@@ -98,7 +98,9 @@ PAF is distributed under the `Apache v2.0 License
 Third party software
 ====================
 
-.. include:: LICENSE-third_party.rst
+PAF relies on third party software for some aspects of its functionality.
+Those third party software are listed in
+`LICENSE-third_party.rst <LICENSE-third_party.rst>`_ .
 
 Feedback, contributions and support
 ===================================
