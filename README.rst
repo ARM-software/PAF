@@ -39,7 +39,7 @@ FastModel).
 PAF has the capability to directly drive a FastModel and perform a number of
 analysis. In order to use this capability, you will need to have access to a
 `FastModel
-https://developer.arm.com/tools-and-software/simulation-models/fast-models`_
+<https://developer.arm.com/tools-and-software/simulation-models/fast-models>`_
 
 
 Building
@@ -98,7 +98,7 @@ PAF is distributed under the `Apache v2.0 License
 Third party software
 ====================
 
-.. include:: LICENSE-third_party.txt
+.. include:: LICENSE-third_party.rst
 
 Feedback, contributions and support
 ===================================

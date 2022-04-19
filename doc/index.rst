@@ -56,18 +56,18 @@ being two noticeable examples.
 
 It is also worth considering physical attacks from a different point of view:
 
- * *passive* attacks, where an attacker monitors a system's physical quantities
-   (time, power consumption, electro-magnetic emissions, ...) to derive
-   information leaked by the system's implementation, without trying to affect
-   the system's behaviour in anyway.
+* *passive* attacks, where an attacker monitors a system's physical quantities
+  (time, power consumption, electro-magnetic emissions, ...) to derive
+  information leaked by the system's implementation, without trying to affect
+  the system's behaviour in anyway.
 
- * *active* attacks, where the attacker actively attempts to affect the system
-   behaviour in some way. This is for example the case with *fault injection*,
-   where an attacker, using a voltage or clock glitch for example, will attempt
-   to derail the program from its expected execution. But this is also the case
-   for some *timing side channel attacks*, like cache attacks, where the
-   attacker will change the state of the CPU caches to guess what the program
-   under attacks does (by measuring differences in execution time).
+* *active* attacks, where the attacker actively attempts to affect the system
+  behaviour in some way. This is for example the case with *fault injection*,
+  where an attacker, using a voltage or clock glitch for example, will attempt
+  to derail the program from its expected execution. But this is also the case
+  for some *timing side channel attacks*, like cache attacks, where the
+  attacker will change the state of the CPU caches to guess what the program
+  under attacks does (by measuring differences in execution time).
 
 Physical attacks will not always lead to the direct exploitation ; they are
 often a necessary step though, a prelude to the real exploit, e.g. firmware
@@ -155,14 +155,14 @@ practice. Instead, PAF's fault injection simulation relies on fault models,
 which are a high level abstraction of faults' effects. For example, for now PAF
 supports:
 
- * *InstructionSkip*: this models the effect of faults for which the
-   instruction appears not to be executed.
+* *InstructionSkip*: this models the effect of faults for which the
+  instruction appears not to be executed.
 
- * *RegisterDefinitionCorruption*: this models the effect of faults that
-   appears to corrupt the destination operand of an instruction.
+* *RegisterDefinitionCorruption*: this models the effect of faults that
+  appears to corrupt the destination operand of an instruction.
 
- * Many more fault models can easily be implemented, e.g. memory corruption, or
-   source operand corruption are on the top of the list
+* Many more fault models can easily be implemented, e.g. memory corruption, or
+  source operand corruption are on the top of the list
 
 All models are wrong (in some way), because they are abstractions of a more
 complex underlying reality, but they remain useful to analyze the behaviour of
@@ -176,46 +176,51 @@ done with faulting the program status register set by the ``CMP`` instruction.
 Fault campaign
 ~~~~~~~~~~~~~~
 
+A fault campaign is a container with all information needed to perform a
+fault injection campaign: information about a program, the fault model used,
+and the list of all fault to inject together with the details of how to inject
+them.
+
 Fault classification
 ~~~~~~~~~~~~~~~~~~~~
 
 When analysing the resistance of a program against fault attacks, it's useful
 to classify the faults according to their effects:
 
- * *success*: the fault was injected and had an effect on the behaviour of the
-   program that can be considered a succesful attack.
+* *success*: the fault was injected and had an effect on the behaviour of the
+  program that can be considered a succesful attack.
 
- * *noeffect*: the fault was injected, but did not have a noticeable impact on
-   the behaviour of the program. This might be true, but this could also be
-   because the Oracle_ was not defined precisely enough.
+* *noeffect*: the fault was injected, but did not have a noticeable impact on
+  the behaviour of the program. This might be true, but this could also be
+  because the Oracle_ was not defined precisely enough.
 
- * *crash*: faults do mess-up the code in many ways (e.g. accesses to invalid
-   memory, unaligned accesses, ...), which are often capture by exception
-   handlers. Note that classifying a fault effect as a crash does not mean the
-   fault can not be succesful ! It only means that the fault effect will depend
-   on how the the exception handlers are setup and will manage the exception.
-   The *crash* classification should be used when it is not known what will
-   happen exactly, because for example the exception handlers behaviour are
-   managed by a different team, and further thinking is needed.
+* *crash*: faults do mess-up the code in many ways (e.g. accesses to invalid
+  memory, unaligned accesses, ...), which are often capture by exception
+  handlers. Note that classifying a fault effect as a crash does not mean the
+  fault can not be succesful ! It only means that the fault effect will depend
+  on how the the exception handlers are setup and will manage the exception.
+  The *crash* classification should be used when it is not known what will
+  happen exactly, because for example the exception handlers behaviour are
+  managed by a different team, and further thinking is needed.
 
- * *caught*: this classification is useful when a program has protections
-   against fault injections. These protections, on top of passive mesures like
-   redundancy often come with an active aspect, where the program will change
-   and adapt its behaviour when it becomes suspicious of a fault injection. In
-   the literature, this is often the ``kill_card`` function that gets invoked
-   to wipe out all secrets for example. It is useful, when testing the
-   resistance of a program to be able to classify the faults that have been
-   caught by the protection schemes.
+* *caught*: this classification is useful when a program has protections
+  against fault injections. These protections, on top of passive mesures like
+  redundancy often come with an active aspect, where the program will change
+  and adapt its behaviour when it becomes suspicious of a fault injection. In
+  the literature, this is often the ``kill_card`` function that gets invoked
+  to wipe out all secrets for example. It is useful, when testing the
+  resistance of a program to be able to classify the faults that have been
+  caught by the protection schemes.
 
- * *notrun*: this classification is for faults which have not been injected.
-   It's useful in reports to be able mark them as *notrun*.
+* *notrun*: this classification is for faults which have not been injected.
+  It's useful in reports to be able mark them as *notrun*.
 
- * *undecided*: faults can alter the control flow of a program, and knowing
-   when to halt the simulation is a hard problem. In some cases, the program
-   can still be in the valid control flow (compared to the reference
-   execution), but locked in an infinite loop, or may be a few more cycles of
-   simulation would have enabled to conclude. This classification usually
-   appears when some sort of timeouts set to the simulation have triggered.
+* *undecided*: faults can alter the control flow of a program, and knowing
+  when to halt the simulation is a hard problem. In some cases, the program
+  can still be in the valid control flow (compared to the reference
+  execution), but locked in an infinite loop, or may be a few more cycles of
+  simulation would have enabled to conclude. This classification usually
+  appears when some sort of timeouts set to the simulation have triggered.
 
 Oracle
 ~~~~~~
@@ -227,6 +232,7 @@ order logical formulae refering to program registers and variables. There is
 captured in a mini-DSL.
 
 A simplified pseudo-grammar for the Oracle-DSL looks like:
+
   *classifier* ::= *event* { *classification* }
 
   *event* ::= *@* (``function``) | *return* (``function``)
@@ -329,11 +335,11 @@ divergences in Tarmac traces:
 
 In this case, ``paf-constanttime`` has found 2 divergences: 
 
- * at time 713, depending on the input value, the instruction at PC: 0x8042 was
-   executed (or not).
+* at time 713, depending on the input value, the instruction at PC: 0x8042 was
+  executed (or not).
 
- * at time 714, thus following the difference in control flow, 2 different
-   instructions are executed.
+* at time 714, thus following the difference in control flow, 2 different
+  instructions are executed.
 
 Power / EM
 ~~~~~~~~~~
@@ -349,11 +355,11 @@ tabular recorded data, so PAF has not re-created the wheel and reuses a
 commonly used container for storing those traces: `NumPy <https://numpy.org/>`_
 arrays. Reusing this stanandard storage has additional benefits:
 
- * NumPy arrays can be used natively in other environments than PAF, e.g.
-   python or `Jupiter <https://jupyter.org/>`_ notebooks,
+* NumPy arrays can be used natively in other environments than PAF, e.g.
+  python or `Jupiter <https://jupyter.org/>`_ notebooks,
 
- * NumPy arrays can be exported by power trace acquisition environment,
-   including `NewAE <https://www.newae.com/>_` ChipWhisperer environment,
+* NumPy arrays can be exported by power trace acquisition environment,
+  including `NewAE <https://www.newae.com/>_` ChipWhisperer environment,
 
 making it a de-facto must-use container.
 
@@ -383,24 +389,24 @@ PAF relies on `tarmac-trace-utilities
 functionality related to tarmac trace analysis. As such, it will give access to
 all tools provided by the Tarmac Trace Utilities:
 
- * ``tarmac-browser``: a terminal-based interactive browser for trace files.
+* ``tarmac-browser``: a terminal-based interactive browser for trace files.
 
- * ``tarmac-callinfo``: reports on calls to a specific function or address.
+* ``tarmac-callinfo``: reports on calls to a specific function or address.
 
- * ``tarmac-calltree``: displays the full hierarchy of function calls
-   identified in the trace.
+* ``tarmac-calltree``: displays the full hierarchy of function calls
+  identified in the trace.
 
- * ``tarmac-flamegraph``: writes out profiling data derived from the trace
-   file, in a format suitable for use with the 'FlameGraph' tools that can be
-   found at https://github.com/brendangregg/FlameGraph.
+* ``tarmac-flamegraph``: writes out profiling data derived from the trace
+  file, in a format suitable for use with the 'FlameGraph' tools that can be
+  found at https://github.com/brendangregg/FlameGraph.
 
- * ``tarmac-gui-browser``: is a GUI-based interactive browser for trace files.
+* ``tarmac-gui-browser``: is a GUI-based interactive browser for trace files.
 
- * ``tarmac-profile``: prints out simple profiling data derived from the trace
-   file, showing the amount of time spent in every function.
+* ``tarmac-profile``: prints out simple profiling data derived from the trace
+  file, showing the amount of time spent in every function.
 
- * ``tarmac-vcd``: translates the trace file into
-   `Value Change Dump <https://en.wikipedia.org/wiki/Value_change_dump>`_.
+* ``tarmac-vcd``: translates the trace file into
+  `Value Change Dump <https://en.wikipedia.org/wiki/Value_change_dump>`_.
 
 For more detailled information on those tools, please refer to their `documentation
 <https://github.com/ARM-software/tarmac-trace-utilities/blob/main/doc/index.rst>`_.
@@ -424,24 +430,24 @@ The command line syntax looks like:
 ``run-model.py`` drives the Arm's FastModel simulation in different ways
 depending on the driver it has been invoked with:
 
- * plain simulation mode: this is the standard operating mode of the FastModel.
-   This is the ``IrisDriver`` and is the default driver.
+* plain simulation mode: this is the standard operating mode of the FastModel.
+  This is the ``IrisDriver`` and is the default driver.
 
- * fault injection mode: in this mode, ``run-model.py`` will run the simulation
-   as many times as there are faults in the user supplied fault campaign file,
-   and at each run inject a fault and try to classify it according to the
-   oracle.
+* fault injection mode: in this mode, ``run-model.py`` will run the simulation
+  as many times as there are faults in the user supplied fault campaign file,
+  and at each run inject a fault and try to classify it according to the
+  oracle.
 
- * check-point mode: in this mode, ``run-model.py`` will stop the simulation at
-   some user specified point and perform a number of checks (register content,
-   memory values, ...). It's essentially equivalent to setting a breaking in a
-   debugger and inspecting the program state.
+* check-point mode: in this mode, ``run-model.py`` will stop the simulation at
+  some user specified point and perform a number of checks (register content,
+  memory values, ...). It's essentially equivalent to setting a breaking in a
+  debugger and inspecting the program state.
 
- * data-override mode: in this mode, ``run-model.py`` will pause the simulation
-   at a user specififed location (typically a function entry), and will
-   override data in memory with user provided data. The simulation will then
-   resume its course. This is useful for checking some hypothesis, or using the
-   same binary, without recompilation for example.
+* data-override mode: in this mode, ``run-model.py`` will pause the simulation
+  at a user specififed location (typically a function entry), and will
+  override data in memory with user provided data. The simulation will then
+  resume its course. This is useful for checking some hypothesis, or using the
+  same binary, without recompilation for example.
 
 Arm's FastModel are versatile and can represent lots of different systems, with
 variant configurations and thus options. ``run-model.py`` can make use of a
@@ -476,91 +482,91 @@ and the ``Name`` field correspond to a parameter in the Arm FastModel.
 
 ``run-model.py`` positional arguments are:
 
-  ``elf_image``
-    The ELF image to load.
+``elf_image``
+  The ELF image to load.
 
-  ``image_args``
-    The ELF image arguments.
+``image_args``
+  The ELF image arguments.
 
 ``run-model.py`` supports the following optional arguments:
 
-  ``-h`` or ``--help``
-    Show this help message and exit
+``-h`` or ``--help``
+  Show this help message and exit
 
-  ``-v`` or ``--verbose``
-    Be more verbose, may be specified multiple times.
+``-v`` or ``--verbose``
+  Be more verbose, may be specified multiple times.
 
-  ``-V`` or ``--version``
-    Print the version number of this tool.
+``-V`` or ``--version``
+  Print the version number of this tool.
 
-  ``-s`` or ``--enable-semihosting``
-    Use semihosting for passing arguments and getting the exit value
+``-s`` or ``--enable-semihosting``
+  Use semihosting for passing arguments and getting the exit value
 
-  ``-g`` or ``--enable-remote-gdb``
-    Enable the remote debug server. You can then point your debugger to
-    127.0.0.1:31627 ('gdb-remote 127.0.0.1:31627' in LLDB)
+``-g`` or ``--enable-remote-gdb``
+  Enable the remote debug server. You can then point your debugger to
+  127.0.0.1:31627 ('gdb-remote 127.0.0.1:31627' in LLDB)
 
-  ``-l SECONDS`` or ``--cpu-limit SECONDS``
-    Set a time limit on the host cpu to the simulation (default:0).
+``-l SECONDS`` or ``--cpu-limit SECONDS``
+  Set a time limit on the host cpu to the simulation (default:0).
 
-  ``-t [TRACE]`` or ``--enable-trace [TRACE]``
-    Trace instructions to file TRACE if provided, elf_image.trace otherwise
+``-t [TRACE]`` or ``--enable-trace [TRACE]``
+  Trace instructions to file TRACE if provided, elf_image.trace otherwise
 
-  ``-d {IrisDriver,FaultInjection,CheckPoint,DataOverrider}`` or ``--driver {IrisDriver,FaultInjection,CheckPoint,DataOverrider}``
-    Set the simulation driver to use
+``-d {IrisDriver,FaultInjection,CheckPoint,DataOverrider}`` or ``--driver {IrisDriver,FaultInjection,CheckPoint,DataOverrider}``
+  Set the simulation driver to use
 
-  ``-c CampaignFile`` or ``--driver-cfg CampaignFile``
-    simulation driver configuration to use (a.k.a fault injection campaign)
+``-c CampaignFile`` or ``--driver-cfg CampaignFile``
+  simulation driver configuration to use (a.k.a fault injection campaign)
 
-  ``-f FaultIds`` or ``--fault-ids FaultIds``
-    A comma separated list of fault Ids or Ids range to run (from the fault
-    injection campaign)
+``-f FaultIds`` or ``--fault-ids FaultIds``
+  A comma separated list of fault Ids or Ids range to run (from the fault
+  injection campaign)
 
-  ``-j NUM`` or ``--jobs NUM``
-    Number of fault injection jobs to run in parallel (default: 1)
+``-j NUM`` or ``--jobs NUM``
+  Number of fault injection jobs to run in parallel (default: 1)
 
-  ``--hard-psr-fault``
-    With the CorruptRegDef model, fault the full PSR instead of just the CC
+``--hard-psr-fault``
+  With the CorruptRegDef model, fault the full PSR instead of just the CC
 
-  ``--reg-fault-value {reset,one,set}``
-    With the register fault models, reset the register, set it to 1 or set it
-    to all 1s
+``--reg-fault-value {reset,one,set}``
+  With the register fault models, reset the register, set it to 1 or set it
+  to all 1s
 
-  ``--gui``
-    Enable the fancy gui from the FVP
+``--gui``
+  Enable the fancy gui from the FVP
 
-  ``--override-when-entering FUNC``
-    override data when entering function FUNC
+``--override-when-entering FUNC``
+  override data when entering function FUNC
 
-  ``--override-symbol-with SYMBOL:BYTESTRING[,SYMBOL:BYTESTRING]``
-    Override SYMBOL with bytes from BYTESTRING
+``--override-symbol-with SYMBOL:BYTESTRING[,SYMBOL:BYTESTRING]``
+  Override SYMBOL with bytes from BYTESTRING
 
-  ``--ignore-return-value``
-    Ignore the return value from semihosting or from the simulator
+``--ignore-return-value``
+  Ignore the return value from semihosting or from the simulator
 
-  ``--dry-run``
-    Don't actually run the simulator, just print the command line that would be
-    used to run it
+``--dry-run``
+  Don't actually run the simulator, just print the command line that would be
+  used to run it
 
-  ``-u SessionCfgFile`` or ``--user-cfg SessionCfgFile``
-    Defines the model meaningful options for you in your environement
+``-u SessionCfgFile`` or ``--user-cfg SessionCfgFile``
+  Defines the model meaningful options for you in your environement
 
-  ``--stat``
-    Print run statistics on simulation exit
+``--stat``
+  Print run statistics on simulation exit
 
-  ``--iris-port PORT``
-    Set the base iris port number to use (default:7100)
+``--iris-port PORT``
+  Set the base iris port number to use (default:7100)
 
-  ``--start-address ADDRESS``
-    Set the PC at ADDRESS at the start of simulation
+``--start-address ADDRESS``
+  Set the PC at ADDRESS at the start of simulation
 
-  ``--exit-address ADDRESSES``
-    Stop and exit simulation when PC matches any address in ADDRESSES.
-    ADDRESSES is interpreted as a comma separated list of symbol namess or
-    adresses
+``--exit-address ADDRESSES``
+  Stop and exit simulation when PC matches any address in ADDRESSES.
+  ADDRESSES is interpreted as a comma separated list of symbol namess or
+  adresses
 
-  ``--data binary``
-    Data loading and placement
+``--data binary``
+  Data loading and placement
 
 Here are a few example usage of ``run-model.py``. In the first example, one
 simply executes the canonical "Hello World !" on a Cortex-M3, using
@@ -627,28 +633,28 @@ where *CAMPAIGN_FILE* denotes a campaign file to process.
 
 The available actions to perform on the *CAMPAIGN_FILEs* are:
 
-  ``--offset-fault-time-by OFFSET``
-    Offset all fault time by OFFSET
+``--offset-fault-time-by OFFSET``
+  Offset all fault time by OFFSET
 
-  ``--offset-fault-address-by OFFSET``
-    Offset all fault addresses by OFFSET
+``--offset-fault-address-by OFFSET``
+  Offset all fault addresses by OFFSET
 
-  ``--summary``
-    Display a summary of the campaign results
+``--summary``
+  Display a summary of the campaign results
 
 ``campaign.py`` supports the following optional arguments:
 
-  ``-h`` or ``--help``
-    Show this help message and exit
+``-h`` or ``--help``
+  Show this help message and exit
 
-  ``-v`` or ``--verbose``
-    Be more verbose, may be specified multiple times.
+``-v`` or ``--verbose``
+  Be more verbose, may be specified multiple times.
 
-  ``-V`` or ``--version``
-    Print the version number of this tool.
+``-V`` or ``--version``
+  Print the version number of this tool.
 
-  ``--dry-run``
-    Perform the action, but don't save the file and dump it for visual inspection.
+``--dry-run``
+  Perform the action, but don't save the file and dump it for visual inspection.
 
 As an example, one can get a summary report of a fault injection campaign with:
 
@@ -669,62 +675,63 @@ The command line syntax looks like:
   ``paf-faulter`` [ *options* ] *TRACEFILE*
 
 The following options are recognized:
-  ``--image=IMAGEFILE``
-    Image file name
 
-  ``--only-index``
-    Generate index and do nothing else
+``--image=IMAGEFILE``
+  Image file name
 
-  ``--force-index``
-    Regenerate index unconditionally
+``--only-index``
+  Generate index and do nothing else
 
-  ``--no-index``
-    Do not regenerate index
+``--force-index``
+  Regenerate index unconditionally
 
-  ``--li``
-    Assume trace is from a little-endian platform
+``--no-index``
+  Do not regenerate index
 
-  ``--bi``
-    Assume trace is from a big-endian platform
+``--li``
+  Assume trace is from a little-endian platform
 
-  ``-v`` or ``--verbose``
-    Make tool more verbose
+``--bi``
+  Assume trace is from a big-endian platform
 
-  ``-q`` or ``--quiet``
-    Make tool quiet
+``-v`` or ``--verbose``
+  Make tool more verbose
 
-  ``--show-progress-meter``
-    Force display of the progress meter
+``-q`` or ``--quiet``
+  Make tool quiet
 
-  ``--index=INDEXFILE``
-    Index file name
+``--show-progress-meter``
+  Force display of the progress meter
 
-  ``--instructionskip``
-    Select InstructionSkip faultModel
+``--index=INDEXFILE``
+  Index file name
 
-  ``--corruptregdef``
-    Select CorruptRegDef faultModel
+``--instructionskip``
+  Select InstructionSkip faultModel
 
-  ``--output=CAMPAIGNFILE``
-    Campaign file name
+``--corruptregdef``
+  Select CorruptRegDef faultModel
 
-  ``--oracle=ORACLESPEC``
-    Oracle specification
+``--output=CAMPAIGNFILE``
+  Campaign file name
 
-  ``--window-labels=WINDOW,LABEL[,LABEL+]``
-    A pair of labels that delimit the region where to inject faults.
+``--oracle=ORACLESPEC``
+  Oracle specification
 
-  ``--labels-pair=START_LABEL,END_LABEL``
-    A pair of labels that delimit the region where to inject faults.
+``--window-labels=WINDOW,LABEL[,LABEL+]``
+  A pair of labels that delimit the region where to inject faults.
 
-  ``--flat-functions=FUNCTION[,FUNCTION]+``
-    A comma separated list of function names where to inject faults into (excluding their call-tree)
+``--labels-pair=START_LABEL,END_LABEL``
+  A pair of labels that delimit the region where to inject faults.
 
-  ``--functions=FUNCTION[,FUNCTION]+``
-    A comma separated list of function names where to inject faults into (including their call-tree)
+``--flat-functions=FUNCTION[,FUNCTION]+``
+  A comma separated list of function names where to inject faults into (excluding their call-tree)
 
-  ``--exclude-functions=FUNCTION[,FUNCTION]+``
-    A comma separated list of function names to skip for fault injection
+``--functions=FUNCTION[,FUNCTION]+``
+  A comma separated list of function names where to inject faults into (including their call-tree)
+
+``--exclude-functions=FUNCTION[,FUNCTION]+``
+  A comma separated list of function names to skip for fault injection
 
 An example usage, extracted from the ``tests/`` directory looks like:
 
@@ -805,38 +812,38 @@ The command line syntax looks like:
 
 The following options are recognized:
 
-  ``--ignore-conditional-execution-differences``
-    Ignore differences in conditional execution
+``--ignore-conditional-execution-differences``
+  Ignore differences in conditional execution
 
-  ``--ignore-memory-access-differences``
-    Ignore differences in memory accesses
+``--ignore-memory-access-differences``
+  Ignore differences in memory accesses
 
-  ``--image=IMAGEFILE``
-    Image file name
+``--image=IMAGEFILE``
+  Image file name
 
-  ``--only-index``
-    Generate index and do nothing else
+``--only-index``
+  Generate index and do nothing else
 
-  ``--force-index``
-    Regenerate index unconditionally
+``--force-index``
+  Regenerate index unconditionally
 
-  ``--no-index``
-    Do not regenerate index
+``--no-index``
+  Do not regenerate index
 
-  ``--li``
-    Assume trace is from a little-endian platform
+``--li``
+  Assume trace is from a little-endian platform
 
-  ``--bi``
-    Assume trace is from a big-endian platform
+``--bi``
+  Assume trace is from a big-endian platform
 
-  ``-v`` or ``--verbose``
-    Make tool more verbose
+``-v`` or ``--verbose``
+  Make tool more verbose
 
-  ``-q`` or ``--quiet``
-    Make tool quiet
+``-q`` or ``--quiet``
+  Make tool quiet
 
-  ``--show-progress-meter``
-    Force display of the progress meter
+``--show-progress-meter``
+  Force display of the progress meter
 
 As an example usage, if we get back to our walk-thru on timing side channels (see `Timing`_):
 
@@ -920,56 +927,56 @@ The command line syntax looks like:
 
 The following options are recognized:
 
-  ``-o`` or ``--output=OutputFilename``
-    Output file name (default: standard output)
+``-o`` or ``--output=OutputFilename``
+  Output file name (default: standard output)
 
-  ``--timing=TimingFilename``
-    Emit timing information to TimingFilename
+``--timing=TimingFilename``
+  Emit timing information to TimingFilename
 
-  ``--csv``
-    Emit the power trace in CSV format (default)
+``--csv``
+  Emit the power trace in CSV format (default)
 
-  ``--npy``
-    Emit the power trace in NPY format
+``--npy``
+  Emit the power trace in NPY format
 
-  ``--detailed-output``
-    Emit more detailed information in the CSV file
+``--detailed-output``
+  Emit more detailed information in the CSV file
 
-  ``--no-noise``
-    Do not add noise to the power trace
+``--no-noise``
+  Do not add noise to the power trace
 
-  ``--hamming-weight``
-    Use the hamming weight power model
+``--hamming-weight``
+  Use the hamming weight power model
 
-  ``--hamming-distance``
-    Use the hamming distance power model
+``--hamming-distance``
+  Use the hamming distance power model
 
-  ``--image=IMAGEFILE``
-    Image file name
+``--image=IMAGEFILE``
+  Image file name
 
-  ``--only-index``
-    Generate index and do nothing else
+``--only-index``
+  Generate index and do nothing else
 
-  ``--force-index``
-    Regenerate index unconditionally
+``--force-index``
+  Regenerate index unconditionally
 
-  ``--no-index``
-    Do not regenerate index
+``--no-index``
+  Do not regenerate index
 
-  ``--li``
-    Assume trace is from a little-endian platform
+``--li``
+  Assume trace is from a little-endian platform
 
-  ``--bi``
-    Assume trace is from a big-endian platform
+``--bi``
+  Assume trace is from a big-endian platform
 
-  ``-v`` or ``--verbose``
-    Make tool more verbose
+``-v`` or ``--verbose``
+  Make tool more verbose
 
-  ``-q`` or ``--quiet``
-    Make tool quiet
+``-q`` or ``--quiet``
+  Make tool quiet
 
-  ``--show-progress-meter``
-    force Display of the progress meter
+``--show-progress-meter``
+  force Display of the progress meter
 
 For example, assume that you want to get a synthetic power trace, using the
 Hamming weight model, of the execution of function ``gadget`` in
@@ -1004,35 +1011,35 @@ The command line syntax looks like:
 
 The following options are recognized:
 
-  ``-v`` or ``--verbose``
-    Increase verbosity level (can be specified multiple times)
+``-v`` or ``--verbose``
+  Increase verbosity level (can be specified multiple times)
 
-  ``-a`` or ``--append``
-    Append to output_file (instead of overwriting)
+``-a`` or ``--append``
+  Append to output_file (instead of overwriting)
 
-  ``-o FILE`` or ``--output=FILE``
-    Write output to FILE (instead of stdout)
+``-o FILE`` or ``--output=FILE``
+  Write output to FILE (instead of stdout)
 
-  ``-p`` or ``--python``
-    Emit results in a format suitable for importing in python
+``-p`` or ``--python``
+  Emit results in a format suitable for importing in python
 
-  ``-g`` or ``--gnuplot``
-    Emit results in gnuplot compatible format.
+``-g`` or ``--gnuplot``
+  Emit results in gnuplot compatible format.
 
-  ``-f S`` or ``--from=S``
-    Start computation at sample S (default: 0)
+``-f S`` or ``--from=S``
+  Start computation at sample S (default: 0)
 
-  ``-n N`` or ``--numsamples=N``
-    Restrict computation to N samples
+``-n N`` or ``--numsamples=N``
+  Restrict computation to N samples
 
-  ``-d T`` or ``--numtraces=T``
-    Only process the first T traces
+``-d T`` or ``--numtraces=T``
+  Only process the first T traces
 
-  ``-i INPUTSFILE`` or ``--inputs=INPUTSFILE``
-    Use INPUTSFILE as input data, in npy format
+``-i INPUTSFILE`` or ``--inputs=INPUTSFILE``
+  Use INPUTSFILE as input data, in npy format
 
-  ``-t TRACESFILE`` or ``--traces=TRACESFILE``
-    Use TRACESFILE as traces, in npy format
+``-t TRACESFILE`` or ``--traces=TRACESFILE``
+  Use TRACESFILE as traces, in npy format
 
 For example, to compute the Pearson correlation coefficient for the combination
 ``inputs[0] ^ inputs[1]`` for a number of traces in file ``traces.npy`` (with
@@ -1072,32 +1079,32 @@ The command line syntax looks like:
 
 The following options are recognized:
 
-  ``-v`` or ``--verbose``
-    Increase verbosity level (can be specified multiple times)
+``-v`` or ``--verbose``
+  Increase verbosity level (can be specified multiple times)
 
-  ``-a`` or ``--append``
-    Append to output_file (instead of overwriting)
+``-a`` or ``--append``
+  Append to output_file (instead of overwriting)
 
-  ``-o FILE`` or ``--output=FILE``
-    Write output to FILE (instead of stdout)
+``-o FILE`` or ``--output=FILE``
+  Write output to FILE (instead of stdout)
 
-  ``-p`` or ``--python``
-    Emit results in a format suitable for importing in python
+``-p`` or ``--python``
+  Emit results in a format suitable for importing in python
 
-  ``-g`` or ``--gnuplot``
-    Emit results in gnuplot compatible format.
+``-g`` or ``--gnuplot``
+  Emit results in gnuplot compatible format.
 
-  ``-f S`` or ``--from=S``
-    Start computation at sample S (default: 0)
+``-f S`` or ``--from=S``
+  Start computation at sample S (default: 0)
 
-  ``-n N`` or ``--numsamples=N``
-    Restrict computation to N samples
+``-n N`` or ``--numsamples=N``
+  Restrict computation to N samples
 
-  ``-d T`` or ``--numtraces=T``
-    Only process the first T traces
+``-d T`` or ``--numtraces=T``
+  Only process the first T traces
 
-  ``--interleaved``
-    Assume interleaved traces in a single NPY file
+``--interleaved``
+  Assume interleaved traces in a single NPY file
 
 For example, let's assume that we have two groups of traces, recorded in two
 separate files. The non-specific t-test, starting from sample 80, can be
@@ -1140,35 +1147,35 @@ The command line syntax looks like:
 
 The following options are recognized:
 
-  ``-v`` or ``--verbose``
-    Increase verbosity level (can be specified multiple times)
+``-v`` or ``--verbose``
+  Increase verbosity level (can be specified multiple times)
 
-  ``-a`` or ``--append``
-    Append to output_file (instead of overwriting)
+``-a`` or ``--append``
+  Append to output_file (instead of overwriting)
 
-  ``-o FILE`` or ``--output=FILE``
-    Write output to FILE (instead of stdout)
+``-o FILE`` or ``--output=FILE``
+  Write output to FILE (instead of stdout)
 
-  ``-p`` or ``--python``
-    Emit results in a format suitable for importing in python
+``-p`` or ``--python``
+  Emit results in a format suitable for importing in python
 
-  ``-g`` or ``--gnuplot``
-    Emit results in gnuplot compatible format.
+``-g`` or ``--gnuplot``
+  Emit results in gnuplot compatible format.
 
-  ``-f S`` or ``--from=S``
-    Start computation at sample S (default: 0)
+``-f S`` or ``--from=S``
+  Start computation at sample S (default: 0)
 
-  ``-n N`` or ``--numsamples=N``
-    Restrict computation to N samples
+``-n N`` or ``--numsamples=N``
+  Restrict computation to N samples
 
-  ``-d T`` or ``--numtraces=T``
-    Only process the first T traces
+``-d T`` or ``--numtraces=T``
+  Only process the first T traces
 
-  ``-i INPUTSFILE`` or ``--inputs=INPUTSFILE``
-    Use INPUTSFILE as input data, in npy format
+``-i INPUTSFILE`` or ``--inputs=INPUTSFILE``
+  Use INPUTSFILE as input data, in npy format
 
-  ``-t TRACESFILE`` or ``--traces=TRACESFILE``
-    Use TRACESFILE as traces, in npy format
+``-t TRACESFILE`` or ``--traces=TRACESFILE``
+  Use TRACESFILE as traces, in npy format
 
 For example, to get the specific t-test for the intermediate value ``inputs[0]
 ^ inputs[1]`` for traces in ``traces.npy`` generated with data in
@@ -1221,21 +1228,21 @@ where ``VALUE`` is the values to use when filling the matrix.
 
 The following options are recognized:
 
-  ``-v`` or ``--verbose``
-    Increase verbosity level (can be specified multiple times)
+``-v`` or ``--verbose``
+  Increase verbosity level (can be specified multiple times)
 
-  ``-r ROWS`` or ``--rows=ROWS``
-    Number of rows in the matrix
+``-r ROWS`` or ``--rows=ROWS``
+  Number of rows in the matrix
 
-  ``-c COLUMNS`` or ``--columns=COLUMNS``
-    Number of columns in the matrix
+``-c COLUMNS`` or ``--columns=COLUMNS``
+  Number of columns in the matrix
 
-  ``-t ELT_TYPE`` or ``--element-type=ELT_TYPE``
-    Select matrix element typei, where ``ELT_TYPE`` is one of numpy element types
-    (e.g. ``u8``, ``i16``, ``f32``, ...)
+``-t ELT_TYPE`` or ``--element-type=ELT_TYPE``
+  Select matrix element typei, where ``ELT_TYPE`` is one of numpy element types
+  (e.g. ``u8``, ``i16``, ``f32``, ...)
 
-  ``-o FILE`` or ``--output=FILE``
-    Specify output file name
+``-o FILE`` or ``--output=FILE``
+  Specify output file name
 
 Example usage, to create a numpy file ``example.npy`` containing a 2 x 4 matrix
 of ``double`` elements initialized with: 0.0 .. 7.0:
@@ -1255,29 +1262,29 @@ The command line syntax looks like:
 
 The following options are recognized:
 
-  ``-v`` or ``--verbose``
-    Increase verbosity level (can be specified multiple times)
+``-v`` or ``--verbose``
+  Increase verbosity level (can be specified multiple times)
 
-  ``-r`` or ``--rows``
-    Print number of rows
+``-r`` or ``--rows``
+  Print number of rows
 
-  ``-c`` or ``--columns``
-    Print number of columns (this is the default action)
+``-c`` or ``--columns``
+  Print number of columns (this is the default action)
 
-  ``-t`` or ``--elttype``
-    Print element type
+``-t`` or ``--elttype``
+  Print element type
 
-  ``-p`` or ``--python-content``
-    Print array content as a python array
+``-p`` or ``--python-content``
+  Print array content as a python array
 
-  ``-f`` or ``--c-content``
-    Print array content as a C/C++ array
+``-f`` or ``--c-content``
+  Print array content as a C/C++ array
 
-  ``-i`` or ``--info``
-    Print NPY file information
+``-i`` or ``--info``
+  Print NPY file information
 
-  ``-m`` or ``--revision``
-    Print NPY revision
+``-m`` or ``--revision``
+  Print NPY revision
 
 Example usage, querying the element type in file ``example.npy``, as created in
 the example for ``paf-np-create`` :
@@ -1315,23 +1322,23 @@ libraries. The bulk of PAF is C++ code, but a few parts, most notably
 
 The code base organization reflects different domains tackled by PAF:
 
- * fault injection related libraries (in ``include/PAF/FI`` and ``lib/FI``)
+* fault injection related libraries (in ``include/PAF/FI`` and ``lib/FI``)
 
- * side channel related libraries (in ``include/PAF/SCA`` and ``lib/SCA``)
+* side channel related libraries (in ``include/PAF/SCA`` and ``lib/SCA``)
 
- * common libraries (in ``include/PAF`` and ``lib/PAF``)
+* common libraries (in ``include/PAF`` and ``lib/PAF``)
 
 and it also has mundane parts like :
 
- * unit tests (in ``unit-test/``)
+* unit tests (in ``unit-test/``)
 
- * end to end tests (in ``tests/``)
+* end to end tests (in ``tests/``)
 
- * continuous integration testing (in ``.github/workflows/``)
+* continuous integration testing (in ``.github/workflows/``)
 
- * documentation (in ``doc/``)
+* documentation (in ``doc/``)
 
- * build configuration (in ``cmake/``)
+* build configuration (in ``cmake/``)
 
 Build
 -----
