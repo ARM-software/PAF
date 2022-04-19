@@ -1,0 +1,38 @@
+# Copyright 2021 Arm Limited. All rights reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+# This file is part of PAF, the Physical Attack Framework.
+#
+# SPDX-License-Identifier: Apache-2.0
+
+FaultInjectionCampain: "test-campaign-1.yml"
+Image: "verifyPIN-O3.elf"
+ReferenceTrace: "verifyPIN-O3.elf.trace"
+MaxTraceTime: 4383
+ProgramEntryAddress: 0x8150
+ProgramEndAddress: 0x103ee
+FaultModel: "InstructionSkip"
+FunctionInfo:
+  - { Name: "verifyPIN", StartTime: 3069, EndTime: 3091, StartAddress: 0x8238, EndAddress: 0x8264, CallAddress: 0x80ae, ResumeAddress: 0x80b2}
+Oracle:
+  - { Pc: 0x8010, Classification: [["success",[]]]}
+  - { Pc: 0x8284, Classification: [["crash",[]]]}
+  - { Pc: 0x80dc, Classification: [["noeffect",[]]]}
+Campaign:
+  - { Id: 0, Time: 3069, Address: 0x8238, Instruction: 0xb4f0, Width: 16, Breakpoint: { Address: 0x8238, Count: 0}, Disassembly: "PUSH {r4-r7}", Effect: "caught", Executed: True, FaultedInstr: 0xbf00}
+  - { Id: 1, Time: 3070, Address: 0x823a, Instruction: 0x6814, Width: 16, Breakpoint: { Address: 0x823a, Count: 0}, Disassembly: "LDR r4,[r2,#0]", Effect: "success", Executed: True, FaultedInstr: 0xbf00}
+  - { Id: 2, Time: 3071, Address: 0x823c, Instruction: 0x2c00, Width: 16, Breakpoint: { Address: 0x823c, Count: 0}, Disassembly: "CMP r4,#0", Effect: "crash", Executed: True, FaultedInstr: 0xbf00}
+  - { Id: 3, Time: 3072, Address: 0x823e, Instruction: 0xdd1d, Width: 16, Breakpoint: { Address: 0x823e, Count: 0}, Disassembly: "BLE {pc}+0x3e", Effect: "success", Executed: False, FaultedInstr: 0xbf00}
+  - { Id: 4, Time: 3073, Address: 0x8240, Instruction: 0x7805, Width: 16, Breakpoint: { Address: 0x8240, Count: 0}, Disassembly: "LDRB r5,[r0,#0]", Executed: True, FaultedInstr: 0xbf00}
+  - { Id: 5, Time: 3074, Address: 0x8242, Instruction: 0x780b, Width: 16, Breakpoint: { Address: 0x8242, Count: 0}, Disassembly: "LDRB r3,[r1,#0]", Effect: "noeffect", Executed: True, FaultedInstr: 0xbf00}

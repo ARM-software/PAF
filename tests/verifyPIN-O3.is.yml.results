@@ -1,0 +1,36 @@
+FaultInjectionCampain: "verifyPIN-O3.is.yml"
+Image: "verifyPIN-O3.elf"
+ReferenceTrace: "verifyPIN-O3.elf.trace"
+MaxTraceTime: 4216
+ProgramEntryAddress: 0x815c
+ProgramEndAddress: 0x10ae2
+FaultModel: "InstructionSkip"
+FunctionInfo:
+  - { Name: "verifyPIN@0", StartTime: 2944, EndTime: 2965, StartAddress: 0x8248, EndAddress: 0x827e, CallAddress: 0x80b0, ResumeAddress: 0x80b4}
+Oracle:
+  - { Pc: 0x8010, Classification: [["success",[]]]}
+  - { Pc: 0x829c, Classification: [["crash",[]]]}
+  - { Pc: 0x80de, Classification: [["noeffect",[]]]}
+Campaign:
+  - { Id: 0, Time: 2944, Address: 0x8248, Instruction: 0xb510, Width: 16, Breakpoint: { Address: 0x8248, Count: 0}, Disassembly: "PUSH {r4,lr}", Effect: "crash", Executed: True, FaultedInstr: 0xbf00}
+  - { Id: 1, Time: 2945, Address: 0x824a, Instruction: 0x6814, Width: 16, Breakpoint: { Address: 0x824a, Count: 0}, Disassembly: "LDR r4,[r2,#0]", Effect: "success", Executed: True, FaultedInstr: 0xbf00}
+  - { Id: 2, Time: 2946, Address: 0x824c, Instruction: 0x2c00, Width: 16, Breakpoint: { Address: 0x824c, Count: 0}, Disassembly: "CMP r4,#0", Effect: "noeffect", Executed: True, FaultedInstr: 0xbf00}
+  - { Id: 3, Time: 2947, Address: 0x824e, Instruction: 0xdd22, Width: 16, Breakpoint: { Address: 0x824e, Count: 0}, Disassembly: "BLE {pc}+0x48", Effect: "noeffect", Executed: False, FaultedInstr: 0xbf00}
+  - { Id: 4, Time: 2948, Address: 0x8250, Instruction: 0xf890c000, Width: 32, Breakpoint: { Address: 0x8250, Count: 0}, Disassembly: "LDRB r12,[r0,#0]", Effect: "noeffect", Executed: True, FaultedInstr: 0xf3af8000}
+  - { Id: 5, Time: 2949, Address: 0x8254, Instruction: 0x780b, Width: 16, Breakpoint: { Address: 0x8254, Count: 0}, Disassembly: "LDRB r3,[r1,#0]", Effect: "noeffect", Executed: True, FaultedInstr: 0xbf00}
+  - { Id: 6, Time: 2950, Address: 0x8256, Instruction: 0xf890e001, Width: 32, Breakpoint: { Address: 0x8256, Count: 0}, Disassembly: "LDRB lr,[r0,#1]", Effect: "noeffect", Executed: True, FaultedInstr: 0xf3af8000}
+  - { Id: 7, Time: 2951, Address: 0x825a, Instruction: 0xebb3030c, Width: 32, Breakpoint: { Address: 0x825a, Count: 0}, Disassembly: "SUBS r3,r3,r12", Effect: "noeffect", Executed: True, FaultedInstr: 0xf3af8000}
+  - { Id: 8, Time: 2952, Address: 0x825e, Instruction: 0xbf18, Width: 16, Breakpoint: { Address: 0x825e, Count: 0}, Disassembly: "IT NE", Effect: "noeffect", Executed: True, FaultedInstr: 0xbf00}
+  - { Id: 9, Time: 2953, Address: 0x8260, Instruction: 0x2301, Width: 16, Breakpoint: { Address: 0x8260, Count: 0}, Disassembly: "MOVNE r3,#1", Effect: "noeffect", Executed: False, FaultedInstr: 0xbf00}
+  - { Id: 10, Time: 2954, Address: 0x8262, Instruction: 0xf891c001, Width: 32, Breakpoint: { Address: 0x8262, Count: 0}, Disassembly: "LDRB r12,[r1,#1]", Effect: "noeffect", Executed: True, FaultedInstr: 0xf3af8000}
+  - { Id: 11, Time: 2955, Address: 0x8266, Instruction: 0x45e6, Width: 16, Breakpoint: { Address: 0x8266, Count: 0}, Disassembly: "CMP lr,r12", Effect: "noeffect", Executed: True, FaultedInstr: 0xbf00}
+  - { Id: 12, Time: 2956, Address: 0x8268, Instruction: 0xbf18, Width: 16, Breakpoint: { Address: 0x8268, Count: 0}, Disassembly: "IT NE", Effect: "noeffect", Executed: True, FaultedInstr: 0xbf00}
+  - { Id: 13, Time: 2957, Address: 0x826a, Instruction: 0x2301, Width: 16, Breakpoint: { Address: 0x826a, Count: 0}, Disassembly: "MOVNE r3,#1", Effect: "noeffect", Executed: False, FaultedInstr: 0xbf00}
+  - { Id: 14, Time: 2958, Address: 0x826c, Instruction: 0xf891e002, Width: 32, Breakpoint: { Address: 0x826c, Count: 0}, Disassembly: "LDRB lr,[r1,#2]", Effect: "noeffect", Executed: True, FaultedInstr: 0xf3af8000}
+  - { Id: 15, Time: 2959, Address: 0x8270, Instruction: 0xf890c002, Width: 32, Breakpoint: { Address: 0x8270, Count: 0}, Disassembly: "LDRB r12,[r0,#2]", Effect: "noeffect", Executed: True, FaultedInstr: 0xf3af8000}
+  - { Id: 16, Time: 2960, Address: 0x8274, Instruction: 0x45e6, Width: 16, Breakpoint: { Address: 0x8274, Count: 0}, Disassembly: "CMP lr,r12", Effect: "success", Executed: True, FaultedInstr: 0xbf00}
+  - { Id: 17, Time: 2961, Address: 0x8276, Instruction: 0xd003, Width: 16, Breakpoint: { Address: 0x8276, Count: 0}, Disassembly: "BEQ {pc}+0xa", Effect: "noeffect", Executed: False, FaultedInstr: 0xbf00}
+  - { Id: 18, Time: 2962, Address: 0x8278, Instruction: 0x3c01, Width: 16, Breakpoint: { Address: 0x8278, Count: 0}, Disassembly: "SUBS r4,#1", Effect: "success", Executed: True, FaultedInstr: 0xbf00}
+  - { Id: 19, Time: 2963, Address: 0x827a, Instruction: 0x2000, Width: 16, Breakpoint: { Address: 0x827a, Count: 0}, Disassembly: "MOVS r0,#0", Effect: "success", Executed: True, FaultedInstr: 0xbf00}
+  - { Id: 20, Time: 2964, Address: 0x827c, Instruction: 0x6014, Width: 16, Breakpoint: { Address: 0x827c, Count: 0}, Disassembly: "STR r4,[r2,#0]", Effect: "success", Executed: True, FaultedInstr: 0xbf00}
+  - { Id: 21, Time: 2965, Address: 0x827e, Instruction: 0xbd10, Width: 16, Breakpoint: { Address: 0x827e, Count: 0}, Disassembly: "POP {r4,pc}", Effect: "success", Executed: True, FaultedInstr: 0xbf00}

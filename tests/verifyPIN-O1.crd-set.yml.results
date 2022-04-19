@@ -1,0 +1,66 @@
+FaultInjectionCampain: "verifyPIN-O1.crd-set.yml"
+Image: "verifyPIN-O1.elf"
+ReferenceTrace: "verifyPIN-O1.elf.trace"
+MaxTraceTime: 4236
+ProgramEntryAddress: 0x8154
+ProgramEndAddress: 0x10ac2
+FaultModel: "CorruptRegDef"
+FunctionInfo:
+  - { Name: "verifyPIN@0", StartTime: 2944, EndTime: 2985, StartAddress: 0x8246, EndAddress: 0x827c, CallAddress: 0x80a8, ResumeAddress: 0x80ac}
+Oracle:
+  - { Pc: 0x8240, Classification: [["success",[]]]}
+  - { Pc: 0x827e, Classification: [["crash",[]]]}
+  - { Pc: 0x80d6, Classification: [["noeffect",[]]]}
+Campaign:
+  - { Id: 0, Time: 2944, Address: 0x8246, Instruction: 0xb530, Width: 16, Breakpoint: { Address: 0x8248, Count: 0}, Disassembly: "PUSH {r4,r5,lr}", Effect: "crash", FaultedReg: "R13"}
+  - { Id: 1, Time: 2945, Address: 0x8248, Instruction: 0x6815, Width: 16, Breakpoint: { Address: 0x824a, Count: 0}, Disassembly: "LDR r5,[r2,#0]", Effect: "success", FaultedReg: "R5"}
+  - { Id: 2, Time: 2946, Address: 0x824a, Instruction: 0x2d00, Width: 16, Breakpoint: { Address: 0x824c, Count: 0}, Disassembly: "CMP r5,#0", Effect: "success", FaultedReg: "PSR"}
+  - { Id: 3, Time: 2948, Address: 0x824e, Instruction: 0x1e4b, Width: 16, Breakpoint: { Address: 0x8250, Count: 0}, Disassembly: "SUBS r3,r1,#1", Effect: "noeffect", FaultedReg: "PSR"}
+  - { Id: 4, Time: 2948, Address: 0x824e, Instruction: 0x1e4b, Width: 16, Breakpoint: { Address: 0x8250, Count: 0}, Disassembly: "SUBS r3,r1,#1", Effect: "crash", FaultedReg: "R3"}
+  - { Id: 5, Time: 2949, Address: 0x8250, Instruction: 0x3801, Width: 16, Breakpoint: { Address: 0x8252, Count: 0}, Disassembly: "SUBS r0,#1", Effect: "noeffect", FaultedReg: "PSR"}
+  - { Id: 6, Time: 2949, Address: 0x8250, Instruction: 0x3801, Width: 16, Breakpoint: { Address: 0x8252, Count: 0}, Disassembly: "SUBS r0,#1", Effect: "noeffect", FaultedReg: "R0"}
+  - { Id: 7, Time: 2950, Address: 0x8252, Instruction: 0x3103, Width: 16, Breakpoint: { Address: 0x8254, Count: 0}, Disassembly: "ADDS r1,#3", Effect: "noeffect", FaultedReg: "PSR"}
+  - { Id: 8, Time: 2950, Address: 0x8252, Instruction: 0x3103, Width: 16, Breakpoint: { Address: 0x8254, Count: 0}, Disassembly: "ADDS r1,#3", Effect: "crash", FaultedReg: "R1"}
+  - { Id: 9, Time: 2951, Address: 0x8254, Instruction: 0x2400, Width: 16, Breakpoint: { Address: 0x8256, Count: 0}, Disassembly: "MOVS r4,#0", Effect: "noeffect", FaultedReg: "PSR"}
+  - { Id: 10, Time: 2951, Address: 0x8254, Instruction: 0x2400, Width: 16, Breakpoint: { Address: 0x8256, Count: 0}, Disassembly: "MOVS r4,#0", Effect: "noeffect", FaultedReg: "R4"}
+  - { Id: 11, Time: 2952, Address: 0x8256, Instruction: 0xf813ef01, Width: 32, Breakpoint: { Address: 0x825a, Count: 0}, Disassembly: "LDRB lr,[r3,#1]!", Effect: "noeffect", FaultedReg: "R14"}
+  - { Id: 12, Time: 2952, Address: 0x8256, Instruction: 0xf813ef01, Width: 32, Breakpoint: { Address: 0x825a, Count: 0}, Disassembly: "LDRB lr,[r3,#1]!", Effect: "crash", FaultedReg: "R3"}
+  - { Id: 13, Time: 2953, Address: 0x825a, Instruction: 0xf810cf01, Width: 32, Breakpoint: { Address: 0x825e, Count: 0}, Disassembly: "LDRB r12,[r0,#1]!", Effect: "noeffect", FaultedReg: "R0"}
+  - { Id: 14, Time: 2953, Address: 0x825a, Instruction: 0xf810cf01, Width: 32, Breakpoint: { Address: 0x825e, Count: 0}, Disassembly: "LDRB r12,[r0,#1]!", Effect: "noeffect", FaultedReg: "R12"}
+  - { Id: 15, Time: 2954, Address: 0x825e, Instruction: 0x45e6, Width: 16, Breakpoint: { Address: 0x8260, Count: 0}, Disassembly: "CMP lr,r12", Effect: "noeffect", FaultedReg: "PSR"}
+  - { Id: 16, Time: 2955, Address: 0x8260, Instruction: 0xbf18, Width: 16, Breakpoint: { Address: 0x8262, Count: 0}, Disassembly: "IT NE", Effect: "noeffect", FaultedReg: "PSR"}
+  - { Id: 17, Time: 2956, Address: 0x8262, Instruction: 0x2401, Width: 16, Breakpoint: { Address: 0x8264, Count: 0}, Disassembly: "MOVNE r4,#1", Effect: "noeffect", FaultedReg: "PSR"}
+  - { Id: 18, Time: 2957, Address: 0x8264, Instruction: 0x428b, Width: 16, Breakpoint: { Address: 0x8266, Count: 0}, Disassembly: "CMP r3,r1", Effect: "success", FaultedReg: "PSR"}
+  - { Id: 19, Time: 2959, Address: 0x8256, Instruction: 0xf813ef01, Width: 32, Breakpoint: { Address: 0x825a, Count: 1}, Disassembly: "LDRB lr,[r3,#1]!", Effect: "noeffect", FaultedReg: "R14"}
+  - { Id: 20, Time: 2959, Address: 0x8256, Instruction: 0xf813ef01, Width: 32, Breakpoint: { Address: 0x825a, Count: 1}, Disassembly: "LDRB lr,[r3,#1]!", Effect: "crash", FaultedReg: "R3"}
+  - { Id: 21, Time: 2960, Address: 0x825a, Instruction: 0xf810cf01, Width: 32, Breakpoint: { Address: 0x825e, Count: 1}, Disassembly: "LDRB r12,[r0,#1]!", Effect: "noeffect", FaultedReg: "R0"}
+  - { Id: 22, Time: 2960, Address: 0x825a, Instruction: 0xf810cf01, Width: 32, Breakpoint: { Address: 0x825e, Count: 1}, Disassembly: "LDRB r12,[r0,#1]!", Effect: "noeffect", FaultedReg: "R12"}
+  - { Id: 23, Time: 2961, Address: 0x825e, Instruction: 0x45e6, Width: 16, Breakpoint: { Address: 0x8260, Count: 1}, Disassembly: "CMP lr,r12", Effect: "noeffect", FaultedReg: "PSR"}
+  - { Id: 24, Time: 2962, Address: 0x8260, Instruction: 0xbf18, Width: 16, Breakpoint: { Address: 0x8262, Count: 1}, Disassembly: "IT NE", Effect: "noeffect", FaultedReg: "PSR"}
+  - { Id: 25, Time: 2963, Address: 0x8262, Instruction: 0x2401, Width: 16, Breakpoint: { Address: 0x8264, Count: 1}, Disassembly: "MOVNE r4,#1", Effect: "noeffect", FaultedReg: "PSR"}
+  - { Id: 26, Time: 2964, Address: 0x8264, Instruction: 0x428b, Width: 16, Breakpoint: { Address: 0x8266, Count: 1}, Disassembly: "CMP r3,r1", Effect: "success", FaultedReg: "PSR"}
+  - { Id: 27, Time: 2966, Address: 0x8256, Instruction: 0xf813ef01, Width: 32, Breakpoint: { Address: 0x825a, Count: 2}, Disassembly: "LDRB lr,[r3,#1]!", Effect: "noeffect", FaultedReg: "R14"}
+  - { Id: 28, Time: 2966, Address: 0x8256, Instruction: 0xf813ef01, Width: 32, Breakpoint: { Address: 0x825a, Count: 2}, Disassembly: "LDRB lr,[r3,#1]!", Effect: "crash", FaultedReg: "R3"}
+  - { Id: 29, Time: 2967, Address: 0x825a, Instruction: 0xf810cf01, Width: 32, Breakpoint: { Address: 0x825e, Count: 2}, Disassembly: "LDRB r12,[r0,#1]!", Effect: "noeffect", FaultedReg: "R0"}
+  - { Id: 30, Time: 2967, Address: 0x825a, Instruction: 0xf810cf01, Width: 32, Breakpoint: { Address: 0x825e, Count: 2}, Disassembly: "LDRB r12,[r0,#1]!", Effect: "noeffect", FaultedReg: "R12"}
+  - { Id: 31, Time: 2968, Address: 0x825e, Instruction: 0x45e6, Width: 16, Breakpoint: { Address: 0x8260, Count: 2}, Disassembly: "CMP lr,r12", Effect: "success", FaultedReg: "PSR"}
+  - { Id: 32, Time: 2969, Address: 0x8260, Instruction: 0xbf18, Width: 16, Breakpoint: { Address: 0x8262, Count: 2}, Disassembly: "IT NE", Effect: "success", FaultedReg: "PSR"}
+  - { Id: 33, Time: 2970, Address: 0x8262, Instruction: 0x2401, Width: 16, Breakpoint: { Address: 0x8264, Count: 2}, Disassembly: "MOVNE r4,#1", Effect: "noeffect", FaultedReg: "PSR"}
+  - { Id: 34, Time: 2970, Address: 0x8262, Instruction: 0x2401, Width: 16, Breakpoint: { Address: 0x8264, Count: 2}, Disassembly: "MOVNE r4,#1", Effect: "noeffect", FaultedReg: "R4"}
+  - { Id: 35, Time: 2971, Address: 0x8264, Instruction: 0x428b, Width: 16, Breakpoint: { Address: 0x8266, Count: 2}, Disassembly: "CMP r3,r1", Effect: "noeffect", FaultedReg: "PSR"}
+  - { Id: 36, Time: 2973, Address: 0x8256, Instruction: 0xf813ef01, Width: 32, Breakpoint: { Address: 0x825a, Count: 3}, Disassembly: "LDRB lr,[r3,#1]!", Effect: "noeffect", FaultedReg: "R14"}
+  - { Id: 37, Time: 2973, Address: 0x8256, Instruction: 0xf813ef01, Width: 32, Breakpoint: { Address: 0x825a, Count: 3}, Disassembly: "LDRB lr,[r3,#1]!", Effect: "crash", FaultedReg: "R3"}
+  - { Id: 38, Time: 2974, Address: 0x825a, Instruction: 0xf810cf01, Width: 32, Breakpoint: { Address: 0x825e, Count: 3}, Disassembly: "LDRB r12,[r0,#1]!", Effect: "noeffect", FaultedReg: "R0"}
+  - { Id: 39, Time: 2974, Address: 0x825a, Instruction: 0xf810cf01, Width: 32, Breakpoint: { Address: 0x825e, Count: 3}, Disassembly: "LDRB r12,[r0,#1]!", Effect: "noeffect", FaultedReg: "R12"}
+  - { Id: 40, Time: 2975, Address: 0x825e, Instruction: 0x45e6, Width: 16, Breakpoint: { Address: 0x8260, Count: 3}, Disassembly: "CMP lr,r12", Effect: "noeffect", FaultedReg: "PSR"}
+  - { Id: 41, Time: 2976, Address: 0x8260, Instruction: 0xbf18, Width: 16, Breakpoint: { Address: 0x8262, Count: 3}, Disassembly: "IT NE", Effect: "noeffect", FaultedReg: "PSR"}
+  - { Id: 42, Time: 2977, Address: 0x8262, Instruction: 0x2401, Width: 16, Breakpoint: { Address: 0x8264, Count: 3}, Disassembly: "MOVNE r4,#1", Effect: "noeffect", FaultedReg: "PSR"}
+  - { Id: 43, Time: 2978, Address: 0x8264, Instruction: 0x428b, Width: 16, Breakpoint: { Address: 0x8266, Count: 3}, Disassembly: "CMP r3,r1", Effect: "noeffect", FaultedReg: "PSR"}
+  - { Id: 44, Time: 2981, Address: 0x8272, Instruction: 0x3d01, Width: 16, Breakpoint: { Address: 0x8274, Count: 0}, Disassembly: "SUBS r5,#1", Effect: "noeffect", FaultedReg: "PSR"}
+  - { Id: 45, Time: 2981, Address: 0x8272, Instruction: 0x3d01, Width: 16, Breakpoint: { Address: 0x8274, Count: 0}, Disassembly: "SUBS r5,#1", Effect: "success", FaultedReg: "R5"}
+  - { Id: 46, Time: 2983, Address: 0x8276, Instruction: 0x2000, Width: 16, Breakpoint: { Address: 0x8278, Count: 0}, Disassembly: "MOVS r0,#0", Effect: "noeffect", FaultedReg: "PSR"}
+  - { Id: 47, Time: 2983, Address: 0x8276, Instruction: 0x2000, Width: 16, Breakpoint: { Address: 0x8278, Count: 0}, Disassembly: "MOVS r0,#0", Effect: "success", FaultedReg: "R0"}
+  - { Id: 48, Time: 2985, Address: 0x827c, Instruction: 0xbd30, Width: 16, Breakpoint: { Address: 0x80ac, Count: 0}, Disassembly: "POP {r4,r5,pc}", Effect: "noeffect", FaultedReg: "PSR"}
+  - { Id: 49, Time: 2985, Address: 0x827c, Instruction: 0xbd30, Width: 16, Breakpoint: { Address: 0x80ac, Count: 0}, Disassembly: "POP {r4,r5,pc}", Effect: "crash", FaultedReg: "R13"}
+  - { Id: 50, Time: 2985, Address: 0x827c, Instruction: 0xbd30, Width: 16, Breakpoint: { Address: 0x80ac, Count: 0}, Disassembly: "POP {r4,r5,pc}", Effect: "success", FaultedReg: "R4"}
+  - { Id: 51, Time: 2985, Address: 0x827c, Instruction: 0xbd30, Width: 16, Breakpoint: { Address: 0x80ac, Count: 0}, Disassembly: "POP {r4,r5,pc}", Effect: "noeffect", FaultedReg: "R5"}

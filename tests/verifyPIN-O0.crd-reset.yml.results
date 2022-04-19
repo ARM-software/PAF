@@ -1,0 +1,102 @@
+FaultInjectionCampain: "verifyPIN-O0.crd-reset.yml"
+Image: "verifyPIN-O0.elf"
+ReferenceTrace: "verifyPIN-O0.elf.trace"
+MaxTraceTime: 4296
+ProgramEntryAddress: 0x8154
+ProgramEndAddress: 0x10b0a
+FaultModel: "CorruptRegDef"
+FunctionInfo:
+  - { Name: "verifyPIN@0", StartTime: 2944, EndTime: 3045, StartAddress: 0x8248, EndAddress: 0x82bc, CallAddress: 0x80a8, ResumeAddress: 0x80ac}
+Oracle:
+  - { Pc: 0x8240, Classification: [["success",[]]]}
+  - { Pc: 0x82be, Classification: [["crash",[]]]}
+  - { Pc: 0x80d6, Classification: [["noeffect",[]]]}
+Campaign:
+  - { Id: 0, Time: 2944, Address: 0x8248, Instruction: 0xb480, Width: 16, Breakpoint: { Address: 0x824a, Count: 0}, Disassembly: "PUSH {r7}", Effect: "crash", FaultedReg: "R13"}
+  - { Id: 1, Time: 2945, Address: 0x824a, Instruction: 0xb087, Width: 16, Breakpoint: { Address: 0x824c, Count: 0}, Disassembly: "SUB sp,sp,#0x1c", Effect: "crash", FaultedReg: "R13"}
+  - { Id: 2, Time: 2946, Address: 0x824c, Instruction: 0xaf00, Width: 16, Breakpoint: { Address: 0x824e, Count: 0}, Disassembly: "ADD r7,sp,#0", Effect: "crash", FaultedReg: "R7"}
+  - { Id: 3, Time: 2950, Address: 0x8254, Instruction: 0x687b, Width: 16, Breakpoint: { Address: 0x8256, Count: 0}, Disassembly: "LDR r3,[r7,#4]", Effect: "noeffect", FaultedReg: "R3"}
+  - { Id: 4, Time: 2951, Address: 0x8256, Instruction: 0x681b, Width: 16, Breakpoint: { Address: 0x8258, Count: 0}, Disassembly: "LDR r3,[r3,#0]", Effect: "success", FaultedReg: "R3"}
+  - { Id: 5, Time: 2952, Address: 0x8258, Instruction: 0x2b00, Width: 16, Breakpoint: { Address: 0x825a, Count: 0}, Disassembly: "CMP r3,#0", Effect: "noeffect", FaultedReg: "PSR"}
+  - { Id: 6, Time: 2954, Address: 0x825c, Instruction: 0x2300, Width: 16, Breakpoint: { Address: 0x825e, Count: 0}, Disassembly: "MOVS r3,#0", Effect: "noeffect", FaultedReg: "PSR"}
+  - { Id: 7, Time: 2954, Address: 0x825c, Instruction: 0x2300, Width: 16, Breakpoint: { Address: 0x825e, Count: 0}, Disassembly: "MOVS r3,#0", Effect: "noeffect", FaultedReg: "R3"}
+  - { Id: 8, Time: 2956, Address: 0x8260, Instruction: 0x2300, Width: 16, Breakpoint: { Address: 0x8262, Count: 0}, Disassembly: "MOVS r3,#0", Effect: "noeffect", FaultedReg: "PSR"}
+  - { Id: 9, Time: 2956, Address: 0x8260, Instruction: 0x2300, Width: 16, Breakpoint: { Address: 0x8262, Count: 0}, Disassembly: "MOVS r3,#0", Effect: "noeffect", FaultedReg: "R3"}
+  - { Id: 10, Time: 2959, Address: 0x8284, Instruction: 0x697b, Width: 16, Breakpoint: { Address: 0x8286, Count: 0}, Disassembly: "LDR r3,[r7,#0x14]", Effect: "noeffect", FaultedReg: "R3"}
+  - { Id: 11, Time: 2960, Address: 0x8286, Instruction: 0x2b03, Width: 16, Breakpoint: { Address: 0x8288, Count: 0}, Disassembly: "CMP r3,#3", Effect: "success", FaultedReg: "PSR"}
+  - { Id: 12, Time: 2962, Address: 0x8266, Instruction: 0x697b, Width: 16, Breakpoint: { Address: 0x8268, Count: 0}, Disassembly: "LDR r3,[r7,#0x14]", Effect: "noeffect", FaultedReg: "R3"}
+  - { Id: 13, Time: 2963, Address: 0x8268, Instruction: 0x68ba, Width: 16, Breakpoint: { Address: 0x826a, Count: 0}, Disassembly: "LDR r2,[r7,#8]", Effect: "noeffect", FaultedReg: "R2"}
+  - { Id: 14, Time: 2964, Address: 0x826a, Instruction: 0x4413, Width: 16, Breakpoint: { Address: 0x826c, Count: 0}, Disassembly: "ADD r3,r3,r2", Effect: "noeffect", FaultedReg: "R3"}
+  - { Id: 15, Time: 2965, Address: 0x826c, Instruction: 0x781a, Width: 16, Breakpoint: { Address: 0x826e, Count: 0}, Disassembly: "LDRB r2,[r3,#0]", Effect: "noeffect", FaultedReg: "R2"}
+  - { Id: 16, Time: 2966, Address: 0x826e, Instruction: 0x697b, Width: 16, Breakpoint: { Address: 0x8270, Count: 0}, Disassembly: "LDR r3,[r7,#0x14]", Effect: "noeffect", FaultedReg: "R3"}
+  - { Id: 17, Time: 2967, Address: 0x8270, Instruction: 0x68f9, Width: 16, Breakpoint: { Address: 0x8272, Count: 0}, Disassembly: "LDR r1,[r7,#0xc]", Effect: "noeffect", FaultedReg: "R1"}
+  - { Id: 18, Time: 2968, Address: 0x8272, Instruction: 0x440b, Width: 16, Breakpoint: { Address: 0x8274, Count: 0}, Disassembly: "ADD r3,r3,r1", Effect: "noeffect", FaultedReg: "R3"}
+  - { Id: 19, Time: 2969, Address: 0x8274, Instruction: 0x781b, Width: 16, Breakpoint: { Address: 0x8276, Count: 0}, Disassembly: "LDRB r3,[r3,#0]", Effect: "noeffect", FaultedReg: "R3"}
+  - { Id: 20, Time: 2970, Address: 0x8276, Instruction: 0x429a, Width: 16, Breakpoint: { Address: 0x8278, Count: 0}, Disassembly: "CMP r2,r3", Effect: "noeffect", FaultedReg: "PSR"}
+  - { Id: 21, Time: 2972, Address: 0x827e, Instruction: 0x697b, Width: 16, Breakpoint: { Address: 0x8280, Count: 0}, Disassembly: "LDR r3,[r7,#0x14]", Effect: "noeffect", FaultedReg: "R3"}
+  - { Id: 22, Time: 2973, Address: 0x8280, Instruction: 0x3301, Width: 16, Breakpoint: { Address: 0x8282, Count: 0}, Disassembly: "ADDS r3,#1", Effect: "noeffect", FaultedReg: "PSR"}
+  - { Id: 23, Time: 2973, Address: 0x8280, Instruction: 0x3301, Width: 16, Breakpoint: { Address: 0x8282, Count: 0}, Disassembly: "ADDS r3,#1", Effect: "noeffect", FaultedReg: "R3"}
+  - { Id: 24, Time: 2975, Address: 0x8284, Instruction: 0x697b, Width: 16, Breakpoint: { Address: 0x8286, Count: 1}, Disassembly: "LDR r3,[r7,#0x14]", Effect: "noeffect", FaultedReg: "R3"}
+  - { Id: 25, Time: 2976, Address: 0x8286, Instruction: 0x2b03, Width: 16, Breakpoint: { Address: 0x8288, Count: 1}, Disassembly: "CMP r3,#3", Effect: "success", FaultedReg: "PSR"}
+  - { Id: 26, Time: 2978, Address: 0x8266, Instruction: 0x697b, Width: 16, Breakpoint: { Address: 0x8268, Count: 1}, Disassembly: "LDR r3,[r7,#0x14]", Effect: "noeffect", FaultedReg: "R3"}
+  - { Id: 27, Time: 2979, Address: 0x8268, Instruction: 0x68ba, Width: 16, Breakpoint: { Address: 0x826a, Count: 1}, Disassembly: "LDR r2,[r7,#8]", Effect: "noeffect", FaultedReg: "R2"}
+  - { Id: 28, Time: 2980, Address: 0x826a, Instruction: 0x4413, Width: 16, Breakpoint: { Address: 0x826c, Count: 1}, Disassembly: "ADD r3,r3,r2", Effect: "noeffect", FaultedReg: "R3"}
+  - { Id: 29, Time: 2981, Address: 0x826c, Instruction: 0x781a, Width: 16, Breakpoint: { Address: 0x826e, Count: 1}, Disassembly: "LDRB r2,[r3,#0]", Effect: "noeffect", FaultedReg: "R2"}
+  - { Id: 30, Time: 2982, Address: 0x826e, Instruction: 0x697b, Width: 16, Breakpoint: { Address: 0x8270, Count: 1}, Disassembly: "LDR r3,[r7,#0x14]", Effect: "noeffect", FaultedReg: "R3"}
+  - { Id: 31, Time: 2983, Address: 0x8270, Instruction: 0x68f9, Width: 16, Breakpoint: { Address: 0x8272, Count: 1}, Disassembly: "LDR r1,[r7,#0xc]", Effect: "noeffect", FaultedReg: "R1"}
+  - { Id: 32, Time: 2984, Address: 0x8272, Instruction: 0x440b, Width: 16, Breakpoint: { Address: 0x8274, Count: 1}, Disassembly: "ADD r3,r3,r1", Effect: "noeffect", FaultedReg: "R3"}
+  - { Id: 33, Time: 2985, Address: 0x8274, Instruction: 0x781b, Width: 16, Breakpoint: { Address: 0x8276, Count: 1}, Disassembly: "LDRB r3,[r3,#0]", Effect: "noeffect", FaultedReg: "R3"}
+  - { Id: 34, Time: 2986, Address: 0x8276, Instruction: 0x429a, Width: 16, Breakpoint: { Address: 0x8278, Count: 1}, Disassembly: "CMP r2,r3", Effect: "noeffect", FaultedReg: "PSR"}
+  - { Id: 35, Time: 2988, Address: 0x827e, Instruction: 0x697b, Width: 16, Breakpoint: { Address: 0x8280, Count: 1}, Disassembly: "LDR r3,[r7,#0x14]", Effect: "noeffect", FaultedReg: "R3"}
+  - { Id: 36, Time: 2989, Address: 0x8280, Instruction: 0x3301, Width: 16, Breakpoint: { Address: 0x8282, Count: 1}, Disassembly: "ADDS r3,#1", Effect: "noeffect", FaultedReg: "PSR"}
+  - { Id: 37, Time: 2989, Address: 0x8280, Instruction: 0x3301, Width: 16, Breakpoint: { Address: 0x8282, Count: 1}, Disassembly: "ADDS r3,#1", Effect: "noeffect", FaultedReg: "R3"}
+  - { Id: 38, Time: 2991, Address: 0x8284, Instruction: 0x697b, Width: 16, Breakpoint: { Address: 0x8286, Count: 2}, Disassembly: "LDR r3,[r7,#0x14]", Effect: "noeffect", FaultedReg: "R3"}
+  - { Id: 39, Time: 2992, Address: 0x8286, Instruction: 0x2b03, Width: 16, Breakpoint: { Address: 0x8288, Count: 2}, Disassembly: "CMP r3,#3", Effect: "success", FaultedReg: "PSR"}
+  - { Id: 40, Time: 2994, Address: 0x8266, Instruction: 0x697b, Width: 16, Breakpoint: { Address: 0x8268, Count: 2}, Disassembly: "LDR r3,[r7,#0x14]", Effect: "noeffect", FaultedReg: "R3"}
+  - { Id: 41, Time: 2995, Address: 0x8268, Instruction: 0x68ba, Width: 16, Breakpoint: { Address: 0x826a, Count: 2}, Disassembly: "LDR r2,[r7,#8]", Effect: "noeffect", FaultedReg: "R2"}
+  - { Id: 42, Time: 2996, Address: 0x826a, Instruction: 0x4413, Width: 16, Breakpoint: { Address: 0x826c, Count: 2}, Disassembly: "ADD r3,r3,r2", Effect: "noeffect", FaultedReg: "R3"}
+  - { Id: 43, Time: 2997, Address: 0x826c, Instruction: 0x781a, Width: 16, Breakpoint: { Address: 0x826e, Count: 2}, Disassembly: "LDRB r2,[r3,#0]", Effect: "noeffect", FaultedReg: "R2"}
+  - { Id: 44, Time: 2998, Address: 0x826e, Instruction: 0x697b, Width: 16, Breakpoint: { Address: 0x8270, Count: 2}, Disassembly: "LDR r3,[r7,#0x14]", Effect: "noeffect", FaultedReg: "R3"}
+  - { Id: 45, Time: 2999, Address: 0x8270, Instruction: 0x68f9, Width: 16, Breakpoint: { Address: 0x8272, Count: 2}, Disassembly: "LDR r1,[r7,#0xc]", Effect: "noeffect", FaultedReg: "R1"}
+  - { Id: 46, Time: 3000, Address: 0x8272, Instruction: 0x440b, Width: 16, Breakpoint: { Address: 0x8274, Count: 2}, Disassembly: "ADD r3,r3,r1", Effect: "noeffect", FaultedReg: "R3"}
+  - { Id: 47, Time: 3001, Address: 0x8274, Instruction: 0x781b, Width: 16, Breakpoint: { Address: 0x8276, Count: 2}, Disassembly: "LDRB r3,[r3,#0]", Effect: "noeffect", FaultedReg: "R3"}
+  - { Id: 48, Time: 3002, Address: 0x8276, Instruction: 0x429a, Width: 16, Breakpoint: { Address: 0x8278, Count: 2}, Disassembly: "CMP r2,r3", Effect: "noeffect", FaultedReg: "PSR"}
+  - { Id: 49, Time: 3004, Address: 0x827a, Instruction: 0x2301, Width: 16, Breakpoint: { Address: 0x827c, Count: 0}, Disassembly: "MOVS r3,#1", Effect: "noeffect", FaultedReg: "PSR"}
+  - { Id: 50, Time: 3004, Address: 0x827a, Instruction: 0x2301, Width: 16, Breakpoint: { Address: 0x827c, Count: 0}, Disassembly: "MOVS r3,#1", Effect: "success", FaultedReg: "R3"}
+  - { Id: 51, Time: 3006, Address: 0x827e, Instruction: 0x697b, Width: 16, Breakpoint: { Address: 0x8280, Count: 2}, Disassembly: "LDR r3,[r7,#0x14]", Effect: "noeffect", FaultedReg: "R3"}
+  - { Id: 52, Time: 3007, Address: 0x8280, Instruction: 0x3301, Width: 16, Breakpoint: { Address: 0x8282, Count: 2}, Disassembly: "ADDS r3,#1", Effect: "noeffect", FaultedReg: "PSR"}
+  - { Id: 53, Time: 3007, Address: 0x8280, Instruction: 0x3301, Width: 16, Breakpoint: { Address: 0x8282, Count: 2}, Disassembly: "ADDS r3,#1", Effect: "noeffect", FaultedReg: "R3"}
+  - { Id: 54, Time: 3009, Address: 0x8284, Instruction: 0x697b, Width: 16, Breakpoint: { Address: 0x8286, Count: 3}, Disassembly: "LDR r3,[r7,#0x14]", Effect: "noeffect", FaultedReg: "R3"}
+  - { Id: 55, Time: 3010, Address: 0x8286, Instruction: 0x2b03, Width: 16, Breakpoint: { Address: 0x8288, Count: 3}, Disassembly: "CMP r3,#3", Effect: "success", FaultedReg: "PSR"}
+  - { Id: 56, Time: 3012, Address: 0x8266, Instruction: 0x697b, Width: 16, Breakpoint: { Address: 0x8268, Count: 3}, Disassembly: "LDR r3,[r7,#0x14]", Effect: "noeffect", FaultedReg: "R3"}
+  - { Id: 57, Time: 3013, Address: 0x8268, Instruction: 0x68ba, Width: 16, Breakpoint: { Address: 0x826a, Count: 3}, Disassembly: "LDR r2,[r7,#8]", Effect: "noeffect", FaultedReg: "R2"}
+  - { Id: 58, Time: 3014, Address: 0x826a, Instruction: 0x4413, Width: 16, Breakpoint: { Address: 0x826c, Count: 3}, Disassembly: "ADD r3,r3,r2", Effect: "noeffect", FaultedReg: "R3"}
+  - { Id: 59, Time: 3015, Address: 0x826c, Instruction: 0x781a, Width: 16, Breakpoint: { Address: 0x826e, Count: 3}, Disassembly: "LDRB r2,[r3,#0]", Effect: "noeffect", FaultedReg: "R2"}
+  - { Id: 60, Time: 3016, Address: 0x826e, Instruction: 0x697b, Width: 16, Breakpoint: { Address: 0x8270, Count: 3}, Disassembly: "LDR r3,[r7,#0x14]", Effect: "noeffect", FaultedReg: "R3"}
+  - { Id: 61, Time: 3017, Address: 0x8270, Instruction: 0x68f9, Width: 16, Breakpoint: { Address: 0x8272, Count: 3}, Disassembly: "LDR r1,[r7,#0xc]", Effect: "noeffect", FaultedReg: "R1"}
+  - { Id: 62, Time: 3018, Address: 0x8272, Instruction: 0x440b, Width: 16, Breakpoint: { Address: 0x8274, Count: 3}, Disassembly: "ADD r3,r3,r1", Effect: "noeffect", FaultedReg: "R3"}
+  - { Id: 63, Time: 3019, Address: 0x8274, Instruction: 0x781b, Width: 16, Breakpoint: { Address: 0x8276, Count: 3}, Disassembly: "LDRB r3,[r3,#0]", Effect: "noeffect", FaultedReg: "R3"}
+  - { Id: 64, Time: 3020, Address: 0x8276, Instruction: 0x429a, Width: 16, Breakpoint: { Address: 0x8278, Count: 3}, Disassembly: "CMP r2,r3", Effect: "noeffect", FaultedReg: "PSR"}
+  - { Id: 65, Time: 3022, Address: 0x827e, Instruction: 0x697b, Width: 16, Breakpoint: { Address: 0x8280, Count: 3}, Disassembly: "LDR r3,[r7,#0x14]", Effect: "noeffect", FaultedReg: "R3"}
+  - { Id: 66, Time: 3023, Address: 0x8280, Instruction: 0x3301, Width: 16, Breakpoint: { Address: 0x8282, Count: 3}, Disassembly: "ADDS r3,#1", Effect: "noeffect", FaultedReg: "PSR"}
+  - { Id: 67, Time: 3023, Address: 0x8280, Instruction: 0x3301, Width: 16, Breakpoint: { Address: 0x8282, Count: 3}, Disassembly: "ADDS r3,#1", Effect: "noeffect", FaultedReg: "R3"}
+  - { Id: 68, Time: 3025, Address: 0x8284, Instruction: 0x697b, Width: 16, Breakpoint: { Address: 0x8286, Count: 4}, Disassembly: "LDR r3,[r7,#0x14]", Effect: "success", FaultedReg: "R3"}
+  - { Id: 69, Time: 3026, Address: 0x8286, Instruction: 0x2b03, Width: 16, Breakpoint: { Address: 0x8288, Count: 4}, Disassembly: "CMP r3,#3", Effect: "noeffect", FaultedReg: "PSR"}
+  - { Id: 70, Time: 3028, Address: 0x828a, Instruction: 0x697b, Width: 16, Breakpoint: { Address: 0x828c, Count: 0}, Disassembly: "LDR r3,[r7,#0x14]", Effect: "success", FaultedReg: "R3"}
+  - { Id: 71, Time: 3029, Address: 0x828c, Instruction: 0x2b04, Width: 16, Breakpoint: { Address: 0x828e, Count: 0}, Disassembly: "CMP r3,#4", Effect: "success", FaultedReg: "PSR"}
+  - { Id: 72, Time: 3031, Address: 0x8294, Instruction: 0x693b, Width: 16, Breakpoint: { Address: 0x8296, Count: 0}, Disassembly: "LDR r3,[r7,#0x10]", Effect: "success", FaultedReg: "R3"}
+  - { Id: 73, Time: 3032, Address: 0x8296, Instruction: 0x2b00, Width: 16, Breakpoint: { Address: 0x8298, Count: 0}, Disassembly: "CMP r3,#0", Effect: "noeffect", FaultedReg: "PSR"}
+  - { Id: 74, Time: 3034, Address: 0x82a4, Instruction: 0x687b, Width: 16, Breakpoint: { Address: 0x82a6, Count: 0}, Disassembly: "LDR r3,[r7,#4]", Effect: "success", FaultedReg: "R3"}
+  - { Id: 75, Time: 3035, Address: 0x82a6, Instruction: 0x681b, Width: 16, Breakpoint: { Address: 0x82a8, Count: 0}, Disassembly: "LDR r3,[r3,#0]", Effect: "success", FaultedReg: "R3"}
+  - { Id: 76, Time: 3036, Address: 0x82a8, Instruction: 0x1e5a, Width: 16, Breakpoint: { Address: 0x82aa, Count: 0}, Disassembly: "SUBS r2,r3,#1", Effect: "noeffect", FaultedReg: "PSR"}
+  - { Id: 77, Time: 3036, Address: 0x82a8, Instruction: 0x1e5a, Width: 16, Breakpoint: { Address: 0x82aa, Count: 0}, Disassembly: "SUBS r2,r3,#1", Effect: "success", FaultedReg: "R2"}
+  - { Id: 78, Time: 3037, Address: 0x82aa, Instruction: 0x687b, Width: 16, Breakpoint: { Address: 0x82ac, Count: 0}, Disassembly: "LDR r3,[r7,#4]", Effect: "success", FaultedReg: "R3"}
+  - { Id: 79, Time: 3039, Address: 0x82ae, Instruction: 0x2300, Width: 16, Breakpoint: { Address: 0x82b0, Count: 0}, Disassembly: "MOVS r3,#0", Effect: "noeffect", FaultedReg: "PSR"}
+  - { Id: 80, Time: 3039, Address: 0x82ae, Instruction: 0x2300, Width: 16, Breakpoint: { Address: 0x82b0, Count: 0}, Disassembly: "MOVS r3,#0", Effect: "noeffect", FaultedReg: "R3"}
+  - { Id: 81, Time: 3041, Address: 0x82b4, Instruction: 0x4618, Width: 16, Breakpoint: { Address: 0x82b6, Count: 0}, Disassembly: "MOV r0,r3", Effect: "noeffect", FaultedReg: "R0"}
+  - { Id: 82, Time: 3042, Address: 0x82b6, Instruction: 0x371c, Width: 16, Breakpoint: { Address: 0x82b8, Count: 0}, Disassembly: "ADDS r7,r7,#0x1c", Effect: "noeffect", FaultedReg: "PSR"}
+  - { Id: 83, Time: 3042, Address: 0x82b6, Instruction: 0x371c, Width: 16, Breakpoint: { Address: 0x82b8, Count: 0}, Disassembly: "ADDS r7,r7,#0x1c", Effect: "crash", FaultedReg: "R7"}
+  - { Id: 84, Time: 3043, Address: 0x82b8, Instruction: 0x46bd, Width: 16, Breakpoint: { Address: 0x82ba, Count: 0}, Disassembly: "MOV sp,r7", Effect: "crash", FaultedReg: "R13"}
+  - { Id: 85, Time: 3044, Address: 0x82ba, Instruction: 0xbc80, Width: 16, Breakpoint: { Address: 0x82bc, Count: 0}, Disassembly: "POP {r7}", Effect: "crash", FaultedReg: "R13"}
+  - { Id: 86, Time: 3044, Address: 0x82ba, Instruction: 0xbc80, Width: 16, Breakpoint: { Address: 0x82bc, Count: 0}, Disassembly: "POP {r7}", Effect: "noeffect", FaultedReg: "R7"}
+  - { Id: 87, Time: 3045, Address: 0x82bc, Instruction: 0x4770, Width: 16, Breakpoint: { Address: 0x80ac, Count: 0}, Disassembly: "BX lr", Effect: "noeffect", FaultedReg: "PSR"}

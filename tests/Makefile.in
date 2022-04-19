@@ -1,0 +1,129 @@
+# Copyright 2021 Arm Limited. All rights reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+# This file is part of PAF, the Physical Attack Framework.
+#
+# SPDX-License-Identifier: Apache-2.0
+
+VPATH=.:@CMAKE_CURRENT_SOURCE_DIR@
+SRCS=verifyPIN.c verifyPIN-main.c
+OBJS=$(addprefix verifyPIN, -O0.o -O1.o -O2.o -O3.o) verifyPIN-main.o
+EXE=verifyPIN
+BASENAMES=$(addprefix $(EXE),-O0 -O1 -O2 -O3)
+EXES=$(addsuffix .elf, $(BASENAMES))
+DIS=$(addsuffix .dis, $(BASENAMES))
+REFTRACES=$(addsuffix .elf.trace, $(BASENAMES))
+FAULT_MODELS=is $(foreach v,reset one set,crd-$v)
+CAMPAIGNS=$(foreach fm,$(FAULT_MODELS),$(addsuffix .$(fm).yml, $(BASENAMES)))
+RESULTS=$(addsuffix .results, $(CAMPAIGNS))
+
+# Compilation
+CC=@ARM_GCC_INSTALL_DIR@/bin/arm-none-eabi-gcc
+OBJDUMP=@ARM_GCC_INSTALL_DIR@/bin/arm-none-eabi-objdump
+ADDR2LINE=@ARM_GCC_INSTALL_DIR@/bin/arm-none-eabi-addr2line
+CFLAGS=-Wall -mthumb -mcpu=cortex-m3 -g
+LDFLAGS=--specs=rdimon.specs
+
+# Simulation
+RUN_MODEL?=@CMAKE_BINARY_DIR@/venv/bin/run-model.py
+RUNMODEL_FLAGS=-u FVP_MPS2_M3.yml -s --ignore-return-value --iris-port 7354
+RUNMODEL_FI_FLAGS=$(RUNMODEL_FLAGS) --driver=FaultInjection
+
+# Campaign file generation
+FAULTER?=@CMAKE_BINARY_DIR@/bin/paf-faulter
+
+# Cross-reference file generation
+GENERATE_XREF?=@CMAKE_BINARY_DIR@/venv/bin/generate-xref.py
+
+all: tests
+tests: test-campaign test-xref test-results
+
+.PHONY: clean tests test-campaign test-xref test-results
+test-campaign: @CMAKE_CURRENT_SOURCE_DIR@/test-campaign.py @CMAKE_CURRENT_SOURCE_DIR@/test-campaign-1.yml
+	cp @CMAKE_CURRENT_SOURCE_DIR@/test-campaign-1.yml . && \
+	@CMAKE_CURRENT_SOURCE_DIR@/test-campaign.py test-campaign-1.yml
+
+test-xref: verifyPIN-O2.elf verifyPIN-O2.is.yml verifyPIN-O2.dis
+	${GENERATE_XREF} --root $(CURDIR) --addr2line $(ADDR2LINE) -o verifyPIN-O2.xref verifyPIN-O2.is.yml && \
+	diff -q verifyPIN-O2.xref @CMAKE_CURRENT_SOURCE_DIR@/verifyPIN-O2.xref > /dev/null 2>&1 && \
+	${GENERATE_XREF} --root $(CURDIR) --addr2line $(ADDR2LINE) -o verifyPIN-O2.d.xref -s verifyPIN-O2.dis verifyPIN-O2.is.yml && \
+	diff -q verifyPIN-O2.d.xref @CMAKE_CURRENT_SOURCE_DIR@/verifyPIN-O2.d.xref > /dev/null 2>&1 && \
+	echo "Ran xref tests"
+
+test-results: $(RESULTS)
+	@ErrCnt=0; \
+	TestCnt=0; \
+	for R in $^; do \
+	  TestCnt=`expr $$TestCnt + 1`; \
+	  diff -q $$R @CMAKE_CURRENT_SOURCE_DIR@/$$R > /dev/null 2>&1 ; \
+	  if [ $$? -ne 0 ]; then \
+	    echo "Comparison error for $$R"; \
+	    ErrCnt=`expr $$ErrCnt + 1`; \
+	  fi \
+	done; \
+	echo "Ran $$TestCnt tests: $$ErrCnt error(s)"; \
+	if [ $$ErrCnt -ne 0 ]; then \
+	  exit 1; \
+	fi
+
+# Some some conveniency intermediate targets
+binaries: $(EXES)
+reftraces: $(REFTRACES)
+campaigns: $(CAMPAIGNS)
+results: $(RESULTS)
+dis: $(DIS)
+
+verifyPIN-main.o: verifyPIN-main.c
+	$(CC) -c -o $@ -O2 $(CFLAGS) $<
+verifyPIN-O%.o: verifyPIN.c
+	$(CC) -c -o $@ -O$* $(CFLAGS) $<
+verifyPIN-O%.elf: verifyPIN-O%.o verifyPIN-main.o
+	$(CC) -o $@ -O$* $(CFLAGS) $^ $(LDFLAGS)
+
+%.dis: %.elf
+	$(OBJDUMP) -D $< > $@
+
+# Note that we ignore errors because semihosting is used, and as the pin code
+# is wrong, verifyPIN will return an error. This is expected and can be safely
+# ignored.
+%.elf.trace: %.elf
+	$(RUN_MODEL) $(RUNMODEL_FLAGS) -t $<.trace $< 1244
+
+%.is.yml: %.elf.trace
+	$(FAULTER) --instructionskip --oracle='@(fault_occurred){success};@(crash_detected){crash};return(main){noeffect}' --output=$@ --image=$(basename $<) --functions=verifyPIN@0 $<
+%.is.yml.results: %.is.yml
+	$(RUN_MODEL) $(RUNMODEL_FI_FLAGS) -c $< $*.elf 1244
+
+%.crd-reset.yml: %.elf.trace
+	$(FAULTER) --corruptregdef --oracle='@(fault_occurred){success};@(crash_detected){crash};return(main){noeffect}' --output=$@ --image=$(basename $<) --functions=verifyPIN@0 $<
+%.crd-reset.yml.results: %.crd-reset.yml
+	$(RUN_MODEL) $(RUNMODEL_FI_FLAGS) --reg-fault-value=reset -c $< $*.elf 1244
+
+%.crd-one.yml: %.elf.trace
+	$(FAULTER) --corruptregdef --oracle='@(fault_occurred){success};@(crash_detected){crash};return(main){noeffect}' --output=$@ --image=$(basename $<) --functions=verifyPIN@0 $<
+%.crd-one.yml.results: %.crd-one.yml
+	$(RUN_MODEL) $(RUNMODEL_FI_FLAGS) --reg-fault-value=one -c $< $*.elf 1244
+
+%.crd-set.yml: %.elf.trace
+	$(FAULTER) --corruptregdef --oracle='@(fault_occurred){success};@(crash_detected){crash};return(main){noeffect}' --output=$@ --image=$(basename $<) --functions=verifyPIN@0 $<
+
+%.crd-set.yml.results: %.crd-set.yml
+	$(RUN_MODEL) $(RUNMODEL_FI_FLAGS) --reg-fault-value=set -c $< $*.elf 1244
+
+clean:
+	-rm $(EXES) $(OBJS) $(DIS) $(REFTRACES) $(CAMPAIGNS) $(RESULTS) \
+	   $(addsuffix .elf.stdout, $(BASENAMES)) $(addsuffix .elf.stderr, $(BASENAMES)) \
+	   $(addsuffix .index, $(REFTRACES)) \
+	   verifyPIN-O2.xref verifyPIN-O2.d.xref \
+	   sim-*.log fibd-*.log

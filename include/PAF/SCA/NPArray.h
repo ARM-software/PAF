@@ -1,0 +1,396 @@
+/*
+ * Copyright 2021 Arm Limited. All rights reserved.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ *
+ * This file is part of PAF, the Physical Attack Framework.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+#pragma once
+
+#include <algorithm>
+#include <cassert>
+#include <cstring>
+#include <fstream>
+#include <memory>
+#include <ostream>
+#include <string>
+#include <type_traits>
+#include <vector>
+
+namespace PAF {
+namespace SCA {
+
+/// NPArrayBase is the base class for all NPArray objects. It collects
+/// attributes and methods which are independant of the actual array element
+/// type.
+class NPArrayBase {
+  public:
+    /// Default constructor.
+    NPArrayBase()
+        : data(nullptr), num_rows(0), num_columns(0), elt_size(0),
+          errstr(nullptr) {}
+
+    /// Construct an NPArrayBase from file filename.
+    ///
+    /// This function will assess if the on-disk storage matches the the
+    /// floating point expectation as well as the element size.
+    NPArrayBase(const char *filename, bool floating,
+                unsigned expected_elt_size);
+
+    /// Construct an NPArray base from raw memory (std::unique_ptr version) and
+    /// misc other information.
+    ///
+    /// Takes ownership of data buffer.
+    NPArrayBase(std::unique_ptr<char> &&data, size_t num_rows, size_t num_columns,
+                unsigned elt_size)
+        : data(std::move(data)), num_rows(num_rows), num_columns(num_columns),
+          elt_size(elt_size), errstr(nullptr) {}
+
+    /// Construct an NPArray base from raw memory (raw pointer version) and misc
+    /// other information.
+    NPArrayBase(const char *buf, size_t num_rows, size_t num_columns,
+                unsigned elt_size)
+        : data(new char[num_rows * num_columns * elt_size]), num_rows(num_rows),
+          num_columns(num_columns), elt_size(elt_size), errstr(nullptr) {
+        memcpy(data.get(), buf, num_rows * num_columns * elt_size);
+    }
+
+    /// Copy construct an NPArrayBase.
+    NPArrayBase(const NPArrayBase &Other)
+        : data(new char[Other.size() * Other.element_size()]),
+          num_rows(Other.rows()), num_columns(Other.cols()),
+          elt_size(Other.element_size()), errstr(Other.error()) {
+        memcpy(data.get(), Other.data.get(), num_rows * num_columns * elt_size);
+    }
+
+    /// Move construct an NPArrayBase.
+    NPArrayBase(NPArrayBase &&Other)
+        : data(std::move(Other.data)), num_rows(Other.rows()),
+          num_columns(Other.cols()), elt_size(Other.element_size()),
+          errstr(Other.error()) {}
+
+    /// Copy assign an NPArrayBase.
+    NPArrayBase &operator=(const NPArrayBase &Other) {
+        if (this == &Other)
+            return *this;
+
+        bool needs_realloc = rows() != Other.rows() || cols() != Other.cols() ||
+                             element_size() != Other.element_size();
+        if (needs_realloc) {
+            data.reset(new char[Other.size() * Other.element_size()]);
+            num_rows = Other.num_rows;
+            num_columns = Other.num_columns;
+            elt_size = Other.elt_size;
+            errstr = Other.errstr;
+        }
+
+        memcpy(data.get(), Other.data.get(), num_rows * num_columns * elt_size);
+
+        return *this;
+    }
+
+    /// Move assign an NPArrayBase.
+    NPArrayBase &operator=(NPArrayBase &&Other) {
+        if (this == &Other)
+            return *this;
+
+        num_rows = Other.num_rows;
+        num_columns = Other.num_columns;
+        elt_size = Other.elt_size;
+        errstr = Other.errstr;
+
+        data = std::move(Other.data);
+
+        return *this;
+    }
+
+    /// Are those NPArray equal ?
+    bool operator==(const NPArrayBase &Other) const {
+        if (element_size() != Other.element_size() || rows() != Other.rows() ||
+            cols() != Other.cols())
+            return false;
+        return std::memcmp(data.get(), Other.data.get(),
+                           size() * element_size()) == 0;
+    }
+
+    /// Are those NPArray different ?
+    bool operator!=(const NPArrayBase &Other) const {
+        return !(*this == Other);
+    }
+
+    /// Get the number of rows.
+    size_t rows() const { return num_rows; }
+
+    /// Get the number of columns.
+    size_t cols() const { return num_columns; }
+
+    /// Get the number of elements.
+    size_t size() const { return num_rows * num_columns; }
+
+    /// Get the underlying element size in bytes.
+    unsigned element_size() const { return elt_size; }
+
+    /// Get the status of this NPArray.
+    bool good() const { return errstr == nullptr; }
+
+    /// Insert (uninitialized) rows at position row.
+    NPArrayBase &insert_rows(size_t row, size_t rows);
+
+    /// Insert an (uninitialized) row at position row.
+    NPArrayBase &insert_row(size_t row) { return insert_rows(row, 1); }
+
+    /// Insert (uninitialized) columns at position col.
+    NPArrayBase &insert_columns(size_t col, size_t cols);
+
+    /// Insert an (uninitialized) column at position col.
+    NPArrayBase &insert_column(size_t col) { return insert_columns(col, 1); }
+
+    /// Get a string describing the last error (if any).
+    /// Especially useful when initializing from a file.
+    const char *error() const { return errstr; }
+
+    /// Get information from the file header.
+    static bool get_information(std::ifstream &ifs, unsigned &major,
+                                unsigned &minor, size_t &header_length,
+                                size_t &file_size, std::string &descr,
+                                bool &fortran_order, std::vector<size_t> &shape,
+                                const char **errstr = nullptr);
+
+    /// Save to file filename.
+    bool save(const char *filename, const std::string &descr,
+              const std::string &shape) const;
+
+  protected:
+    /// Get a pointer to type Ty to the array (const version).
+    template <class Ty> const Ty *getAs() const {
+        return reinterpret_cast<Ty *>(data.get());
+    }
+    /// Get a pointer to type Ty to the array.
+    template <class Ty> Ty *getAs() {
+        return reinterpret_cast<Ty *>(data.get());
+    }
+
+  private:
+    std::unique_ptr<char> data;
+    size_t num_rows, num_columns; //< Number of rows and columns.
+    unsigned elt_size;            //< Number of elements.
+    const char *errstr;
+};
+
+/// NPArray is the user facing class to work with 1D or 2D numpy arrays.
+template <class Ty> class NPArray : public NPArrayBase {
+  public:
+    /// The array elements' type.
+    typedef Ty DataTy;
+
+    static_assert(std::is_arithmetic<DataTy>(),
+                  "expecting an integral or floating point type");
+
+    /// Construct an NPArray from data store in file filename.
+    NPArray(const char *filename)
+        : NPArrayBase(filename, std::is_floating_point<Ty>(), sizeof(Ty)) {}
+
+    /// Construct an NPArray from data store in file filename (std::string
+    /// version).
+    NPArray(const std::string &filename)
+        : NPArrayBase(filename.c_str(), std::is_floating_point<Ty>(),
+                      sizeof(Ty)) {}
+
+    /// Construct an NPArray from memory (std::unique_ptr version) and number of
+    /// rows and columns.
+    ///
+    /// This object takes ownership of the memory.
+    NPArray(std::unique_ptr<Ty[]> &&data, size_t num_rows, size_t num_columns)
+        : NPArrayBase(
+              std::unique_ptr<char>(reinterpret_cast<char *>(data.release())),
+              num_rows, num_columns, sizeof(Ty)) {}
+
+    /// Construct an NPArray from memory (raw pointer version) and number of
+    /// rows and columns.
+    NPArray(const Ty buf[], size_t num_rows, size_t num_columns)
+        : NPArrayBase(reinterpret_cast<const char *>(buf), num_rows,
+                      num_columns, sizeof(Ty)) {}
+
+    /// Copy construct an NParray.
+    NPArray(const NPArray &Other) : NPArrayBase(Other) {}
+
+    /// Move construct an NParray.
+    NPArray(NPArray &&Other) : NPArrayBase(Other) {}
+
+    /// Copy assign an NParray.
+    NPArray &operator=(const NPArray &Other) {
+        this->NPArrayBase::operator=(Other);
+        return *this;
+    }
+
+    /// Move assign an NParray.
+    NPArray &operator=(NPArray &&Other) {
+        this->NPArrayBase::operator=(Other);
+        return *this;
+    }
+
+    /// Get element located at [row, col].
+    Ty &operator()(size_t row, size_t col) {
+        assert(row < rows() && "Row is out-of-range");
+        assert(col < cols() && "Col is out-of-range");
+        Ty *p = getAs<Ty>();
+        return p[row * cols() + col];
+    }
+
+    /// Get element located at [row, col] (const version).
+    Ty operator()(size_t row, size_t col) const {
+        assert(row < rows() && "Row is out-of-range");
+        assert(col < cols() && "Col is out-of-range");
+        const Ty *p = getAs<Ty>();
+        return p[row * cols() + col];
+    }
+
+    /// Get a pointer to row row.
+    const Ty *operator()(size_t row) const {
+        assert(row < rows() && "Row is out-of-range");
+        const Ty *p = getAs<Ty>();
+        return &p[row * cols()];
+    }
+
+    /// Dump an ascii representation of the NPY array to os.
+    ///
+    /// The number of rows (resp. columns) printed can be set with num_rows
+    /// (resp. num_columns). If num_rows (resp. num_columns) is set to 0, then
+    /// alls rows (resp. columns) will be dumped. The dump can use an optional
+    /// name for the array to improve the user experience.
+    void dump(std::ostream &os, size_t num_rows = 0, size_t num_columns = 0,
+              const char *name = nullptr) const {
+        const size_t J = num_rows == 0 ? rows() : std::min(num_rows, rows());
+        const size_t I =
+            num_columns == 0 ? cols() : std::min(num_columns, cols());
+        const char *sep = std::is_floating_point<Ty>() ? "\t" : "\t0x";
+        if (name)
+            os << name << ":\n";
+        std::ios_base::fmtflags saved_flags(os.flags());
+        if (!std::is_floating_point<Ty>())
+            os << std::hex;
+
+        for (size_t j = 0; j < J; j++) {
+            for (size_t i = 0; i < I; i++)
+                os << sep << this->operator()(j, i);
+            if (I < cols())
+                os << "\t...";
+            os << '\n';
+        }
+        if (J < rows()) {
+            os << "\t...";
+            os << '\n';
+        }
+
+        os.flags(saved_flags);
+    }
+
+    /// Save to file filename, in NPY format.
+    bool save(const char *filename) const {
+        std::string descr;
+        if (std::is_floating_point<DataTy>())
+            descr += 'f';
+        else if (std::is_signed<DataTy>())
+            descr += 'i';
+        else
+            descr += 'u';
+        size_t s = sizeof(DataTy);
+        assert(s > 0 && s <= 8 && "unexpected datasize");
+        descr += char('0' + s);
+
+        std::string shape("(");
+        shape += std::to_string(rows());
+        shape += ",";
+        shape += std::to_string(cols());
+        shape += ")";
+        return this->NPArrayBase::save(filename, descr, shape);
+    }
+
+    /// Save to file filename, in NPY format.
+    bool save(const std::string &filename) const {
+        return save(filename.c_str());
+    }
+
+    /// The Row class is an adapter around an NPArray to provide a view
+    /// of a row of the NPArray. It can be used as an iterator.
+    class Row {
+      public:
+        Row() = delete;
+
+        /// Construct a Row view of nparray.
+        Row(const NPArray<DataTy> &nparray, size_t row)
+            : nparray(&nparray), row(row) {}
+
+        /// Copy constructor.
+        Row(const Row &Other) : nparray(Other.nparray), row(Other.row) {}
+
+        /// Copy assignment.
+        Row &operator=(const Row &Other) {
+            nparray = Other.nparray;
+            row = Other.row;
+            return *this;
+        }
+
+        /// Pre-increment this Row (move to the next row).
+        Row &operator++() {
+            row++;
+            return *this;
+        }
+
+        /// Post-increment this Row (move to the next row)
+        const Row operator++(int) {
+            Row copy(*this);
+            row++;
+            return copy;
+        }
+
+        /// Get the ith element in this Row.
+        DataTy operator[](size_t ith) const {
+            assert(row < nparray->rows() &&
+                   "NPArray::Row out of bound row access");
+            assert(ith < nparray->cols() &&
+                   "NPArray::Row out of bound index access");
+            return (*nparray)(row, ith);
+        }
+
+        /// Compare 2 rows for equality (as iterators).
+        ///
+        /// This compares the rows as iterators, but not the rows' content.
+        bool operator==(const Row &Other) const {
+            return nparray == Other.nparray && row == Other.row;
+        }
+
+        /// Compare 2 rows for inequality (as iterators).
+        ///
+        /// This compares the rows as iterators, but not the rows' content.
+        bool operator!=(const Row &Other) const {
+            return nparray != Other.nparray || row != Other.row;
+        }
+
+      private:
+        const NPArray *nparray; ///< The NPArray this row refers to.
+        size_t row;             ///< row index in the NPArray.
+    };
+
+    /// Get the first row from this NPArray.
+    Row row_begin() const { return Row(*this, 0); }
+
+    /// Get a past-the-end row for this NPArray.
+    Row row_end() const { return Row(*this, rows()); }
+};
+
+} // namespace SCA
+} // namespace PAF
