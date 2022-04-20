@@ -20,6 +20,7 @@
 
 #include "paf-unit-testing.h"
 
+#include <cstring>
 #include <fstream>
 #include <memory>
 #include <string>
