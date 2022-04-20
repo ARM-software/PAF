@@ -326,7 +326,7 @@ TEST(PowerTrace, base) {
     TestTimingInfo TTI;
 
     PowerTrace PT(TPD, TTI, std::make_unique<PAF::V7MInfo>());
-    EXPECT_EQ(PT.getArchInfo()->description(), "Arm V7M ISA");
+    EXPECT_STREQ(PT.getArchInfo()->description(), "Arm V7M ISA");
     PT.add(Insts[0]);
     PT.analyze(true);
     EXPECT_EQ(TPD.pwf.size(), 1);

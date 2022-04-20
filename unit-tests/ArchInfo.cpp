@@ -45,7 +45,7 @@ using std::unique_ptr;
 // -------------------------------------------------------------------
 TEST(V7MCPUInfo, description) {
     unique_ptr<V7MInfo> CPU(new V7MInfo);
-    EXPECT_EQ(CPU->description(), "Arm V7M ISA");
+    EXPECT_STREQ(CPU->description(), "Arm V7M ISA");
 }
 
 TEST(V7MCPUInfo, isStatusRegister) {
@@ -1281,7 +1281,7 @@ TEST(V7MCPUInfo, registersReadByT32Instr) {
 // -------------------------------------------------------------------
 TEST(V8ACPUInfo, description) {
     unique_ptr<V8AInfo> CPU(new V8AInfo);
-    EXPECT_EQ(CPU->description(), "Arm V8A ISA");
+    EXPECT_STREQ(CPU->description(), "Arm V8A ISA");
 }
 
 TEST(V8ACPUInfo, isStatusRegister) {
