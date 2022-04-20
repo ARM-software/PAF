@@ -23,7 +23,7 @@ setup(
         version="0.1",
         packages=['FI', 'PAF'],
         install_requires=[
-          'pyyaml==5.3.1',
+          'pyyaml==5.4.1',
           'pyelftools==0.26',
           'tqdm==4.50.0'
         ],
