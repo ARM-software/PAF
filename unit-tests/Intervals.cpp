@@ -20,6 +20,17 @@
 
 #include "PAF/Intervals.h"
 
+// For some reason, GCC's ADL + gtest-printers.h tamplate magic fails to find
+// ::operator<<(ostream &, const Interval<Ty>&), so provide a falback mechanism
+// here.
+#ifdef __GNUC__
+namespace PAF {
+template <typename Ty> void PrintTo(const Interval<Ty> &I, std::ostream *os) {
+    *os << I;
+}
+} // namespace PAF
+#endif
+
 #include "gtest/gtest.h"
 
 using namespace testing;
