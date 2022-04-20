@@ -112,9 +112,28 @@ PAF is distributed under the `Apache v2.0 License
 Third party software
 ====================
 
-PAF relies on third party software for some aspects of its functionality.
-Those third party software are listed in
-`LICENSE-third_party.rst <LICENSE-third_party.rst>`_ .
+PAF requires third party software that is not included in PAF's source code
+repository. PAF's configure and build system, `CMake`, will automatically
+download, configure and build this third party software. As each of those
+third party software comes with its own specific license, you have to check
+their licenses complie with your own specific requirements.
+
+The third party software used by PAF is:
+
+- `tarmac-trace-utilities <https://github.com/ARM-software/tarmac-trace-utilities>`_,
+  licensed under https://github.com/ARM-software/tarmac-trace-utilities/blob/main/LICENSE.txt,
+  is the library that provides PAF with the fondations for efficiently manipulating tarmac traces.
+
+- `pyyaml <https://pypi.org/project/PyYAML/>`_,
+  and `pyelftools <https://pypi.org/project/pyelftools/>`_,
+  and `tqdm <https://pypi.org/project/tqdm/>`_ are used by ``run-model.py`` and ancilliary tools.
+  
+- `GoogleTest <https://github.com/google/googletest>`_,
+  licensed under https://github.com/google/googletest/blob/main/LICENSE,
+  is the unit testing framework used by PAF.
+
+- `numpy <https://numpy.org/>`_, licensed under https://github.com/numpy/numpy/blob/main/LICENSE.txt,
+  is used by some unit tests.
 
 Feedback, contributions and support
 ===================================

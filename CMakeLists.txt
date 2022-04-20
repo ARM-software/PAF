@@ -146,5 +146,5 @@ add_subdirectory(unit-tests)
 add_subdirectory(tests)
 
 # Add our readme and license files when installing.
-install(FILES README.rst LICENSE-third_party.txt LICENSE.txt
+install(FILES README.rst LICENSE.txt
         DESTINATION ${CMAKE_INSTALL_PREFIX})
