@@ -66,19 +66,19 @@ foreach(executable ${TARMAC_EXECUTABLES})
 endforeach()
 
 # PAF unit testing is relying on the googletest framework.
+set(GTEST_VARIANT "")
+if (CMAKE_BUILD_TYPE STREQUAL "Debug")
+  set(GTEST_VARIANT "d")
+endif()
 ExternalProject_Add(googletest
   PREFIX "third_party"
   GIT_REPOSITORY "https://github.com/google/googletest"
   GIT_TAG "release-1.11.0"
   GIT_SHALLOW TRUE
   CMAKE_ARGS ${EXTERNAL_PROJECT_CMAKE_ARGS}
-  BUILD_BYPRODUCTS "${CMAKE_BINARY_DIR}/lib/${CMAKE_STATIC_LIBRARY_PREFIX}gtest${CMAKE_STATIC_LIBRARY_SUFFIX}"
+  BUILD_BYPRODUCTS "${CMAKE_BINARY_DIR}/lib/${CMAKE_STATIC_LIBRARY_PREFIX}gtest${GTEST_VARIANT}${CMAKE_STATIC_LIBRARY_SUFFIX}"
   )
 add_library(gtest STATIC IMPORTED)
-set(GTEST_VARIANT "")
-if (CMAKE_BUILD_TYPE STREQUAL "Debug")
-  set(GTEST_VARIANT "d")
-endif()
 set_target_properties(gtest PROPERTIES IMPORTED_LOCATION "${CMAKE_BINARY_DIR}/lib/${CMAKE_STATIC_LIBRARY_PREFIX}gtest${GTEST_VARIANT}${CMAKE_STATIC_LIBRARY_SUFFIX}")
 add_dependencies(gtest googletest)
 
