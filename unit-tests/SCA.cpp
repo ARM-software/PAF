@@ -166,11 +166,7 @@ double correl_wrapper(const NPArray<double> &traces,
 }
 } // namespace
 
-#define NUM_TRACES 10000
-#define NUM_INPUTS 4
-#define NUM_SAMPLES 50
-
-#include "ttest-correl-data.cpp.inc"
+#include "ttest-correl-data.inc.cpp"
 
 TEST(TTest, specific) {
     NPArray<uint32_t> inputs(reinterpret_cast<const uint32_t *>(inputs_init),
