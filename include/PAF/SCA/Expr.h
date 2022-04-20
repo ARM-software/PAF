@@ -214,44 +214,45 @@ class Input : public InputBase {
     Value Val;
 };
 
+/// Define NPArray traits for use in NPInput.
+template <class Ty> struct NPInputTraits { static ValueType::Type getType(); };
+
+template <> struct NPInputTraits<NPArray<uint64_t>> {
+    static ValueType::Type getType() { return ValueType::UINT64; }
+};
+template <> struct NPInputTraits<NPArray<uint32_t>> {
+    static ValueType::Type getType() { return ValueType::UINT32; }
+};
+template <> struct NPInputTraits<NPArray<uint16_t>> {
+    static ValueType::Type getType() { return ValueType::UINT16; }
+};
+template <> struct NPInputTraits<NPArray<uint8_t>> {
+    static ValueType::Type getType() { return ValueType::UINT8; }
+};
+
 /// The NPInput class is an adapter class to access an element in a row of an
 /// NPArray.
 template <class DataTy> class NPInput : public InputBase {
-
-    template <class Ty> struct Traits { static ValueType::Type getType(); };
-
-    template <> struct Traits<NPArray<uint64_t>> {
-        static ValueType::Type getType() { return ValueType::UINT64; }
-    };
-    template <> struct Traits<NPArray<uint32_t>> {
-        static ValueType::Type getType() { return ValueType::UINT32; }
-    };
-    template <> struct Traits<NPArray<uint16_t>> {
-        static ValueType::Type getType() { return ValueType::UINT16; }
-    };
-    template <> struct Traits<NPArray<uint8_t>> {
-        static ValueType::Type getType() { return ValueType::UINT8; }
-    };
 
   public:
     NPInput() = delete;
     /// Construct an NPInput refering to nprow[index], with optional name.
     NPInput(typename NPArray<DataTy>::Row &nprow, size_t index,
             const char *name = "")
-        : InputBase(Traits<NPArray<DataTy>>::getType()), Row(nprow), Name(name),
-          Index(index) {}
+        : InputBase(NPInputTraits<NPArray<DataTy>>::getType()), Row(nprow),
+          Name(name), Index(index) {}
     /// Destruct this NPInput.
     virtual ~NPInput() {}
 
     /// Get the type of this NPInput.
     virtual ValueType::Type getType() const override {
-        return Traits<NPArray<DataTy>>::getType();
+        return NPInputTraits<NPArray<DataTy>>::getType();
     }
 
     /// Get this NPInput's value from the associated NPArray.
     virtual PAF::SCA::Expr::Value eval() const override {
         return PAF::SCA::Expr::Value(Row[Index],
-                                     Traits<NPArray<DataTy>>::getType());
+                                     NPInputTraits<NPArray<DataTy>>::getType());
     }
 
     /// Get a string representation of this NPInput.
