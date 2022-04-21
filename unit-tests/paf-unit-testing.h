@@ -38,7 +38,10 @@ class TestWithTemporaryFile : public ::testing::Test {
 
   protected:
     /// Cleanup after ourselves.
-    void TearDown() override { std::remove(tmpFileName.c_str()); }
+    void TearDown() override {
+        if (tmpFileName.size() != 0)
+            std::remove(tmpFileName.c_str());
+    }
 
   private:
     std::string tmpFileName;

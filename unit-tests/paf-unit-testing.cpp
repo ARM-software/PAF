@@ -20,6 +20,7 @@
 
 #include "paf-unit-testing.h"
 
+#include <cstdlib>
 #include <cstring>
 #include <fstream>
 #include <memory>
@@ -35,20 +36,27 @@ TestWithTemporaryFile::TestWithTemporaryFile(const char *tpl) : tmpFileName() {
     unique_ptr<char[]> tmpTpl(new char[tmpTplStr.size() + 1]);
     std::memcpy(tmpTpl.get(), tmpTplStr.c_str(), tmpTplStr.size());
     tmpTpl[tmpTplStr.size()] = 0;
-    tmpFileName = mktemp(tmpTpl.get());
+    // mkstemp will create a file for us, and open it --- if it succeeded. Close
+    // it right away, without removing it, keeping its name so that we can
+    // reopen it ourselves at a later time.
+    int fd = mkstemp(tmpTpl.get());
+    if (fd != -1) {
+        close(fd);
+        tmpFileName = tmpTpl.get();
+    }
 }
 
 bool TestWithTemporaryFile::checkFileContent(const vector<string> &exp) const {
-    std::ifstream yml(tmpFileName.c_str());
+    std::ifstream f(tmpFileName.c_str());
 
     // Ensure the file is in a good state (it exists, ...).
-    if (!yml.good())
+    if (!f.good())
         return false;
 
     // Read the file line by line.
     vector<string> lines;
     string line;
-    while (std::getline(yml, line))
+    while (std::getline(f, line))
         lines.emplace_back(line);
 
     // Ensure we have the same number of lines.
