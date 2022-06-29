@@ -833,7 +833,7 @@ TEST(V7MCPUInfo, registersReadByT32Instr) {
 
     // ===== Load byte, memory hints
     const array<
-        std::pair<TRB<THUMB, 32>, std::vector<V7MInfo::Register>>, 18>
+        std::pair<TRB<THUMB, 32>, std::vector<V7MInfo::Register>>, 19>
         T32_LoadByteHintsInstructions = {{
             {{0xf89f9040, "ldrb.w     r9,[PC,#64]"},
              {V7MInfo::Register::PC}},
@@ -841,6 +841,8 @@ TEST(V7MCPUInfo, registersReadByT32Instr) {
              {V7MInfo::Register::R11}},
             {{0xf8179f40, "ldrb       r9,[r7,#64]!"},
              {V7MInfo::Register::R7}},
+            {{0xf8130c48, "ldrb       r0,[r3,#-0x48]"},
+             {V7MInfo::Register::R3}},
             {{0xf81b4e40, "ldrbt      r4,[r11,#64]"},
              {V7MInfo::Register::R11}},
             {{0xf81a4008, "ldrb.w     r4,[r10,r8]"},

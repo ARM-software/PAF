@@ -373,7 +373,7 @@ registersReadByT32Instr(const PAF::ReferenceInstruction &I) {
     if (op1 == 0x01) {
         if (bits<6, 5>(op2) == 0x00) {
             const uint8_t Rn = bits<19, 16>(instr);
-            // The base adress is always read.
+            // The base address is always read.
             regs.push_back(V7MInfo::Register(Rn));
             // ===== Load / Store multiple
             if (bit<2>(op2) == 0) {
@@ -676,7 +676,7 @@ registersReadByT32Instr(const PAF::ReferenceInstruction &I) {
                 if (/* LDRB imm */
                     ((lOp1 == 0x01) ||
                      (lOp1 == 0x00 && bit<5>(lOp2) == 1 && bit<2>(lOp2) == 1) ||
-                     (lOp1 == 0x00 && bits<5, 2>(lOp2) == 0x0d)) &&
+                     (lOp1 == 0x00 && bits<5, 2>(lOp2) == 0x0c)) &&
                     Rn != 0x0f) {
                     regs.push_back(V7MInfo::Register(Rn));
                     return regs;
