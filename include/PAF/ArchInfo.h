@@ -24,12 +24,88 @@
 
 #include "PAF/PAF.h"
 
-#include <vector>
 #include <memory>
+#include <vector>
 
 namespace PAF {
 
-/// The ArchInfo class is the base class to describe architecture related information.
+/// The InstrInfo class collects a decoded instructions' attributes.
+class InstrInfo {
+  public:
+    enum InstructionKind {NO_KIND, LOAD, STORE, BRANCH, CALL};
+
+    InstrInfo() : InputRegisters(), Kind(InstructionKind::NO_KIND) {
+        InputRegisters.reserve(4);
+    }
+    InstrInfo(const InstrInfo &) = default;
+    InstrInfo(InstrInfo &&) = default;
+
+    InstrInfo &operator=(const InstrInfo &) = default;
+    InstrInfo &operator=(InstrInfo &&) = default;
+
+    /// Has this instruction no kind ?
+    bool hasNoKind() const { return Kind == InstructionKind::NO_KIND; }
+    /// Is this instruction a load instruction ?
+    bool isLoad() const { return Kind == InstructionKind::LOAD; }
+    /// Is this instruction a store instruction ?
+    bool isStore() const { return Kind == InstructionKind::STORE; }
+    /// Is this instruction a memory access instruction, i.e a load or a store ?
+    bool isMemoryAccess() const { return isLoad() || isStore(); }
+    /// Is this instruction a branch instruction ?
+    bool isBranch() const { return Kind == InstructionKind::BRANCH; }
+    /// Is this instruction a call instruction ?
+    bool isCall() const { return Kind == InstructionKind::CALL; }
+    /// Get this instruction's Kind directly.
+    InstructionKind getKind() const { return Kind; }
+
+    /// Set this instruction as a load instruction.
+    InstrInfo &setLoad() {
+        Kind = InstructionKind::LOAD;
+        return *this;
+    }
+    /// Set this instruction as a store instruction.
+    InstrInfo &setStore() {
+        Kind = InstructionKind::STORE;
+        return *this;
+    }
+    /// Set this instruction as a branch instruction.
+    InstrInfo &setBranch() {
+        Kind = InstructionKind::BRANCH;
+        return *this;
+    }
+    /// Set this instruction as a branch instruction.
+    InstrInfo &setCall() {
+        Kind = InstructionKind::CALL;
+        return *this;
+    }
+
+    /// Add an input register to this instruction.
+    InstrInfo &addInputRegister(unsigned r1) {
+        InputRegisters.push_back(r1);
+        return *this;
+    }
+    /// Add multiple input registers to this instruction.
+    template <typename... RegTy>
+    InstrInfo &addInputRegister(unsigned r, RegTy... regs) {
+        return addInputRegister(r).addInputRegister(regs...);
+    }
+
+    /// Get the raw list of registers read by this instruction, in asm order.
+    const std::vector<unsigned> &getInputRegisters() const {
+        return InputRegisters;
+    }
+
+    /// Get a list of unique registers read by this instruction. Order is
+    /// unspecified.
+    std::vector<unsigned> getUniqueInputRegisters() const;
+
+  private:
+    std::vector<unsigned> InputRegisters; /// The raw list of registers read.
+    InstructionKind Kind;
+};
+
+/// The ArchInfo class is the base class to describe architecture related
+/// information.
 class ArchInfo {
   public:
     /// Destructor.
@@ -57,8 +133,8 @@ class ArchInfo {
     /// Is register named reg a status register for this CPU ?
     virtual bool isStatusRegister(const std::string &reg) const = 0;
 
-    /// Get registers read by this instruction.
-    virtual std::vector<unsigned> registersReadBy(const ReferenceInstruction &I) const = 0;
+    /// Get the InstrAttributes for instruction I.
+    virtual InstrInfo getInstrInfo(const ReferenceInstruction &I) const = 0;
 
     /// Describe this ArchInfo.
     virtual const char *description() const = 0;
@@ -105,17 +181,25 @@ class V7MInfo : public ArchInfo {
     };
 
     /// How many registers does this architecture have ?
-    unsigned numRegisters() const override { return unsigned(Register::NUM_REGISTERS); }
+    unsigned numRegisters() const override {
+        return unsigned(Register::NUM_REGISTERS);
+    }
 
     /// Get this register name.
     const char *registerName(unsigned reg) const override;
     /// Get this register name.
     static const char *name(Register reg);
 
+    /// Get the InstrAttributes for instruction I (static edition).
+    static InstrInfo instrInfo(const ReferenceInstruction &I);
+    /// Get the InstrAttributes for instruction I.
+    InstrInfo getInstrInfo(const ReferenceInstruction &I) const override {
+        return V7MInfo::instrInfo(I);
+    }
+
     /// Get registers read by this instruction.
-    std::vector<unsigned> registersReadBy(const ReferenceInstruction &I) const override;
-    /// Get registers read by this instruction.
-    static std::vector<Register> registersReadByInstr(const ReferenceInstruction &I);
+    static std::vector<Register> registersReadByInstr(const InstrInfo &II,
+                                                      bool NoUniquify = false);
 
     /// Describe this ArchInfo.
     const char *description() const override { return "Arm V7M ISA"; }
@@ -139,9 +223,7 @@ class V8AInfo : public ArchInfo {
     bool isStatusRegister(const std::string &reg) const override;
 
     /// ARMv8-A available registers.
-    enum class Register : unsigned {
-        NUM_REGISTERS = 0
-    };
+    enum class Register : unsigned { NUM_REGISTERS = 0 };
 
     /// How many registers does this architecture have ?
     unsigned numRegisters() const override;
@@ -150,10 +232,16 @@ class V8AInfo : public ArchInfo {
     /// Get this register name.
     static const char *name(Register reg);
 
+    /// Get the InstrAttributes for instruction I (static edition).
+    static InstrInfo instrInfo(const ReferenceInstruction &I);
+    /// Get the InstrAttributes for instruction I.
+    InstrInfo getInstrInfo(const ReferenceInstruction &I) const override {
+        return V8AInfo::instrInfo(I);
+    }
+
     /// Get registers read by this instruction.
-    std::vector<unsigned> registersReadBy(const ReferenceInstruction &I) const override;
-    /// Get registers read by this instruction.
-    static std::vector<Register> registersReadByInstr(const ReferenceInstruction &I);
+    static std::vector<Register> registersReadByInstr(const InstrInfo &II,
+                                                      bool NoUniquify = false);
 
     /// Describe this ArchInfo.
     const char *description() const override { return "Arm V8A ISA"; }

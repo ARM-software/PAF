@@ -32,12 +32,14 @@
 
 using namespace testing;
 
+using PAF::InstrInfo;
 using PAF::ReferenceInstruction;
 using PAF::RegisterAccess;
 using PAF::V7MInfo;
 using PAF::V8AInfo;
 
 using std::array;
+using std::cout;
 using std::unique_ptr;
 
 // ===================================================================
@@ -173,19 +175,24 @@ TEST(V7MCPUInfo, registers) {
                  "psr");
 }
 
-// Helper to test registersReadBy.
-template <ISet mode, unsigned width> struct TRB {
+// Helper to test InstrInfo.
+template <typename AInfo, ISet mode, unsigned width> struct TRB {
   public:
     TRB(uint32_t opc, const char *dis)
-        : Inst(0, true, 1, mode, width, opc, dis, {}, {}) {}
+        : Inst(0, true, 1, mode, width, opc, dis, {}, {}),
+          Kind(InstrInfo::NO_KIND) {}
+    TRB(uint32_t opc, const char *dis, InstrInfo::InstructionKind K)
+        : Inst(0, true, 1, mode, width, opc, dis, {}, {}), Kind(K) {}
 
-    bool
-    operator==(const std::vector<V7MInfo::Register> &expected) const {
-        const std::vector<V7MInfo::Register> actual =
-            V7MInfo::registersReadByInstr(Inst);
+    bool check(const std::vector<typename AInfo::Register> &expected) const {
+        const InstrInfo II = AInfo::instrInfo(Inst);
+
+        // Check register read by this instruction.
+        const std::vector<typename AInfo::Register> actual =
+            AInfo::registersReadByInstr(II);
 
         if (actual.size() != expected.size()) {
-            dump(expected, actual);
+            report_error(expected, actual);
             return false;
         }
 
@@ -195,31 +202,69 @@ template <ISet mode, unsigned width> struct TRB {
                 rv = false;
 
         if (!rv)
-            dump(expected, actual);
+            report_error(expected, actual);
+
+        // Check instruction attributes.
+        switch (Kind) {
+        case InstrInfo::NO_KIND:
+            if (!II.hasNoKind())
+                rv &= report_error("no attribute check although this "
+                                   "instruction has some attributes set !");
+            break;
+        case InstrInfo::LOAD:
+            if (!II.isLoad())
+                rv &= report_error("expecting the 'Load' attribute to be set "
+                                   "on this instruction.");
+            break;
+        case InstrInfo::STORE:
+            if (!II.isStore())
+                rv &= report_error("expecting the 'Store' attribute to be set "
+                                   "on this instruction.");
+            break;
+        case InstrInfo::BRANCH:
+            if (!II.isBranch())
+                rv &= report_error("expecting the 'Branch' attribute to be set "
+                                   "on this instruction.");
+            break;
+
+        case InstrInfo::CALL:
+            if (!II.isCall())
+                rv &= report_error("expecting the 'Call' attribute to be set "
+                                   "on this instruction.");
+            break;
+        }
+
         return rv;
     }
 
     static void dump(const char *msg,
-                     const std::vector<V7MInfo::Register> &regs) {
-        std::cout << msg;
+                     const std::vector<typename AInfo::Register> &regs) {
+        cout << msg;
         for (const auto &r : regs)
-            std::cout << ' ' << V7MInfo::name(r);
-        std::cout << '\n';
+            cout << ' ' << AInfo::name(r);
+        cout << '\n';
     }
-    void dump(const std::vector<V7MInfo::Register> &expected,
-              const std::vector<V7MInfo::Register> &actual) const {
-        std::cout << "For instruction '" << Inst.disassembly << "':\n";
+    bool report_error(const char *msg) const {
+        cout << "For instruction '" << Inst.disassembly << "': ";
+        cout << msg << '\n';
+        return false;
+    }
+    bool report_error(const std::vector<typename AInfo::Register> &expected,
+              const std::vector<typename AInfo::Register> &actual) const {
+        cout << "For instruction '" << Inst.disassembly << "':\n";
         dump("Expected:", expected);
         dump("Actual:", actual);
+        return false;
     }
 
     ReferenceInstruction Inst;
+    InstrInfo::InstructionKind Kind;
 };
 
 #define RUN_TRB_TESTS(arr)                                                     \
     do {                                                                       \
         for (const auto &t : arr)                                              \
-            EXPECT_TRUE(t.first == t.second);                                  \
+            EXPECT_TRUE(t.first.check(t.second));                              \
     } while (0)
 
 // Use this macro to generate an instruction stream that can be fed to
@@ -228,18 +273,18 @@ template <ISet mode, unsigned width> struct TRB {
 #define DUMP_TRB_INSTRS(arr)                                                   \
     do {                                                                       \
         const char instrFile[] = "/tmp/" #arr ".txt";                          \
-        std::cout << "Dumping instruction stream to : " << instrFile << '\n';  \
+        cout << "Dumping instruction stream to : " << instrFile << '\n';       \
         std::ofstream of(instrFile);                                           \
         of << "\t.text\n";                                                     \
         for (const auto &t : arr)                                              \
             of << '\t' << t.first.Inst.disassembly << '\n';                    \
     } while (0)
 
-TEST(V7MCPUInfo, registersReadByT16Instr) {
+TEST(V7MCPUInfo, T16InstrInfo) {
 
     // ===== Shift (immediate), add, substract, move and compare.
     const array<
-        std::pair<TRB<THUMB, 16>, std::vector<V7MInfo::Register>>, 11>
+        std::pair<TRB<V7MInfo, THUMB, 16>, std::vector<V7MInfo::Register>>, 11>
         T16_SASMCInstructions = {{
             {{0x07da, "lsls     r2,r3,#31"}, {V7MInfo::Register::R3}},
             {{0x0923, "lsrs     r3,r4,#4"}, {V7MInfo::Register::R4}},
@@ -264,7 +309,7 @@ TEST(V7MCPUInfo, registersReadByT16Instr) {
 
     // ===== Data processing instructions.
     const array<
-        std::pair<TRB<THUMB, 16>, std::vector<V7MInfo::Register>>, 16>
+        std::pair<TRB<V7MInfo, THUMB, 16>, std::vector<V7MInfo::Register>>, 16>
         T16_DataProcessingInstructions = {{
             {{0x4018, "ands     r0,r0,r3"},
              {V7MInfo::Register::R0,
@@ -316,28 +361,26 @@ TEST(V7MCPUInfo, registersReadByT16Instr) {
 
     // ===== Special data instructions and branch and exchange
     const array<
-        std::pair<TRB<THUMB, 16>, std::vector<V7MInfo::Register>>, 5>
+        std::pair<TRB<V7MInfo, THUMB, 16>, std::vector<V7MInfo::Register>>, 5>
         T16_SpecialAndBranchInstructions = {{
             {{0x449b, "add      r11,r3"},
-             {V7MInfo::Register::R3,
-              V7MInfo::Register::R11}},
+             {V7MInfo::Register::R3, V7MInfo::Register::R11}},
             {{0x45aa, "cmp      r10,r5"},
-             {V7MInfo::Register::R5,
-              V7MInfo::Register::R10}},
+             {V7MInfo::Register::R5, V7MInfo::Register::R10}},
             {{0x469b, "mov      r11,r3"}, {V7MInfo::Register::R3}},
-            {{0x4750, "bx       r10"}, {V7MInfo::Register::R10}},
-            {{0x47c8, "blx      r9"},
-             {V7MInfo::Register::R9,
-              V7MInfo::Register::PC}},
+            {{0x4750, "bx       r10", InstrInfo::BRANCH},
+             {V7MInfo::Register::R10}},
+            {{0x47c8, "blx      r9", InstrInfo::CALL},
+             {V7MInfo::Register::R9, V7MInfo::Register::PC}},
         }};
 
     RUN_TRB_TESTS(T16_SpecialAndBranchInstructions);
 
     // ===== Load from Literal Pool
     const array<
-        std::pair<TRB<THUMB, 16>, std::vector<V7MInfo::Register>>, 1>
+        std::pair<TRB<V7MInfo, THUMB, 16>, std::vector<V7MInfo::Register>>, 1>
         T16_LitPoolInstructions = {{
-            {{0x4b02, "ldr      r3,{pc}+0xc"},
+            {{0x4b02, "ldr      r3,{pc}+0xc", InstrInfo::LOAD},
              {V7MInfo::Register::PC}},
         }};
 
@@ -345,51 +388,41 @@ TEST(V7MCPUInfo, registersReadByT16Instr) {
 
     // ===== Load / store single data item
     const array<
-        std::pair<TRB<THUMB, 16>, std::vector<V7MInfo::Register>>, 16>
+        std::pair<TRB<V7MInfo, THUMB, 16>, std::vector<V7MInfo::Register>>, 16>
         T16_LoadStoreSingleInstructions = {{
-            {{0x50cb, "str      r3,[r1,r3]"},
-             {V7MInfo::Register::R1,
-              V7MInfo::Register::R3}},
-            {{0x520a, "strh	    r2, [r1, r0]"},
+            {{0x50cb, "str      r3,[r1,r3]", InstrInfo::STORE},
+             {V7MInfo::Register::R1, V7MInfo::Register::R3}},
+            {{0x520a, "strh	    r2, [r1, r0]", InstrInfo::STORE},
              {V7MInfo::Register::R0, V7MInfo::Register::R1,
               V7MInfo::Register::R2}},
-            {{0x553a, "strb     r2,[r7,r4]"},
+            {{0x553a, "strb     r2,[r7,r4]", InstrInfo::STORE},
              {V7MInfo::Register::R2, V7MInfo::Register::R4,
               V7MInfo::Register::R7}},
-            {{0x560a, "ldrsb	r2, [r1, r0]"},
-             {V7MInfo::Register::R0,
-              V7MInfo::Register::R1}},
-            {{0x59e2, "ldr      r2,[r4,r7]"},
-             {V7MInfo::Register::R4,
-              V7MInfo::Register::R7}},
-            {{0x5a0a, "ldrh	    r2, [r1, r0]"},
-             {V7MInfo::Register::R0,
-              V7MInfo::Register::R1}},
-            {{0x5d2e, "ldrb     r6,[r5,r4]"},
-             {V7MInfo::Register::R4,
-              V7MInfo::Register::R5}},
-            {{0x5e0a, "ldrsh    r2, [r1, r0]"},
-             {V7MInfo::Register::R0,
-              V7MInfo::Register::R1}},
-            {{0x6023, "str      r3,[r4,#0]"},
-             {V7MInfo::Register::R3,
-              V7MInfo::Register::R4}},
-            {{0x6833, "ldr      r3,[r6,#0]"},
+            {{0x560a, "ldrsb	r2, [r1, r0]", InstrInfo::LOAD},
+             {V7MInfo::Register::R0, V7MInfo::Register::R1}},
+            {{0x59e2, "ldr      r2,[r4,r7]", InstrInfo::LOAD},
+             {V7MInfo::Register::R4, V7MInfo::Register::R7}},
+            {{0x5a0a, "ldrh	    r2, [r1, r0]", InstrInfo::LOAD},
+             {V7MInfo::Register::R0, V7MInfo::Register::R1}},
+            {{0x5d2e, "ldrb     r6,[r5,r4]", InstrInfo::LOAD},
+             {V7MInfo::Register::R4, V7MInfo::Register::R5}},
+            {{0x5e0a, "ldrsh    r2, [r1, r0]", InstrInfo::LOAD},
+             {V7MInfo::Register::R0, V7MInfo::Register::R1}},
+            {{0x6023, "str      r3,[r4,#0]", InstrInfo::STORE},
+             {V7MInfo::Register::R3, V7MInfo::Register::R4}},
+            {{0x6833, "ldr      r3,[r6,#0]", InstrInfo::LOAD},
              {V7MInfo::Register::R6}},
-            {{0x7023, "strb     r3,[r4,#0]"},
-             {V7MInfo::Register::R3,
-              V7MInfo::Register::R4}},
-            {{0x7802, "ldrb     r2,[r0,#0]"},
+            {{0x7023, "strb     r3,[r4,#0]", InstrInfo::STORE},
+             {V7MInfo::Register::R3, V7MInfo::Register::R4}},
+            {{0x7802, "ldrb     r2,[r0,#0]", InstrInfo::LOAD},
              {V7MInfo::Register::R0}},
-            {{0x81ac, "strh     r4,[r5,#0xc]"},
-             {V7MInfo::Register::R4,
-              V7MInfo::Register::R5}},
-            {{0x89ab, "ldrh     r3,[r5,#0xc]"},
+            {{0x81ac, "strh     r4,[r5,#0xc]", InstrInfo::STORE},
+             {V7MInfo::Register::R4, V7MInfo::Register::R5}},
+            {{0x89ab, "ldrh     r3,[r5,#0xc]", InstrInfo::LOAD},
              {V7MInfo::Register::R5}},
-            {{0x9101, "str      r1,[sp,#4]"},
-             {V7MInfo::Register::R1,
-              V7MInfo::Register::MSP}},
-            {{0x9c25, "ldr      r4,[sp,#0x94]"},
+            {{0x9101, "str      r1,[sp,#4]", InstrInfo::STORE},
+             {V7MInfo::Register::R1, V7MInfo::Register::MSP}},
+            {{0x9c25, "ldr      r4,[sp,#0x94]", InstrInfo::LOAD},
              {V7MInfo::Register::MSP}},
         }};
 
@@ -397,7 +430,7 @@ TEST(V7MCPUInfo, registersReadByT16Instr) {
 
     // ===== Generate PC-relative address
     const array<
-        std::pair<TRB<THUMB, 16>, std::vector<V7MInfo::Register>>, 1>
+        std::pair<TRB<V7MInfo, THUMB, 16>, std::vector<V7MInfo::Register>>, 1>
         T16_PCRelAddrInstructions = {{
             {{0xa131, "adr      r1,{pc}+0xc6"},
              {V7MInfo::Register::PC}},
@@ -407,7 +440,7 @@ TEST(V7MCPUInfo, registersReadByT16Instr) {
 
     // ===== Generate SP-relative address
     const array<
-        std::pair<TRB<THUMB, 16>, std::vector<V7MInfo::Register>>, 1>
+        std::pair<TRB<V7MInfo, THUMB, 16>, std::vector<V7MInfo::Register>>, 1>
         T16_SPRelAddrInstructions = {{
             {{0xaf01, "add      r7,sp,#4"}, {V7MInfo::Register::MSP}},
         }};
@@ -416,16 +449,14 @@ TEST(V7MCPUInfo, registersReadByT16Instr) {
 
     // ===== Misc instructions
     const array<
-        std::pair<TRB<THUMB, 16>, std::vector<V7MInfo::Register>>, 21>
+        std::pair<TRB<V7MInfo, THUMB, 16>, std::vector<V7MInfo::Register>>, 21>
         T16_MiscInstructions = {{
             {{0xb663, "cpsie	 if"}, {}},
-            {{0xb003, "add	     sp,sp,#0xc"},
-             {V7MInfo::Register::MSP}},
-            {{0xb084, "sub	     sp,sp,#0x10"},
-             {V7MInfo::Register::MSP}},
-            {{0xb123, "cbz	     r3, 0x0c"},
+            {{0xb003, "add	     sp,sp,#0xc"}, {V7MInfo::Register::MSP}},
+            {{0xb084, "sub	     sp,sp,#0x10"}, {V7MInfo::Register::MSP}},
+            {{0xb123, "cbz	     r3, 0x0c", InstrInfo::BRANCH},
              {V7MInfo::Register::R3}},
-            {{0xb936, "cbnz	     r6, 0x10"},
+            {{0xb936, "cbnz	     r6, 0x10", InstrInfo::BRANCH},
              {V7MInfo::Register::R6}},
             {{0xb20e, "sxth      r6, r1"}, {V7MInfo::Register::R1}},
             {{0xb255, "sxtb      r5,r2"}, {V7MInfo::Register::R2}},
@@ -434,14 +465,13 @@ TEST(V7MCPUInfo, registersReadByT16Instr) {
             {{0xba2f, "rev       r7,r5"}, {V7MInfo::Register::R5}},
             {{0xba59, "rev16     r1,r3"}, {V7MInfo::Register::R3}},
             {{0xbaca, "revsh     r2,r1"}, {V7MInfo::Register::R1}},
-            {{0xb5f8, "push      {r3-r7,lr}"},
+            {{0xb5f8, "push      {r3-r7,lr}", InstrInfo::STORE},
              {V7MInfo::Register::R3, V7MInfo::Register::R4,
               V7MInfo::Register::R5, V7MInfo::Register::R6,
-              V7MInfo::Register::R7,
-              V7MInfo::Register::MSP}},
-            {{0xbdf8, "pop       {r3-r7,pc}"},
+              V7MInfo::Register::R7, V7MInfo::Register::MSP}},
+            {{0xbdf8, "pop       {r3-r7,pc}", InstrInfo::LOAD},
              {V7MInfo::Register::MSP}},
-            {{0xbe36, "bkpt      0x0036"}, {}},
+            {{0xbe36, "bkpt      0x0036", InstrInfo::CALL}, {}},
             {{0xbf00, "nop"}, {}},
             {{0xbf10, "yield"}, {}},
             {{0xbf20, "wfe"}, {}},
@@ -454,87 +484,83 @@ TEST(V7MCPUInfo, registersReadByT16Instr) {
 
     // ===== Store multiple registers
     const array<
-        std::pair<TRB<THUMB, 16>, std::vector<V7MInfo::Register>>, 1>
+        std::pair<TRB<V7MInfo, THUMB, 16>, std::vector<V7MInfo::Register>>, 1>
         T16_STMInstructions = {{
-            {{0xc270, "stmia	r2!, {r4, r5, r6}"},
+            {{0xc270, "stmia	r2!, {r4, r5, r6}", InstrInfo::STORE},
              {V7MInfo::Register::R2, V7MInfo::Register::R4,
-              V7MInfo::Register::R5,
-              V7MInfo::Register::R6}},
+              V7MInfo::Register::R5, V7MInfo::Register::R6}},
         }};
 
     RUN_TRB_TESTS(T16_STMInstructions);
 
     // ===== Load multiple registers
     const array<
-        std::pair<TRB<THUMB, 16>, std::vector<V7MInfo::Register>>, 1>
+        std::pair<TRB<V7MInfo, THUMB, 16>, std::vector<V7MInfo::Register>>, 1>
         T16_LDMInstructions = {{
-            {{0xca78, "ldmia	r2!, {r3, r4, r5, r6}"},
+            {{0xca78, "ldmia	r2!, {r3, r4, r5, r6}", InstrInfo::LOAD},
              {V7MInfo::Register::R2}},
         }};
 
     RUN_TRB_TESTS(T16_LDMInstructions);
 
-    // ===== Conditionnal branch and supervisor call
+    // ===== Conditional branch and supervisor call
     const array<
-        std::pair<TRB<THUMB, 16>, std::vector<V7MInfo::Register>>, 3>
+        std::pair<TRB<V7MInfo, THUMB, 16>, std::vector<V7MInfo::Register>>, 3>
         T16_BranchInstructions = {{
-            {{0xd1f8, "bne      {pc}-0xc"},
+            {{0xd1f8, "bne      {pc}-0xc", InstrInfo::BRANCH},
              {V7MInfo::Register::CPSR}},
-            {{0xde21, "udf      33"}, {}},
-            {{0xdf36, "svc      54"}, {}},
+            {{0xde21, "udf      33", InstrInfo::CALL}, {}},
+            {{0xdf36, "svc      54", InstrInfo::CALL}, {}},
         }};
 
     RUN_TRB_TESTS(T16_BranchInstructions);
 
     // ===== Unconditional branch
     const array<
-        std::pair<TRB<THUMB, 16>, std::vector<V7MInfo::Register>>, 1>
+        std::pair<TRB<V7MInfo, THUMB, 16>, std::vector<V7MInfo::Register>>, 1>
         T16_UncondBranchInstructions = {{
-            {{0xe002, "b        {pc}+8"}, {}},
+            {{0xe002, "b        {pc}+8", InstrInfo::BRANCH}, {}},
         }};
 
     RUN_TRB_TESTS(T16_UncondBranchInstructions);
 }
 
-TEST(V7MCPUInfo, registersReadByT32Instr) {
+TEST(V7MCPUInfo, T32InstrInfo) {
     // ===== Load / Store multiple
     const array<
-        std::pair<TRB<THUMB, 32>, std::vector<V7MInfo::Register>>, 12>
+        std::pair<TRB<V7MInfo, THUMB, 32>, std::vector<V7MInfo::Register>>, 12>
         T32_LoadStoreMultipleInstructions = {{
-            {{0xe8ad03ea, "stm.w        sp!, {r1,r3,r5-r9}"},
+            {{0xe8ad03ea, "stm.w        sp!, {r1,r3,r5-r9}", InstrInfo::STORE},
              {V7MInfo::Register::R1, V7MInfo::Register::R3,
               V7MInfo::Register::R5, V7MInfo::Register::R6,
               V7MInfo::Register::R7, V7MInfo::Register::R8,
-              V7MInfo::Register::R9,
-              V7MInfo::Register::MSP}},
-            {{0xe8a10400, "stmia.w      r1!, {r10}"},
-             {V7MInfo::Register::R1,
-              V7MInfo::Register::R10}},
-            {{0xe8a107c0, "stmea.w      r1!, {r6-r10}"},
+              V7MInfo::Register::R9, V7MInfo::Register::MSP}},
+            {{0xe8a10400, "stmia.w      r1!, {r10}", InstrInfo::STORE},
+             {V7MInfo::Register::R1, V7MInfo::Register::R10}},
+            {{0xe8a107c0, "stmea.w      r1!, {r6-r10}", InstrInfo::STORE},
              {V7MInfo::Register::R1, V7MInfo::Register::R6,
               V7MInfo::Register::R7, V7MInfo::Register::R8,
-              V7MInfo::Register::R9,
-              V7MInfo::Register::R10}},
-            {{0xe8910600, "ldm.w        r1, {r9-r10}"},
+              V7MInfo::Register::R9, V7MInfo::Register::R10}},
+            {{0xe8910600, "ldm.w        r1, {r9-r10}", InstrInfo::LOAD},
              {V7MInfo::Register::R1}},
-            {{0xe8bd0300, "ldmia.w      sp!, {r8,r9}"},
+            {{0xe8bd0300, "ldmia.w      sp!, {r8,r9}", InstrInfo::LOAD},
              {V7MInfo::Register::MSP}},
-            {{0xe89d0c00, "ldmfd.w      sp, {r10-r11}"},
+            {{0xe89d0c00, "ldmfd.w      sp, {r10-r11}", InstrInfo::LOAD},
              {V7MInfo::Register::MSP}},
-            {{0xe8bd0300, "pop.w        {r8-r9}"},
+            {{0xe8bd0300, "pop.w        {r8-r9}", InstrInfo::LOAD},
              {V7MInfo::Register::MSP}},
-            {{0xe9030a00, "stmdb.w      r3, {r9,r11}"},
+            {{0xe9030a00, "stmdb.w      r3, {r9,r11}", InstrInfo::STORE},
              {V7MInfo::Register::R3, V7MInfo::Register::R9,
               V7MInfo::Register::R11}},
-            {{0xe9210900, "stmfd.w      r1!, {r8,r11}"},
+            {{0xe9210900, "stmfd.w      r1!, {r8,r11}", InstrInfo::STORE},
              {V7MInfo::Register::R1, V7MInfo::Register::R8,
               V7MInfo::Register::R11}},
-            {{0xe92d0280, "push.w       {r7,r9}"},
+            {{0xe92d0280, "push.w       {r7,r9}", InstrInfo::STORE},
              {V7MInfo::Register::R7, V7MInfo::Register::R9,
               V7MInfo::Register::MSP}},
-            {{0xe9300006, "ldmdb.w      r0!, {r1,r2}"},
+            {{0xe9300006, "ldmdb.w      r0!, {r1,r2}", InstrInfo::LOAD},
              {V7MInfo::Register::R0}},
-            {{0xe93d000c, "ldmea.w      sp!, {r2,r3}"},
+            {{0xe93d000c, "ldmea.w      sp!, {r2,r3}", InstrInfo::LOAD},
              {V7MInfo::Register::MSP}},
         }};
 
@@ -542,52 +568,50 @@ TEST(V7MCPUInfo, registersReadByT32Instr) {
 
     // ===== Load / Store dual or exclusive, table branch
     const array<
-        std::pair<TRB<THUMB, 32>, std::vector<V7MInfo::Register>>, 14>
+        std::pair<TRB<V7MInfo, THUMB, 32>, std::vector<V7MInfo::Register>>, 14>
         T32_LoadStoreAndTBBInstructions = {{
-            {{0xe8432100, "strex        r1,r2,[r3]"},
-             {V7MInfo::Register::R2,
-              V7MInfo::Register::R3}},
-            {{0xe8541f00, "ldrex        r1,[r4]"},
+            {{0xe8432100, "strex        r1,r2,[r3]", InstrInfo::STORE},
+             {V7MInfo::Register::R2, V7MInfo::Register::R3}},
+            {{0xe8541f00, "ldrex        r1,[r4]", InstrInfo::LOAD},
              {V7MInfo::Register::R4}},
-            {{0xe9c71202, "strd         r1,r2,[r7,#8]"},
+            {{0xe9c71202, "strd         r1,r2,[r7,#8]", InstrInfo::STORE},
              {V7MInfo::Register::R1, V7MInfo::Register::R2,
               V7MInfo::Register::R7}},
-            {{0xe8e81202, "strd         r1,r2,[r8],#8"},
+            {{0xe8e81202, "strd         r1,r2,[r8],#8", InstrInfo::STORE},
              {V7MInfo::Register::R1, V7MInfo::Register::R2,
               V7MInfo::Register::R8}},
-            {{0xe9e91202, "strd         r1,r2,[r9,#8]!"},
+            {{0xe9e91202, "strd         r1,r2,[r9,#8]!", InstrInfo::STORE},
              {V7MInfo::Register::R1, V7MInfo::Register::R2,
               V7MInfo::Register::R9}},
-            {{0xe9d91202, "ldrd         r1,r2,[r9,#8]"},
+            {{0xe9d91202, "ldrd         r1,r2,[r9,#8]", InstrInfo::LOAD},
              {V7MInfo::Register::R9}},
-            {{0xe8fa1202, "ldrd         r1,r2,[r10],#8"},
+            {{0xe8fa1202, "ldrd         r1,r2,[r10],#8", InstrInfo::LOAD},
              {V7MInfo::Register::R10}},
-            {{0xe9fb1202, "ldrd         r1,r2,[r11,#8]!"},
+            {{0xe9fb1202, "ldrd         r1,r2,[r11,#8]!", InstrInfo::LOAD},
              {V7MInfo::Register::R11}},
-            {{0xe8cc7f43, "strexb       r3,r7,[r12]"},
+            {{0xe8cc7f43, "strexb       r3,r7,[r12]", InstrInfo::STORE},
              {V7MInfo::Register::R3, V7MInfo::Register::R7,
               V7MInfo::Register::R12}},
-            {{0xe8c47f5c, "strexh       r12,r7,[r4]"},
+            {{0xe8c47f5c, "strexh       r12,r7,[r4]", InstrInfo::STORE},
              {V7MInfo::Register::R4, V7MInfo::Register::R7,
               V7MInfo::Register::R12}},
-            {{0xe8daf00b, "tbb         [r10,r11]"},
-             {V7MInfo::Register::R10,
-              V7MInfo::Register::R11,
+            {{0xe8daf00b, "tbb         [r10,r11]", InstrInfo::BRANCH},
+             {V7MInfo::Register::R10, V7MInfo::Register::R11,
               V7MInfo::Register::PC}},
-            {{0xe8d9f01a, "tbh         [r9,r10, LSL #1]"},
-             {V7MInfo::Register::R9,
-              V7MInfo::Register::R10,
+            {{0xe8d9f01a, "tbh         [r9,r10, LSL #1]", InstrInfo::BRANCH},
+             {V7MInfo::Register::R9, V7MInfo::Register::R10,
               V7MInfo::Register::PC}},
-            {{0xe8db3f4f, "ldrexb      r3,[r11]"},
+            {{0xe8db3f4f, "ldrexb      r3,[r11]", InstrInfo::LOAD},
              {V7MInfo::Register::R11}},
-            {{0xe8d74f5f, "ldrexh      r4,[r7]"}, {V7MInfo::Register::R7}},
+            {{0xe8d74f5f, "ldrexh      r4,[r7]", InstrInfo::LOAD},
+             {V7MInfo::Register::R7}},
         }};
 
     RUN_TRB_TESTS(T32_LoadStoreAndTBBInstructions);
 
     // ===== Data processing (shifted register)
     const array<
-        std::pair<TRB<THUMB, 32>, std::vector<V7MInfo::Register>>, 25>
+        std::pair<TRB<V7MInfo, THUMB, 32>, std::vector<V7MInfo::Register>>, 25>
         T32_DataProcessingShiftedRegInstructions = {{
             {{0xea070108, "and.w     r1,r7,r8"},
              {V7MInfo::Register::R7,
@@ -643,10 +667,12 @@ TEST(V7MCPUInfo, registersReadByT32Instr) {
               V7MInfo::Register::R10}},
             {{0xeb4a0701, "adc.w     r7,r10,r1"},
              {V7MInfo::Register::R1,
-              V7MInfo::Register::R10}},
+              V7MInfo::Register::R10,
+              V7MInfo::Register::CPSR}},
             {{0xeb680703, "sbc.w     r7,r8,r3"},
              {V7MInfo::Register::R3,
-              V7MInfo::Register::R8}},
+              V7MInfo::Register::R8,
+              V7MInfo::Register::CPSR}},
             {{0xebaa0701, "sub.w     r7,r10,r1"},
              {V7MInfo::Register::R1,
               V7MInfo::Register::R10}},
@@ -662,13 +688,13 @@ TEST(V7MCPUInfo, registersReadByT32Instr) {
 
     // ===== Coprocessor instructions
     const array<
-        std::pair<TRB<THUMB, 32>, std::vector<V7MInfo::Register>>, 16>
+        std::pair<TRB<V7MInfo, THUMB, 32>, std::vector<V7MInfo::Register>>, 16>
         T32_CoprocessorInstructions = {{
-            {{0xed8b3903, "stc       p9,c3,[r11,#12]"},
+            {{0xed8b3903, "stc       p9,c3,[r11,#12]", InstrInfo::STORE},
              {V7MInfo::Register::R11}},
-            {{0xed955903, "ldc       p9,c5,[r5,#12]"},
+            {{0xed955903, "ldc       p9,c5,[r5,#12]", InstrInfo::LOAD},
              {V7MInfo::Register::R5}},
-            {{0xed1f6903, "ldc       p9,c6,[PC,#-0xc]"},
+            {{0xed1f6903, "ldc       p9,c6,[PC,#-0xc]", InstrInfo::LOAD},
              {V7MInfo::Register::PC}},
             {{0xec47a923, "mcrr      p9,#2,r10,r7,c3"},
              {V7MInfo::Register::R7,
@@ -678,11 +704,11 @@ TEST(V7MCPUInfo, registersReadByT32Instr) {
             {{0xee411992, "mcr       p9,#2,r1,c1,c2,#4"},
              {V7MInfo::Register::R1}},
             {{0xee513992, "mrc       p9,#2,r3,c1,c2,#4"}, {}},
-            {{0xfd883903, "stc2      p9,c3,[r8,#12]"},
+            {{0xfd883903, "stc2      p9,c3,[r8,#12]", InstrInfo::STORE},
              {V7MInfo::Register::R8}},
-            {{0xfd946903, "ldc2      p9,c6,[r4,#12]"},
+            {{0xfd946903, "ldc2      p9,c6,[r4,#12]", InstrInfo::LOAD},
              {V7MInfo::Register::R4}},
-            {{0xfd9f6902, "ldc2      p9,c6,[PC,#0x8]"},
+            {{0xfd9f6902, "ldc2      p9,c6,[PC,#0x8]", InstrInfo::LOAD},
              {V7MInfo::Register::PC}},
             {{0xfc47a923, "mcrr2     p9,#2,r10,r7,c3"},
              {V7MInfo::Register::R7,
@@ -698,7 +724,7 @@ TEST(V7MCPUInfo, registersReadByT32Instr) {
 
     // ===== Data processing (modified immediate)
     const array<
-        std::pair<TRB<THUMB, 32>, std::vector<V7MInfo::Register>>, 16>
+        std::pair<TRB<V7MInfo, THUMB, 32>, std::vector<V7MInfo::Register>>, 16>
         T32_DataProcessingModImmInstructions = {{
             {{0xf402217f, "and       r1,r2,#1044480"},
              {V7MInfo::Register::R2}},
@@ -736,7 +762,7 @@ TEST(V7MCPUInfo, registersReadByT32Instr) {
 
     // ===== Data processing (plain binary immediate)
     const array<
-        std::pair<TRB<THUMB, 32>, std::vector<V7MInfo::Register>>, 14>
+        std::pair<TRB<V7MInfo, THUMB, 32>, std::vector<V7MInfo::Register>>, 14>
         T32_DataProcessingPlainImmInstructions = {{
             {{0xf602214b, "addw       r1,r2,#2635"},
              {V7MInfo::Register::R2}},
@@ -769,12 +795,11 @@ TEST(V7MCPUInfo, registersReadByT32Instr) {
 
     // ===== Branches and misc control
     const array<
-        std::pair<TRB<THUMB, 32>, std::vector<V7MInfo::Register>>, 19>
+        std::pair<TRB<V7MInfo, THUMB, 32>, std::vector<V7MInfo::Register>>, 19>
         T32_BranchMiscInstructions = {{
-            {{0xf6bdae6e, "bge.w      #-8996"},
+            {{0xf6bdae6e, "bge.w      #-8996", InstrInfo::BRANCH},
              {V7MInfo::Register::PC}},
-            {{0xf38b8400, "msr        apsr_g, r11"},
-             {V7MInfo::Register::R11}},
+            {{0xf38b8400, "msr        apsr_g, r11"}, {V7MInfo::Register::R11}},
             {{0xf3af8000, "nop.w"}, {}},
             {{0xf3af8001, "yield.w"}, {}},
             {{0xf3af8002, "wfe.w"}, {}},
@@ -790,41 +815,37 @@ TEST(V7MCPUInfo, registersReadByT32Instr) {
             {{0xf3bf8f6f, "isb"}, {}},
             {{0xf3ef8a00, "mrs        r10,apsr_g"}, {}},
             {{0xf7f0a07b, "udf.w      #123"}, {}},
-            {{0xf004b850, "b.w        #16544"}, {V7MInfo::Register::PC}},
-            {{0xf002f966, "bl         #8908"}, {V7MInfo::Register::PC}},
+            {{0xf004b850, "b.w        #16544", InstrInfo::BRANCH},
+             {V7MInfo::Register::PC}},
+            {{0xf002f966, "bl         #8908", InstrInfo::CALL},
+             {V7MInfo::Register::PC}},
         }};
 
     RUN_TRB_TESTS(T32_BranchMiscInstructions);
-    
+
     // ===== Store single data item
     const array<
-        std::pair<TRB<THUMB, 32>, std::vector<V7MInfo::Register>>, 9>
+        std::pair<TRB<V7MInfo, THUMB, 32>, std::vector<V7MInfo::Register>>, 9>
         T32_StoreSingleInstructions = {{
-            {{0xf88ba800, "strb.w      r10,[r11,#2048]"},
-             {V7MInfo::Register::R10,
-              V7MInfo::Register::R11}},
-            {{0xf8079f40, "strb        r9,[r7,#64]!"},
-             {V7MInfo::Register::R7,
-              V7MInfo::Register::R9}},
-            {{0xf8079008, "strb.w      r9,[r7,r8]"},
+            {{0xf88ba800, "strb.w      r10,[r11,#2048]", InstrInfo::STORE},
+             {V7MInfo::Register::R10, V7MInfo::Register::R11}},
+            {{0xf8079f40, "strb        r9,[r7,#64]!", InstrInfo::STORE},
+             {V7MInfo::Register::R7, V7MInfo::Register::R9}},
+            {{0xf8079008, "strb.w      r9,[r7,r8]", InstrInfo::STORE},
              {V7MInfo::Register::R7, V7MInfo::Register::R8,
               V7MInfo::Register::R9}},
-            {{0xf8aba800, "strh.w      r10,[r11,#2048]"},
-             {V7MInfo::Register::R10,
-              V7MInfo::Register::R11}},
-            {{0xf8279f40, "strh        r9,[r7,#64]!"},
-             {V7MInfo::Register::R7,
-              V7MInfo::Register::R9}},
-            {{0xf8279008, "strh.w      r9,[r7,r8]"},
+            {{0xf8aba800, "strh.w      r10,[r11,#2048]", InstrInfo::STORE},
+             {V7MInfo::Register::R10, V7MInfo::Register::R11}},
+            {{0xf8279f40, "strh        r9,[r7,#64]!", InstrInfo::STORE},
+             {V7MInfo::Register::R7, V7MInfo::Register::R9}},
+            {{0xf8279008, "strh.w      r9,[r7,r8]", InstrInfo::STORE},
              {V7MInfo::Register::R7, V7MInfo::Register::R8,
               V7MInfo::Register::R9}},
-            {{0xf8cba800, "str.w      r10,[r11,#2048]"},
-             {V7MInfo::Register::R10,
-              V7MInfo::Register::R11}},
-            {{0xf8479f40, "str.w      r9,[r7,#64]!"},
-             {V7MInfo::Register::R7,
-              V7MInfo::Register::R9}},
-            {{0xf8479008, "str.w      r9,[r7,r8]"},
+            {{0xf8cba800, "str.w      r10,[r11,#2048]", InstrInfo::STORE},
+             {V7MInfo::Register::R10, V7MInfo::Register::R11}},
+            {{0xf8479f40, "str.w      r9,[r7,#64]!", InstrInfo::STORE},
+             {V7MInfo::Register::R7, V7MInfo::Register::R9}},
+            {{0xf8479008, "str.w      r9,[r7,r8]", InstrInfo::STORE},
              {V7MInfo::Register::R7, V7MInfo::Register::R8,
               V7MInfo::Register::R9}},
         }};
@@ -833,98 +854,85 @@ TEST(V7MCPUInfo, registersReadByT32Instr) {
 
     // ===== Load byte, memory hints
     const array<
-        std::pair<TRB<THUMB, 32>, std::vector<V7MInfo::Register>>, 19>
+        std::pair<TRB<V7MInfo, THUMB, 32>, std::vector<V7MInfo::Register>>, 19>
         T32_LoadByteHintsInstructions = {{
-            {{0xf89f9040, "ldrb.w     r9,[PC,#64]"},
+            {{0xf89f9040, "ldrb.w     r9,[PC,#64]", InstrInfo::LOAD},
              {V7MInfo::Register::PC}},
-            {{0xf89ba800, "ldrb.w     r10,[r11,#2048]"},
+            {{0xf89ba800, "ldrb.w     r10,[r11,#2048]", InstrInfo::LOAD},
              {V7MInfo::Register::R11}},
-            {{0xf8179f40, "ldrb       r9,[r7,#64]!"},
+            {{0xf8179f40, "ldrb       r9,[r7,#64]!", InstrInfo::LOAD},
              {V7MInfo::Register::R7}},
-            {{0xf8130c48, "ldrb       r0,[r3,#-0x48]"},
+            {{0xf8130c48, "ldrb       r0,[r3,#-0x48]", InstrInfo::LOAD},
              {V7MInfo::Register::R3}},
-            {{0xf81b4e40, "ldrbt      r4,[r11,#64]"},
+            {{0xf81b4e40, "ldrbt      r4,[r11,#64]", InstrInfo::LOAD},
              {V7MInfo::Register::R11}},
-            {{0xf81a4008, "ldrb.w     r4,[r10,r8]"},
-             {V7MInfo::Register::R8,
-              V7MInfo::Register::R10}},
-            {{0xf99f9040, "ldrsb      r9,[PC,#64]"},
+            {{0xf81a4008, "ldrb.w     r4,[r10,r8]", InstrInfo::LOAD},
+             {V7MInfo::Register::R8, V7MInfo::Register::R10}},
+            {{0xf99f9040, "ldrsb      r9,[PC,#64]", InstrInfo::LOAD},
              {V7MInfo::Register::PC}},
-            {{0xf99ba800, "ldrsb      r10,[r11,#2048]"},
+            {{0xf99ba800, "ldrsb      r10,[r11,#2048]", InstrInfo::LOAD},
              {V7MInfo::Register::R11}},
-            {{0xf9179f40, "ldrsb      r9,[r7,#64]!"},
+            {{0xf9179f40, "ldrsb      r9,[r7,#64]!", InstrInfo::LOAD},
              {V7MInfo::Register::R7}},
-            {{0xf917be40, "ldrsbt     r11,[r7,#64]"},
+            {{0xf917be40, "ldrsbt     r11,[r7,#64]", InstrInfo::LOAD},
              {V7MInfo::Register::R7}},
-            {{0xf9148003, "ldrsb.w    r8,[r4,r3]"},
-             {V7MInfo::Register::R3,
-              V7MInfo::Register::R4}},
-            {{0xf89ff07c, "pld        [PC,#124]"},
-             {V7MInfo::Register::PC}},
-            {{0xf89bf18c, "pld        [r11,#396]"},
-             {V7MInfo::Register::R11}},
-            {{0xf817fc40, "pld        [r7,#-64]"},
-             {V7MInfo::Register::R7}},
+            {{0xf9148003, "ldrsb.w    r8,[r4,r3]", InstrInfo::LOAD},
+             {V7MInfo::Register::R3, V7MInfo::Register::R4}},
+            {{0xf89ff07c, "pld        [PC,#124]"}, {V7MInfo::Register::PC}},
+            {{0xf89bf18c, "pld        [r11,#396]"}, {V7MInfo::Register::R11}},
+            {{0xf817fc40, "pld        [r7,#-64]"}, {V7MInfo::Register::R7}},
             {{0xf814f003, "pld        [r4,r3]"},
-             {V7MInfo::Register::R3,
-              V7MInfo::Register::R4}},
-            {{0xf99ff07c, "pli        [PC,#124]"},
-             {V7MInfo::Register::PC}},
-            {{0xf99af18c, "pli        [r10,#396]"},
-             {V7MInfo::Register::R10}},
-            {{0xf91bfc40, "pli        [r11,#-64]"},
-             {V7MInfo::Register::R11}},
+             {V7MInfo::Register::R3, V7MInfo::Register::R4}},
+            {{0xf99ff07c, "pli        [PC,#124]"}, {V7MInfo::Register::PC}},
+            {{0xf99af18c, "pli        [r10,#396]"}, {V7MInfo::Register::R10}},
+            {{0xf91bfc40, "pli        [r11,#-64]"}, {V7MInfo::Register::R11}},
             {{0xf919f00b, "pli        [r9,r11]"},
-             {V7MInfo::Register::R9,
-              V7MInfo::Register::R11}},
+             {V7MInfo::Register::R9, V7MInfo::Register::R11}},
         }};
 
     RUN_TRB_TESTS(T32_LoadByteHintsInstructions);
 
     // ===== Load halfword, memory hints
-        const array<
-        std::pair<TRB<THUMB, 32>, std::vector<V7MInfo::Register>>, 10>
+    const array<
+        std::pair<TRB<V7MInfo, THUMB, 32>, std::vector<V7MInfo::Register>>, 10>
         T32_LoadHalfHintsInstructions = {{
-            {{0xf8bf9040, "ldrh.w     r9,[PC,#64]"},
+            {{0xf8bf9040, "ldrh.w     r9,[PC,#64]", InstrInfo::LOAD},
              {V7MInfo::Register::PC}},
-            {{0xf8b9a800, "ldrh.w     r10,[r9,#2048]"},
+            {{0xf8b9a800, "ldrh.w     r10,[r9,#2048]", InstrInfo::LOAD},
              {V7MInfo::Register::R9}},
-            {{0xf83a9f40, "ldrh       r9,[r10,#64]!"},
+            {{0xf83a9f40, "ldrh       r9,[r10,#64]!", InstrInfo::LOAD},
              {V7MInfo::Register::R10}},
-            {{0xf8354e40, "ldrht      r4,[r5,#64]"},
+            {{0xf8354e40, "ldrht      r4,[r5,#64]", InstrInfo::LOAD},
              {V7MInfo::Register::R5}},
-            {{0xf8394007, "ldrh.w     r4,[r9,r7]"},
-             {V7MInfo::Register::R7,
-              V7MInfo::Register::R9}},
-            {{0xf9bf9040, "ldrsh      r9,[PC,#64]"},
+            {{0xf8394007, "ldrh.w     r4,[r9,r7]", InstrInfo::LOAD},
+             {V7MInfo::Register::R7, V7MInfo::Register::R9}},
+            {{0xf9bf9040, "ldrsh      r9,[PC,#64]", InstrInfo::LOAD},
              {V7MInfo::Register::PC}},
-            {{0xf9b7a800, "ldrsh      r10,[r7,#2048]"},
+            {{0xf9b7a800, "ldrsh      r10,[r7,#2048]", InstrInfo::LOAD},
              {V7MInfo::Register::R7}},
-            {{0xf93b9f40, "ldrsh      r9,[r11,#64]!"},
+            {{0xf93b9f40, "ldrsh      r9,[r11,#64]!", InstrInfo::LOAD},
              {V7MInfo::Register::R11}},
-            {{0xf935be40, "ldrsht     r11,[r5,#64]"},
+            {{0xf935be40, "ldrsht     r11,[r5,#64]", InstrInfo::LOAD},
              {V7MInfo::Register::R5}},
-            {{0xf93b800a, "ldrsh.w    r8,[r11,r10]"},
-             {V7MInfo::Register::R10,
-              V7MInfo::Register::R11}},
+            {{0xf93b800a, "ldrsh.w    r8,[r11,r10]", InstrInfo::LOAD},
+             {V7MInfo::Register::R10, V7MInfo::Register::R11}},
         }};
 
     RUN_TRB_TESTS(T32_LoadHalfHintsInstructions);
 
     // ===== Load word
     const array<
-        std::pair<TRB<THUMB, 32>, std::vector<V7MInfo::Register>>, 5>
+        std::pair<TRB<V7MInfo, THUMB, 32>, std::vector<V7MInfo::Register>>, 5>
         T32_LoadWordInstructions = {{
-            {{0xf8dba800, "ldr.w      r10,[r11,#2048]"},
+            {{0xf8dba800, "ldr.w      r10,[r11,#2048]", InstrInfo::LOAD},
              {V7MInfo::Register::R11}},
-            {{0xf8579f40, "ldr        r9,[r7,#64]!"},
+            {{0xf8579f40, "ldr        r9,[r7,#64]!", InstrInfo::LOAD},
              {V7MInfo::Register::R7}},
-            {{0xf8579e40, "ldrt       r9,[r7,#64]"},
+            {{0xf8579e40, "ldrt       r9,[r7,#64]", InstrInfo::LOAD},
              {V7MInfo::Register::R7}},
-            {{0xf8579003, "ldr.w      r9,[r7,r3]"},
-             {V7MInfo::Register::R3,
-              V7MInfo::Register::R7}},
-            {{0xf8df9040, "ldr.w      r9,[PC,#64]"},
+            {{0xf8579003, "ldr.w      r9,[r7,r3]", InstrInfo::LOAD},
+             {V7MInfo::Register::R3, V7MInfo::Register::R7}},
+            {{0xf8df9040, "ldr.w      r9,[PC,#64]", InstrInfo::LOAD},
              {V7MInfo::Register::PC}},
         }};
 
@@ -932,7 +940,7 @@ TEST(V7MCPUInfo, registersReadByT32Instr) {
 
     // ===== Data processing (register)
     const array<
-        std::pair<TRB<THUMB, 32>, std::vector<V7MInfo::Register>>, 62>
+        std::pair<TRB<V7MInfo, THUMB, 32>, std::vector<V7MInfo::Register>>, 62>
         T32_DataProcessingRegInstructions = {{
             {{0xfa0bfa0c, "lsl.w      r10,r11,r12"},
              {V7MInfo::Register::R11,
@@ -1105,7 +1113,8 @@ TEST(V7MCPUInfo, registersReadByT32Instr) {
              {V7MInfo::Register::R11}},
             {{0xfaa5f486, "sel     r4,r5,r6"},
              {V7MInfo::Register::R5,
-              V7MInfo::Register::R6}},
+              V7MInfo::Register::R6,
+              V7MInfo::Register::CPSR}},
             {{0xfab5f485, "clz     r4,r5"}, {V7MInfo::Register::R5}},
         }};
 
@@ -1113,19 +1122,16 @@ TEST(V7MCPUInfo, registersReadByT32Instr) {
 
     // ===== Multiply, multiply accumulate and absolute difference
     const array<
-        std::pair<TRB<THUMB, 32>, std::vector<V7MInfo::Register>>, 31>
+        std::pair<TRB<V7MInfo, THUMB, 32>, std::vector<V7MInfo::Register>>, 31>
         T32_MMAADInstructions = {{
             {{0xfb0b5a04, "mla       r10,r11,r4,r5"},
              {V7MInfo::Register::R4, V7MInfo::Register::R5,
-              V7MInfo::Register::R10,
               V7MInfo::Register::R11}},
             {{0xfb07511a, "mls       r1,r7,r10,r5"},
-             {V7MInfo::Register::R1, V7MInfo::Register::R5,
-              V7MInfo::Register::R7,
+             {V7MInfo::Register::R5, V7MInfo::Register::R7,
               V7MInfo::Register::R10}},
             {{0xfb07f903, "mul        r9,r7,r3"},
-             {V7MInfo::Register::R3,
-              V7MInfo::Register::R7}},
+             {V7MInfo::Register::R3, V7MInfo::Register::R7}},
             {{0xfb124103, "smlabb     r1,r2,r3,r4"},
              {V7MInfo::Register::R2, V7MInfo::Register::R3,
               V7MInfo::Register::R4}},
@@ -1139,17 +1145,13 @@ TEST(V7MCPUInfo, registersReadByT32Instr) {
              {V7MInfo::Register::R7, V7MInfo::Register::R10,
               V7MInfo::Register::R11}},
             {{0xfb1bfa04, "smulbb     r10,r11,r4"},
-             {V7MInfo::Register::R4,
-              V7MInfo::Register::R11}},
+             {V7MInfo::Register::R4, V7MInfo::Register::R11}},
             {{0xfb17f11a, "smulbt     r1,r7,r10"},
-             {V7MInfo::Register::R7,
-              V7MInfo::Register::R10}},
+             {V7MInfo::Register::R7, V7MInfo::Register::R10}},
             {{0xfb12f123, "smultb     r1,r2,r3"},
-             {V7MInfo::Register::R2,
-              V7MInfo::Register::R3}},
+             {V7MInfo::Register::R2, V7MInfo::Register::R3}},
             {{0xfb14f331, "smultt     r3,r4,r1"},
-             {V7MInfo::Register::R1,
-              V7MInfo::Register::R4}},
+             {V7MInfo::Register::R1, V7MInfo::Register::R4}},
             {{0xfb224103, "smlad      r1,r2,r3,r4"},
              {V7MInfo::Register::R2, V7MInfo::Register::R3,
               V7MInfo::Register::R4}},
@@ -1157,11 +1159,9 @@ TEST(V7MCPUInfo, registersReadByT32Instr) {
              {V7MInfo::Register::R7, V7MInfo::Register::R10,
               V7MInfo::Register::R11}},
             {{0xfb22f103, "smuad      r1,r2,r3"},
-             {V7MInfo::Register::R2,
-              V7MInfo::Register::R3}},
+             {V7MInfo::Register::R2, V7MInfo::Register::R3}},
             {{0xfb2af71b, "smuadx     r7,r10,r11"},
-             {V7MInfo::Register::R10,
-              V7MInfo::Register::R11}},
+             {V7MInfo::Register::R10, V7MInfo::Register::R11}},
             {{0xfb324103, "smlawb     r1,r2,r3,r4"},
              {V7MInfo::Register::R2, V7MInfo::Register::R3,
               V7MInfo::Register::R4}},
@@ -1169,11 +1169,9 @@ TEST(V7MCPUInfo, registersReadByT32Instr) {
              {V7MInfo::Register::R7, V7MInfo::Register::R10,
               V7MInfo::Register::R11}},
             {{0xfb33f204, "smulwb     r2,r3,r4"},
-             {V7MInfo::Register::R3,
-              V7MInfo::Register::R4}},
+             {V7MInfo::Register::R3, V7MInfo::Register::R4}},
             {{0xfb32f113, "smulwt     r1,r2,r3"},
-             {V7MInfo::Register::R2,
-              V7MInfo::Register::R3}},
+             {V7MInfo::Register::R2, V7MInfo::Register::R3}},
             {{0xfb424103, "smlsd      r1,r2,r3,r4"},
              {V7MInfo::Register::R2, V7MInfo::Register::R3,
               V7MInfo::Register::R4}},
@@ -1181,11 +1179,9 @@ TEST(V7MCPUInfo, registersReadByT32Instr) {
              {V7MInfo::Register::R7, V7MInfo::Register::R10,
               V7MInfo::Register::R11}},
             {{0xfb43f204, "smusd      r2,r3,r4"},
-             {V7MInfo::Register::R3,
-              V7MInfo::Register::R4}},
+             {V7MInfo::Register::R3, V7MInfo::Register::R4}},
             {{0xfb42f113, "smusdx     r1,r2,r3"},
-             {V7MInfo::Register::R2,
-              V7MInfo::Register::R3}},
+             {V7MInfo::Register::R2, V7MInfo::Register::R3}},
             {{0xfb524103, "smmla      r1,r2,r3,r4"},
              {V7MInfo::Register::R2, V7MInfo::Register::R3,
               V7MInfo::Register::R4}},
@@ -1193,11 +1189,9 @@ TEST(V7MCPUInfo, registersReadByT32Instr) {
              {V7MInfo::Register::R7, V7MInfo::Register::R10,
               V7MInfo::Register::R11}},
             {{0xfb53f204, "smmul      r2,r3,r4"},
-             {V7MInfo::Register::R3,
-              V7MInfo::Register::R4}},
+             {V7MInfo::Register::R3, V7MInfo::Register::R4}},
             {{0xfb52f113, "smmulr     r1,r2,r3"},
-             {V7MInfo::Register::R2,
-              V7MInfo::Register::R3}},
+             {V7MInfo::Register::R2, V7MInfo::Register::R3}},
             {{0xfb624103, "smmls      r1,r2,r3,r4"},
              {V7MInfo::Register::R2, V7MInfo::Register::R3,
               V7MInfo::Register::R4}},
@@ -1205,19 +1199,17 @@ TEST(V7MCPUInfo, registersReadByT32Instr) {
              {V7MInfo::Register::R7, V7MInfo::Register::R10,
               V7MInfo::Register::R11}},
             {{0xfb735204, "usada8     r2,r3,r4,r5"},
-             {V7MInfo::Register::R3,
-              V7MInfo::Register::R4,
+             {V7MInfo::Register::R3, V7MInfo::Register::R4,
               V7MInfo::Register::R5}},
             {{0xfb72f103, "usad8      r1,r2,r3"},
-             {V7MInfo::Register::R2,
-              V7MInfo::Register::R3}},
+             {V7MInfo::Register::R2, V7MInfo::Register::R3}},
         }};
 
     RUN_TRB_TESTS(T32_MMAADInstructions);
 
     // ===== Long multiply, long multiply accumulate and divide
     const array<
-        std::pair<TRB<THUMB, 32>, std::vector<V7MInfo::Register>>, 15>
+        std::pair<TRB<V7MInfo, THUMB, 32>, std::vector<V7MInfo::Register>>, 15>
         T32_LongMulInstructions = {{
             {{0xfb84ab05, "smull       r10,r11,r4,r5"},
              {V7MInfo::Register::R4,
