@@ -1,4 +1,4 @@
-# Copyright 2021 Arm Limited. All rights reserved.
+# Copyright 2022 Arm Limited. All rights reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -16,9 +16,9 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-add_subdirectory(faulter)
-add_subdirectory(constanttime)
-add_subdirectory(power)
-add_subdirectory(run-model)
-add_subdirectory(sca-apps)
-add_subdirectory(check-attributes)
+add_paf_executable(check-attributes 
+  SOURCES check-attributes.cpp
+  LIBRARIES paf tarmac
+  DEPENDS tarmac-trace-utilities
+  OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin"
+  )
