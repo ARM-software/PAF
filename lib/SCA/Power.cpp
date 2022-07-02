@@ -347,7 +347,8 @@ PowerTrace PowerAnalyzer::getPowerTrace(PowerDumper &Dumper, TimingInfo &Timing,
         void operator()(PAF::ReferenceInstruction &I) {
 
             const InstrInfo II = CPU->getInstrInfo(I);
-            for (const auto &r : II.getUniqueInputRegisters()) {
+            for (const auto &r :
+                 II.getUniqueInputRegisters(/* Implicit: */ false)) {
                 const char *name = CPU->registerName(r);
                 uint32_t value = MTA.getRegisterValueAtTime(name, I.time - 1);
                 I.add(RegisterAccess(name, value, RegisterAccess::Type::Read));

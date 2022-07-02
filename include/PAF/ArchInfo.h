@@ -90,17 +90,24 @@ class InstrInfo {
         return addInputRegister(r).addInputRegister(regs...);
     }
 
+    /// Add an implicit input register to this instruction.
+    InstrInfo &addImplicitInputRegister(unsigned r) {
+        ImplicitInputRegisters.push_back(r);
+        return *this;
+    }
+
     /// Get the raw list of registers read by this instruction, in asm order.
-    const std::vector<unsigned> &getInputRegisters() const {
-        return InputRegisters;
+    const std::vector<unsigned> &getInputRegisters(bool implicit) const {
+        return implicit ? ImplicitInputRegisters : InputRegisters;
     }
 
     /// Get a list of unique registers read by this instruction. Order is
     /// unspecified.
-    std::vector<unsigned> getUniqueInputRegisters() const;
+    std::vector<unsigned> getUniqueInputRegisters(bool implicit) const;
 
   private:
     std::vector<unsigned> InputRegisters; /// The raw list of registers read.
+    std::vector<unsigned> ImplicitInputRegisters; /// The raw list of implicit registers read.
     InstructionKind Kind;
 };
 
@@ -199,6 +206,7 @@ class V7MInfo : public ArchInfo {
 
     /// Get registers read by this instruction.
     static std::vector<Register> registersReadByInstr(const InstrInfo &II,
+                                                      bool Implicit,
                                                       bool NoUniquify = false);
 
     /// Describe this ArchInfo.
@@ -241,6 +249,7 @@ class V8AInfo : public ArchInfo {
 
     /// Get registers read by this instruction.
     static std::vector<Register> registersReadByInstr(const InstrInfo &II,
+                                                      bool Implicit,
                                                       bool NoUniquify = false);
 
     /// Describe this ArchInfo.
