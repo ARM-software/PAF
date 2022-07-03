@@ -32,6 +32,7 @@
 
 using namespace testing;
 
+using PAF::AddressingMode;
 using PAF::InstrInfo;
 using PAF::ReferenceInstruction;
 using PAF::RegisterAccess;
@@ -39,9 +40,20 @@ using PAF::V7MInfo;
 using PAF::V8AInfo;
 
 using std::array;
-using std::cout;
 using std::unique_ptr;
 using std::vector;
+
+// ===================================================================
+// AddressingMode tests
+// -------------------------------------------------------------------
+TEST(AddressingMode, base) {
+    AddressingMode AM;
+    EXPECT_FALSE(AM.isValid());
+
+    AM = AddressingMode(AddressingMode::AMF_IMMEDIATE,
+                        AddressingMode::AMU_POST_INDEXED);
+    EXPECT_TRUE(AM.isValid());
+}
 
 // ===================================================================
 // InstrInfo tests
@@ -202,113 +214,158 @@ template <typename AInfo, ISet mode, unsigned width> struct TRB {
   public:
     TRB(uint32_t opc, const char *dis)
         : Inst(0, true, 1, mode, width, opc, dis, {}, {}),
-          Kind(InstrInfo::NO_KIND) {}
+          Kind(InstrInfo::NO_KIND), AM() {}
     TRB(uint32_t opc, const char *dis, InstrInfo::InstructionKind K)
-        : Inst(0, true, 1, mode, width, opc, dis, {}, {}), Kind(K) {}
+        : Inst(0, true, 1, mode, width, opc, dis, {}, {}), Kind(K), AM() {}
+    TRB(uint32_t opc, const char *dis, InstrInfo::InstructionKind K,
+        AddressingMode::OffsetFormat Offset, AddressingMode::BaseUpdate Update)
+        : Inst(0, true, 1, mode, width, opc, dis, {}, {}), Kind(K),
+          AM(Offset, Update) {
+        assert((K == InstrInfo::LOAD || K == InstrInfo::STORE) &&
+               "AddressingMode is only available for loads and stores");
+    }
+    TRB(uint32_t opc, const char *dis, InstrInfo::InstructionKind K,
+        AddressingMode::OffsetFormat Offset)
+        : TRB(opc, dis, K, Offset, AddressingMode::AMU_OFFSET) {}
 
-    bool check(const vector<typename AInfo::Register> &expectedInputRegs,
-               const vector<typename AInfo::Register>
-                   &expectedImplicitInputRegs) const {
+    AssertionResult
+    check(size_t testNum,
+          const vector<typename AInfo::Register> &expectedInputRegs,
+          const vector<typename AInfo::Register> &expectedImplicitInputRegs)
+        const {
         const InstrInfo II = AInfo::instrInfo(Inst);
 
         // Check register read by this instruction.
-        if (!check_registers("input", expectedInputRegs,
-                             AInfo::registersReadByInstr(II, false)))
-            return false;
-        if (!check_registers("implicit input", expectedImplicitInputRegs,
-                             AInfo::registersReadByInstr(II, true)))
-            return false;
+        const vector<typename AInfo::Register> inputRegs(
+            AInfo::registersReadByInstr(II, false));
+        if (!check_registers(expectedInputRegs, inputRegs))
+            return report_reg_error(testNum, "input", expectedInputRegs,
+                                    inputRegs);
+
+        const vector<typename AInfo::Register> implicitInputRegs(
+            AInfo::registersReadByInstr(II, true));
+        if (!check_registers(expectedImplicitInputRegs, implicitInputRegs))
+            return report_reg_error(testNum, "implicit input",
+                                    expectedImplicitInputRegs,
+                                    implicitInputRegs);
 
         // Check instruction attributes.
         switch (Kind) {
         case InstrInfo::NO_KIND:
             if (!II.hasNoKind())
-                return report_error("no attribute check although this "
-                                    "instruction has some attributes set !");
+                return report_error(testNum,
+                                    "no attribute check although this "
+                                    "instruction has some attributes set");
             break;
         case InstrInfo::LOAD:
             if (!II.isLoad())
-                return report_error("expecting the 'Load' attribute to be set "
-                                    "on this instruction.");
+                return report_error(testNum,
+                                    "expecting the 'Load' attribute to be set "
+                                    "on this instruction");
             break;
         case InstrInfo::STORE:
             if (!II.isStore())
-                return report_error("expecting the 'Store' attribute to be set "
-                                    "on this instruction.");
+                return report_error(testNum,
+                                    "expecting the 'Store' attribute to be set "
+                                    "on this instruction");
             break;
         case InstrInfo::BRANCH:
             if (!II.isBranch())
                 return report_error(
-                    "expecting the 'Branch' attribute to be set "
-                    "on this instruction.");
+                    testNum, "expecting the 'Branch' attribute to be set "
+                             "on this instruction");
             break;
 
         case InstrInfo::CALL:
             if (!II.isCall())
-                return report_error("expecting the 'Call' attribute to be set "
-                                    "on this instruction.");
+                return report_error(testNum,
+                                    "expecting the 'Call' attribute to be set "
+                                    "on this instruction");
             break;
         }
 
-        return true;
+        // Addressing mode checks.
+        if (II.isMemoryAccess()) {
+            const AddressingMode iam = II.getAddressingMode();
+            if (!iam.isValid())
+                return report_error(
+                    testNum, "memory access with invalid addressing mode");
+            if (iam != AM)
+                return report_error(
+                    testNum, "unexpected memory access addressing mode");
+        } else if (II.hasValidAddressingMode())
+            return report_error(testNum,
+                                "instruction is not a memory access "
+                                "instruction, but has a valid addressing mode");
+
+        return AssertionSuccess();
     }
 
-    bool check_registers(const char *regKind,
-                         const vector<typename AInfo::Register> &expected,
+    bool check_registers(const vector<typename AInfo::Register> &expected,
                          const vector<typename AInfo::Register> &actual) const {
 
         if (actual.size() != expected.size())
-            return report_reg_error(regKind, expected, actual);
+            return false;
 
         for (size_t i = 0; i < actual.size(); i++)
             if (actual[i] != expected[i])
-                return report_reg_error(regKind, expected, actual);
+                return false;
 
         return true;
     }
 
-    static void dump(const char *msg,
+    static void dump(AssertionResult &AR, const char *msg,
                      const vector<typename AInfo::Register> &regs) {
-        cout << msg;
+        AR << msg;
         for (const auto &r : regs)
-            cout << ' ' << AInfo::name(r);
-        cout << '\n';
+            AR << ' ' << AInfo::name(r);
+        AR << '\n';
     }
-    bool report_error(const char *msg) const {
-        cout << "For instruction '" << Inst.disassembly << "': ";
-        cout << msg << '\n';
-        return false;
+    AssertionResult report_error(size_t testNum, const char *msg) const {
+        return AssertionFailure()
+               << "test #" << testNum << " with instruction '"
+               << Inst.disassembly << "': " << msg;
     }
-    bool report_reg_error(const char *regKind, const vector<typename AInfo::Register> &expected,
-              const vector<typename AInfo::Register> &actual) const {
-        cout << "For instruction '" << Inst.disassembly << "', " << regKind << " registers don't match:\n";
-        dump("Expected:", expected);
-        dump("Actual:", actual);
-        return false;
+    AssertionResult
+    report_reg_error(size_t testNum, const char *regKind,
+                     const vector<typename AInfo::Register> &expected,
+                     const vector<typename AInfo::Register> &actual) const {
+        AssertionResult AR = AssertionFailure();
+        AR << "test #" << testNum << " with instruction '" << Inst.disassembly
+           << "', " << regKind << " registers don't match:\n";
+        dump(AR, "Expected:", expected);
+        dump(AR, "Actual:", actual);
+        return AR;
     }
 
     ReferenceInstruction Inst;
     InstrInfo::InstructionKind Kind;
+    AddressingMode AM;
 };
 
 template <typename TRBTy, typename RegisterTy> struct TestInput {
-    TestInput(TRBTy trb, std::initializer_list<RegisterTy> inputRegisters,
+    TestInput(const TRBTy &trb,
+              std::initializer_list<RegisterTy> inputRegisters,
               std::initializer_list<RegisterTy> implicitInputRegisters)
         : trb(trb), inputRegisters(inputRegisters),
           implicitInputRegisters(implicitInputRegisters) {}
-        TestInput(TRBTy trb, std::initializer_list<RegisterTy> inputRegisters)
-        : trb(trb), inputRegisters(inputRegisters),
-          implicitInputRegisters() {}
-    bool check() const { return trb.check(inputRegisters, implicitInputRegisters); }
-    TRBTy trb;
-    vector<RegisterTy> inputRegisters;
-    vector<RegisterTy> implicitInputRegisters;
+    TestInput(const TRBTy &trb,
+              std::initializer_list<RegisterTy> inputRegisters)
+        : trb(trb), inputRegisters(inputRegisters), implicitInputRegisters() {}
+
+    AssertionResult check(size_t testNum) const {
+        return trb.check(testNum, inputRegisters, implicitInputRegisters);
+    }
+
+    const TRBTy trb;
+    const vector<RegisterTy> inputRegisters;
+    const vector<RegisterTy> implicitInputRegisters;
 };
 
 #define RUN_TRB_TESTS(arr)                                                     \
     do {                                                                       \
-        for (const auto &t : arr)                                              \
-            EXPECT_TRUE(t.check());                                            \
+        for (size_t i = 0; i < arr.size(); i++)                                \
+            EXPECT_TRUE(arr[i].check(i));                                      \
     } while (0)
 
 // Use this macro to generate an instruction stream that can be fed to
@@ -317,7 +374,7 @@ template <typename TRBTy, typename RegisterTy> struct TestInput {
 #define DUMP_TRB_INSTRS(arr)                                                   \
     do {                                                                       \
         const char instrFile[] = "/tmp/" #arr ".txt";                          \
-        cout << "Dumping instruction stream to : " << instrFile << '\n';       \
+        std::cout << "Dumping instruction stream to : " << instrFile << '\n';  \
         std::ofstream of(instrFile);                                           \
         of << "\t.text\n";                                                     \
         for (const auto &t : arr)                                              \
@@ -409,7 +466,8 @@ TEST(V7MCPUInfo, T16InstrInfo) {
     // ===== Load from Literal Pool
     const array<TestInput<TRB<V7MInfo, THUMB, 16>, V7MInfo::Register>, 1>
         T16_LitPoolInstructions = {{
-            {{0x4b02, "ldr      r3,{pc}+0xc", InstrInfo::LOAD},
+            {{0x4b02, "ldr      r3,{pc}+0xc", InstrInfo::LOAD,
+              AddressingMode::AMF_IMMEDIATE},
              {V7MInfo::Register::PC}},
         }};
 
@@ -418,39 +476,55 @@ TEST(V7MCPUInfo, T16InstrInfo) {
     // ===== Load / store single data item
     const array<TestInput<TRB<V7MInfo, THUMB, 16>, V7MInfo::Register>, 16>
         T16_LoadStoreSingleInstructions = {{
-            {{0x50cb, "str      r3,[r1,r3]", InstrInfo::STORE},
+            {{0x50cb, "str      r3,[r1,r3]", InstrInfo::STORE,
+              AddressingMode::AMF_REGISTER},
              {V7MInfo::Register::R1, V7MInfo::Register::R3}},
-            {{0x520a, "strh	    r2, [r1, r0]", InstrInfo::STORE},
+            {{0x520a, "strh	    r2, [r1, r0]", InstrInfo::STORE,
+              AddressingMode::AMF_REGISTER},
              {V7MInfo::Register::R0, V7MInfo::Register::R1,
               V7MInfo::Register::R2}},
-            {{0x553a, "strb     r2,[r7,r4]", InstrInfo::STORE},
+            {{0x553a, "strb     r2,[r7,r4]", InstrInfo::STORE,
+              AddressingMode::AMF_REGISTER},
              {V7MInfo::Register::R2, V7MInfo::Register::R4,
               V7MInfo::Register::R7}},
-            {{0x560a, "ldrsb	r2, [r1, r0]", InstrInfo::LOAD},
+            {{0x560a, "ldrsb	r2, [r1, r0]", InstrInfo::LOAD,
+              AddressingMode::AMF_REGISTER},
              {V7MInfo::Register::R0, V7MInfo::Register::R1}},
-            {{0x59e2, "ldr      r2,[r4,r7]", InstrInfo::LOAD},
+            {{0x59e2, "ldr      r2,[r4,r7]", InstrInfo::LOAD,
+              AddressingMode::AMF_REGISTER},
              {V7MInfo::Register::R4, V7MInfo::Register::R7}},
-            {{0x5a0a, "ldrh	    r2, [r1, r0]", InstrInfo::LOAD},
+            {{0x5a0a, "ldrh	    r2, [r1, r0]", InstrInfo::LOAD,
+              AddressingMode::AMF_REGISTER},
              {V7MInfo::Register::R0, V7MInfo::Register::R1}},
-            {{0x5d2e, "ldrb     r6,[r5,r4]", InstrInfo::LOAD},
+            {{0x5d2e, "ldrb     r6,[r5,r4]", InstrInfo::LOAD,
+              AddressingMode::AMF_REGISTER},
              {V7MInfo::Register::R4, V7MInfo::Register::R5}},
-            {{0x5e0a, "ldrsh    r2, [r1, r0]", InstrInfo::LOAD},
+            {{0x5e0a, "ldrsh    r2, [r1, r0]", InstrInfo::LOAD,
+              AddressingMode::AMF_REGISTER},
              {V7MInfo::Register::R0, V7MInfo::Register::R1}},
-            {{0x6023, "str      r3,[r4,#0]", InstrInfo::STORE},
+            {{0x6023, "str      r3,[r4,#0]", InstrInfo::STORE,
+              AddressingMode::AMF_IMMEDIATE},
              {V7MInfo::Register::R3, V7MInfo::Register::R4}},
-            {{0x6833, "ldr      r3,[r6,#0]", InstrInfo::LOAD},
+            {{0x6833, "ldr      r3,[r6,#0]", InstrInfo::LOAD,
+              AddressingMode::AMF_IMMEDIATE},
              {V7MInfo::Register::R6}},
-            {{0x7023, "strb     r3,[r4,#0]", InstrInfo::STORE},
+            {{0x7023, "strb     r3,[r4,#0]", InstrInfo::STORE,
+              AddressingMode::AMF_IMMEDIATE},
              {V7MInfo::Register::R3, V7MInfo::Register::R4}},
-            {{0x7802, "ldrb     r2,[r0,#0]", InstrInfo::LOAD},
+            {{0x7802, "ldrb     r2,[r0,#0]", InstrInfo::LOAD,
+              AddressingMode::AMF_IMMEDIATE},
              {V7MInfo::Register::R0}},
-            {{0x81ac, "strh     r4,[r5,#0xc]", InstrInfo::STORE},
+            {{0x81ac, "strh     r4,[r5,#0xc]", InstrInfo::STORE,
+              AddressingMode::AMF_IMMEDIATE},
              {V7MInfo::Register::R4, V7MInfo::Register::R5}},
-            {{0x89ab, "ldrh     r3,[r5,#0xc]", InstrInfo::LOAD},
+            {{0x89ab, "ldrh     r3,[r5,#0xc]", InstrInfo::LOAD,
+              AddressingMode::AMF_IMMEDIATE},
              {V7MInfo::Register::R5}},
-            {{0x9101, "str      r1,[sp,#4]", InstrInfo::STORE},
+            {{0x9101, "str      r1,[sp,#4]", InstrInfo::STORE,
+              AddressingMode::AMF_IMMEDIATE},
              {V7MInfo::Register::R1, V7MInfo::Register::MSP}},
-            {{0x9c25, "ldr      r4,[sp,#0x94]", InstrInfo::LOAD},
+            {{0x9c25, "ldr      r4,[sp,#0x94]", InstrInfo::LOAD,
+              AddressingMode::AMF_IMMEDIATE},
              {V7MInfo::Register::MSP}},
         }};
 
@@ -489,11 +563,13 @@ TEST(V7MCPUInfo, T16InstrInfo) {
             {{0xba2f, "rev       r7,r5"}, {V7MInfo::Register::R5}},
             {{0xba59, "rev16     r1,r3"}, {V7MInfo::Register::R3}},
             {{0xbaca, "revsh     r2,r1"}, {V7MInfo::Register::R1}},
-            {{0xb5f8, "push      {r3-r7,lr}", InstrInfo::STORE},
+            {{0xb5f8, "push      {r3-r7,lr}", InstrInfo::STORE,
+              AddressingMode::AMF_IMMEDIATE},
              {V7MInfo::Register::R3, V7MInfo::Register::R4,
               V7MInfo::Register::R5, V7MInfo::Register::R6,
               V7MInfo::Register::R7, V7MInfo::Register::MSP}},
-            {{0xbdf8, "pop       {r3-r7,pc}", InstrInfo::LOAD},
+            {{0xbdf8, "pop       {r3-r7,pc}", InstrInfo::LOAD,
+              AddressingMode::AMF_IMMEDIATE},
              {V7MInfo::Register::MSP}},
             {{0xbe36, "bkpt      0x0036", InstrInfo::CALL}, {}},
             {{0xbf00, "nop"}, {}},
@@ -509,7 +585,8 @@ TEST(V7MCPUInfo, T16InstrInfo) {
     // ===== Store multiple registers
     const array<TestInput<TRB<V7MInfo, THUMB, 16>, V7MInfo::Register>, 1>
         T16_STMInstructions = {{
-            {{0xc270, "stmia	r2!, {r4, r5, r6}", InstrInfo::STORE},
+            {{0xc270, "stmia	r2!, {r4, r5, r6}", InstrInfo::STORE,
+              AddressingMode::AMF_IMMEDIATE, AddressingMode::AMU_POST_INDEXED},
              {V7MInfo::Register::R2, V7MInfo::Register::R4,
               V7MInfo::Register::R5, V7MInfo::Register::R6}},
         }};
@@ -519,7 +596,8 @@ TEST(V7MCPUInfo, T16InstrInfo) {
     // ===== Load multiple registers
     const array<TestInput<TRB<V7MInfo, THUMB, 16>, V7MInfo::Register>, 1>
         T16_LDMInstructions = {{
-            {{0xca78, "ldmia	r2!, {r3, r4, r5, r6}", InstrInfo::LOAD},
+            {{0xca78, "ldmia	r2!, {r3, r4, r5, r6}", InstrInfo::LOAD,
+              AddressingMode::AMF_IMMEDIATE, AddressingMode::AMU_POST_INDEXED},
              {V7MInfo::Register::R2}},
         }};
 
@@ -552,37 +630,49 @@ TEST(V7MCPUInfo, T32InstrInfo) {
     // ===== Load / Store multiple
     const array<TestInput<TRB<V7MInfo, THUMB, 32>, V7MInfo::Register>, 12>
         T32_LoadStoreMultipleInstructions = {{
-            {{0xe8ad03ea, "stm.w        sp!, {r1,r3,r5-r9}", InstrInfo::STORE},
+            {{0xe8ad03ea, "stm.w        sp!, {r1,r3,r5-r9}", InstrInfo::STORE,
+              AddressingMode::AMF_IMMEDIATE, AddressingMode::AMU_POST_INDEXED},
              {V7MInfo::Register::R1, V7MInfo::Register::R3,
               V7MInfo::Register::R5, V7MInfo::Register::R6,
               V7MInfo::Register::R7, V7MInfo::Register::R8,
               V7MInfo::Register::R9, V7MInfo::Register::MSP}},
-            {{0xe8a10400, "stmia.w      r1!, {r10}", InstrInfo::STORE},
+            {{0xe8a10400, "stmia.w      r1!, {r10}", InstrInfo::STORE,
+              AddressingMode::AMF_IMMEDIATE, AddressingMode::AMU_POST_INDEXED},
              {V7MInfo::Register::R1, V7MInfo::Register::R10}},
-            {{0xe8a107c0, "stmea.w      r1!, {r6-r10}", InstrInfo::STORE},
+            {{0xe8a107c0, "stmea.w      r1!, {r6-r10}", InstrInfo::STORE,
+              AddressingMode::AMF_IMMEDIATE, AddressingMode::AMU_POST_INDEXED},
              {V7MInfo::Register::R1, V7MInfo::Register::R6,
               V7MInfo::Register::R7, V7MInfo::Register::R8,
               V7MInfo::Register::R9, V7MInfo::Register::R10}},
-            {{0xe8910600, "ldm.w        r1, {r9-r10}", InstrInfo::LOAD},
+            {{0xe8910600, "ldm.w        r1, {r9-r10}", InstrInfo::LOAD,
+              AddressingMode::AMF_IMMEDIATE},
              {V7MInfo::Register::R1}},
-            {{0xe8bd0300, "ldmia.w      sp!, {r8,r9}", InstrInfo::LOAD},
+            {{0xe8bd0300, "ldmia.w      sp!, {r8,r9}", InstrInfo::LOAD,
+              AddressingMode::AMF_IMMEDIATE, AddressingMode::AMU_POST_INDEXED},
              {V7MInfo::Register::MSP}},
-            {{0xe89d0c00, "ldmfd.w      sp, {r10-r11}", InstrInfo::LOAD},
+            {{0xe89d0c00, "ldmfd.w      sp, {r10-r11}", InstrInfo::LOAD,
+              AddressingMode::AMF_IMMEDIATE},
              {V7MInfo::Register::MSP}},
-            {{0xe8bd0300, "pop.w        {r8-r9}", InstrInfo::LOAD},
+            {{0xe8bd0300, "pop.w        {r8-r9}", InstrInfo::LOAD,
+              AddressingMode::AMF_IMMEDIATE, AddressingMode::AMU_POST_INDEXED},
              {V7MInfo::Register::MSP}},
-            {{0xe9030a00, "stmdb.w      r3, {r9,r11}", InstrInfo::STORE},
+            {{0xe9030a00, "stmdb.w      r3, {r9,r11}", InstrInfo::STORE,
+              AddressingMode::AMF_IMMEDIATE},
              {V7MInfo::Register::R3, V7MInfo::Register::R9,
               V7MInfo::Register::R11}},
-            {{0xe9210900, "stmfd.w      r1!, {r8,r11}", InstrInfo::STORE},
+            {{0xe9210900, "stmfd.w      r1!, {r8,r11}", InstrInfo::STORE,
+              AddressingMode::AMF_IMMEDIATE, AddressingMode::AMU_POST_INDEXED},
              {V7MInfo::Register::R1, V7MInfo::Register::R8,
               V7MInfo::Register::R11}},
-            {{0xe92d0280, "push.w       {r7,r9}", InstrInfo::STORE},
+            {{0xe92d0280, "push.w       {r7,r9}", InstrInfo::STORE,
+              AddressingMode::AMF_IMMEDIATE, AddressingMode::AMU_POST_INDEXED},
              {V7MInfo::Register::R7, V7MInfo::Register::R9,
               V7MInfo::Register::MSP}},
-            {{0xe9300006, "ldmdb.w      r0!, {r1,r2}", InstrInfo::LOAD},
+            {{0xe9300006, "ldmdb.w      r0!, {r1,r2}", InstrInfo::LOAD,
+              AddressingMode::AMF_IMMEDIATE, AddressingMode::AMU_POST_INDEXED},
              {V7MInfo::Register::R0}},
-            {{0xe93d000c, "ldmea.w      sp!, {r2,r3}", InstrInfo::LOAD},
+            {{0xe93d000c, "ldmea.w      sp!, {r2,r3}", InstrInfo::LOAD,
+              AddressingMode::AMF_IMMEDIATE, AddressingMode::AMU_POST_INDEXED},
              {V7MInfo::Register::MSP}},
         }};
 
@@ -591,29 +681,39 @@ TEST(V7MCPUInfo, T32InstrInfo) {
     // ===== Load / Store dual or exclusive, table branch
     const array<TestInput<TRB<V7MInfo, THUMB, 32>, V7MInfo::Register>, 14>
         T32_LoadStoreAndTBBInstructions = {{
-            {{0xe8432100, "strex        r1,r2,[r3]", InstrInfo::STORE},
+            {{0xe8432100, "strex        r1,r2,[r3]", InstrInfo::STORE,
+              AddressingMode::AMF_IMMEDIATE},
              {V7MInfo::Register::R2, V7MInfo::Register::R3}},
-            {{0xe8541f00, "ldrex        r1,[r4]", InstrInfo::LOAD},
+            {{0xe8541f00, "ldrex        r1,[r4]", InstrInfo::LOAD,
+              AddressingMode::AMF_IMMEDIATE},
              {V7MInfo::Register::R4}},
-            {{0xe9c71202, "strd         r1,r2,[r7,#8]", InstrInfo::STORE},
+            {{0xe9c71202, "strd         r1,r2,[r7,#8]", InstrInfo::STORE,
+              AddressingMode::AMF_IMMEDIATE},
              {V7MInfo::Register::R1, V7MInfo::Register::R2,
               V7MInfo::Register::R7}},
-            {{0xe8e81202, "strd         r1,r2,[r8],#8", InstrInfo::STORE},
+            {{0xe8e81202, "strd         r1,r2,[r8],#8", InstrInfo::STORE,
+              AddressingMode::AMF_IMMEDIATE, AddressingMode::AMU_POST_INDEXED},
              {V7MInfo::Register::R1, V7MInfo::Register::R2,
               V7MInfo::Register::R8}},
-            {{0xe9e91202, "strd         r1,r2,[r9,#8]!", InstrInfo::STORE},
+            {{0xe9e91202, "strd         r1,r2,[r9,#8]!", InstrInfo::STORE,
+              AddressingMode::AMF_IMMEDIATE, AddressingMode::AMU_PRE_INDEXED},
              {V7MInfo::Register::R1, V7MInfo::Register::R2,
               V7MInfo::Register::R9}},
-            {{0xe9d91202, "ldrd         r1,r2,[r9,#8]", InstrInfo::LOAD},
+            {{0xe9d91202, "ldrd         r1,r2,[r9,#8]", InstrInfo::LOAD,
+              AddressingMode::AMF_IMMEDIATE},
              {V7MInfo::Register::R9}},
-            {{0xe8fa1202, "ldrd         r1,r2,[r10],#8", InstrInfo::LOAD},
+            {{0xe8fa1202, "ldrd         r1,r2,[r10],#8", InstrInfo::LOAD,
+              AddressingMode::AMF_IMMEDIATE, AddressingMode::AMU_POST_INDEXED},
              {V7MInfo::Register::R10}},
-            {{0xe9fb1202, "ldrd         r1,r2,[r11,#8]!", InstrInfo::LOAD},
+            {{0xe9fb1202, "ldrd         r1,r2,[r11,#8]!", InstrInfo::LOAD,
+              AddressingMode::AMF_IMMEDIATE, AddressingMode::AMU_PRE_INDEXED},
              {V7MInfo::Register::R11}},
-            {{0xe8cc7f43, "strexb       r3,r7,[r12]", InstrInfo::STORE},
+            {{0xe8cc7f43, "strexb       r3,r7,[r12]", InstrInfo::STORE,
+              AddressingMode::AMF_IMMEDIATE},
              {V7MInfo::Register::R3, V7MInfo::Register::R7,
               V7MInfo::Register::R12}},
-            {{0xe8c47f5c, "strexh       r12,r7,[r4]", InstrInfo::STORE},
+            {{0xe8c47f5c, "strexh       r12,r7,[r4]", InstrInfo::STORE,
+              AddressingMode::AMF_IMMEDIATE},
              {V7MInfo::Register::R4, V7MInfo::Register::R7,
               V7MInfo::Register::R12}},
             {{0xe8daf00b, "tbb         [r10,r11]", InstrInfo::BRANCH},
@@ -622,9 +722,11 @@ TEST(V7MCPUInfo, T32InstrInfo) {
             {{0xe8d9f01a, "tbh         [r9,r10, LSL #1]", InstrInfo::BRANCH},
              {V7MInfo::Register::R9, V7MInfo::Register::R10},
              {V7MInfo::Register::PC}},
-            {{0xe8db3f4f, "ldrexb      r3,[r11]", InstrInfo::LOAD},
+            {{0xe8db3f4f, "ldrexb      r3,[r11]", InstrInfo::LOAD,
+              AddressingMode::AMF_IMMEDIATE},
              {V7MInfo::Register::R11}},
-            {{0xe8d74f5f, "ldrexh      r4,[r7]", InstrInfo::LOAD},
+            {{0xe8d74f5f, "ldrexh      r4,[r7]", InstrInfo::LOAD,
+              AddressingMode::AMF_IMMEDIATE},
              {V7MInfo::Register::R7}},
         }};
 
@@ -682,13 +784,34 @@ TEST(V7MCPUInfo, T32InstrInfo) {
     RUN_TRB_TESTS(T32_DataProcessingShiftedRegInstructions);
 
     // ===== Coprocessor instructions
-    const array<TestInput<TRB<V7MInfo, THUMB, 32>, V7MInfo::Register>, 16>
+    const array<TestInput<TRB<V7MInfo, THUMB, 32>, V7MInfo::Register>, 28>
         T32_CoprocessorInstructions = {{
-            {{0xed8b3903, "stc       p9,c3,[r11,#12]", InstrInfo::STORE},
+            {{0xed8b3903, "stc       p9,c3,[r11,#12]", InstrInfo::STORE,
+              AddressingMode::AMF_IMMEDIATE, AddressingMode::AMU_OFFSET},
              {V7MInfo::Register::R11}},
-            {{0xed955903, "ldc       p9,c5,[r5,#12]", InstrInfo::LOAD},
+            {{0xedab3903, "stc       p9,c3,[r11,#12]!", InstrInfo::STORE,
+              AddressingMode::AMF_IMMEDIATE, AddressingMode::AMU_PRE_INDEXED},
+             {V7MInfo::Register::R11}},
+            {{0xecab3903, "stc       p9,c3,[r11], #12", InstrInfo::STORE,
+              AddressingMode::AMF_IMMEDIATE, AddressingMode::AMU_POST_INDEXED},
+             {V7MInfo::Register::R11}},
+            {{0xec8b3903, "stc       p9,c3,[r11], {12}", InstrInfo::STORE,
+              AddressingMode::AMF_IMMEDIATE, AddressingMode::AMU_UNINDEXED},
+             {V7MInfo::Register::R11}},
+            {{0xed955903, "ldc       p9,c5,[r5,#12]", InstrInfo::LOAD,
+              AddressingMode::AMF_IMMEDIATE, AddressingMode::AMU_OFFSET},
              {V7MInfo::Register::R5}},
-            {{0xed1f6903, "ldc       p9,c6,[PC,#-0xc]", InstrInfo::LOAD},
+            {{0xedb55903, "ldc       p9,c5,[r5,#12]!", InstrInfo::LOAD,
+              AddressingMode::AMF_IMMEDIATE, AddressingMode::AMU_PRE_INDEXED},
+             {V7MInfo::Register::R5}},
+            {{0xecb55903, "ldc       p9,c5,[r5], #12", InstrInfo::LOAD,
+              AddressingMode::AMF_IMMEDIATE, AddressingMode::AMU_POST_INDEXED},
+             {V7MInfo::Register::R5}},
+            {{0xec955903, "ldc       p9,c5,[r5], {12}", InstrInfo::LOAD,
+              AddressingMode::AMF_IMMEDIATE, AddressingMode::AMU_UNINDEXED},
+             {V7MInfo::Register::R5}},
+            {{0xed1f6903, "ldc       p9,c6,[PC,#-0xc]", InstrInfo::LOAD,
+              AddressingMode::AMF_IMMEDIATE, AddressingMode::AMU_OFFSET},
              {V7MInfo::Register::PC}},
             {{0xec47a923, "mcrr      p9,#2,r10,r7,c3"},
              {V7MInfo::Register::R7, V7MInfo::Register::R10}},
@@ -697,11 +820,32 @@ TEST(V7MCPUInfo, T32InstrInfo) {
             {{0xee411992, "mcr       p9,#2,r1,c1,c2,#4"},
              {V7MInfo::Register::R1}},
             {{0xee513992, "mrc       p9,#2,r3,c1,c2,#4"}, {}},
-            {{0xfd883903, "stc2      p9,c3,[r8,#12]", InstrInfo::STORE},
+            {{0xfd883903, "stc2      p9,c3,[r8,#12]", InstrInfo::STORE,
+              AddressingMode::AMF_IMMEDIATE, AddressingMode::AMU_OFFSET},
              {V7MInfo::Register::R8}},
-            {{0xfd946903, "ldc2      p9,c6,[r4,#12]", InstrInfo::LOAD},
+            {{0xfda83903, "stc2      p9,c3,[r8,#12]!", InstrInfo::STORE,
+              AddressingMode::AMF_IMMEDIATE, AddressingMode::AMU_PRE_INDEXED},
+             {V7MInfo::Register::R8}},
+            {{0xfca83903, "stc2      p9,c3,[r8], #12", InstrInfo::STORE,
+              AddressingMode::AMF_IMMEDIATE, AddressingMode::AMU_POST_INDEXED},
+             {V7MInfo::Register::R8}},
+            {{0xfc883903, "stc2      p9,c3,[r8], {12}", InstrInfo::STORE,
+              AddressingMode::AMF_IMMEDIATE, AddressingMode::AMU_UNINDEXED},
+             {V7MInfo::Register::R8}},
+            {{0xfd946903, "ldc2      p9,c6,[r4,#12]", InstrInfo::LOAD,
+              AddressingMode::AMF_IMMEDIATE, AddressingMode::AMU_OFFSET},
              {V7MInfo::Register::R4}},
-            {{0xfd9f6902, "ldc2      p9,c6,[PC,#0x8]", InstrInfo::LOAD},
+            {{0xfdb46903, "ldc2      p9,c6,[r4,#12]!", InstrInfo::LOAD,
+              AddressingMode::AMF_IMMEDIATE, AddressingMode::AMU_PRE_INDEXED},
+             {V7MInfo::Register::R4}},
+            {{0xfcb46903, "ldc2      p9,c6,[r4], #12", InstrInfo::LOAD,
+              AddressingMode::AMF_IMMEDIATE, AddressingMode::AMU_POST_INDEXED},
+             {V7MInfo::Register::R4}},
+            {{0xfc946903, "ldc2      p9,c6,[r4], {12}", InstrInfo::LOAD,
+              AddressingMode::AMF_IMMEDIATE, AddressingMode::AMU_UNINDEXED},
+             {V7MInfo::Register::R4}},
+            {{0xfd9f6902, "ldc2      p9,c6,[PC,#0x8]", InstrInfo::LOAD,
+              AddressingMode::AMF_IMMEDIATE, AddressingMode::AMU_OFFSET},
              {V7MInfo::Register::PC}},
             {{0xfc47a923, "mcrr2     p9,#2,r10,r7,c3"},
              {V7MInfo::Register::R7, V7MInfo::Register::R10}},
@@ -795,27 +939,57 @@ TEST(V7MCPUInfo, T32InstrInfo) {
     RUN_TRB_TESTS(T32_BranchMiscInstructions);
 
     // ===== Store single data item
-    const array<TestInput<TRB<V7MInfo, THUMB, 32>, V7MInfo::Register>, 9>
+    const array<TestInput<TRB<V7MInfo, THUMB, 32>, V7MInfo::Register>, 15>
         T32_StoreSingleInstructions = {{
-            {{0xf88ba800, "strb.w      r10,[r11,#2048]", InstrInfo::STORE},
+            {{0xf88ba800, "strb.w      r10,[r11,#2048]", InstrInfo::STORE,
+              AddressingMode::AMF_IMMEDIATE},
              {V7MInfo::Register::R10, V7MInfo::Register::R11}},
-            {{0xf8079f40, "strb        r9,[r7,#64]!", InstrInfo::STORE},
+            // imm8 encoding :
+            {{0xf8cbac40, "strb        r10,[r11,#64]", InstrInfo::STORE,
+              AddressingMode::AMF_IMMEDIATE},
+             {V7MInfo::Register::R10, V7MInfo::Register::R11}},
+            {{0xf8079f40, "strb        r9,[r7,#64]!", InstrInfo::STORE,
+              AddressingMode::AMF_IMMEDIATE, AddressingMode::AMU_PRE_INDEXED},
              {V7MInfo::Register::R7, V7MInfo::Register::R9}},
-            {{0xf8079008, "strb.w      r9,[r7,r8]", InstrInfo::STORE},
+            {{0xf8079b40, "strb        r9,[r7], #64", InstrInfo::STORE,
+              AddressingMode::AMF_IMMEDIATE, AddressingMode::AMU_POST_INDEXED},
+             {V7MInfo::Register::R7, V7MInfo::Register::R9}},
+            {{0xf8079008, "strb.w      r9,[r7,r8]", InstrInfo::STORE,
+              AddressingMode::AMF_REGISTER},
              {V7MInfo::Register::R7, V7MInfo::Register::R8,
               V7MInfo::Register::R9}},
-            {{0xf8aba800, "strh.w      r10,[r11,#2048]", InstrInfo::STORE},
+            {{0xf8aba800, "strh.w      r10,[r11,#2048]", InstrInfo::STORE,
+              AddressingMode::AMF_IMMEDIATE},
              {V7MInfo::Register::R10, V7MInfo::Register::R11}},
-            {{0xf8279f40, "strh        r9,[r7,#64]!", InstrInfo::STORE},
+            // imm8 encoding :
+            {{0xf8abac40, "strh        r10,[r11,#64]", InstrInfo::STORE,
+              AddressingMode::AMF_IMMEDIATE},
+             {V7MInfo::Register::R10, V7MInfo::Register::R11}},
+            {{0xf8279f40, "strh        r9,[r7,#64]!", InstrInfo::STORE,
+              AddressingMode::AMF_IMMEDIATE, AddressingMode::AMU_PRE_INDEXED},
              {V7MInfo::Register::R7, V7MInfo::Register::R9}},
-            {{0xf8279008, "strh.w      r9,[r7,r8]", InstrInfo::STORE},
+            {{0xf8279b40, "strh        r9,[r7], #64", InstrInfo::STORE,
+              AddressingMode::AMF_IMMEDIATE, AddressingMode::AMU_POST_INDEXED},
+             {V7MInfo::Register::R7, V7MInfo::Register::R9}},
+            {{0xf8279008, "strh.w      r9,[r7,r8]", InstrInfo::STORE,
+              AddressingMode::AMF_REGISTER},
              {V7MInfo::Register::R7, V7MInfo::Register::R8,
               V7MInfo::Register::R9}},
-            {{0xf8cba800, "str.w      r10,[r11,#2048]", InstrInfo::STORE},
+            {{0xf8cba800, "str.w      r10,[r11,#2048]", InstrInfo::STORE,
+              AddressingMode::AMF_IMMEDIATE},
              {V7MInfo::Register::R10, V7MInfo::Register::R11}},
-            {{0xf8479f40, "str.w      r9,[r7,#64]!", InstrInfo::STORE},
+            // imm8 encoding :
+            {{0xf84bac40, "str        r10,[r11,#64]", InstrInfo::STORE,
+              AddressingMode::AMF_IMMEDIATE},
+             {V7MInfo::Register::R10, V7MInfo::Register::R11}},
+            {{0xf8479f40, "str        r9,[r7,#64]!", InstrInfo::STORE,
+              AddressingMode::AMF_IMMEDIATE, AddressingMode::AMU_PRE_INDEXED},
              {V7MInfo::Register::R7, V7MInfo::Register::R9}},
-            {{0xf8479008, "str.w      r9,[r7,r8]", InstrInfo::STORE},
+            {{0xf8479b40, "str        r9,[r7], #64", InstrInfo::STORE,
+              AddressingMode::AMF_IMMEDIATE, AddressingMode::AMU_POST_INDEXED},
+             {V7MInfo::Register::R7, V7MInfo::Register::R9}},
+            {{0xf8479008, "str.w      r9,[r7,r8]", InstrInfo::STORE,
+              AddressingMode::AMF_REGISTER},
              {V7MInfo::Register::R7, V7MInfo::Register::R8,
               V7MInfo::Register::R9}},
         }};
@@ -823,29 +997,54 @@ TEST(V7MCPUInfo, T32InstrInfo) {
     RUN_TRB_TESTS(T32_StoreSingleInstructions);
 
     // ===== Load byte, memory hints
-    const array<TestInput<TRB<V7MInfo, THUMB, 32>, V7MInfo::Register>, 19>
+    const array<TestInput<TRB<V7MInfo, THUMB, 32>, V7MInfo::Register>, 23>
         T32_LoadByteHintsInstructions = {{
-            {{0xf89f9040, "ldrb.w     r9,[PC,#64]", InstrInfo::LOAD},
+            {{0xf89f9040, "ldrb.w     r9,[PC,#64]", InstrInfo::LOAD,
+              AddressingMode::AMF_IMMEDIATE},
              {V7MInfo::Register::PC}},
-            {{0xf89ba800, "ldrb.w     r10,[r11,#2048]", InstrInfo::LOAD},
+            {{0xf89ba800, "ldrb.w     r10,[r11,#2048]", InstrInfo::LOAD,
+              AddressingMode::AMF_IMMEDIATE},
              {V7MInfo::Register::R11}},
-            {{0xf8179f40, "ldrb       r9,[r7,#64]!", InstrInfo::LOAD},
+            // imm8 encoding:
+            {{0xf8179e40, "ldrb       r9,[r7,#64]", InstrInfo::LOAD,
+              AddressingMode::AMF_IMMEDIATE},
              {V7MInfo::Register::R7}},
-            {{0xf8130c48, "ldrb       r0,[r3,#-0x48]", InstrInfo::LOAD},
+            {{0xf8179f40, "ldrb       r9,[r7,#64]!", InstrInfo::LOAD,
+              AddressingMode::AMF_IMMEDIATE, AddressingMode::AMU_PRE_INDEXED},
+             {V7MInfo::Register::R7}},
+            {{0xf8179b40, "ldrb       r9,[r7], #64", InstrInfo::LOAD,
+              AddressingMode::AMF_IMMEDIATE, AddressingMode::AMU_POST_INDEXED},
+             {V7MInfo::Register::R7}},
+            {{0xf8130c48, "ldrb       r0,[r3,#-0x48]", InstrInfo::LOAD,
+              AddressingMode::AMF_IMMEDIATE},
              {V7MInfo::Register::R3}},
-            {{0xf81b4e40, "ldrbt      r4,[r11,#64]", InstrInfo::LOAD},
+            {{0xf81b4e40, "ldrbt      r4,[r11,#64]", InstrInfo::LOAD,
+              AddressingMode::AMF_IMMEDIATE},
              {V7MInfo::Register::R11}},
-            {{0xf81a4008, "ldrb.w     r4,[r10,r8]", InstrInfo::LOAD},
+            {{0xf81a4008, "ldrb.w     r4,[r10,r8]", InstrInfo::LOAD,
+              AddressingMode::AMF_SCALED_REGISTER},
              {V7MInfo::Register::R8, V7MInfo::Register::R10}},
-            {{0xf99f9040, "ldrsb      r9,[PC,#64]", InstrInfo::LOAD},
+            {{0xf99f9040, "ldrsb      r9,[PC,#64]", InstrInfo::LOAD,
+              AddressingMode::AMF_IMMEDIATE},
              {V7MInfo::Register::PC}},
-            {{0xf99ba800, "ldrsb      r10,[r11,#2048]", InstrInfo::LOAD},
+            {{0xf99ba800, "ldrsb      r10,[r11,#2048]", InstrInfo::LOAD,
+              AddressingMode::AMF_IMMEDIATE},
              {V7MInfo::Register::R11}},
-            {{0xf9179f40, "ldrsb      r9,[r7,#64]!", InstrInfo::LOAD},
+            // imm8 encoding:
+            {{0xf9179e40, "ldrsb      r9,[r7,#64]", InstrInfo::LOAD,
+              AddressingMode::AMF_IMMEDIATE},
              {V7MInfo::Register::R7}},
-            {{0xf917be40, "ldrsbt     r11,[r7,#64]", InstrInfo::LOAD},
+            {{0xf9179f40, "ldrsb      r9,[r7,#64]!", InstrInfo::LOAD,
+              AddressingMode::AMF_IMMEDIATE, AddressingMode::AMU_PRE_INDEXED},
              {V7MInfo::Register::R7}},
-            {{0xf9148003, "ldrsb.w    r8,[r4,r3]", InstrInfo::LOAD},
+            {{0xf9179b40, "ldrsb      r9,[r7], #64", InstrInfo::LOAD,
+              AddressingMode::AMF_IMMEDIATE, AddressingMode::AMU_POST_INDEXED},
+             {V7MInfo::Register::R7}},
+            {{0xf917be40, "ldrsbt     r11,[r7,#64]", InstrInfo::LOAD,
+              AddressingMode::AMF_IMMEDIATE},
+             {V7MInfo::Register::R7}},
+            {{0xf9148003, "ldrsb.w    r8,[r4,r3]", InstrInfo::LOAD,
+              AddressingMode::AMF_SCALED_REGISTER},
              {V7MInfo::Register::R3, V7MInfo::Register::R4}},
             {{0xf89ff07c, "pld        [PC,#124]"}, {V7MInfo::Register::PC}},
             {{0xf89bf18c, "pld        [r11,#396]"}, {V7MInfo::Register::R11}},
@@ -862,44 +1061,80 @@ TEST(V7MCPUInfo, T32InstrInfo) {
     RUN_TRB_TESTS(T32_LoadByteHintsInstructions);
 
     // ===== Load halfword, memory hints
-    const array<TestInput<TRB<V7MInfo, THUMB, 32>, V7MInfo::Register>, 10>
+    const array<TestInput<TRB<V7MInfo, THUMB, 32>, V7MInfo::Register>, 14>
         T32_LoadHalfHintsInstructions = {{
-            {{0xf8bf9040, "ldrh.w     r9,[PC,#64]", InstrInfo::LOAD},
+            {{0xf8bf9040, "ldrh.w     r9,[PC,#64]", InstrInfo::LOAD,
+              AddressingMode::AMF_IMMEDIATE},
              {V7MInfo::Register::PC}},
-            {{0xf8b9a800, "ldrh.w     r10,[r9,#2048]", InstrInfo::LOAD},
+            {{0xf8b9a800, "ldrh.w     r10,[r9,#2048]", InstrInfo::LOAD,
+              AddressingMode::AMF_IMMEDIATE},
              {V7MInfo::Register::R9}},
-            {{0xf83a9f40, "ldrh       r9,[r10,#64]!", InstrInfo::LOAD},
+            // imm8 encoding:
+            {{0xf83a9e40, "ldrh       r9,[r10,#64]!", InstrInfo::LOAD,
+              AddressingMode::AMF_IMMEDIATE},
              {V7MInfo::Register::R10}},
-            {{0xf8354e40, "ldrht      r4,[r5,#64]", InstrInfo::LOAD},
+            {{0xf83a9f40, "ldrh       r9,[r10,#64]!", InstrInfo::LOAD,
+              AddressingMode::AMF_IMMEDIATE, AddressingMode::AMU_PRE_INDEXED},
+             {V7MInfo::Register::R10}},
+            {{0xf83a9b40, "ldrh       r9,[r10], #64", InstrInfo::LOAD,
+              AddressingMode::AMF_IMMEDIATE, AddressingMode::AMU_POST_INDEXED},
+             {V7MInfo::Register::R10}},
+            {{0xf8354e40, "ldrht      r4,[r5,#64]", InstrInfo::LOAD,
+              AddressingMode::AMF_IMMEDIATE},
              {V7MInfo::Register::R5}},
-            {{0xf8394007, "ldrh.w     r4,[r9,r7]", InstrInfo::LOAD},
+            {{0xf8394007, "ldrh.w     r4,[r9,r7]", InstrInfo::LOAD,
+              AddressingMode::AMF_SCALED_REGISTER},
              {V7MInfo::Register::R7, V7MInfo::Register::R9}},
-            {{0xf9bf9040, "ldrsh      r9,[PC,#64]", InstrInfo::LOAD},
+            {{0xf9bf9040, "ldrsh      r9,[PC,#64]", InstrInfo::LOAD,
+              AddressingMode::AMF_IMMEDIATE},
              {V7MInfo::Register::PC}},
-            {{0xf9b7a800, "ldrsh      r10,[r7,#2048]", InstrInfo::LOAD},
+            {{0xf9b7a800, "ldrsh      r10,[r7,#2048]", InstrInfo::LOAD,
+              AddressingMode::AMF_IMMEDIATE},
              {V7MInfo::Register::R7}},
-            {{0xf93b9f40, "ldrsh      r9,[r11,#64]!", InstrInfo::LOAD},
+            // imm8 encoding:
+            {{0xf93b9e40, "ldrsh      r9,[r11,#64]!", InstrInfo::LOAD,
+              AddressingMode::AMF_IMMEDIATE},
              {V7MInfo::Register::R11}},
-            {{0xf935be40, "ldrsht     r11,[r5,#64]", InstrInfo::LOAD},
+            {{0xf93b9f40, "ldrsh      r9,[r11,#64]!", InstrInfo::LOAD,
+              AddressingMode::AMF_IMMEDIATE, AddressingMode::AMU_PRE_INDEXED},
+             {V7MInfo::Register::R11}},
+            {{0xf93b9b40, "ldrsh      r9,[r11], #64", InstrInfo::LOAD,
+              AddressingMode::AMF_IMMEDIATE, AddressingMode::AMU_POST_INDEXED},
+             {V7MInfo::Register::R11}},
+            {{0xf935be40, "ldrsht     r11,[r5,#64]", InstrInfo::LOAD,
+              AddressingMode::AMF_IMMEDIATE},
              {V7MInfo::Register::R5}},
-            {{0xf93b800a, "ldrsh.w    r8,[r11,r10]", InstrInfo::LOAD},
+            {{0xf93b800a, "ldrsh.w    r8,[r11,r10]", InstrInfo::LOAD,
+              AddressingMode::AMF_SCALED_REGISTER},
              {V7MInfo::Register::R10, V7MInfo::Register::R11}},
         }};
 
     RUN_TRB_TESTS(T32_LoadHalfHintsInstructions);
 
     // ===== Load word
-    const array<TestInput<TRB<V7MInfo, THUMB, 32>, V7MInfo::Register>, 5>
+    const array<TestInput<TRB<V7MInfo, THUMB, 32>, V7MInfo::Register>, 7>
         T32_LoadWordInstructions = {{
-            {{0xf8dba800, "ldr.w      r10,[r11,#2048]", InstrInfo::LOAD},
+            {{0xf8dba800, "ldr.w      r10,[r11,#2048]", InstrInfo::LOAD,
+              AddressingMode::AMF_IMMEDIATE},
              {V7MInfo::Register::R11}},
-            {{0xf8579f40, "ldr        r9,[r7,#64]!", InstrInfo::LOAD},
+            // imm8 encoding:
+            {{0xf8579e40, "ldr        r9,[r7,#64]!", InstrInfo::LOAD,
+              AddressingMode::AMF_IMMEDIATE},
              {V7MInfo::Register::R7}},
-            {{0xf8579e40, "ldrt       r9,[r7,#64]", InstrInfo::LOAD},
+            {{0xf8579f40, "ldr        r9,[r7,#64]!", InstrInfo::LOAD,
+              AddressingMode::AMF_IMMEDIATE, AddressingMode::AMU_PRE_INDEXED},
              {V7MInfo::Register::R7}},
-            {{0xf8579003, "ldr.w      r9,[r7,r3]", InstrInfo::LOAD},
+            {{0xf8579b40, "ldr        r9,[r7], #64", InstrInfo::LOAD,
+              AddressingMode::AMF_IMMEDIATE, AddressingMode::AMU_POST_INDEXED},
+             {V7MInfo::Register::R7}},
+            {{0xf8579e40, "ldrt       r9,[r7,#64]", InstrInfo::LOAD,
+              AddressingMode::AMF_IMMEDIATE},
+             {V7MInfo::Register::R7}},
+            {{0xf8579003, "ldr.w      r9,[r7,r3]", InstrInfo::LOAD,
+              AddressingMode::AMF_SCALED_REGISTER},
              {V7MInfo::Register::R3, V7MInfo::Register::R7}},
-            {{0xf8df9040, "ldr.w      r9,[PC,#64]", InstrInfo::LOAD},
+            {{0xf8df9040, "ldr.w      r9,[PC,#64]", InstrInfo::LOAD,
+              AddressingMode::AMF_IMMEDIATE},
              {V7MInfo::Register::PC}},
         }};
 

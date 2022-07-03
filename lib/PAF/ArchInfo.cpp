@@ -33,6 +33,7 @@ using std::string;
 using std::unique_ptr;
 using std::vector;
 
+using PAF::AddressingMode;
 using PAF::V7MInfo;
 
 namespace {
@@ -187,35 +188,39 @@ PAF::InstrInfo decodeT16Instr(const PAF::ReferenceInstruction &I) {
 
     // ===== Load from Literal Pool
     if (b15_10 == 0x12 || b15_10 == 0x13)
-        return II.setLoad().addInputRegister(
-            to_underlying(V7MInfo::Register::PC));
+        return II
+            .setLoad(AddressingMode::AMF_IMMEDIATE, AddressingMode::AMU_OFFSET)
+            .addInputRegister(to_underlying(V7MInfo::Register::PC));
 
     // ===== Load / store single data item
     const uint8_t b15_12 = bits<15, 12>(opcode);
     if (b15_12 >= 0x05 && b15_12 <= 0x09) {
         const uint8_t opB = bits<11, 9>(opcode);
-        // STR, STRH, STRB, LDR, LDRH, LDRB, LDRSH (register)
+        // STR, STRH, STRB, LDR, LDRH, LDRB, LDRSB, LDRSH (register)
         if (b15_12 == 0x05) {
             if (opB < 3) // Stores
-                II.setStore().addInputRegister(bits<2, 0>(opcode));
+                II.setStore(AddressingMode::AMF_REGISTER)
+                    .addInputRegister(bits<2, 0>(opcode));
             else
-                II.setLoad();
+                II.setLoad(AddressingMode::AMF_REGISTER);
             return II.addInputRegister(bits<5, 3>(opcode), bits<8, 6>(opcode));
         }
         // ===== Load / Store immediate
         if (b15_12 == 0x06 || b15_12 == 0x07 || b15_12 == 0x08) {
             if (bit<2>(opB) == 0) // Stores
-                II.setStore().addInputRegister(bits<2, 0>(opcode));
+                II.setStore(AddressingMode::AMF_IMMEDIATE)
+                    .addInputRegister(bits<2, 0>(opcode));
             else
-                II.setLoad();
+                II.setLoad(AddressingMode::AMF_IMMEDIATE);
             return II.addInputRegister(bits<5, 3>(opcode));
         }
         // ===== Load / Store SP-relative
         if (b15_12 == 0x09) {
             if (bit<2>(opB) == 0) // Stores
-                II.setStore().addInputRegister(bits<10, 8>(opcode));
+                II.setStore(AddressingMode::AMF_IMMEDIATE)
+                    .addInputRegister(bits<10, 8>(opcode));
             else
-                II.setLoad();
+                II.setLoad(AddressingMode::AMF_IMMEDIATE);
             return II.addInputRegister(to_underlying(V7MInfo::Register::MSP));
         }
         reportDecodingError(I);
@@ -253,12 +258,12 @@ PAF::InstrInfo decodeT16Instr(const PAF::ReferenceInstruction &I) {
         const uint8_t b11_9 = bits<11, 9>(opcode);
         if (/* PUSH */ b11_9 == 0x02 || /* POP */ b11_9 == 0x06) {
             if (b11_9 == 0x02) {
-                II.setStore();
+                II.setStore(AddressingMode::AMF_IMMEDIATE);
                 for (unsigned i = 0; i < 8; i++)
                     if (bit(i, opcode) == 1)
                         II.addInputRegister(i);
             } else
-                II.setLoad();
+                II.setLoad(AddressingMode::AMF_IMMEDIATE);
             return II.addInputRegister(to_underlying(V7MInfo::Register::MSP));
         }
 
@@ -282,12 +287,16 @@ PAF::InstrInfo decodeT16Instr(const PAF::ReferenceInstruction &I) {
         for (unsigned i = 0; i < 8; i++)
             if (bit(i, opcode) == 1)
                 II.addInputRegister(i);
-        return II.setStore();
+        return II.setStore(AddressingMode::AMF_IMMEDIATE,
+                           AddressingMode::AMU_POST_INDEXED);
     }
 
     // ===== Load multiple registers
     if (b15_11 == 0x19)
-        return II.setLoad().addInputRegister(bits<10, 8>(opcode));
+        return II
+            .setLoad(AddressingMode::AMF_IMMEDIATE,
+                     AddressingMode::AMU_POST_INDEXED)
+            .addInputRegister(bits<10, 8>(opcode));
 
     // ===== Conditional branch and supervisor call
     if (b15_12 == 0x0d) {
@@ -312,6 +321,37 @@ PAF::InstrInfo decodeT16Instr(const PAF::ReferenceInstruction &I) {
     reportDecodingError(I);
 }
 
+bool getAddressingMode(AddressingMode::OffsetFormat &OF,
+                       AddressingMode::BaseUpdate &BU, bool b23, bool b11,
+                       bool P, bool W) {
+    if (/* imm12 */ b23) {
+        OF = AddressingMode::AMF_IMMEDIATE;
+        BU = AddressingMode::AMU_OFFSET;
+        return true;
+    }
+
+    if (!b11) {
+        OF = AddressingMode::AMF_REGISTER;
+        BU = AddressingMode::AMU_OFFSET;
+        return true;
+    }
+
+    OF = AddressingMode::AMF_IMMEDIATE;
+
+    if (P == 1 && W == 0) {
+        BU = AddressingMode::AMU_OFFSET;
+        return true;
+    } else if (P == 1 && W == 1) {
+        BU = AddressingMode::AMU_PRE_INDEXED;
+        return true;
+    } else if (P == 0 && W == 1) {
+        BU = AddressingMode::AMU_POST_INDEXED;
+        return true;
+    }
+
+    return false;
+}
+
 PAF::InstrInfo decodeT32Instr(const PAF::ReferenceInstruction &I) {
     PAF::InstrInfo II;
     const uint32_t instr = I.instruction;
@@ -328,10 +368,27 @@ PAF::InstrInfo decodeT32Instr(const PAF::ReferenceInstruction &I) {
         const uint8_t Rn = bits<19, 16>(instr);
         if (/* STC, STC2, LDC, LDC2 */ bit<5>(cOp1) == 0 &&
             (bits<4, 3>(cOp1) != 0x0 || bit<1>(cOp1) != 0)) {
+            const uint8_t W = bit<21>(instr);
+            const uint8_t U = bit<23>(instr);
+            const uint8_t P = bit<24>(instr);
+            AddressingMode::BaseUpdate BU;
+            if (P == 1)
+                BU = W ? AddressingMode::AMU_PRE_INDEXED
+                       : AddressingMode::AMU_OFFSET;
+            else {
+                if (W == 1)
+                    BU = AddressingMode::AMU_POST_INDEXED;
+                else {
+                    if (U == 1)
+                        BU = AddressingMode::AMU_UNINDEXED;
+                    else
+                        reportDecodingError(I);
+                }
+            }
             if (bit<0>(cOp1) == 0x0)
-                II.setStore();
+                II.setStore(AddressingMode::AMF_IMMEDIATE, BU);
             else
-                II.setLoad();
+                II.setLoad(AddressingMode::AMF_IMMEDIATE, BU);
             return II.addInputRegister(Rn);
         }
         if (/* MCRR, MCRR2 */ cOp1 == 0x04)
@@ -357,17 +414,23 @@ PAF::InstrInfo decodeT32Instr(const PAF::ReferenceInstruction &I) {
             if (bit<2>(op2) == 0) {
                 const uint8_t b24_23 = bits<24, 23>(instr);
                 const uint8_t L = bit<20>(instr);
+                const uint8_t W = bit<21>(instr);
                 // The base address is always read.
                 II.addInputRegister(Rn);
                 if (L == 0x01)
-                    return II.setLoad();
-                if ((/* Store multiple IAEA */ b24_23 == 0x01) ||
-                    (/* Push & Store multiple DBFD */ b24_23 == 0x02)) {
+                    /* POP, LDM, LDMIA, LDMFD, LDMDB, LDMEA */
+                    return II.setLoad(AddressingMode::AMF_IMMEDIATE,
+                                      W ? AddressingMode::AMU_POST_INDEXED
+                                        : AddressingMode::AMU_OFFSET);
+                if ((/* STM, STMIA, STMEA */ b24_23 == 0x01) ||
+                    (/* PUSH, STMDB, STMFD */ b24_23 == 0x02)) {
                     const uint16_t reglists = bits<15, 0>(instr);
                     for (size_t i = 0; i < 16; i++)
                         if ((reglists & (1 << i)) != 0)
                             II.addInputRegister(i);
-                    return II.setStore();
+                    return II.setStore(AddressingMode::AMF_IMMEDIATE,
+                                       W ? AddressingMode::AMU_POST_INDEXED
+                                         : AddressingMode::AMU_OFFSET);
                 }
                 reportDecodingError(I);
             } else
@@ -376,29 +439,48 @@ PAF::InstrInfo decodeT32Instr(const PAF::ReferenceInstruction &I) {
                 const uint8_t b24_23 = bits<24, 23>(instr);
                 const uint8_t b21_20 = bits<21, 20>(instr);
                 const uint8_t b7_4 = bits<7, 4>(instr);
+                const uint8_t W = bit<21>(instr);
+                const uint8_t P = bit<24>(instr);
                 if (/* STREX */ b24_23 == 0x00 && b21_20 == 0x00) {
                     const uint8_t Rt = bits<15, 12>(instr);
-                    return II.setStore().addInputRegister(Rt, Rn);
+                    return II.setStore(AddressingMode::AMF_IMMEDIATE)
+                        .addInputRegister(Rt, Rn);
                 }
                 if (/* LDREX */ b24_23 == 0x00 && b21_20 == 0x01)
-                    return II.setLoad().addInputRegister(Rn);
+                    return II.setLoad(AddressingMode::AMF_IMMEDIATE)
+                        .addInputRegister(Rn);
                 if (/* STRD */ (bit<1>(b24_23) == 0 && b21_20 == 0x02) ||
                     (bit<1>(b24_23) == 1 && bit<0>(b21_20) == 0)) {
                     const uint8_t Rt2 = bits<11, 8>(instr);
                     const uint8_t Rt = bits<15, 12>(instr);
-                    return II.setStore().addInputRegister(Rt, Rt2, Rn);
+                    if (W == 1)
+                        II.setStore(AddressingMode::AMF_IMMEDIATE,
+                                    P ? AddressingMode::AMU_PRE_INDEXED
+                                      : AddressingMode::AMU_POST_INDEXED);
+                    else
+                        II.setStore(AddressingMode::AMF_IMMEDIATE);
+                    return II.addInputRegister(Rt, Rt2, Rn);
                 }
                 if (/* LDRD */ (bit<1>(b24_23) == 0 && b21_20 == 0x03) ||
-                    (bit<1>(b24_23) == 1 && bit<0>(b21_20) == 1))
-                    return II.setLoad().addInputRegister(Rn);
+                    (bit<1>(b24_23) == 1 && bit<0>(b21_20) == 1)) {
+                    if (W == 1)
+                        II.setLoad(AddressingMode::AMF_IMMEDIATE,
+                                   P ? AddressingMode::AMU_PRE_INDEXED
+                                     : AddressingMode::AMU_POST_INDEXED);
+                    else
+                        II.setLoad(AddressingMode::AMF_IMMEDIATE);
+                    return II.addInputRegister(Rn);
+                }
                 if (b24_23 == 0x01) {
                     if (b7_4 == 0x04 || b7_4 == 0x05) {
                         if (/* LDREXB, LDREXH */ b21_20 == 0x01)
-                            return II.setLoad().addInputRegister(Rn);
+                            return II.setLoad(AddressingMode::AMF_IMMEDIATE)
+                                .addInputRegister(Rn);
                         if (/* STREXB, STREXH */ b21_20 == 0x00) {
                             const uint8_t Rd = bits<3, 0>(instr);
                             const uint8_t Rt = bits<15, 12>(instr);
-                            return II.setStore().addInputRegister(Rd, Rt, Rn);
+                            return II.setStore(AddressingMode::AMF_IMMEDIATE)
+                                .addInputRegister(Rd, Rt, Rn);
                         }
                     }
                     if (/* TBB, TBH */ b21_20 == 0x01 &&
@@ -570,23 +652,38 @@ PAF::InstrInfo decodeT32Instr(const PAF::ReferenceInstruction &I) {
         // ===== Store single data item
         if (bits<6, 4>(op2) == 0x00 && bit<0>(op2) == 0) {
             const uint8_t sOp1 = bits<23, 21>(instr);
-            const uint8_t b11 = bit<11>(instr);
             const uint8_t Rn = bits<19, 16>(instr);
             const uint8_t Rt = bits<15, 12>(instr);
+            const uint8_t b11 = bit<11>(instr);
+            const uint8_t P = bit<10>(instr);
+            const uint8_t W = bit<8>(instr);
             const uint8_t Rm = bits<3, 0>(instr);
-            II.setStore();
-            if (/* STRB Imm */ sOp1 == 0x04 || (sOp1 == 0x00 && b11 == 1))
-                return II.addInputRegister(Rt, Rn);
-            if (/* STRB Reg */ sOp1 == 0x00 && b11 == 0)
-                return II.addInputRegister(Rt, Rn, Rm);
-            if (/* STRH Imm */ sOp1 == 0x05 || (sOp1 == 0x01 && b11 == 1))
-                return II.addInputRegister(Rt, Rn);
-            if (/* STRH Reg */ sOp1 == 0x01)
-                return II.addInputRegister(Rt, Rn, bits<3, 0>(instr));
-            if (/* STR Imm */ sOp1 == 0x06 || (sOp1 == 0x02 && b11 == 1))
-                return II.addInputRegister(Rt, Rn);
-            if (/* STR Reg */ sOp1 == 0x02)
-                return II.addInputRegister(Rt, Rn, Rm);
+            AddressingMode::OffsetFormat OF;
+            AddressingMode::BaseUpdate BU;
+            if (!getAddressingMode(OF, BU, bit<23>(instr), b11, P, W))
+                reportDecodingError(I);
+            II.setStore(OF, BU);
+            if (/* long imm */ bit<23>(instr) == 1) {
+                if (/* STRB Imm12 */ sOp1 == 0x04)
+                    return II.addInputRegister(Rt, Rn);
+                if (/* STRH Imm12 */ sOp1 == 0x05)
+                    return II.addInputRegister(Rt, Rn);
+                if (/* STR Imm12 */ sOp1 == 0x06)
+                    return II.addInputRegister(Rt, Rn);
+            } else {
+                if (/* STRB Imm */ sOp1 == 0x00 && b11 == 1)
+                    return II.addInputRegister(Rt, Rn);
+                if (/* STRB Reg */ sOp1 == 0x00 && b11 == 0)
+                    return II.addInputRegister(Rt, Rn, Rm);
+                if (/* STRH Imm */ sOp1 == 0x01 && b11 == 1)
+                    return II.addInputRegister(Rt, Rn);
+                if (/* STRH Reg */ sOp1 == 0x01)
+                    return II.addInputRegister(Rt, Rn, bits<3, 0>(instr));
+                if (/* STR Imm */ sOp1 == 0x02 && b11 == 1)
+                    return II.addInputRegister(Rt, Rn);
+                if (/* STR Reg */ sOp1 == 0x02)
+                    return II.addInputRegister(Rt, Rn, Rm);
+            }
             reportDecodingError(I);
         }
         // ===== Load byte, memory hints
@@ -598,36 +695,55 @@ PAF::InstrInfo decodeT32Instr(const PAF::ReferenceInstruction &I) {
             const uint8_t Rm = bits<3, 0>(instr);
 
             if (Rt != 0x0f) {
-                II.setLoad();
                 if (/* LDRB lit */ bit<1>(lOp1) == 0 && Rn == 0x0f)
-                    return II.addInputRegister(
-                        to_underlying(V7MInfo::Register::PC));
+                    return II.setLoad(AddressingMode::AMF_IMMEDIATE)
+                        .addInputRegister(to_underlying(V7MInfo::Register::PC));
                 if (/* LDRB imm */
                     ((lOp1 == 0x01) ||
                      (lOp1 == 0x00 && bit<5>(lOp2) == 1 && bit<2>(lOp2) == 1) ||
                      (lOp1 == 0x00 && bits<5, 2>(lOp2) == 0x0c)) &&
-                    Rn != 0x0f)
-                    return II.addInputRegister(Rn);
+                    Rn != 0x0f) {
+                    AddressingMode::OffsetFormat OF;
+                    AddressingMode::BaseUpdate BU;
+                    const uint8_t b11 = bit<11>(instr);
+                    const uint8_t P = bit<10>(instr);
+                    const uint8_t W = bit<8>(instr);
+                    if (!getAddressingMode(OF, BU, bit<23>(instr), b11, P, W))
+                        reportDecodingError(I);
+                    return II.setLoad(OF, BU).addInputRegister(Rn);
+                }
                 if (/* LDRBT */ lOp1 == 0x00 && bits<5, 2>(lOp2) == 0x0e &&
                     Rn != 0x0f)
-                    return II.addInputRegister(Rn);
+                    return II.setLoad(AddressingMode::AMF_IMMEDIATE)
+                        .addInputRegister(Rn);
                 if (/* LDRB reg */ lOp1 == 0x00 && lOp2 == 0x00 && Rn != 0x0f)
-                    return II.addInputRegister(Rn, Rm);
+                    return II.setLoad(AddressingMode::AMF_SCALED_REGISTER)
+                        .addInputRegister(Rn, Rm);
                 if (/* LDRSB lit */ bit<1>(lOp1) == 1 && Rn == 0x0f)
-                    return II.addInputRegister(
-                        to_underlying(V7MInfo::Register::PC));
+                    return II.setLoad(AddressingMode::AMF_IMMEDIATE)
+                        .addInputRegister(to_underlying(V7MInfo::Register::PC));
                 if (/* LDRSB imm */
                     (lOp1 == 0x03 ||
                      (lOp1 == 0x02 &&
                       (bit<5>(lOp2) == 1 && bit<2>(lOp2) == 1)) ||
                      (lOp1 == 0x02 && bits<5, 2>(lOp2) == 0x0c)) &&
-                    Rn != 0x0f)
-                    return II.addInputRegister(Rn);
+                    Rn != 0x0f) {
+                    AddressingMode::OffsetFormat OF;
+                    AddressingMode::BaseUpdate BU;
+                    const uint8_t b11 = bit<11>(instr);
+                    const uint8_t P = bit<10>(instr);
+                    const uint8_t W = bit<8>(instr);
+                    if (!getAddressingMode(OF, BU, bit<23>(instr), b11, P, W))
+                        reportDecodingError(I);
+                    return II.setLoad(OF, BU).addInputRegister(Rn);
+                }
                 if (/* LDRSBT */ lOp1 == 0x02 && bits<5, 2>(lOp2) == 0x0e &&
                     Rn != 0x0f)
-                    return II.addInputRegister(Rn);
+                    return II.setLoad(AddressingMode::AMF_IMMEDIATE)
+                        .addInputRegister(Rn);
                 if (/* LDRSB reg */ lOp1 == 0x02 && lOp2 == 0x00 && Rn != 0x0f)
-                    return II.addInputRegister(Rn, Rm);
+                    return II.setLoad(AddressingMode::AMF_SCALED_REGISTER)
+                        .addInputRegister(Rn, Rm);
             } else {
                 if (/* PLD lit */ bit<1>(lOp1) == 0 && Rn == 0x0f)
                     return II.addInputRegister(
@@ -667,36 +783,55 @@ PAF::InstrInfo decodeT32Instr(const PAF::ReferenceInstruction &I) {
             const uint8_t Rm = bits<3, 0>(instr);
 
             if (Rt != 0x0f) {
-                II.setLoad();
                 if (/* LDRH lit */ bit<1>(lOp1) == 0 && Rn == 0x0f)
-                    return II.addInputRegister(
-                        to_underlying(V7MInfo::Register::PC));
+                    return II.setLoad(AddressingMode::AMF_IMMEDIATE)
+                        .addInputRegister(to_underlying(V7MInfo::Register::PC));
                 if (/* LDRH imm */
                     ((lOp1 == 0x01) ||
                      (lOp1 == 0x00 && bit<5>(lOp2) == 1 && bit<2>(lOp2) == 1) ||
                      (lOp1 == 0x00 && bits<5, 2>(lOp2) == 0x0c)) &&
-                    Rn != 0x0f)
-                    return II.addInputRegister(Rn);
+                    Rn != 0x0f) {
+                    AddressingMode::OffsetFormat OF;
+                    AddressingMode::BaseUpdate BU;
+                    const uint8_t b11 = bit<11>(instr);
+                    const uint8_t P = bit<10>(instr);
+                    const uint8_t W = bit<8>(instr);
+                    if (!getAddressingMode(OF, BU, bit<23>(instr), b11, P, W))
+                        reportDecodingError(I);
+                    return II.setLoad(OF, BU).addInputRegister(Rn);
+                }
                 if (/* LDRH reg */ lOp1 == 0x00 && lOp2 == 0x00 && Rn != 0x0f)
-                    return II.addInputRegister(Rn, Rm);
+                    return II.setLoad(AddressingMode::AMF_SCALED_REGISTER)
+                        .addInputRegister(Rn, Rm);
                 if (/* LDRHT */ lOp1 == 0x00 && bits<5, 2>(lOp2) == 0x0e &&
                     Rn != 0x0f)
-                    return II.addInputRegister(Rn);
+                    return II.setLoad(AddressingMode::AMF_IMMEDIATE)
+                        .addInputRegister(Rn);
                 if (/* LDRSH imm */
                     (lOp1 == 0x03 ||
                      (lOp1 == 0x02 &&
                       (bit<5>(lOp2) == 1 && bit<2>(lOp2) == 1)) ||
                      (lOp1 == 0x02 && bits<5, 2>(lOp2) == 0x0c)) &&
-                    Rn != 0x0f)
-                    return II.addInputRegister(Rn);
+                    Rn != 0x0f) {
+                    AddressingMode::OffsetFormat OF;
+                    AddressingMode::BaseUpdate BU;
+                    const uint8_t b11 = bit<11>(instr);
+                    const uint8_t P = bit<10>(instr);
+                    const uint8_t W = bit<8>(instr);
+                    if (!getAddressingMode(OF, BU, bit<23>(instr), b11, P, W))
+                        reportDecodingError(I);
+                    return II.setLoad(OF, BU).addInputRegister(Rn);
+                }
                 if (/* LDRSH lit */ bit<1>(lOp1) == 1 && Rn == 0x0f)
-                    return II.addInputRegister(
-                        to_underlying(V7MInfo::Register::PC));
+                    return II.setLoad(AddressingMode::AMF_IMMEDIATE)
+                        .addInputRegister(to_underlying(V7MInfo::Register::PC));
                 if (/* LDRSH reg */ lOp1 == 0x02 && lOp2 == 0x00 && Rn != 0x0f)
-                    return II.addInputRegister(Rn, Rm);
+                    return II.setLoad(AddressingMode::AMF_SCALED_REGISTER)
+                        .addInputRegister(Rn, Rm);
                 if (/* LDRSHT */ lOp1 == 0x02 && bits<5, 2>(lOp2) == 0x0e &&
                     Rn != 0x0f)
-                    return II.addInputRegister(Rn);
+                    return II.setLoad(AddressingMode::AMF_IMMEDIATE)
+                        .addInputRegister(Rn);
             } else {
                 if (/* Unallocated */ bit<1>(lOp1) == 0 && Rn == 0x0f)
                     return II;
@@ -734,21 +869,30 @@ PAF::InstrInfo decodeT32Instr(const PAF::ReferenceInstruction &I) {
             const uint8_t Rn = bits<19, 16>(instr);
             const uint8_t lOp2 = bits<11, 6>(instr);
             const uint8_t Rm = bits<3, 0>(instr);
-            II.setLoad();
             if (/* LDR Imm */ (lOp1 == 0x01 ||
                                (lOp1 == 0x00 &&
                                 ((bit<5>(lOp2) == 1 && bit<2>(lOp2) == 1) ||
                                  (bits<5, 2>(lOp2) == 0x0c)))) &&
-                Rn != 0x0f)
-                return II.addInputRegister(Rn);
+                Rn != 0x0f) {
+                AddressingMode::OffsetFormat OF;
+                AddressingMode::BaseUpdate BU;
+                const uint8_t b11 = bit<11>(instr);
+                const uint8_t P = bit<10>(instr);
+                const uint8_t W = bit<8>(instr);
+                if (!getAddressingMode(OF, BU, bit<23>(instr), b11, P, W))
+                    reportDecodingError(I);
+                return II.setLoad(OF, BU).addInputRegister(Rn);
+            }
             if (/* LDRT */ lOp1 == 0x00 && bits<5, 2>(lOp2) == 0x0e &&
                 Rn != 0x0f)
-                return II.addInputRegister(Rn);
+                return II.setLoad(AddressingMode::AMF_IMMEDIATE)
+                    .addInputRegister(Rn);
             if (/* LDR Reg */ lOp1 == 0x00 && lOp2 == 0x00 && Rn != 0x0f)
-                return II.addInputRegister(Rn, Rm);
+                return II.setLoad(AddressingMode::AMF_SCALED_REGISTER)
+                    .addInputRegister(Rn, Rm);
             if (/* LDR lit */ bit<1>(lOp1) == 0 && Rn == 0x0f)
-                return II.addInputRegister(
-                    to_underlying(V7MInfo::Register::PC));
+                return II.setLoad(AddressingMode::AMF_IMMEDIATE)
+                    .addInputRegister(to_underlying(V7MInfo::Register::PC));
             reportDecodingError(I);
         }
 
@@ -1043,7 +1187,7 @@ unsigned V7MInfo::getCycles(const ReferenceInstruction &I,
     return 1;
 }
 
-bool V7MInfo::isStatusRegister(const std::string &reg) const {
+bool V7MInfo::isStatusRegister(const string &reg) const {
     return reg == V7MRegisterNames[unsigned(Register::PSR)] ||
            reg == V7MRegisterNames[unsigned(Register::CPSR)];
 }
@@ -1104,7 +1248,7 @@ unsigned V8AInfo::getCycles(const ReferenceInstruction &I,
     return 1;
 }
 
-bool V8AInfo::isStatusRegister(const std::string &reg) const {
+bool V8AInfo::isStatusRegister(const string &reg) const {
     return reg == "psr" || reg == "cpsr" || reg == "fpsr" || reg == "fpcr" ||
            reg == "fpscr" || reg == "vpr";
 }
@@ -1114,7 +1258,7 @@ unsigned V8AInfo::numRegisters() const {
 }
 const char *V8AInfo::registerName(unsigned reg) const {
     // TODO: Implement !
-    return "";std::vector<unsigned> InputRegisters; /// The raw list of registers read.
+    return "";
 }
 
 const char *V8AInfo::name(Register reg) {

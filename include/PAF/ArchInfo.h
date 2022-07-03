@@ -24,17 +24,51 @@
 
 #include "PAF/PAF.h"
 
+#include <cassert>
 #include <memory>
 #include <vector>
 
 namespace PAF {
+
+/// The AddressingMode class is used to describe the addressing modes used by
+/// load & store instructions.
+struct AddressingMode {
+    enum OffsetFormat {
+        AMF_NO_ACCESS,
+        AMF_IMMEDIATE,
+        AMF_REGISTER,
+        AMF_SCALED_REGISTER
+    };
+    enum BaseUpdate {
+        AMU_OFFSET,
+        AMU_PRE_INDEXED,
+        AMU_POST_INDEXED,
+        AMU_UNINDEXED
+    };
+
+    AddressingMode() : Offset(AMF_NO_ACCESS), Update(AMU_OFFSET) {}
+    AddressingMode(OffsetFormat Offset, BaseUpdate Update)
+        : Offset(Offset), Update(Update) {}
+
+    bool isValid() const { return Offset != AMF_NO_ACCESS; }
+
+    bool operator==(const AddressingMode &Other) const {
+        return Offset == Other.Offset && Update == Other.Update;
+    }
+    bool operator!=(const AddressingMode &Other) const {
+        return Offset != Other.Offset || Update != Other.Update;
+    }
+
+    OffsetFormat Offset;
+    BaseUpdate Update;
+};
 
 /// The InstrInfo class collects a decoded instructions' attributes.
 class InstrInfo {
   public:
     enum InstructionKind {NO_KIND, LOAD, STORE, BRANCH, CALL};
 
-    InstrInfo() : InputRegisters(), Kind(InstructionKind::NO_KIND) {
+    InstrInfo() : InputRegisters(), Kind(InstructionKind::NO_KIND), AM() {
         InputRegisters.reserve(4);
     }
     InstrInfo(const InstrInfo &) = default;
@@ -59,14 +93,28 @@ class InstrInfo {
     InstructionKind getKind() const { return Kind; }
 
     /// Set this instruction as a load instruction.
-    InstrInfo &setLoad() {
+    InstrInfo &setLoad(AddressingMode::OffsetFormat Offset,
+                       AddressingMode::BaseUpdate Update) {
         Kind = InstructionKind::LOAD;
+        AM = AddressingMode(Offset, Update);
         return *this;
     }
     /// Set this instruction as a store instruction.
-    InstrInfo &setStore() {
+    InstrInfo &setStore(AddressingMode::OffsetFormat Offset,
+                        AddressingMode::BaseUpdate Update) {
         Kind = InstructionKind::STORE;
+        AM = AddressingMode(Offset, Update);
         return *this;
+    }
+    /// Set this instruction as a load instruction (no base register update
+    /// version).
+    InstrInfo &setLoad(AddressingMode::OffsetFormat Offset) {
+        return setLoad(Offset, AddressingMode::AMU_OFFSET);
+    }
+    /// Set this instruction as a store instruction (no base register update
+    /// version).
+    InstrInfo &setStore(AddressingMode::OffsetFormat Offset) {
+        return setStore(Offset, AddressingMode::AMU_OFFSET);
     }
     /// Set this instruction as a branch instruction.
     InstrInfo &setBranch() {
@@ -105,10 +153,27 @@ class InstrInfo {
     /// unspecified.
     std::vector<unsigned> getUniqueInputRegisters(bool implicit) const;
 
+    /// Get this instruction addressing mode.
+    /// Note: this is only valid for instructions that accesses memory.
+    const AddressingMode &getAddressingMode() const {
+        assert(
+            isMemoryAccess() &&
+            "Only instructions that access memory have a valid addressing mode");
+        return AM;
+    }
+
+    /// Does this instruction have a valid addressing mode ?
+    bool hasValidAddressingMode() const { return AM.isValid(); }
+
   private:
-    std::vector<unsigned> InputRegisters; /// The raw list of registers read.
-    std::vector<unsigned> ImplicitInputRegisters; /// The raw list of implicit registers read.
+    /// The raw list of registers read.
+    std::vector<unsigned> InputRegisters;
+    /// The raw list of implicit registers read.
+    std::vector<unsigned> ImplicitInputRegisters;
+    /// This instruction kind: load, store, branch, call, ...
     InstructionKind Kind;
+    /// The addressing mode used by this load / store instruction.
+    AddressingMode AM;
 };
 
 /// The ArchInfo class is the base class to describe architecture related
