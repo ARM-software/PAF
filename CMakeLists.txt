@@ -73,7 +73,7 @@ endif()
 ExternalProject_Add(googletest
   PREFIX "third_party"
   GIT_REPOSITORY "https://github.com/google/googletest"
-  GIT_TAG "release-1.11.0"
+  GIT_TAG "release-1.12.1"
   GIT_SHALLOW TRUE
   CMAKE_ARGS ${EXTERNAL_PROJECT_CMAKE_ARGS}
   BUILD_BYPRODUCTS "${CMAKE_BINARY_DIR}/lib/${CMAKE_STATIC_LIBRARY_PREFIX}gtest${GTEST_VARIANT}${CMAKE_STATIC_LIBRARY_SUFFIX}"
