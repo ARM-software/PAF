@@ -272,7 +272,7 @@ class V7MInfo : public ArchInfo {
     /// Get registers read by this instruction.
     static std::vector<Register> registersReadByInstr(const InstrInfo &II,
                                                       bool Implicit,
-                                                      bool NoUniquify = false);
+                                                      bool Uniquify = true);
 
     /// Describe this ArchInfo.
     const char *description() const override { return "Arm V7M ISA"; }
@@ -315,7 +315,7 @@ class V8AInfo : public ArchInfo {
     /// Get registers read by this instruction.
     static std::vector<Register> registersReadByInstr(const InstrInfo &II,
                                                       bool Implicit,
-                                                      bool NoUniquify = false);
+                                                      bool Uniquify = true);
 
     /// Describe this ArchInfo.
     const char *description() const override { return "Arm V8A ISA"; }

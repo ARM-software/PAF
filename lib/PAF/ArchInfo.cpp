@@ -156,11 +156,12 @@ PAF::InstrInfo decodeT16Instr(const PAF::ReferenceInstruction &I) {
     const uint32_t b15_10 = bits<15, 10>(opcode);
     // ===== Data processing instructions
     if (b15_10 == 0x10) {
-        unsigned r1 = bits<5, 3>(opcode);
-        uint32_t opc = bits<9, 6>(opcode);
+        const uint8_t opc = bits<9, 6>(opcode);
+        const uint8_t Rm = bits<5, 3>(opcode);
+        const uint8_t Rdn = bits<2, 0>(opcode);
         if (/* RSB */ opc == 0x09 || /* MVN */ opc == 0x0F)
-            return II.addInputRegister(r1);
-        II.addInputRegister(bits<2, 0>(opcode), r1);
+            return II.addInputRegister(Rm);
+        II.addInputRegister(Rdn, Rm);
         if (/* ADC */ opc == 0x05 || /* SBC */ opc == 0x06)
             II.addImplicitInputRegister(to_underlying(V7MInfo::Register::CPSR));
         return II;
@@ -307,9 +308,9 @@ PAF::InstrInfo decodeT16Instr(const PAF::ReferenceInstruction &I) {
             return II.setCall();
         default /* Bcc */:
             return II.setBranch()
+                .addImplicitInputRegister(to_underlying(V7MInfo::Register::PC))
                 .addImplicitInputRegister(
-                    to_underlying(V7MInfo::Register::CPSR))
-                .addImplicitInputRegister(to_underlying(V7MInfo::Register::PC));
+                    to_underlying(V7MInfo::Register::CPSR));
         }
     }
 
@@ -986,7 +987,7 @@ PAF::InstrInfo decodeT32Instr(const PAF::ReferenceInstruction &I) {
                     case /* QDADD */ 0x01: // Fall-thru intended
                     case /* QSUB */ 0x02:  // Fall-thru intended
                     case /* QDSUB */ 0x03:
-                        return II.addInputRegister(Rn, Rm);
+                        return II.addInputRegister(Rm, Rn);
                     default:
                         reportDecodingError(I);
                     }
@@ -1217,9 +1218,9 @@ InstrInfo V7MInfo::instrInfo(const ReferenceInstruction &I) {
 
 vector<V7MInfo::Register> V7MInfo::registersReadByInstr(const InstrInfo &II,
                                                         bool Implicit,
-                                                        bool NoUniquify) {
-    vector<unsigned> regs(NoUniquify ? II.getInputRegisters(Implicit)
-                                     : II.getUniqueInputRegisters(Implicit));
+                                                        bool Uniquify) {
+    vector<unsigned> regs(Uniquify ? II.getUniqueInputRegisters(Implicit)
+                                   : II.getInputRegisters(Implicit));
 
     return vector<V7MInfo::Register>(
         reinterpret_cast<V7MInfo::Register *>(regs.data()),
@@ -1272,7 +1273,7 @@ InstrInfo V8AInfo::instrInfo(const ReferenceInstruction &I) {
 
 vector<V8AInfo::Register> V8AInfo::registersReadByInstr(const InstrInfo &I,
                                                         bool Implicit,
-                                                        bool NoUniquify) {
+                                                        bool Uniquify) {
     vector<V8AInfo::Register> regs;
 
     return regs;
