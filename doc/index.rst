@@ -35,7 +35,7 @@ threats.
 On physical attacks
 -------------------
 
-Physical attacks are a specifc threat to systems, where systems are considered
+Physical attacks are a specific threat to systems, where systems are considered
 in their entirety, i.e. as software + hardware implementations. Those attacks
 are taking advantage of physical parameters.
 
@@ -46,7 +46,7 @@ used either to reduce the complexity of a brute force attack (for password
 guessing for example), or to directly recover a secret (the secret key used in
 AES for example)
 
-For *fault injection*, the attacker will physically affect the correct behaviour
+For *fault injection*, the attacker will physically affect the correct behavior
 of the silicon. There are many ways to alter the correct functionality of logic
 gates, flip-flops or memory cells: power supply glitching, clock glitching, EM
 pulse, laser beam, ... One has to note that physical access is not necessarily
@@ -59,10 +59,10 @@ It is also worth considering physical attacks from a different point of view:
 * *passive* attacks, where an attacker monitors a system's physical quantities
   (time, power consumption, electro-magnetic emissions, ...) to derive
   information leaked by the system's implementation, without trying to affect
-  the system's behaviour in anyway.
+  the system's behavior in anyway.
 
 * *active* attacks, where the attacker actively attempts to affect the system
-  behaviour in some way. This is for example the case with *fault injection*,
+  behavior in some way. This is for example the case with *fault injection*,
   where an attacker, using a voltage or clock glitch for example, will attempt
   to derail the program from its expected execution. But this is also the case
   for some *timing side channel attacks*, like cache attacks, where the
@@ -78,7 +78,7 @@ force attack possible.
 On Tarmac traces
 ----------------
 
-Tarmac traces are detailled traces of a program's execution that are generated
+Tarmac traces are detailed traces of a program's execution that are generated
 by a number of Arm products, like software models of CPUs (e.g. FastModel). A
 detailed description of the Tarmac traces can be found in the documentation of
 `tarmac-trace-utilities
@@ -108,7 +108,7 @@ Fault injection
 PAF's fault injection capabilities relies on using an Arm FastModel driven by
 the ``run-model.py`` tool.
 
-For example, meeet's assume that we have a program ``program.elf`` for which we
+For example, let's assume that we have a program ``program.elf`` for which we
 want to check the resistance against fault injection.
 
 Fault injection is performed in three steps:
@@ -124,7 +124,7 @@ Fault injection is performed in three steps:
    given a `Fault model`_ and a place of interest for injection (because one is
    interested in attacking a specific part of the program, not the complete
    program), the paf-faulter_ tool will produce a list of all faults to inject
-   as well as some more ancilliary data usefull for the fault injection in a
+   as well as some more ancillary data useful for the fault injection in a
    so-called `Fault campaign`_ file.
 
    .. code-block:: bash
@@ -141,7 +141,7 @@ Fault injection is performed in three steps:
 
    .. code-block:: bash
 
-     $ run-model.py --driver=FaultInjection -c campaign.yml prgram.elf
+     $ run-model.py --driver=FaultInjection -c campaign.yml program.elf
      41 faults to inject.
      100%|##############################################| 41/41 [00:07<00:00,  5.23 faults/s]
      41 faults injected: 11 successful, 0 caught, 28 noeffect, 2 crash and 0 undecided
@@ -165,11 +165,11 @@ supports:
   source operand corruption are on the top of the list
 
 All models are wrong (in some way), because they are abstractions of a more
-complex underlying reality, but they remain useful to analyze the behaviour of
+complex underlying reality, but they remain useful to analyze the behavior of
 a piece of code under different scenarios. It's also worth mentioning that
-different models can make a program exhibit the same behaviour, or said
+different models can make a program exhibit the same behavior, or said
 differently, different fault models can be used to model a similar effect ; for
-example, in a sequence of instructions like ``CMP + BNE`` (a comparison flowwed
+example, in a sequence of instructions like ``CMP + BNE`` (a comparison flowed
 by a conditional branch), the effect of skipping the ``BNE`` can be equally
 done with faulting the program status register set by the ``CMP`` instruction.
 
@@ -184,29 +184,29 @@ them.
 Fault classification
 ~~~~~~~~~~~~~~~~~~~~
 
-When analysing the resistance of a program against fault attacks, it's useful
+When analyzing the resistance of a program against fault attacks, it's useful
 to classify the faults according to their effects:
 
-* *success*: the fault was injected and had an effect on the behaviour of the
-  program that can be considered a succesful attack.
+* *success*: the fault was injected and had an effect on the behavior of the
+  program that can be considered a successful attack.
 
 * *noeffect*: the fault was injected, but did not have a noticeable impact on
-  the behaviour of the program. This might be true, but this could also be
+  the behavior of the program. This might be true, but this could also be
   because the Oracle_ was not defined precisely enough.
 
 * *crash*: faults do mess-up the code in many ways (e.g. accesses to invalid
   memory, unaligned accesses, ...), which are often capture by exception
   handlers. Note that classifying a fault effect as a crash does not mean the
-  fault can not be succesful ! It only means that the fault effect will depend
+  fault can not be successful ! It only means that the fault effect will depend
   on how the the exception handlers are setup and will manage the exception.
   The *crash* classification should be used when it is not known what will
-  happen exactly, because for example the exception handlers behaviour are
+  happen exactly, because for example the exception handlers behavior are
   managed by a different team, and further thinking is needed.
 
 * *caught*: this classification is useful when a program has protections
-  against fault injections. These protections, on top of passive mesures like
+  against fault injections. These protections, on top of passive measures like
   redundancy often come with an active aspect, where the program will change
-  and adapt its behaviour when it becomes suspicious of a fault injection. In
+  and adapt its behavior when it becomes suspicious of a fault injection. In
   the literature, this is often the ``kill_card`` function that gets invoked
   to wipe out all secrets for example. It is useful, when testing the
   resistance of a program to be able to classify the faults that have been
@@ -228,7 +228,7 @@ Oracle
 The oracle is in charge of classifying the effect of a fault. A fault
 classification is attempted at specific events, and involves inspecting the
 state of a program. As such, this is an event based process, with some first
-order logical formulae refering to program registers and variables. There is
+order logical formulae referring to program registers and variables. There is
 captured in a mini-DSL.
 
 A simplified pseudo-grammar for the Oracle-DSL looks like:
@@ -256,12 +256,12 @@ Timing
 When protecting against side channels, one of the first (not so) obvious step
 is to harden against timing side channels. A timing side channel exist when
 depending on some sensitive input (like a secret), the program will have a
-different behaviour. The most obvious difference is execution time, i.e. when
+different behavior. The most obvious difference is execution time, i.e. when
 program execution differs in time. A desirable goal is thus to ensure the
-sensitive part of a program exxecutes in constant-time, that's to say
-independant of the sensitive data values.
+sensitive part of a program executes in constant-time, that's to say
+independent of the sensitive data values.
 
-In this example, we will see how a non-constant time behaviour can be found
+In this example, we will see how a non-constant time behavior can be found
 with PAF. The simplistic ``check`` program below compare pin digits. For the
 sake of the example, it is made non constant time in an explicit way, as the
 pin comparison exit early as soon as a difference is found:
@@ -348,12 +348,12 @@ Another source of side channel leakage are the system's power consumption and
 its electro-magnetic emissions, because the power consumption (and EM emission)
 depends on the instruction being executed as well as the data manipulated by
 this instruction. By recording power trace of the system executing with
-different data, and analyzing their behviour with statiscal analysis tools, he
+different data, and analyzing their behvior with statistical analysis tools, he
 might be able to derive some useful information, if not directly a secret
-information. Thjose type of attacks require manipulating a large amount of
+information. Those type of attacks require manipulating a large amount of
 tabular recorded data, so PAF has not re-created the wheel and reuses a
 commonly used container for storing those traces: `NumPy <https://numpy.org/>`_
-arrays. Reusing this stanandard storage has additional benefits:
+arrays. Reusing this standard storage has additional benefits:
 
 * NumPy arrays can be used natively in other environments than PAF, e.g.
   python or `Jupiter <https://jupyter.org/>`_ notebooks,
@@ -444,7 +444,7 @@ depending on the driver it has been invoked with:
   debugger and inspecting the program state.
 
 * data-override mode: in this mode, ``run-model.py`` will pause the simulation
-  at a user specififed location (typically a function entry), and will
+  at a user specified location (typically a function entry), and will
   override data in memory with user provided data. The simulation will then
   resume its course. This is useful for checking some hypothesis, or using the
   same binary, without recompilation for example.
@@ -549,7 +549,7 @@ and the ``Name`` field correspond to a parameter in the Arm FastModel.
   used to run it
 
 ``-u SessionCfgFile`` or ``--user-cfg SessionCfgFile``
-  Defines the model meaningful options for you in your environement
+  Defines the model meaningful options for you in your environment
 
 ``--stat``
   Print run statistics on simulation exit
@@ -562,8 +562,8 @@ and the ``Name`` field correspond to a parameter in the Arm FastModel.
 
 ``--exit-address ADDRESSES``
   Stop and exit simulation when PC matches any address in ADDRESSES.
-  ADDRESSES is interpreted as a comma separated list of symbol namess or
-  adresses
+  ADDRESSES is interpreted as a comma separated list of symbol names or
+  addresses
 
 ``--data binary``
   Data loading and placement
@@ -663,7 +663,7 @@ As an example, one can get a summary report of a fault injection campaign with:
    $ campaign.py --summary verifyPIN-O2.is.yml.results
    41 faults: 0 caught, 2 crash, 28 noeffect, 0 notrun, 11 success, 0 undecided
 
-which let us know that 41 faults were injected, that 11 led to a succesful
+which let us know that 41 faults were injected, that 11 led to a successful
 attack, that 2 crashed somehow the program and the 28 had no noticeable effect.
 
 ``paf-faulter``
