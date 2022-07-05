@@ -739,7 +739,7 @@ TEST(V7MCPUInfo, T32InstrInfo) {
     RUN_TRB_TESTS(T32_LoadStoreAndTBBInstructions);
 
     // ===== Data processing (shifted register)
-    const array<TestInput<TRB<V7MInfo, THUMB, 32>, V7MInfo::Register>, 25>
+    const array<TestInput<TRB<V7MInfo, THUMB, 32>, V7MInfo::Register>, 26>
         T32_DataProcessingShiftedRegInstructions = {{
             {{0xea070108, "and.w     r1,r7,r8"},
              {V7MInfo::Register::R7, V7MInfo::Register::R8}},
@@ -763,6 +763,8 @@ TEST(V7MCPUInfo, T32InstrInfo) {
             {{0xea6f1946, "mvn       r9,r6, lsl #5"}, {V7MInfo::Register::R6}},
             {{0xea9509db, "eors.w    r9,r5,r11,lsr #3"},
              {V7MInfo::Register::R5, V7MInfo::Register::R11}},
+            {{0xea860203, "eor.w     r2,r6,r3"},
+             {V7MInfo::Register::R6, V7MInfo::Register::R3}},
             {{0xea991f77, "teq       r9,r7, ror #5"},
              {V7MInfo::Register::R9, V7MInfo::Register::R7}},
             {{0xeac3090a, "pkhbt     r9,r3,r10"},
