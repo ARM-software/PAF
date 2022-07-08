@@ -265,7 +265,8 @@ PAF::InstrInfo decodeT16Instr(const PAF::ReferenceInstruction &I) {
                         II.addInputRegister(i);
             } else
                 II.setLoad(AddressingMode::AMF_IMMEDIATE);
-            return II.addInputRegister(to_underlying(V7MInfo::Register::MSP));
+            return II.addImplicitInputRegister(
+                to_underlying(V7MInfo::Register::MSP));
         }
 
         if (/* BKPT */ b11_8 == 0x0e)
@@ -417,7 +418,11 @@ PAF::InstrInfo decodeT32Instr(const PAF::ReferenceInstruction &I) {
                 const uint8_t L = bit<20>(instr);
                 const uint8_t W = bit<21>(instr);
                 // The base address is always read.
-                II.addInputRegister(Rn);
+                if ((b24_23 == 0x01 || b24_23 == 0x02) && W == 1 && Rn == 0x0d)
+                    // MSP is implicitly read by PUSH & POP.
+                    II.addImplicitInputRegister(Rn);
+                else
+                    II.addInputRegister(Rn);
                 if (L == 0x01)
                     /* POP, LDM, LDMIA, LDMFD, LDMDB, LDMEA */
                     return II.setLoad(AddressingMode::AMF_IMMEDIATE,
@@ -426,9 +431,12 @@ PAF::InstrInfo decodeT32Instr(const PAF::ReferenceInstruction &I) {
                 if ((/* STM, STMIA, STMEA */ b24_23 == 0x01) ||
                     (/* PUSH, STMDB, STMFD */ b24_23 == 0x02)) {
                     const uint16_t reglists = bits<15, 0>(instr);
-                    for (size_t i = 0; i < 16; i++)
+                    for (size_t i = 0; i < 16; i++) {
+                        if (i == 13 || i == 15) // SP and PC are excluded.
+                            continue;
                         if ((reglists & (1 << i)) != 0)
                             II.addInputRegister(i);
+                    }
                     return II.setStore(AddressingMode::AMF_IMMEDIATE,
                                        W ? AddressingMode::AMU_POST_INDEXED
                                          : AddressingMode::AMU_OFFSET);
