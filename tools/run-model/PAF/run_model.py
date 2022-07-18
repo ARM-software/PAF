@@ -159,7 +159,7 @@ class Simulator:
         simulator.logfile.write("Launching Simulator #{} with command line:\n".format(simulator.instance))
         simulator.logfile.write("> " + simulator.getQuotedCmdLine() + " --iris-port {}\n".format(port))
         simulator.logfile.flush()
-        return subprocess.call(cmdLine, stdout=simulator.logfile, stderr=simulator.logfile)
+        return subprocess.run(cmdLine, stdout=simulator.logfile, stderr=simulator.logfile).returncode
 
 class SimConfigurator:
     """This allows to have custom target sessions to set reasonnable actions for the target being used."""
