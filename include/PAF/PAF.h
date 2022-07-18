@@ -547,6 +547,10 @@ class MTAnalyzer : public IndexNavigator {
 
     /// Get the value of register reg at time t.
     uint64_t getRegisterValueAtTime(const std::string &reg, Time t) const;
+
+    /// Get memory content at time t.
+    std::vector<uint8_t> getMemoryValueAtTime(uint64_t address,
+                                              size_t num_bytes, Time t) const;
 };
 
 } // namespace PAF

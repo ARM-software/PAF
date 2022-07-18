@@ -520,11 +520,24 @@ TEST(MTAnalyzer, base) {
     run_indexer(Inputs, /* big_endian */ false, /*show_progress_meter*/ false);
     TestMTAnalyzer T(Inputs, SAMPLES_SRC_DIR "instances-v7m.elf");
 
-    std::vector<PAF::ExecutionRange> Instances = T.getInstances("foo");
+    vector<PAF::ExecutionRange> Instances = T.getInstances("foo");
     EXPECT_EQ(Instances.size(), 4);
 
-    for (size_t i = 0; i<Instances.size(); i++) {
-        EXPECT_EQ(T.getRegisterValueAtTime("r0", Instances[i].Start.time - 1), i);
+    uint64_t symb_addr;
+    size_t symb_size;
+    EXPECT_TRUE(T.lookup_symbol("glob", symb_addr, symb_size));
+    EXPECT_EQ(symb_size, 4);
+
+    const array<uint64_t, 4> valExp = { 125, 125, 126, 134 };
+    for (size_t i = 0; i < Instances.size(); i++) {
+        EXPECT_EQ(T.getRegisterValueAtTime("r0", Instances[i].Start.time - 1),
+                  i);
+        vector<uint8_t> mem = T.getMemoryValueAtTime(
+            symb_addr, symb_size, Instances[i].Start.time - 1);
+        uint64_t val = 0;
+        for (size_t j = 0; j < mem.size(); j++)
+            val |= uint64_t(mem[j]) << (j * 8);
+        EXPECT_EQ(val, valExp[i]);
     }
 
     for (size_t i = 0; i<Instances.size(); i++) {

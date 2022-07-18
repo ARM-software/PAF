@@ -20,9 +20,10 @@
 
 /* The prupose of this test program is to check if PAF can :
    - count how many times foo is called,
-   - get foo's input parameter value, upon foo entry. */
+   - get foo's input parameter value, upon foo entry,
+   - get glob's value at foo's entry. */
 
-unsigned glob = 125;
+volatile unsigned glob = 125;  // Force read and write accesses to glob.
 
 unsigned __attribute__((noinline)) foo(unsigned i) {
     // FIXME: make this function slightly longer than strickly needed to bypass

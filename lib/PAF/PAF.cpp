@@ -154,3 +154,22 @@ uint64_t PAF::MTAnalyzer::getRegisterValueAtTime(const string &reg,
 
     return value;
 }
+
+vector<uint8_t> PAF::MTAnalyzer::getMemoryValueAtTime(uint64_t address,
+                                                      size_t num_bytes,
+                                                      Time t) const {
+    SeqOrderPayload SOP;
+    if (!node_at_time(t, &SOP))
+        reporter->errx(1, "Can not find node at time %d in this trace", t);
+
+    vector<uint8_t> def(num_bytes);
+    vector<uint8_t> result(num_bytes);
+    getmem(SOP.memory_root, 'm', address, num_bytes, &result[0], &def[0]);
+
+    for (size_t i = 0; i < num_bytes; i++)
+        if (!def[i])
+            reporter->errx(1, "Byte at address 0x%08x is undefined",
+                           address + i);
+
+    return result;
+}
