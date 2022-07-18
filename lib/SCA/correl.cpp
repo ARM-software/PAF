@@ -22,10 +22,9 @@
 
 #include <cassert>
 #include <cmath>
-#include <memory>
+#include <vector>
 
 using std::sqrt;
-using std::unique_ptr;
 using std::vector;
 
 namespace PAF {
@@ -41,17 +40,11 @@ vector<double> correl(size_t b, size_t e, size_t nbtraces,
 
     const size_t nbsamples = e - b;
 
-    unique_ptr<double[]> sum_t(new double[nbsamples]);
-    unique_ptr<double[]> sum_t_sq(new double[nbsamples]);
-    unique_ptr<double[]> sum_ht(new double[nbsamples]);
+    vector<double> sum_t(nbsamples, 0.0);
+    vector<double> sum_t_sq(nbsamples, 0.0);
+    vector<double> sum_ht(nbsamples, 0.0);
     double sum_h = 0.0;
     double sum_h_sq = 0.0;
-
-    for (size_t s = 0; s < nbsamples; s++) {
-        sum_t[s] = 0.0;
-        sum_t_sq[s] = 0.0;
-        sum_ht[s] = 0.0;
-    }
 
     for (size_t t = 0; t < nbtraces; t++) {
         double ival = intermediate[t];
