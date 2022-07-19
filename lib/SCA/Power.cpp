@@ -335,17 +335,20 @@ void PowerTrace::analyze(bool NoNoise) const {
     for (unsigned i = 0; i < Instructions.size(); i++) {
         const PAF::ReferenceInstruction &I = Instructions[i];
         Power<HammingWeight> pwr(Dumper, *CPU.get(), I, Config);
-        Timing.add(I.pc, pwr.cycles());
+        size_t cycles = pwr.cycles();
+        Timing.add(I.pc, cycles);
         pwr.dump(NoNoise, &I);
 
         // Insert dummy cycles when needed if we are not at the end of the
         // sequence.
         if (i < Instructions.size() - 1) {
             if (CPU->isBranch(I)) {
-                unsigned cycles = CPU->getCycles(I, &Instructions[i + 1]);
-                Timing.incr(cycles);
-                for (unsigned i = 1; i < cycles; i++)
-                    pwr.dump(NoNoise);
+                unsigned bcycles = CPU->getCycles(I, &Instructions[i + 1]);
+                if (bcycles > cycles) {
+                    Timing.incr(bcycles - cycles);
+                    for (unsigned i = 0; i < bcycles - cycles; i++)
+                        pwr.dump(NoNoise);
+                }
             }
         }
     }
