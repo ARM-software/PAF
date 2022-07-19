@@ -65,32 +65,44 @@ template <template <class> class PowerModelTy> class Power {
   public:
     Power() = delete;
     Power(PAF::SCA::PowerDumper &Dumper, const PAF::ArchInfo &CPU,
-          const PAF::ReferenceInstruction &I)
-        : Dumper(Dumper), CPU(CPU), PC(F_PC * PowerModelTy<Addr>()(I.pc)),
+          const PAF::ReferenceInstruction &I,
+          const PAF::SCA::PowerAnalysisConfig &Config)
+        : Dumper(Dumper), CPU(CPU), Config(Config),
+          PC(Config.withPC() ? F_PC * PowerModelTy<Addr>()(I.pc) : 0.0),
           PSR(0.0), IRegisters(0.0),
-          Instr(PowerModelTy<uint32_t>()(I.instruction)), Cycles(1),
-          ORegisters(), Memory() {
+          Instr(Config.withOpcode() ? PowerModelTy<uint32_t>()(I.instruction)
+                                    : 0.0),
+          Cycles(1), ORegisters(), Memory() {
+
         // Memory access related power consumption estimation.
         for (const PAF::MemoryAccess &MA : I.memaccess)
-            Memory.emplace_back(PowerModelTy<Addr>()(MA.addr),
-                                PowerModelTy<unsigned long long>()(MA.value));
+            Memory.emplace_back(
+                Config.withMemAddress() ? PowerModelTy<Addr>()(MA.addr) : 0.0,
+                Config.withMemData()
+                    ? PowerModelTy<unsigned long long>()(MA.value)
+                    : 0.0);
 
         // Register accesses estimated power consumption
-        for (const PAF::RegisterAccess &RA : I.regaccess) {
-            switch (RA.access) {
-            // Output registers.
-            case PAF::RegisterAccess::Type::Write:
-                if (CPU.isStatusRegister(RA.name))
-                    PSR += PowerModelTy<uint32_t>()(RA.value);
-                else
-                    ORegisters.push_back(PowerModelTy<uint32_t>()(RA.value));
-                break;
-            // Input registers.
-            case PAF::RegisterAccess::Type::Read:
-                IRegisters += PowerModelTy<uint32_t>()(RA.value);
-                break;
+        if (Config.withInstructionsInputs() || Config.withInstructionsOutputs())
+            for (const PAF::RegisterAccess &RA : I.regaccess) {
+                switch (RA.access) {
+                // Output registers.
+                case PAF::RegisterAccess::Type::Write:
+                    if (Config.withInstructionsOutputs()) {
+                        if (CPU.isStatusRegister(RA.name))
+                            PSR += PowerModelTy<uint32_t>()(RA.value);
+                        else
+                            ORegisters.push_back(
+                                PowerModelTy<uint32_t>()(RA.value));
+                    }
+                    break;
+                // Input registers.
+                case PAF::RegisterAccess::Type::Read:
+                    if (Config.withInstructionsInputs())
+                        IRegisters += PowerModelTy<uint32_t>()(RA.value);
+                    break;
+                }
             }
-        }
 
         unsigned mcycles = std::max(ORegisters.size(), Memory.size());
         if (mcycles > 1)
@@ -108,12 +120,18 @@ template <template <class> class PowerModelTy> class Power {
             double PInstr = Instr;
 
             if (!NoNoise) {
-                POReg += PowerNoiseDist(MT);
-                PIReg += PowerNoiseDist(MT);
-                PAddr += PowerNoiseDist(MT);
-                PData += PowerNoiseDist(MT);
-                PPC += PowerNoiseDist(MT);
-                PInstr += PowerNoiseDist(MT);
+                if (Config.withInstructionsOutputs())
+                    POReg += PowerNoiseDist(MT);
+                if (Config.withInstructionsInputs())
+                    PIReg += PowerNoiseDist(MT);
+                if (Config.withMemAddress())
+                    PAddr += PowerNoiseDist(MT);
+                if (Config.withMemData())
+                    PData += PowerNoiseDist(MT);
+                if (Config.withPC())
+                    PPC += PowerNoiseDist(MT);
+                if (Config.withOpcode())
+                    PInstr += PowerNoiseDist(MT);
             }
 
             double total = F_PC * PPC + F_Instr * PInstr +
@@ -130,6 +148,7 @@ template <template <class> class PowerModelTy> class Power {
   private:
     PAF::SCA::PowerDumper &Dumper;
     const PAF::ArchInfo &CPU;
+    const PAF::SCA::PowerAnalysisConfig &Config;
 
     // Scaling factors, very finger in the air values.
     const double F_PC = 1.0;
@@ -315,7 +334,7 @@ void PowerTrace::analyze(bool NoNoise) const {
 
     for (unsigned i = 0; i < Instructions.size(); i++) {
         const PAF::ReferenceInstruction &I = Instructions[i];
-        Power<HammingWeight> pwr(Dumper, *CPU.get(), I);
+        Power<HammingWeight> pwr(Dumper, *CPU.get(), I, Config);
         Timing.add(I.pc, pwr.cycles());
         pwr.dump(NoNoise, &I);
 
@@ -341,18 +360,24 @@ PowerTrace PowerAnalyzer::getPowerTrace(PowerDumper &Dumper, TimingInfo &Timing,
     struct PTCont {
         PAF::MTAnalyzer &MTA;
         PowerTrace &PT;
+        const PowerAnalysisConfig &Config;
         const ArchInfo *CPU;
 
-        PTCont(PAF::MTAnalyzer &MTA, PowerTrace &PT)
-            : MTA(MTA), PT(PT), CPU(PT.getArchInfo()) {}
+        PTCont(PAF::MTAnalyzer &MTA, PowerTrace &PT,
+               const PowerAnalysisConfig &Config)
+            : MTA(MTA), PT(PT), Config(Config), CPU(PT.getArchInfo()) {}
         void operator()(PAF::ReferenceInstruction &I) {
 
-            const InstrInfo II = CPU->getInstrInfo(I);
-            for (const auto &r :
-                 II.getUniqueInputRegisters(/* Implicit: */ false)) {
-                const char *name = CPU->registerName(r);
-                uint32_t value = MTA.getRegisterValueAtTime(name, I.time - 1);
-                I.add(RegisterAccess(name, value, RegisterAccess::Type::Read));
+            if (Config.withInstructionsInputs()) {
+                const InstrInfo II = CPU->getInstrInfo(I);
+                for (const auto &r :
+                     II.getUniqueInputRegisters(/* Implicit: */ false)) {
+                    const char *name = CPU->registerName(r);
+                    uint32_t value =
+                        MTA.getRegisterValueAtTime(name, I.time - 1);
+                    I.add(RegisterAccess(name, value,
+                                         RegisterAccess::Type::Read));
+                }
             }
 
             PT.add(I);
@@ -360,7 +385,7 @@ PowerTrace PowerAnalyzer::getPowerTrace(PowerDumper &Dumper, TimingInfo &Timing,
     };
 
     PowerTrace PT(Dumper, Timing, Config, PAF::getCPU(index));
-    PTCont PTC(*this, PT);
+    PTCont PTC(*this, PT, Config);
     PAF::FromTraceBuilder<PAF::ReferenceInstruction,
                           PAF::ReferenceInstructionBuilder, PTCont>
         FTB(*this);

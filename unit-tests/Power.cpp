@@ -415,6 +415,148 @@ TEST(PowerTrace, withNoise) {
     EXPECT_GT(PowerFields::noise(TPD.pwf[1], TPD.pwf[0]), 0.0);
 }
 
+TEST(PowerTrace, withConfig) {
+    // Tests that only the source contributing to the power have non zero power.
+    TestPowerDumper TPD;
+    TestTimingInfo TTI;
+    PowerAnalysisConfig PAC;
+
+    PAC.clear().set(PowerAnalysisConfig::WITH_PC);
+    PowerTrace PT1(TPD, TTI, PAC, std::make_unique<PAF::V7MInfo>());
+    PT1.add(Insts[0]);
+    PT1.add(Insts[1]);
+    PT1.add(Insts[2]);
+    PT1.add(Insts[3]);
+    PT1.analyze(true);
+    EXPECT_EQ(TPD.pwf.size(),
+              6); // 4 instructions, 2 extra cycles.
+    EXPECT_EQ(TPD.pwf[0], PowerFields(8, 8, 0, 0, 0, 0, 0, &Insts[0]));
+    EXPECT_EQ(TPD.pwf[1], PowerFields(9, 9, 0, 0, 0, 0, 0, &Insts[1]));
+    EXPECT_EQ(TPD.pwf[2], PowerFields(6, 6, 0, 0, 0, 0, 0, &Insts[2]));
+    EXPECT_EQ(TPD.pwf[3], PowerFields(6, 6, 0, 0, 0, 0, 0, nullptr));
+    EXPECT_EQ(TPD.pwf[4], PowerFields(6, 6, 0, 0, 0, 0, 0, &Insts[3]));
+    EXPECT_EQ(TPD.pwf[5], PowerFields(6, 6, 0, 0, 0, 0, 0, nullptr));
+
+    TPD.reset();
+    PAC.clear().set(PowerAnalysisConfig::WITH_MEM_ADDRESS);
+    PowerTrace PT2(TPD, TTI, PAC, std::make_unique<PAF::V7MInfo>());
+    PT2.add(Insts[0]);
+    PT2.add(Insts[1]);
+    PT2.add(Insts[2]);
+    PT2.add(Insts[3]);
+    PT2.analyze(true);
+    EXPECT_EQ(TPD.pwf.size(),
+              6); // 4 instructions, 2 extra cycles.
+    EXPECT_EQ(TPD.pwf[0], PowerFields(0, 0, 0, 0, 0, 0, 0, &Insts[0]));
+    EXPECT_EQ(TPD.pwf[1], PowerFields(0, 0, 0, 0, 0, 0, 0, &Insts[1]));
+    EXPECT_EQ(TPD.pwf[2], PowerFields(12, 0, 0, 0, 0, 10, 0, &Insts[2]));
+    EXPECT_EQ(TPD.pwf[3], PowerFields(6, 0, 0, 0, 0, 5, 0, nullptr));
+    EXPECT_EQ(TPD.pwf[4], PowerFields(12, 0, 0, 0, 0, 10, 0, &Insts[3]));
+    EXPECT_EQ(TPD.pwf[5], PowerFields(9.6, 0, 0, 0, 0, 8, 0, nullptr));
+
+    TPD.reset();
+    PAC.clear().set(PowerAnalysisConfig::WITH_MEM_DATA);
+    PowerTrace PT3(TPD, TTI, PAC, std::make_unique<PAF::V7MInfo>());
+    PT3.add(Insts[0]);
+    PT3.add(Insts[1]);
+    PT3.add(Insts[2]);
+    PT3.add(Insts[3]);
+    PT3.analyze(true);
+    EXPECT_EQ(TPD.pwf.size(),
+              6); // 4 instructions, 2 extra cycles.
+    EXPECT_EQ(TPD.pwf[0], PowerFields(0, 0, 0, 0, 0, 0, 0, &Insts[0]));
+    EXPECT_EQ(TPD.pwf[1], PowerFields(0, 0, 0, 0, 0, 0, 0, &Insts[1]));
+    EXPECT_EQ(TPD.pwf[2], PowerFields(4, 0, 0, 0, 0, 0, 2, &Insts[2]));
+    EXPECT_EQ(TPD.pwf[3], PowerFields(4, 0, 0, 0, 0, 0, 2, nullptr));
+    EXPECT_EQ(TPD.pwf[4], PowerFields(4, 0, 0, 0, 0, 0, 2, &Insts[3]));
+    EXPECT_EQ(TPD.pwf[5], PowerFields(18, 0, 0, 0, 0, 0, 9, nullptr));
+
+        TPD.reset();
+    PAC.clear().set(PowerAnalysisConfig::WITH_OPCODE);
+    PowerTrace PT4(TPD, TTI, PAC, std::make_unique<PAF::V7MInfo>());
+    PT4.add(Insts[0]);
+    PT4.add(Insts[1]);
+    PT4.add(Insts[2]);
+    PT4.add(Insts[3]);
+    PT4.analyze(true);
+    EXPECT_EQ(TPD.pwf.size(),
+              6); // 4 instructions, 2 extra cycles.
+    EXPECT_EQ(TPD.pwf[0], PowerFields(4, 0, 4, 0, 0, 0, 0, &Insts[0]));
+    EXPECT_EQ(TPD.pwf[1], PowerFields(5, 0, 5, 0, 0, 0, 0, &Insts[1]));
+    EXPECT_EQ(TPD.pwf[2], PowerFields(12, 0, 12, 0, 0, 0, 0, &Insts[2]));
+    EXPECT_EQ(TPD.pwf[3], PowerFields(12, 0, 12, 0, 0, 0, 0, nullptr));
+    EXPECT_EQ(TPD.pwf[4], PowerFields(14, 0, 14, 0, 0, 0, 0, &Insts[3]));
+    EXPECT_EQ(TPD.pwf[5], PowerFields(14, 0, 14, 0, 0, 0, 0, nullptr));
+
+    TPD.reset();
+    PAC.clear().set(PowerAnalysisConfig::WITH_INSTRUCTIONS_INPUTS);
+    PowerTrace PT5(TPD, TTI, PAC, std::make_unique<PAF::V7MInfo>());
+    PT5.add(Insts[0]);
+    PT5.add(Insts[1]);
+    PT5.add(Insts[2]);
+    PT5.add(Insts[3]);
+    PT5.analyze(true);
+    EXPECT_EQ(TPD.pwf.size(),
+              6); // 4 instructions, 2 extra cycles.
+    EXPECT_EQ(TPD.pwf[0], PowerFields(0, 0, 0, 0, 0, 0, 0, &Insts[0]));
+    EXPECT_EQ(TPD.pwf[1], PowerFields(4, 0, 0, 0, 2, 0, 0, &Insts[1]));
+    EXPECT_EQ(TPD.pwf[2], PowerFields(0, 0, 0, 0, 0, 0, 0, &Insts[2]));
+    EXPECT_EQ(TPD.pwf[3], PowerFields(0, 0, 0, 0, 0, 0, 0, nullptr));
+    EXPECT_EQ(TPD.pwf[4], PowerFields(0, 0, 0, 0, 0, 0, 0, &Insts[3]));
+    EXPECT_EQ(TPD.pwf[5], PowerFields(0, 0, 0, 0, 0, 0, 0, nullptr));
+
+    TPD.reset();
+    PAC.clear().set(PowerAnalysisConfig::WITH_INSTRUCTIONS_OUTPUTS);
+    PowerTrace PT6(TPD, TTI, PAC, std::make_unique<PAF::V7MInfo>());
+    PT6.add(Insts[0]);
+    PT6.add(Insts[1]);
+    PT6.add(Insts[2]);
+    PT6.add(Insts[3]);
+    PT6.analyze(true);
+    EXPECT_EQ(TPD.pwf.size(),
+              6); // 4 instructions, 2 extra cycles.
+    EXPECT_EQ(TPD.pwf[0], PowerFields(8, 0, 0, 4, 0, 0, 0, &Insts[0]));
+    EXPECT_EQ(TPD.pwf[1], PowerFields(4, 0, 0, 2, 0, 0, 0, &Insts[1]));
+    EXPECT_EQ(TPD.pwf[2], PowerFields(0, 0, 0, 0, 0, 0, 0, &Insts[2]));
+    EXPECT_EQ(TPD.pwf[3], PowerFields(0, 0, 0, 0, 0, 0, 0, nullptr));
+    EXPECT_EQ(TPD.pwf[4], PowerFields(4, 0, 0, 2, 0, 0, 0, &Insts[3]));
+    EXPECT_EQ(TPD.pwf[5], PowerFields(18, 0, 0, 9, 0, 0, 0, nullptr));
+}
+
+TEST(PowerTrace, withConfigAndNoise) {
+    // Tests that only the sources contributing to the overall power get some
+    // noise.
+    TestPowerDumper TPD;
+    TestTimingInfo TTI;
+    PowerAnalysisConfig PAC(PowerAnalysisConfig::WITH_OPCODE);
+
+    PowerTrace PT(TPD, TTI, PAC, std::make_unique<PAF::V7MInfo>());
+    PT.add(Insts[0]);
+    PT.analyze(true);
+    PT.analyze(false);
+    EXPECT_EQ(TPD.pwf.size(), 2);
+    EXPECT_GT(PowerFields::noise(TPD.pwf[1], TPD.pwf[0]), 0.0);
+    EXPECT_EQ(TPD.pwf[0].addr, 0.0);
+    EXPECT_EQ(TPD.pwf[0].data, 0.0);
+    EXPECT_EQ(TPD.pwf[0].ireg, 0.0);
+    EXPECT_EQ(TPD.pwf[0].oreg, 0.0);
+    EXPECT_EQ(TPD.pwf[0].pc, 0.0);
+
+    PAC.clear().set(PowerAnalysisConfig::WITH_INSTRUCTIONS_OUTPUTS);
+    TPD.reset();
+    PowerTrace PT2(TPD, TTI, PAC, std::make_unique<PAF::V7MInfo>());
+    PT2.add(Insts[0]);
+    PT2.analyze(true);
+    PT2.analyze(false);
+    EXPECT_EQ(TPD.pwf.size(), 2);
+    EXPECT_GT(PowerFields::noise(TPD.pwf[1], TPD.pwf[0]), 0.0);
+    EXPECT_EQ(TPD.pwf[0].addr, 0.0);
+    EXPECT_EQ(TPD.pwf[0].data, 0.0);
+    EXPECT_EQ(TPD.pwf[0].ireg, 0.0);
+    EXPECT_EQ(TPD.pwf[0].instr, 0.0);
+    EXPECT_EQ(TPD.pwf[0].pc, 0.0);
+}
+
 unique_ptr<Reporter> reporter = make_cli_reporter();
 
 int main(int argc, char **argv) {
