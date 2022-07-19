@@ -37,6 +37,14 @@ using std::string;
 using std::unique_ptr;
 using std::vector;
 
+using PAF::SCA::PowerAnalysisConfig;
+using PAF::SCA::PowerAnalyzer;
+using PAF::SCA::PowerTrace;
+using PAF::SCA::YAMLTimingInfo;
+using PAF::SCA::CSVPowerDumper;
+using PAF::SCA::NPYPowerDumper;
+using PAF::SCA::PowerDumper;
+
 unique_ptr<Reporter> reporter = make_cli_reporter();
 
 int main(int argc, char **argv) {
@@ -44,6 +52,7 @@ int main(int argc, char **argv) {
     string TimingFilename;
     bool detailed_output = false;
     bool NoNoise = false;
+    PowerAnalysisConfig PAConfig;
     string FunctionName;
     enum class PowerModel {
         HAMMING_WEIGHT,
@@ -80,11 +89,11 @@ int main(int argc, char **argv) {
     tu.setup();
 
     // Setup the power trace emitter.
-    unique_ptr<PAF::SCA::PowerDumper> Dumper;
+    unique_ptr<PowerDumper> Dumper;
     switch (OutFmt) {
     case OutputFormat::CSV:
         Dumper.reset(
-            new PAF::SCA::CSVPowerDumper(OutputFilename, detailed_output));
+            new CSVPowerDumper(OutputFilename, detailed_output));
         break;
     case OutputFormat::NPY:
         if (OutputFilename.empty())
@@ -92,7 +101,7 @@ int main(int argc, char **argv) {
                 EXIT_FAILURE,
                 "Output file name can not be empty with the npy format");
         Dumper.reset(
-            new PAF::SCA::NPYPowerDumper(OutputFilename, tu.traces.size()));
+            new NPYPowerDumper(OutputFilename, tu.traces.size()));
         break;
     }
 
@@ -101,7 +110,7 @@ int main(int argc, char **argv) {
         if (tu.is_verbose())
             cout << "Running analysis on trace '" << trace.tarmac_filename
                  << "'\n";
-        PAF::SCA::PowerAnalyzer PA(trace, tu.image_filename);
+        PowerAnalyzer PA(trace, tu.image_filename);
 
         vector<PAF::ExecutionRange> Functions = PA.getInstances(FunctionName);
 
@@ -116,7 +125,7 @@ int main(int argc, char **argv) {
                 cout << " - Building power trace from " << FunctionName
                      << " instance at time : " << ER.Start.time << " to "
                      << ER.End.time << '\n';
-            PAF::SCA::PowerTrace PTrace = PA.getPowerTrace(*Dumper, Timing, ER);
+            PowerTrace PTrace = PA.getPowerTrace(*Dumper, Timing, PAConfig, ER);
             PTrace.analyze(NoNoise);
             Dumper->next_trace();
             Timing.next_trace();

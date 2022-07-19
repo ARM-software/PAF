@@ -335,6 +335,7 @@ void PowerTrace::analyze(bool NoNoise) const {
 }
 
 PowerTrace PowerAnalyzer::getPowerTrace(PowerDumper &Dumper, TimingInfo &Timing,
+                                        PowerAnalysisConfig &Config,
                                         const PAF::ExecutionRange &ER) {
 
     struct PTCont {
@@ -358,7 +359,7 @@ PowerTrace PowerAnalyzer::getPowerTrace(PowerDumper &Dumper, TimingInfo &Timing,
         }
     };
 
-    PowerTrace PT(Dumper, Timing, PAF::getCPU(index));
+    PowerTrace PT(Dumper, Timing, Config, PAF::getCPU(index));
     PTCont PTC(*this, PT);
     PAF::FromTraceBuilder<PAF::ReferenceInstruction,
                           PAF::ReferenceInstructionBuilder, PTCont>

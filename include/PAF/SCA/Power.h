@@ -173,6 +173,74 @@ class NPYPowerDumper : public PowerDumper {
     std::vector<std::vector<double>> samples;
 };
 
+/// The PowerAnalysisConfig class is used to configure a power analysis run. It
+/// allows to select what has to be considered as a power source: the opcode,
+/// the program counter, ...
+class PowerAnalysisConfig {
+  public:
+    enum Selection {
+        /// Include the PC
+        WITH_PC = 1 << 0,
+        /// Include the Instruction encoding
+        WITH_OPCODE = 1 << 1,
+        /// Include the memory access address
+        WITH_MEM_ADDRESS = 1 << 2,
+        /// Include the memory access data
+        WITH_MEM_DATA = 1 << 3,
+        /// Include the instructions' input operands
+        WITH_INSTRUCTIONS_INPUTS = 1 << 4,
+        /// Include the instructions' output operands
+        WITH_INSTRUCTIONS_OUTPUTS = 1 << 5,
+        /// Include all !
+        WITH_ALL = 0x3F
+    };
+
+    /// Default constructor, consider all power sources.
+    PowerAnalysisConfig() : config(WITH_ALL) {}
+    /// Constructor for the case with a single power source.
+    PowerAnalysisConfig(Selection s) : config(s) {}
+
+    /// Remove all power sources from this configuration.
+    PowerAnalysisConfig &clear() {
+        config = 0;
+        return *this;
+    }
+    /// Set s as a power source for this configuration.
+    PowerAnalysisConfig &set(Selection s) {
+        config |= s;
+        return *this;
+    }
+    /// Set all the those sources for this configuration.
+    template <typename... SelTy>
+    PowerAnalysisConfig &set(Selection s, SelTy... sels) {
+        return set(s).set(sels...);
+    }
+
+    /// Does this config have no power source set ?
+    bool withNone() const { return config == 0; }
+    /// Does this config include the PC contribution ?
+    bool withPC() const { return config & WITH_PC; }
+    /// Does this config include the instructions' encoding contribution ?
+    bool withOpcode() const { return config & WITH_OPCODE; }
+    /// Does this config include the memory accesses address contribution ?
+    bool withMemAddress() const { return config & WITH_MEM_ADDRESS; }
+    /// Does this config include the memory accesses data contribution ?
+    bool withMemData() const { return config & WITH_MEM_DATA; }
+    /// Does this config include the instructions' input operands contribution ?
+    bool withInstructionsInputs() const {
+        return config & WITH_INSTRUCTIONS_INPUTS;
+    }
+    /// Does this config include the instructions' output operands contribution?
+    bool withInstructionsOutputs() const {
+        return config & WITH_INSTRUCTIONS_OUTPUTS;
+    }
+    /// Does this config have all power sources set ?
+    bool withAll() const { return config == WITH_ALL; }
+
+  private:
+    unsigned config;
+};
+
 /// The PowerTrace class represents a unique of work: andExecutionRange
 /// extracted from a Tarmac trace on which analysis can be performed to build a
 /// synthetic power trace.
@@ -180,19 +248,21 @@ class PowerTrace {
   public:
     /// Construct a PowerTrace.
     PowerTrace(PowerDumper &Dumper, TimingInfo &Timing,
+               PowerAnalysisConfig &Config,
                std::unique_ptr<PAF::ArchInfo> &&cpu)
-        : Dumper(Dumper), Timing(Timing),
-          Instructions(), CPU(std::move(cpu)) {}
+        : Dumper(Dumper), Timing(Timing), Config(Config), Instructions(),
+          CPU(std::move(cpu)) {}
 
     /// Move construct a PowerTrace.
     PowerTrace(PowerTrace &&PT)
-        : Dumper(PT.Dumper), Timing(PT.Timing),
+        : Dumper(PT.Dumper), Timing(PT.Timing), Config(PT.Config),
           Instructions(std::move(PT.Instructions)), CPU(std::move(PT.CPU)) {}
 
     /// Move assign a PowerTrace.
     PowerTrace &operator=(PowerTrace &&PT) {
         Dumper = PT.Dumper;
         Timing = PT.Timing;
+        Config = PT.Config;
         Instructions = std::move(PT.Instructions);
         CPU.reset(PT.CPU.release());
         return *this;
@@ -214,6 +284,7 @@ class PowerTrace {
   private:
     PowerDumper &Dumper;
     TimingInfo &Timing;
+    PowerAnalysisConfig &Config;
     std::vector<PAF::ReferenceInstruction> Instructions;
     std::unique_ptr<const PAF::ArchInfo> CPU;
 };
@@ -229,7 +300,8 @@ class PowerAnalyzer : public PAF::MTAnalyzer {
 
     /// Get a PowerTrace from the analyzer.
     PowerTrace getPowerTrace(PowerDumper &Dumper, TimingInfo &Timing,
-                             const PAF::ExecutionRange &ER);    
+                             PowerAnalysisConfig &Config,
+                             const PAF::ExecutionRange &ER);
 };
 
 } // namespace SCA

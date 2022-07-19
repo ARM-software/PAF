@@ -49,6 +49,7 @@ using PAF::RegisterAccess;
 using PAF::SCA::CSVPowerDumper;
 using PAF::SCA::NPArray;
 using PAF::SCA::NPYPowerDumper;
+using PAF::SCA::PowerAnalysisConfig;
 using PAF::SCA::PowerDumper;
 using PAF::SCA::PowerTrace;
 using PAF::SCA::TimingInfo;
@@ -321,11 +322,27 @@ TEST_F(NPYPowerDumperF, base) {
             EXPECT_EQ(npy(row, col), double((row + 1) * (col + 1)));
 }
 
+TEST(PowerAnalysisConfig, base) {
+    PowerAnalysisConfig PAC;
+    EXPECT_TRUE(PAC.withAll());
+
+    PAC.clear();
+    EXPECT_TRUE(PAC.withNone());
+    EXPECT_FALSE(PAC.withAll());
+    PAC.set(PowerAnalysisConfig::WITH_OPCODE);
+    EXPECT_TRUE(PAC.withOpcode());
+    EXPECT_FALSE(PAC.withMemAddress());
+    PAC.set(PowerAnalysisConfig::WITH_MEM_ADDRESS);
+    EXPECT_TRUE(PAC.withOpcode());
+    EXPECT_TRUE(PAC.withMemAddress());
+}
+
 TEST(PowerTrace, base) {
     TestPowerDumper TPD;
     TestTimingInfo TTI;
+    PowerAnalysisConfig PAC;
 
-    PowerTrace PT(TPD, TTI, std::make_unique<PAF::V7MInfo>());
+    PowerTrace PT(TPD, TTI, PAC, std::make_unique<PAF::V7MInfo>());
     EXPECT_STREQ(PT.getArchInfo()->description(), "Arm V7M ISA");
     PT.add(Insts[0]);
     PT.analyze(true);
@@ -369,7 +386,7 @@ TEST(PowerTrace, base) {
     // Move assign.
     TestPowerDumper TPD2;
     TestTimingInfo TTI2;
-    PowerTrace PT3(TPD, TTI, std::make_unique<PAF::V7MInfo>());
+    PowerTrace PT3(TPD, TTI, PAC, std::make_unique<PAF::V7MInfo>());
     PT3 = std::move(PT2);
     TPD.reset();
     PT3.add(Insts[0]);
@@ -388,8 +405,9 @@ TEST(PowerTrace, base) {
 TEST(PowerTrace, withNoise) {
     TestPowerDumper TPD;
     TestTimingInfo TTI;
+    PowerAnalysisConfig PAC;
 
-    PowerTrace PT(TPD, TTI, std::make_unique<PAF::V7MInfo>());
+    PowerTrace PT(TPD, TTI, PAC, std::make_unique<PAF::V7MInfo>());
     PT.add(Insts[0]);
     PT.analyze(true);
     PT.analyze(false);
