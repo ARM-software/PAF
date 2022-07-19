@@ -53,6 +53,7 @@ int main(int argc, char **argv) {
     bool detailed_output = false;
     bool NoNoise = false;
     PowerAnalysisConfig PAConfig;
+    vector<PowerAnalysisConfig::Selection> PASelect;
     string FunctionName;
     enum class PowerModel {
         HAMMING_WEIGHT,
@@ -80,6 +81,33 @@ int main(int argc, char **argv) {
                 [&]() { PwrModel = PowerModel::HAMMING_WEIGHT; });
     ap.optnoval({"--hamming-distance"}, "use the hamming distance power model",
                 [&]() { PwrModel = PowerModel::HAMMING_DISTANCE; });
+    ap.optnoval({"--with-pc"},
+                "include the program counter contribution to the power",
+                [&]() { PASelect.push_back(PowerAnalysisConfig::WITH_PC); });
+    ap.optnoval(
+        {"--with-opcode"},
+        "include the instruction encoding contribution to the power",
+        [&]() { PASelect.push_back(PowerAnalysisConfig::WITH_OPCODE); });
+    ap.optnoval(
+        {"--with-mem-address"},
+        "include the memory accesses address contribution to the power",
+        [&]() { PASelect.push_back(PowerAnalysisConfig::WITH_MEM_ADDRESS); });
+    ap.optnoval(
+        {"--with-mem-data"},
+        "include the memory accesses data contribution to the power",
+        [&]() { PASelect.push_back(PowerAnalysisConfig::WITH_MEM_DATA); });
+    ap.optnoval(
+        {"--with-instruction-inputs"},
+        "include the instructions input operands contribution to the power",
+        [&]() {
+            PASelect.push_back(PowerAnalysisConfig::WITH_INSTRUCTIONS_INPUTS);
+        });
+    ap.optnoval(
+        {"--with-instruction-outputs"},
+        "include the instructions output operands contribution to the power",
+        [&]() {
+            PASelect.push_back(PowerAnalysisConfig::WITH_INSTRUCTIONS_OUTPUTS);
+        });
     ap.positional("FUNCTION", "name or hex address of function to analyze",
                   [&](const string &s) { FunctionName = s; });
 
@@ -87,6 +115,14 @@ int main(int argc, char **argv) {
 
     ap.parse();
     tu.setup();
+
+    // Process the contributions sources if any. Default to all of them if none
+    // was specified.
+    if (!PASelect.empty()) {
+        PAConfig.clear();
+        for (const auto &s : PASelect)
+            PAConfig.set(s);
+    }
 
     // Setup the power trace emitter.
     unique_ptr<PowerDumper> Dumper;
