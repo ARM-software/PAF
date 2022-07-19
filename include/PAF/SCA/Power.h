@@ -141,7 +141,7 @@ class CSVPowerDumper : public PowerDumper {
     const std::string filename; ///< The CSV file name, empty string for stdout.
     std::ostream *os;           ///< Our output stream.
     const char *sep;            ///< CVS column separator.
-    const bool detailed_output; ///< Use a detailled output format.
+    const bool detailed_output; ///< Use a detailed output format.
 };
 
 /// NPYPowerDumper is a PowerDumper specialization for writing the power trace
@@ -204,7 +204,7 @@ class PowerTrace {
     }
 
     /// Perform the analysis on the ExecutionRange, dispatching power information
-    /// to our Dumper which will be in charge of formating the results to the
+    /// to our Dumper which will be in charge of formatting the results to the
     /// user's taste.
     void analyze(bool NoNoise) const;
 
@@ -223,7 +223,7 @@ class PowerAnalyzer : public PAF::MTAnalyzer {
 
   public:
     PowerAnalyzer(const PowerAnalyzer &) = delete;
-    /// PowerAnayzer constructor.
+    /// PowerAnalyzer constructor.
     PowerAnalyzer(const TracePair &trace, const std::string &image_filename)
         : MTAnalyzer(trace, image_filename) {}
 
