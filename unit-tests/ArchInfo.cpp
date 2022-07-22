@@ -553,7 +553,7 @@ TEST(V7MCPUInfo, T16InstrInfo) {
     RUN_TRB_TESTS(T16_SPRelAddrInstructions);
 
     // ===== Misc instructions
-    const array<TestInput<TRB<V7MInfo, THUMB, 16>, V7MInfo::Register>, 21>
+    const array<TestInput<TRB<V7MInfo, THUMB, 16>, V7MInfo::Register>, 22>
         T16_MiscInstructions = {{
             {{0xb663, "cpsie	 if"}, {}},
             {{0xb003, "add	     sp,sp,#0xc"}, {V7MInfo::Register::MSP}},
@@ -569,11 +569,15 @@ TEST(V7MCPUInfo, T16InstrInfo) {
             {{0xba2f, "rev       r7,r5"}, {V7MInfo::Register::R5}},
             {{0xba59, "rev16     r1,r3"}, {V7MInfo::Register::R3}},
             {{0xbaca, "revsh     r2,r1"}, {V7MInfo::Register::R1}},
+            {{0xb410, "push      {r4}", InstrInfo::STORE,
+              AddressingMode::AMF_IMMEDIATE},
+             {V7MInfo::Register::R4},
+             {V7MInfo::Register::MSP}},
             {{0xb5f8, "push      {r3-r7,lr}", InstrInfo::STORE,
               AddressingMode::AMF_IMMEDIATE},
              {V7MInfo::Register::R3, V7MInfo::Register::R4,
               V7MInfo::Register::R5, V7MInfo::Register::R6,
-              V7MInfo::Register::R7},
+              V7MInfo::Register::R7, V7MInfo::Register::LR},
              {V7MInfo::Register::MSP}},
             {{0xbdf8, "pop       {r3-r7,pc}", InstrInfo::LOAD,
               AddressingMode::AMF_IMMEDIATE},
@@ -636,7 +640,7 @@ TEST(V7MCPUInfo, T16InstrInfo) {
 
 TEST(V7MCPUInfo, T32InstrInfo) {
     // ===== Load / Store multiple
-    const array<TestInput<TRB<V7MInfo, THUMB, 32>, V7MInfo::Register>, 15>
+    const array<TestInput<TRB<V7MInfo, THUMB, 32>, V7MInfo::Register>, 16>
         T32_LoadStoreMultipleInstructions = {{
             {{0xe8ad03ea, "stm.w        sp!, {r1,r3,r5-r9}", InstrInfo::STORE,
               AddressingMode::AMF_IMMEDIATE, AddressingMode::AMU_POST_INDEXED},
@@ -687,6 +691,14 @@ TEST(V7MCPUInfo, T32InstrInfo) {
             {{0xe92d0280, "push.w       {r7,r9}", InstrInfo::STORE,
               AddressingMode::AMF_IMMEDIATE, AddressingMode::AMU_POST_INDEXED},
              {V7MInfo::Register::R7, V7MInfo::Register::R9},
+             {V7MInfo::Register::MSP}},
+            {{0xe92d41ff, "push.w       {r0-r8,lr}", InstrInfo::STORE,
+              AddressingMode::AMF_IMMEDIATE, AddressingMode::AMU_POST_INDEXED},
+             {V7MInfo::Register::R0, V7MInfo::Register::R1,
+              V7MInfo::Register::R2, V7MInfo::Register::R3,
+              V7MInfo::Register::R4, V7MInfo::Register::R5,
+              V7MInfo::Register::R6, V7MInfo::Register::R7,
+              V7MInfo::Register::R8, V7MInfo::Register::LR},
              {V7MInfo::Register::MSP}},
             {{0xe9300006, "ldmdb.w      r0!, {r1,r2}", InstrInfo::LOAD,
               AddressingMode::AMF_IMMEDIATE, AddressingMode::AMU_POST_INDEXED},

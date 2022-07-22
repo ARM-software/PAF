@@ -263,6 +263,8 @@ PAF::InstrInfo decodeT16Instr(const PAF::ReferenceInstruction &I) {
                 for (unsigned i = 0; i < 8; i++)
                     if (bit(i, opcode) == 1)
                         II.addInputRegister(i);
+                if (bit<8>(opcode))
+                    II.addInputRegister(to_underlying(V7MInfo::Register::LR));
             } else
                 II.setLoad(AddressingMode::AMF_IMMEDIATE);
             return II.addImplicitInputRegister(
