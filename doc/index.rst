@@ -1294,6 +1294,49 @@ the example for ``paf-np-create`` :
   $ paf-np-utils -t example.npy
   <f8
 
+``paf-np-expand``
+~~~~~~~~~~~~~~~~~
+
+``paf-np-expand`` is a utility to expand or trunc a matrix, on the x and/or y axis with modulo.
+It can optionnaly add noise to the samples in the matrix.
+
+The command line syntax looks like:
+  ``paf-np-expand`` [ *options* ] *NPY*
+
+The following options are recognized:
+
+``-v`` or ``--verbose``
+  increase verbosity level (can be specified multiple times)
+
+``-o`` or ``--output=FILENAME``
+  NPY output file name (if not specified, input file will be overwritten)
+
+``-c`` or ``--columns=NUM_COLS``
+  Number of column to expand to. If not set, use all columns from the source NPY.
+
+``-r`` or ``--rows=NUM_ROWS``
+  Number of rows to expand to. If not set, use all rows from the source NPY.
+
+``--noise=NOISE_LEVEL``
+  Add noise to all samples
+
+.. code-block:: bash
+
+  $ paf-np-create -o source.npy -t f8 -r 2 -c 3 1.0 2.0 3.0 4.0 5.0 6.0
+  $ paf-np-utils -p source.npy
+  [
+    [ 1, 2, 3 ],
+    [ 4, 5, 6 ],
+  ]
+  $ paf-np-expand -o dest.npy -r 4 -c 2 --noise 0.5 source.npy
+  $ paf-np-utils -p dest.npy
+  [
+    [ 1.42664, 2.21827 ],
+    [ 4.08553, 5.38625 ],
+    [ 1.09103, 2.39464 ],
+    [ 4.29554, 5.0181 ],
+  ]
+
 Contributing to PAF
 ===================
 

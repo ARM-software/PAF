@@ -16,7 +16,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-add_paf_executable(calibration 
+add_paf_executable(calibration
   SOURCES calibration.cpp
   LIBRARIES sca paf tarmac
   DEPENDS tarmac-trace-utilities
@@ -24,28 +24,35 @@ add_paf_executable(calibration
   )
 
 
-add_paf_executable(np-create 
+add_paf_executable(np-create
   SOURCES np-create.cpp
   LIBRARIES sca paf tarmac
   DEPENDS tarmac-trace-utilities
   OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin"
   )
 
-add_paf_executable(np-utils 
+add_paf_executable(np-expand 
+  SOURCES np-expand.cpp
+  LIBRARIES sca paf tarmac
+  DEPENDS tarmac-trace-utilities
+  OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin"
+  )
+
+add_paf_executable(np-utils
   SOURCES np-utils.cpp
   LIBRARIES sca paf tarmac
   DEPENDS tarmac-trace-utilities
   OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin"
   )
 
-add_paf_executable(ns-t-test 
+add_paf_executable(ns-t-test
   SOURCES ns-t-test.cpp
   LIBRARIES sca paf tarmac
   DEPENDS tarmac-trace-utilities
   OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin"
   )
 
-add_paf_executable(t-test 
+add_paf_executable(t-test
   SOURCES metric.cpp
   COMPILE_DEFINITIONS "METRIC=Metric::T_TEST"
   LIBRARIES sca paf tarmac
