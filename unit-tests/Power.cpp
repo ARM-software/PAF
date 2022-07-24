@@ -32,6 +32,7 @@
 #include <fstream>
 #include <iostream>
 #include <memory>
+#include <random>
 #include <sstream>
 #include <string>
 #include <vector>
@@ -345,13 +346,13 @@ TEST(PowerTrace, base) {
     PowerTrace PT(TPD, TTI, PAC, std::make_unique<PAF::V7MInfo>());
     EXPECT_STREQ(PT.getArchInfo()->description(), "Arm V7M ISA");
     PT.add(Insts[0]);
-    PT.analyze(true);
+    PT.analyze();
     EXPECT_EQ(TPD.pwf.size(), 1);
     EXPECT_EQ(TPD.pwf[0], PowerFields(20, 8, 4, 4, 0, 0, 0, &Insts[0]));
 
     TPD.reset();
     PT.add(Insts[1]);
-    PT.analyze(true);
+    PT.analyze();
     EXPECT_EQ(TPD.pwf.size(), 2);
     EXPECT_EQ(TPD.pwf[0], PowerFields(20, 8, 4, 4, 0, 0, 0, &Insts[0]));
     EXPECT_EQ(TPD.pwf[1], PowerFields(22, 9, 5, 2, 2, 0, 0, &Insts[1]));
@@ -359,7 +360,7 @@ TEST(PowerTrace, base) {
     TPD.reset();
     PT.add(Insts[2]);
     PT.add(Insts[3]);
-    PT.analyze(true);
+    PT.analyze();
     EXPECT_EQ(TPD.pwf.size(),
               4 + 2); // 4 instructions, 2 extra cycles for LDRD and STRD.
     EXPECT_EQ(TPD.pwf[0], PowerFields(20, 8, 4, 4, 0, 0, 0, &Insts[0]));
@@ -373,7 +374,7 @@ TEST(PowerTrace, base) {
     PowerTrace PT2(std::move(PT));
     TPD.reset();
     PT2.add(Insts[0]);
-    PT2.analyze(true);
+    PT2.analyze();
     EXPECT_EQ(TPD.pwf.size(), 7);
     EXPECT_EQ(TPD.pwf[0], PowerFields(20, 8, 4, 4, 0, 0, 0, &Insts[0]));
     EXPECT_EQ(TPD.pwf[1], PowerFields(22, 9, 5, 2, 2, 0, 0, &Insts[1]));
@@ -390,7 +391,7 @@ TEST(PowerTrace, base) {
     PT3 = std::move(PT2);
     TPD.reset();
     PT3.add(Insts[0]);
-    PT3.analyze(true);
+    PT3.analyze();
     EXPECT_EQ(TPD.pwf.size(), 8);
     EXPECT_EQ(TPD.pwf[0], PowerFields(20, 8, 4, 4, 0, 0, 0, &Insts[0]));
     EXPECT_EQ(TPD.pwf[1], PowerFields(22, 9, 5, 2, 2, 0, 0, &Insts[1]));
@@ -402,15 +403,30 @@ TEST(PowerTrace, base) {
     EXPECT_EQ(TPD.pwf[7], PowerFields(20, 8, 4, 4, 0, 0, 0, &Insts[0]));
 }
 
+class PowerAnalysisConfigWithNoise : public PowerAnalysisConfig {
+  public:
+    PowerAnalysisConfigWithNoise()
+        : PowerAnalysisConfig(), RD(), MT(RD()), NoiseDist(0.0, 1.0) {}
+    PowerAnalysisConfigWithNoise(PowerAnalysisConfig::Selection s)
+        : PowerAnalysisConfig(s), RD(), MT(RD()), NoiseDist(0.0, 1.0) {}
+    virtual double getNoise() override { return NoiseDist(MT); }
+
+  private:
+    std::random_device RD;
+    std::mt19937 MT;
+    std::uniform_real_distribution<> NoiseDist;
+};
+
 TEST(PowerTrace, withNoise) {
     TestPowerDumper TPD;
     TestTimingInfo TTI;
-    PowerAnalysisConfig PAC;
+    PowerAnalysisConfigWithNoise PAC;
 
     PowerTrace PT(TPD, TTI, PAC, std::make_unique<PAF::V7MInfo>());
     PT.add(Insts[0]);
-    PT.analyze(true);
-    PT.analyze(false);
+    PT.analyze();
+    PAC.setWithoutNoise();
+    PT.analyze();
     EXPECT_EQ(TPD.pwf.size(), 2);
     EXPECT_GT(PowerFields::noise(TPD.pwf[1], TPD.pwf[0]), 0.0);
 }
@@ -427,7 +443,7 @@ TEST(PowerTrace, withConfig) {
     PT1.add(Insts[1]);
     PT1.add(Insts[2]);
     PT1.add(Insts[3]);
-    PT1.analyze(true);
+    PT1.analyze();
     EXPECT_EQ(TPD.pwf.size(),
               6); // 4 instructions, 2 extra cycles.
     EXPECT_EQ(TPD.pwf[0], PowerFields(8, 8, 0, 0, 0, 0, 0, &Insts[0]));
@@ -444,7 +460,7 @@ TEST(PowerTrace, withConfig) {
     PT2.add(Insts[1]);
     PT2.add(Insts[2]);
     PT2.add(Insts[3]);
-    PT2.analyze(true);
+    PT2.analyze();
     EXPECT_EQ(TPD.pwf.size(),
               6); // 4 instructions, 2 extra cycles.
     EXPECT_EQ(TPD.pwf[0], PowerFields(0, 0, 0, 0, 0, 0, 0, &Insts[0]));
@@ -461,7 +477,7 @@ TEST(PowerTrace, withConfig) {
     PT3.add(Insts[1]);
     PT3.add(Insts[2]);
     PT3.add(Insts[3]);
-    PT3.analyze(true);
+    PT3.analyze();
     EXPECT_EQ(TPD.pwf.size(),
               6); // 4 instructions, 2 extra cycles.
     EXPECT_EQ(TPD.pwf[0], PowerFields(0, 0, 0, 0, 0, 0, 0, &Insts[0]));
@@ -478,7 +494,7 @@ TEST(PowerTrace, withConfig) {
     PT4.add(Insts[1]);
     PT4.add(Insts[2]);
     PT4.add(Insts[3]);
-    PT4.analyze(true);
+    PT4.analyze();
     EXPECT_EQ(TPD.pwf.size(),
               6); // 4 instructions, 2 extra cycles.
     EXPECT_EQ(TPD.pwf[0], PowerFields(4, 0, 4, 0, 0, 0, 0, &Insts[0]));
@@ -495,7 +511,7 @@ TEST(PowerTrace, withConfig) {
     PT5.add(Insts[1]);
     PT5.add(Insts[2]);
     PT5.add(Insts[3]);
-    PT5.analyze(true);
+    PT5.analyze();
     EXPECT_EQ(TPD.pwf.size(),
               6); // 4 instructions, 2 extra cycles.
     EXPECT_EQ(TPD.pwf[0], PowerFields(0, 0, 0, 0, 0, 0, 0, &Insts[0]));
@@ -512,7 +528,7 @@ TEST(PowerTrace, withConfig) {
     PT6.add(Insts[1]);
     PT6.add(Insts[2]);
     PT6.add(Insts[3]);
-    PT6.analyze(true);
+    PT6.analyze();
     EXPECT_EQ(TPD.pwf.size(),
               6); // 4 instructions, 2 extra cycles.
     EXPECT_EQ(TPD.pwf[0], PowerFields(8, 0, 0, 4, 0, 0, 0, &Insts[0]));
@@ -528,12 +544,13 @@ TEST(PowerTrace, withConfigAndNoise) {
     // noise.
     TestPowerDumper TPD;
     TestTimingInfo TTI;
-    PowerAnalysisConfig PAC(PowerAnalysisConfig::WITH_OPCODE);
+    PowerAnalysisConfigWithNoise PAC(PowerAnalysisConfig::WITH_OPCODE);
 
     PowerTrace PT(TPD, TTI, PAC, std::make_unique<PAF::V7MInfo>());
     PT.add(Insts[0]);
-    PT.analyze(true);
-    PT.analyze(false);
+    PT.analyze();
+    PAC.setWithoutNoise();
+    PT.analyze();
     EXPECT_EQ(TPD.pwf.size(), 2);
     EXPECT_GT(PowerFields::noise(TPD.pwf[1], TPD.pwf[0]), 0.0);
     EXPECT_EQ(TPD.pwf[0].addr, 0.0);
@@ -543,11 +560,13 @@ TEST(PowerTrace, withConfigAndNoise) {
     EXPECT_EQ(TPD.pwf[0].pc, 0.0);
 
     PAC.clear().set(PowerAnalysisConfig::WITH_INSTRUCTIONS_OUTPUTS);
+    PAC.setWithNoise();
     TPD.reset();
     PowerTrace PT2(TPD, TTI, PAC, std::make_unique<PAF::V7MInfo>());
     PT2.add(Insts[0]);
-    PT2.analyze(true);
-    PT2.analyze(false);
+    PT2.analyze();
+    PAC.setWithoutNoise();
+    PT2.analyze();
     EXPECT_EQ(TPD.pwf.size(), 2);
     EXPECT_GT(PowerFields::noise(TPD.pwf[1], TPD.pwf[0]), 0.0);
     EXPECT_EQ(TPD.pwf[0].addr, 0.0);

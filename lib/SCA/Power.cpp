@@ -26,7 +26,6 @@
 #include <iomanip>
 #include <iostream>
 #include <memory>
-#include <random>
 #include <vector>
 
 using std::ostream;
@@ -35,10 +34,6 @@ using std::unique_ptr;
 using std::vector;
 
 namespace {
-
-std::random_device RD;
-std::mt19937 MT(RD());
-std::uniform_real_distribution<> PowerNoiseDist(0.0, 0.1);
 
 // HammingWeight and HammingDistance are 2 functors, abstracting the power model
 // computation.
@@ -66,7 +61,7 @@ template <template <class> class PowerModelTy> class Power {
     Power() = delete;
     Power(PAF::SCA::PowerDumper &Dumper, const PAF::ArchInfo &CPU,
           const PAF::ReferenceInstruction &I,
-          const PAF::SCA::PowerAnalysisConfig &Config)
+          PAF::SCA::PowerAnalysisConfig &Config)
         : Dumper(Dumper), CPU(CPU), Config(Config),
           PC(Config.withPC() ? F_PC * PowerModelTy<Addr>()(I.pc) : 0.0),
           PSR(0.0), IRegisters(0.0),
@@ -109,8 +104,7 @@ template <template <class> class PowerModelTy> class Power {
             Cycles += mcycles - 1;
     }
 
-    void dump(bool NoNoise,
-              const PAF::ReferenceInstruction *I = nullptr) const {
+    void dump(const PAF::ReferenceInstruction *I = nullptr) const {
         for (unsigned i = 0; i < Cycles; i++) {
             double POReg = PSR + (i < ORegisters.size() ? ORegisters[i] : 0.0);
             double PIReg = IRegisters;
@@ -119,19 +113,19 @@ template <template <class> class PowerModelTy> class Power {
             double PPC = PC;
             double PInstr = Instr;
 
-            if (!NoNoise) {
+            if (Config.addNoise()) {
                 if (Config.withInstructionsOutputs())
-                    POReg += PowerNoiseDist(MT);
+                    POReg += Config.getNoise();
                 if (Config.withInstructionsInputs())
-                    PIReg += PowerNoiseDist(MT);
+                    PIReg += Config.getNoise();
                 if (Config.withMemAddress())
-                    PAddr += PowerNoiseDist(MT);
+                    PAddr += Config.getNoise();
                 if (Config.withMemData())
-                    PData += PowerNoiseDist(MT);
+                    PData += Config.getNoise();
                 if (Config.withPC())
-                    PPC += PowerNoiseDist(MT);
+                    PPC += Config.getNoise();
                 if (Config.withOpcode())
-                    PInstr += PowerNoiseDist(MT);
+                    PInstr += Config.getNoise();
             }
 
             double total = F_PC * PPC + F_Instr * PInstr +
@@ -148,7 +142,7 @@ template <template <class> class PowerModelTy> class Power {
   private:
     PAF::SCA::PowerDumper &Dumper;
     const PAF::ArchInfo &CPU;
-    const PAF::SCA::PowerAnalysisConfig &Config;
+    PAF::SCA::PowerAnalysisConfig &Config;
 
     // Scaling factors, very finger in the air values.
     const double F_PC = 1.0;
@@ -329,7 +323,9 @@ NPYPowerDumper::~NPYPowerDumper() {
     npy.save(filename);
 }
 
-void PowerTrace::analyze(bool NoNoise) const {
+PowerAnalysisConfig::~PowerAnalysisConfig() {}
+
+void PowerTrace::analyze() const {
     Dumper.predump();
 
     for (unsigned i = 0; i < Instructions.size(); i++) {
@@ -337,7 +333,7 @@ void PowerTrace::analyze(bool NoNoise) const {
         Power<HammingWeight> pwr(Dumper, *CPU.get(), I, Config);
         size_t cycles = pwr.cycles();
         Timing.add(I.pc, cycles);
-        pwr.dump(NoNoise, &I);
+        pwr.dump(&I);
 
         // Insert dummy cycles when needed if we are not at the end of the
         // sequence.
@@ -347,7 +343,7 @@ void PowerTrace::analyze(bool NoNoise) const {
                 if (bcycles > cycles) {
                     Timing.incr(bcycles - cycles);
                     for (unsigned i = 0; i < bcycles - cycles; i++)
-                        pwr.dump(NoNoise);
+                        pwr.dump();
                 }
             }
         }

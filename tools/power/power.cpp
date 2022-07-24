@@ -29,6 +29,7 @@
 #include <cstdlib>
 #include <iostream>
 #include <memory>
+#include <random>
 #include <string>
 #include <vector>
 
@@ -45,6 +46,21 @@ using PAF::SCA::CSVPowerDumper;
 using PAF::SCA::NPYPowerDumper;
 using PAF::SCA::PowerDumper;
 
+namespace {
+class MyPowerAnalysisConfig : public PowerAnalysisConfig {
+  public:
+    MyPowerAnalysisConfig(double NoiseLevel)
+        : PowerAnalysisConfig(), RD(), MT(RD()), NoiseDist(0.0, NoiseLevel) {}
+
+    virtual double getNoise() override { return NoiseDist(MT); }
+
+  private:
+    std::random_device RD;
+    std::mt19937 MT;
+    std::uniform_real_distribution<> NoiseDist;
+};
+} // namespace
+
 unique_ptr<Reporter> reporter = make_cli_reporter();
 
 int main(int argc, char **argv) {
@@ -52,7 +68,7 @@ int main(int argc, char **argv) {
     string TimingFilename;
     bool detailed_output = false;
     bool NoNoise = false;
-    PowerAnalysisConfig PAConfig;
+    double NoiseLevel = 0.1;
     vector<PowerAnalysisConfig::Selection> PASelect;
     string FunctionName;
     enum class PowerModel {
@@ -77,6 +93,8 @@ int main(int argc, char **argv) {
                 [&]() { detailed_output = true; });
     ap.optnoval({"--no-noise"}, "Do not add noise to the power trace",
                 [&]() { NoNoise = true; });
+    ap.optval({"--noise-level"}, "Value", "Level of noise to add",
+              [&](const string &s) { NoiseLevel = stod(s); });
     ap.optnoval({"--hamming-weight"}, "use the hamming weight power model",
                 [&]() { PwrModel = PowerModel::HAMMING_WEIGHT; });
     ap.optnoval({"--hamming-distance"}, "use the hamming distance power model",
@@ -118,6 +136,9 @@ int main(int argc, char **argv) {
 
     // Process the contributions sources if any. Default to all of them if none
     // was specified.
+    MyPowerAnalysisConfig PAConfig(NoiseLevel);
+    if (NoNoise)
+        PAConfig.setWithoutNoise();
     if (!PASelect.empty()) {
         PAConfig.clear();
         for (const auto &s : PASelect)
@@ -162,7 +183,7 @@ int main(int argc, char **argv) {
                      << " instance at time : " << ER.Start.time << " to "
                      << ER.End.time << '\n';
             PowerTrace PTrace = PA.getPowerTrace(*Dumper, Timing, PAConfig, ER);
-            PTrace.analyze(NoNoise);
+            PTrace.analyze();
             Dumper->next_trace();
             Timing.next_trace();
         }

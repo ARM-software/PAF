@@ -196,9 +196,11 @@ class PowerAnalysisConfig {
     };
 
     /// Default constructor, consider all power sources.
-    PowerAnalysisConfig() : config(WITH_ALL) {}
+    PowerAnalysisConfig() : config(WITH_ALL), noise(true) {}
     /// Constructor for the case with a single power source.
-    PowerAnalysisConfig(Selection s) : config(s) {}
+    PowerAnalysisConfig(Selection s) : config(s), noise(true) {}
+
+    ~PowerAnalysisConfig();
 
     /// Remove all power sources from this configuration.
     PowerAnalysisConfig &clear() {
@@ -237,8 +239,24 @@ class PowerAnalysisConfig {
     /// Does this config have all power sources set ?
     bool withAll() const { return config == WITH_ALL; }
 
+    /// Should noise be added to the synthetic power trace.
+    bool addNoise() const { return noise; }
+    /// Disable adding noise to the synthetic power trace.
+    PowerAnalysisConfig &setWithoutNoise() {
+        noise = false;
+        return *this;
+    }
+    /// Enable adding noise to the synthetic power trace.
+    PowerAnalysisConfig &setWithNoise() {
+        noise = true;
+        return *this;
+    }
+    /// Get some noise to add to the computed power.
+    virtual double getNoise() { return 0.0; }
+
   private:
     unsigned config;
+    bool noise;
 };
 
 /// The PowerTrace class represents a unique of work: andExecutionRange
@@ -276,7 +294,7 @@ class PowerTrace {
     /// Perform the analysis on the ExecutionRange, dispatching power information
     /// to our Dumper which will be in charge of formatting the results to the
     /// user's taste.
-    void analyze(bool NoNoise) const;
+    void analyze() const;
 
     /// Get this PowerTrace ArchInfo.
     const PAF::ArchInfo *getArchInfo() const { return CPU.get(); }
