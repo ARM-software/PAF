@@ -93,8 +93,6 @@ int main(int argc, char *argv[]) {
         reporter->errx(EXIT_FAILURE, "negative noise level is not supported");
     if (inputFileName.empty())
         reporter->errx(EXIT_FAILURE, "An input file name is required");
-    if (outputFileName.empty())
-        reporter->errx(EXIT_FAILURE, "An output file name is required");
 
     NPArray<double> inputNPY(inputFileName);
     if (!inputNPY.good())
