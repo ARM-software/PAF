@@ -101,7 +101,7 @@ int main(int argc, char *argv[]) {
     argparser.optval({"-c", "--columns"}, "COLUMNS", "number of columns",
                      [&](const string &s) { columns = stoul(s); });
     argparser.optval({"-t", "--element-type"}, "ELT_TYPE",
-                     "select element type (u8, i16, f32, ...)",
+                     "select element type (u1, u2, u4, ..., f4, f8, ...)",
                      [&](const string &s) { elt_type = s; });
     argparser.optval({"-o", "--output"}, "FILE", "output file name",
                      [&](const string &s) { filename = s; });
