@@ -945,6 +945,15 @@ The following options are recognized:
 ``--no-noise``
   Do not add noise to the power trace
 
+``--noise-level VALUE``
+  Level of noise to add (default: 1.0)
+
+``--uniform-noise``
+  Use a uniform distribution noise sourceforge
+
+``--normal-noise``
+  Use a normal distribution noise source
+
 ``--hamming-weight``
   Use the hamming weight power model
 
@@ -1318,7 +1327,13 @@ The following options are recognized:
   Number of rows to expand to. If not set, use all rows from the source NPY.
 
 ``--noise=NOISE_LEVEL``
-  Add noise to all samples
+  Add noise to all samples (default: 0.0, i.e. no noise)
+
+``--uniform-noise``
+  Use a uniform distribution noise sourceforge
+
+``--normal-noise``
+  Use a normal distribution noise source
 
 .. code-block:: bash
 

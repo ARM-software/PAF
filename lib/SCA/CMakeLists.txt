@@ -19,5 +19,5 @@
 add_paf_library(sca
   OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/lib"
   DEPENDS tarmac-trace-utilities
-  SOURCES Expr.cpp NPArray.cpp correl.cpp sca-apps.cpp t-test.cpp utils.cpp Power.cpp
+  SOURCES Expr.cpp NPArray.cpp correl.cpp sca-apps.cpp t-test.cpp utils.cpp Noise.cpp Power.cpp
   )

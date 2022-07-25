@@ -19,6 +19,7 @@
  */
 
 #include "PAF/PAF.h"
+#include "PAF/SCA/Noise.h"
 #include "PAF/SCA/SCA.h"
 #include "PAF/SCA/Power.h"
 
@@ -38,28 +39,14 @@ using std::string;
 using std::unique_ptr;
 using std::vector;
 
+using PAF::SCA::CSVPowerDumper;
+using PAF::SCA::NoiseSource;
+using PAF::SCA::NPYPowerDumper;
 using PAF::SCA::PowerAnalysisConfig;
 using PAF::SCA::PowerAnalyzer;
+using PAF::SCA::PowerDumper;
 using PAF::SCA::PowerTrace;
 using PAF::SCA::YAMLTimingInfo;
-using PAF::SCA::CSVPowerDumper;
-using PAF::SCA::NPYPowerDumper;
-using PAF::SCA::PowerDumper;
-
-namespace {
-class MyPowerAnalysisConfig : public PowerAnalysisConfig {
-  public:
-    MyPowerAnalysisConfig(double NoiseLevel)
-        : PowerAnalysisConfig(), RD(), MT(RD()), NoiseDist(0.0, NoiseLevel) {}
-
-    virtual double getNoise() override { return NoiseDist(MT); }
-
-  private:
-    std::random_device RD;
-    std::mt19937 MT;
-    std::uniform_real_distribution<> NoiseDist;
-};
-} // namespace
 
 unique_ptr<Reporter> reporter = make_cli_reporter();
 
@@ -67,8 +54,9 @@ int main(int argc, char **argv) {
     string OutputFilename;
     string TimingFilename;
     bool detailed_output = false;
-    bool NoNoise = false;
-    double NoiseLevel = 0.1;
+    bool dontAddNoise = false;
+    double NoiseLevel = 1.0;
+    NoiseSource::Type noiseTy = NoiseSource::Type::NORMAL;
     vector<PowerAnalysisConfig::Selection> PASelect;
     string FunctionName;
     enum class PowerModel {
@@ -91,10 +79,16 @@ int main(int argc, char **argv) {
     ap.optnoval({"--detailed-output"},
                 "Emit more detailed information in the CSV file",
                 [&]() { detailed_output = true; });
-    ap.optnoval({"--no-noise"}, "Do not add noise to the power trace",
-                [&]() { NoNoise = true; });
-    ap.optval({"--noise-level"}, "Value", "Level of noise to add",
+    ap.optnoval({"--dont-add-noise"}, "Do not add noise to the power trace",
+                [&]() {
+                    dontAddNoise = true;
+                    noiseTy = NoiseSource::Type::ZERO;
+                });
+    ap.optval({"--noise-level"}, "Value",
+              "Level of noise to add (default: 1.0)",
               [&](const string &s) { NoiseLevel = stod(s); });
+    ap.optnoval({"--uniform-noise"}, "Use a uniform distribution noise source",
+                [&]() { noiseTy = NoiseSource::Type::UNIFORM; });
     ap.optnoval({"--hamming-weight"}, "use the hamming weight power model",
                 [&]() { PwrModel = PowerModel::HAMMING_WEIGHT; });
     ap.optnoval({"--hamming-distance"}, "use the hamming distance power model",
@@ -136,8 +130,9 @@ int main(int argc, char **argv) {
 
     // Process the contributions sources if any. Default to all of them if none
     // was specified.
-    MyPowerAnalysisConfig PAConfig(NoiseLevel);
-    if (NoNoise)
+    PowerAnalysisConfig PAConfig(NoiseSource::getSource(noiseTy, NoiseLevel),
+                                 PowerAnalysisConfig::WITH_ALL);
+    if (dontAddNoise)
         PAConfig.setWithoutNoise();
     if (!PASelect.empty()) {
         PAConfig.clear();

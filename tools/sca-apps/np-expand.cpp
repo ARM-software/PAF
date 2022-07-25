@@ -19,6 +19,7 @@
  */
 
 #include "PAF/SCA/NPArray.h"
+#include "PAF/SCA/Noise.h"
 
 #include "libtarmac/argparse.hh"
 #include "libtarmac/reporter.hh"
@@ -28,32 +29,11 @@
 #include <random>
 #include <string>
 
-namespace {
-class NoiseSource {
-  public:
-    NoiseSource() {}
-    virtual ~NoiseSource() {}
-    virtual double get() { return 0.0; }
-};
-
-class UniformNoiseSource : public NoiseSource {
-  public:
-    UniformNoiseSource(double NoiseLevel)
-        : NoiseSource(), RD(), MT(RD()), NoiseDist(0.0, NoiseLevel) {}
-
-    virtual double get() override { return NoiseDist(MT); }
-
-  private:
-    std::random_device RD;
-    std::mt19937 MT;
-    std::uniform_real_distribution<> NoiseDist;
-};
-} // namespace
-
 using std::string;
 using std::unique_ptr;
 
 using PAF::SCA::NPArray;
+using PAF::SCA::NoiseSource;
 
 unique_ptr<Reporter> reporter = make_cli_reporter();
 
@@ -63,6 +43,7 @@ int main(int argc, char *argv[]) {
     size_t newColNumber = 0;
     size_t newRowNumber = 0;
     double noiseLevel = 0.0;
+    NoiseSource::Type noiseTy = NoiseSource::Type::ZERO;
     unsigned verbose = 0;
 
     Argparse argparser("paf-np-expand", argc, argv);
@@ -82,8 +63,15 @@ int main(int argc, char *argv[]) {
                      "Number of rows to expand to. If not set, use all rows "
                      "from the source NPY.",
                      [&](const string &s) { newRowNumber = stoul(s); });
-    argparser.optval({"--noise"}, "NOISE_LEVEL", "Add noise to all samples",
+    argparser.optval({"--noise"}, "NOISE_LEVEL",
+                     "Add noise to all samples (default: 0.0, i.e. no noise)",
                      [&](const string &s) { noiseLevel = stod(s); });
+    argparser.optnoval({"--uniform-noise"},
+                       "Use a uniform distribution noise source",
+                       [&]() { noiseTy = NoiseSource::Type::UNIFORM; });
+    argparser.optnoval({"--normal-noise"},
+                       "Use a normal distribution noise source",
+                       [&]() { noiseTy = NoiseSource::Type::NORMAL; });
     argparser.positional(
         "NPY", "input file in NPY format",
         [&](const string &s) { inputFileName = s; }, /* Required: */ true);
@@ -104,9 +92,7 @@ int main(int argc, char *argv[]) {
     if (newColNumber == 0)
         newColNumber = inputNPY.cols();
 
-    unique_ptr<NoiseSource> NS(noiseLevel > 0.0
-                                   ? new UniformNoiseSource(noiseLevel)
-                                   : new NoiseSource());
+    unique_ptr<PAF::SCA::NoiseSource> NS(NoiseSource::getSource(noiseTy, noiseLevel));
     unique_ptr<double[]> outputSamples(new double[newRowNumber * newColNumber]);
     NPArray<double> outputNPY(std::move(outputSamples), newRowNumber,
                               newColNumber);

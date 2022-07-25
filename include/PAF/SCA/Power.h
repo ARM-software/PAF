@@ -22,10 +22,12 @@
 
 #include "PAF/ArchInfo.h"
 #include "PAF/PAF.h"
+#include "PAF/SCA/Noise.h"
 
 #include "libtarmac/misc.hh"
 
 #include <iostream>
+#include <memory>
 #include <string>
 #include <vector>
 
@@ -196,11 +198,21 @@ class PowerAnalysisConfig {
     };
 
     /// Default constructor, consider all power sources.
-    PowerAnalysisConfig() : config(WITH_ALL), noise(true) {}
+    PowerAnalysisConfig()
+        : noiseSource(new NullNoise()), config(WITH_ALL), noise(true) {}
     /// Constructor for the case with a single power source.
-    PowerAnalysisConfig(Selection s) : config(s), noise(true) {}
+    PowerAnalysisConfig(Selection s)
+        : noiseSource(new NullNoise()), config(s), noise(true) {}
+    /// Constructor with a custom NoiseSource and a single power source.
+    PowerAnalysisConfig(std::unique_ptr<NoiseSource> &&ns, Selection s)
+        : noiseSource(std::move(ns)), config(s), noise(true) {}
+    /// Default move constructor.
+    PowerAnalysisConfig(PowerAnalysisConfig &&) = default;
 
     ~PowerAnalysisConfig();
+
+    /// Default move assign operator.
+    PowerAnalysisConfig &operator=(PowerAnalysisConfig &&) = default;
 
     /// Remove all power sources from this configuration.
     PowerAnalysisConfig &clear() {
@@ -252,9 +264,10 @@ class PowerAnalysisConfig {
         return *this;
     }
     /// Get some noise to add to the computed power.
-    virtual double getNoise() { return 0.0; }
+    virtual double getNoise() { return noiseSource->get(); }
 
   private:
+    std::unique_ptr<NoiseSource> noiseSource;
     unsigned config;
     bool noise;
 };
@@ -280,7 +293,7 @@ class PowerTrace {
     PowerTrace &operator=(PowerTrace &&PT) {
         Dumper = PT.Dumper;
         Timing = PT.Timing;
-        Config = PT.Config;
+        Config = std::move(PT.Config);
         Instructions = std::move(PT.Instructions);
         CPU.reset(PT.CPU.release());
         return *this;
