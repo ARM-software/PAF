@@ -16,10 +16,9 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-add_subdirectory(faulter)
-add_subdirectory(constanttime)
-add_subdirectory(power)
-add_subdirectory(run-model)
-add_subdirectory(sca-apps)
-add_subdirectory(context)
-
+add_paf_executable(context
+  SOURCES context.cpp
+  LIBRARIES sca paf tarmac
+  DEPENDS tarmac-trace-utilities
+  OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin"
+  )
