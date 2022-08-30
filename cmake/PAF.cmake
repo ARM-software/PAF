@@ -18,8 +18,8 @@
 
 function(add_paf_library name)
   set(options "SHARED")
-  set(oneValueArgs "OUTPUT_DIRECTORY")
-  set(multiValueArgs "DEPENDS;SOURCES")
+  set(oneValueArgs "OUTPUT_DIRECTORY;NAMESPACE")
+  set(multiValueArgs "DEPENDS;SOURCES;PUBLIC_HEADERS")
   cmake_parse_arguments(ARG
     "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN})
 
@@ -30,12 +30,16 @@ function(add_paf_library name)
     add_library(${name} STATIC ${ARG_SOURCES})
     set_target_properties(${name} PROPERTIES ARCHIVE_OUTPUT_DIRECTORY "${ARG_OUTPUT_DIRECTORY}")
   endif()
+  if(ARG_PUBLIC_HEADERS)
+    set_target_properties(${name} PROPERTIES PUBLIC_HEADER "${ARG_PUBLIC_HEADERS}")
+  endif()
 
   if(ARG_DEPENDS)
     add_dependencies(${name} ${ARG_DEPENDS})
   endif()
 
-  install(TARGETS ${name})
+  install(TARGETS ${name} ARCHIVE PUBLIC_HEADER
+    DESTINATION ${CMAKE_INSTALL_PREFIX}/include/${ARG_NAMESPACE})
 endfunction()
 
 function(add_paf_executable name)

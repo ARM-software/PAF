@@ -1,4 +1,4 @@
-# Copyright 2021 Arm Limited. All rights reserved.
+# Copyright 2021,2022 Arm Limited. All rights reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -16,8 +16,19 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
+set(LIBPAF_PUBLIC_HEADERS
+      ${CMAKE_SOURCE_DIR}/include/PAF/ArchInfo.h
+      ${CMAKE_SOURCE_DIR}/include/PAF/Intervals.h
+      ${CMAKE_SOURCE_DIR}/include/PAF/PAF.h)
+
+set(LIBPAF_SOURCES
+  ArchInfo.cpp
+  PAF.cpp)
+
 add_paf_library(paf
   OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/lib"
   DEPENDS tarmac-trace-utilities
-  SOURCES ArchInfo.cpp PAF.cpp
+  SOURCES "${LIBPAF_SOURCES}"
+  PUBLIC_HEADERS "${LIBPAF_PUBLIC_HEADERS}"
+  NAMESPACE "PAF"
 )

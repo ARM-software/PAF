@@ -1,4 +1,4 @@
-# Copyright 2021 Arm Limited. All rights reserved.
+# Copyright 2021,2022 Arm Limited. All rights reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -16,8 +16,28 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
+set(LIBSCA_PUBLIC_HEADERS
+  ${CMAKE_SOURCE_DIR}/include/PAF/SCA/Expr.h
+  ${CMAKE_SOURCE_DIR}/include/PAF/SCA/Noise.h
+  ${CMAKE_SOURCE_DIR}/include/PAF/SCA/NPArray.h
+  ${CMAKE_SOURCE_DIR}/include/PAF/SCA/Power.h
+  ${CMAKE_SOURCE_DIR}/include/PAF/SCA/SCA.h
+  ${CMAKE_SOURCE_DIR}/include/PAF/SCA/utils.h)
+
+set(LIBSCA_SOURCES
+  Expr.cpp
+  NPArray.cpp
+  correl.cpp
+  sca-apps.cpp
+  t-test.cpp
+  utils.cpp
+  Noise.cpp
+  Power.cpp)
+
 add_paf_library(sca
   OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/lib"
   DEPENDS tarmac-trace-utilities
-  SOURCES Expr.cpp NPArray.cpp correl.cpp sca-apps.cpp t-test.cpp utils.cpp Noise.cpp Power.cpp
+  SOURCES "${LIBSCA_SOURCES}"
+  PUBLIC_HEADERS "${LIBSCA_PUBLIC_HEADERS}"
+  NAMESPACE "PAF/SCA"
   )
