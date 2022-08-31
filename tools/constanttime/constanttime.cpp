@@ -1,5 +1,7 @@
 /*
- * Copyright 2021 Arm Limited. All rights reserved.
+ * SPDX-FileCopyrightText: <text>Copyright 2021,2022 Arm Limited and/or its
+ * affiliates <open-source-office@arm.com></text>
+ * SPDX-License-Identifier: Apache-2.0
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,8 +16,6 @@
  * limitations under the License.
  *
  * This file is part of PAF, the Physical Attack Framework.
- *
- * SPDX-License-Identifier: Apache-2.0
  */
 
 #include "PAF/PAF.h"
