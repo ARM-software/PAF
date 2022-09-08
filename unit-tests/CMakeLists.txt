@@ -69,6 +69,7 @@ add_paf_gtest(Power)
 add_paf_gtest(Noise)
 add_paf_gtest(NPArray)
 add_paf_gtest(SCA)
+add_paf_gtest(StopWatch)
 
 add_paf_np_python(np-utils)
 add_paf_np_python(np-create)
