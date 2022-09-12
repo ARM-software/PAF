@@ -68,6 +68,7 @@ add_paf_gtest(PAF)
 add_paf_gtest(Power)
 add_paf_gtest(Noise)
 add_paf_gtest(NPArray)
+add_paf_gtest(ProgressMonitor)
 add_paf_gtest(SCA)
 add_paf_gtest(StopWatch)
 
