@@ -20,8 +20,7 @@
 
 #pragma once
 
-#include "libtarmac/calltree.hh"
-#include "libtarmac/index.hh"
+#include "PAF/PAF.h"
 
 #include <map>
 #include <set>
@@ -105,14 +104,14 @@ struct FunctionExecutionInfo {
     }
 };
 
-class Faulter : public IndexNavigator {
+class Faulter : public PAF::MTAnalyzer {
 
   public:
     enum class FaultModel { InstructionSkip, CorruptRegDef };
 
     Faulter(const TracePair &trace, const std::string &image_filename,
             bool verbose, const std::string &campaign_filename = "")
-        : IndexNavigator(trace, image_filename),
+        : PAF::MTAnalyzer(trace, image_filename),
           campaign_filename(campaign_filename), verbose(verbose) {}
 
     void run(const InjectionRangeSpec &IRS, FaultModel Model,
@@ -121,7 +120,4 @@ class Faulter : public IndexNavigator {
   private:
     const std::string campaign_filename;
     bool verbose;
-
-    bool findRegisterValue(uint64_t *out, const std::string &RegName,
-                           Time time);
 };

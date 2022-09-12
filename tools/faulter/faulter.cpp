@@ -114,7 +114,7 @@ class BPCollector {
 };
 
 // The SuccessorCollector class contains a sequence of (time, address) pairs and
-// can be queried to get the address of the next intruction for example.
+// can be queried to get the address of the next instruction for example.
 class SuccessorCollector {
   public:
     struct Point {
@@ -892,25 +892,4 @@ void Faulter::run(const InjectionRangeSpec &IRS, FaultModel Model,
 
     // Save the results.
     FIP->dump(campaign_filename);
-}
-
-bool Faulter::findRegisterValue(uint64_t *out, const string &RegName,
-                                Time time) {
-    SeqOrderPayload SOP;
-    if (!node_at_time(time, &SOP))
-        reporter->errx(EXIT_FAILURE,
-                       "Unable to retrieve SeqOrderPayload at time %d", time);
-
-    RegisterId RegId;
-    if (!lookup_reg_name(RegId, RegName))
-        reporter->errx(EXIT_FAILURE, "Register lookup failed for '%s'",
-                       RegName.c_str());
-
-    std::pair<bool, uint64_t> res = get_reg_value(SOP.memory_root, RegId);
-    if (!res.first)
-        reporter->errx(EXIT_FAILURE, "Unable to get register value for '%s'",
-                       RegName.c_str());
-
-    *out = res.second;
-    return true;
 }

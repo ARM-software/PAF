@@ -136,23 +136,12 @@ uint64_t PAF::MTAnalyzer::getRegisterValueAtTime(const string &reg,
     if (!lookup_reg_name(r, reg))
         reporter->errx(1, "Can not find register '%s'", reg.c_str());
 
-    vector<unsigned char> val(reg_size(r));
-    vector<unsigned char> def(reg_size(r));
-    auto memroot = SOP.memory_root;
-    unsigned iflags = get_iflags(memroot);
-    Addr roffset = reg_offset(r, iflags);
-    size_t rsize = reg_size(r);
+    std::pair<bool, uint64_t> res = get_reg_value(SOP.memory_root, r);
+    if (!res.first)
+        reporter->errx(EXIT_FAILURE, "Unable to get register value for '%s'",
+                       reg.c_str());
 
-    getmem(memroot, 'r', roffset, rsize, &val[0], &def[0]);
-
-    uint64_t value = 0;
-    for (size_t i = rsize; i-- > 0;) {
-        if (!def[i])
-            reporter->errx(1, "register %s is not defined", reg.c_str());
-        value = (value << 8) | val[i];
-    }
-
-    return value;
+    return res.second;
 }
 
 vector<uint8_t> PAF::MTAnalyzer::getMemoryValueAtTime(uint64_t address,
