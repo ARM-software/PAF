@@ -565,8 +565,12 @@ class MTAnalyzer : public IndexNavigator {
     MTAnalyzer() = delete;
     MTAnalyzer(const MTAnalyzer &) = delete;
     /// Construct a MTAnalyzer from a trace and an image.
-    MTAnalyzer(const TracePair &trace, const std::string &image_filename)
-        : IndexNavigator(trace, image_filename) {}
+    MTAnalyzer(const TracePair &trace, const std::string &image_filename,
+               unsigned verbosity = 0)
+        : IndexNavigator(trace, image_filename), verbosityLevel(verbosity) {}
+
+    unsigned verbosity() const { return verbosityLevel; }
+    bool verbose() const { return verbosityLevel > 0; }
 
     /// Get all ExecutionRange where function FunctionName was executed.
     std::vector<PAF::ExecutionRange>
@@ -577,12 +581,21 @@ class MTAnalyzer : public IndexNavigator {
     std::vector<PAF::ExecutionRange>
     getCallSites(const std::string &FunctionName);
 
+    /// Get all ExecutionRanges between StartLabel and EndLabel. The labels are
+    /// considered to be prefixes, so that one can use labels uniquified by the
+    /// assembler.
+    std::vector<PAF::ExecutionRange>
+    getLabelPairs(const std::string &StartLabel, const std::string &EndLabel);
+
     /// Get the value of register reg at time t.
     uint64_t getRegisterValueAtTime(const std::string &reg, Time t) const;
 
     /// Get memory content at time t.
     std::vector<uint8_t> getMemoryValueAtTime(uint64_t address,
                                               size_t num_bytes, Time t) const;
+
+  private:
+    unsigned verbosityLevel;
 };
 
 } // namespace PAF

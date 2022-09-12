@@ -98,13 +98,12 @@ class Faulter : public PAF::MTAnalyzer {
 
     Faulter(const TracePair &trace, const std::string &image_filename,
             bool verbose, const std::string &campaign_filename = "")
-        : PAF::MTAnalyzer(trace, image_filename),
-          campaign_filename(campaign_filename), verbose(verbose) {}
+        : PAF::MTAnalyzer(trace, image_filename, verbose),
+          campaign_filename(campaign_filename) {}
 
     void run(const InjectionRangeSpec &IRS, FaultModel Model,
              const std::string &oracleSpec);
 
   private:
     const std::string campaign_filename;
-    bool verbose;
 };

@@ -624,7 +624,7 @@ void Faulter::run(const InjectionRangeSpec &IRS, FaultModel Model,
                     FIP->addInjectionRangeInfo(
                         invocation_name, FEI[i].Start.time, FEI[i].End.time,
                         FEI[i].Start.addr, FEI[i].End.addr);
-                    if (verbose) {
+                    if (verbose()) {
                         cout << "Will inject faults on '" << invocation_name
                              << "' : ";
                         dump(cout, FEI[i].Start);
@@ -666,7 +666,7 @@ void Faulter::run(const InjectionRangeSpec &IRS, FaultModel Model,
                             range_name, ir.begin_value().time,
                             ir.end_value().time, ir.begin_value().addr,
                             ir.end_value().addr);
-                        if (verbose) {
+                        if (verbose()) {
                             cout << "Will inject faults on '" << range_name
                                  << "' : ";
                             dump(cout, ir.begin_value());
@@ -688,7 +688,7 @@ void Faulter::run(const InjectionRangeSpec &IRS, FaultModel Model,
         for (const auto s : start_symbs) {
             StartAddresses.push_back(s->addr);
             LabelMap.insert(std::pair<uint64_t, string>(s->addr, s->getName()));
-            if (verbose) {
+            if (verbose()) {
                 cout << "Adding Start label " << s->getName();
                 cout << " at 0x" << hex << s->addr << dec << '\n';
             }
@@ -700,7 +700,7 @@ void Faulter::run(const InjectionRangeSpec &IRS, FaultModel Model,
         for (const auto s : end_symbs) {
             EndAddresses.push_back(s->addr);
             LabelMap.insert(std::pair<uint64_t, string>(s->addr, s->getName()));
-            if (verbose) {
+            if (verbose()) {
                 cout << "Adding End label " << s->getName();
                 cout << " at 0x" << hex << s->addr << dec << '\n';
             }
@@ -709,7 +709,7 @@ void Faulter::run(const InjectionRangeSpec &IRS, FaultModel Model,
         sort(StartAddresses.begin(), StartAddresses.end());
         sort(EndAddresses.begin(), EndAddresses.end());
         LabelCollector Labels(InjectionRanges, StartAddresses, EndAddresses,
-                              verbose);
+                              verbose());
         PAF::FromTraceBuilder<TarmacSite, LabelCollector::EmptyHandler,
                               LabelCollector>
             LC(*this);
@@ -750,7 +750,7 @@ void Faulter::run(const InjectionRangeSpec &IRS, FaultModel Model,
                 Addresses.push_back(s->addr);
                 LabelMap.insert(
                     std::pair<uint64_t, string>(s->addr, s->getName()));
-                if (verbose) {
+                if (verbose()) {
                     cout << "Adding label " << s->getName();
                     cout << " at 0x" << hex << s->addr << dec << '\n';
                 }
@@ -758,7 +758,7 @@ void Faulter::run(const InjectionRangeSpec &IRS, FaultModel Model,
         }
         sort(Addresses.begin(), Addresses.end());
         WLabelCollector Labels(InjectionRanges, *this, IRS.window, Addresses,
-                               LabelMap, verbose);
+                               LabelMap, verbose());
         PAF::FromTraceBuilder<TarmacSite, WLabelCollector::EmptyHandler,
                               WLabelCollector>
             WLC(*this);
@@ -800,7 +800,7 @@ void Faulter::run(const InjectionRangeSpec &IRS, FaultModel Model,
     // Inject faults into each range.
     for (const auto &ir : InjectionRanges) {
 
-        if (verbose) {
+        if (verbose()) {
             cout << "Injecting faults on range ";
             dump(cout, ir.begin_value());
             cout << " - ";
