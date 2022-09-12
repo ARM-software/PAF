@@ -81,7 +81,7 @@ class FunctionSpec {
 };
 
 struct InjectionRangeSpec {
-    enum { NotSet, Functions, LabelsPair, Labels, FlatFunctions } Kind = NotSet;
+    enum { NotSet, Functions, LabelsPair, WLabels, FlatFunctions } Kind = NotSet;
     FunctionSpec included;
     FunctionSpec included_flat;
     FunctionSpec excluded;
@@ -89,19 +89,6 @@ struct InjectionRangeSpec {
     std::string end_label;
     std::vector<std::string> labels;
     unsigned window;
-};
-
-struct FunctionExecutionInfo {
-    TarmacSite Entry;
-    TarmacSite Exit;
-    TarmacSite CallSite;
-    TarmacSite ResumeSite;
-
-    FunctionExecutionInfo(const TarmacSite &Entry, const TarmacSite &Exit,
-                          const TarmacSite &CallSite,
-                          const TarmacSite &ResumeSite)
-        : Entry(Entry), Exit(Exit), CallSite(CallSite), ResumeSite(ResumeSite) {
-    }
 };
 
 class Faulter : public PAF::MTAnalyzer {

@@ -210,17 +210,15 @@ class Oracle:
             s.append("  - {}".format(C))
         return "\n".join(s)
 
-class FunctionInfo:
+class InjectionRangeInfo:
 
     def __init__(self, FI):
-        assertEntityContainsAllOf(FI, 'FunctionInfo',  ['Name', 'StartTime', 'EndTime', 'StartAddress', 'EndAddress', 'CallAddress', 'ResumeAddress'])
+        assertEntityContainsAllOf(FI, 'InjectionRangeInfo',  ['Name', 'StartTime', 'EndTime', 'StartAddress', 'EndAddress'])
         self.__Name = FI['Name']
         self.__StartTime = int(FI['StartTime'])
         self.__EndTime = int(FI['EndTime'])
         self.__StartAddress = int(FI['StartAddress'])
         self.__EndAddress = int(FI['EndAddress'])
-        self.__CallAddress = int(FI['CallAddress'])
-        self.__ResumeAddress = int(FI['ResumeAddress'])
 
     @property
     def Name(self):
@@ -258,14 +256,6 @@ class FunctionInfo:
     def EndAddress(self, address):
         self.__EndAddress = address
 
-    @property
-    def CallAddress(self):
-        return self.__CallAddress
-
-    @property
-    def ResumeAddress(self):
-        return self.__ResumeAddress
-
     def isInCallTree(self, pc):
         """This function returns true iff the program counter is this function or one of its callee."""
         # TODO: Add the calltree information into the campaign file. For now we only check the top level.
@@ -274,7 +264,6 @@ class FunctionInfo:
     def __repr__(self):
         s = "Name: \"{}\", StartTime: {}, EndTime: {}".format(self.Name, self.StartTime, self.EndTime)
         s += ", StartAddress: 0x{:x}, EndAddress: 0x{:x}".format(self.StartAddress, self.EndAddress)
-        s += ", CallAddress: 0x{:x}, ResumeAddress: 0x{:x}".format(self.CallAddress, self.ResumeAddress)
         return '{ ' + s + '}'
 
 class BreakpointInfo:
@@ -429,7 +418,7 @@ class FaultInjectionCampaign:
         self.__Filename = filename
         with open(self.Filename, 'r') as f:
             y = yaml.safe_load(f)
-            assertEntityContainsAllOf(y, "Fault injection campaign file '{}'".format(self.__Filename), ['Image', 'ReferenceTrace', 'MaxTraceTime', 'ProgramEntryAddress', 'ProgramEndAddress', 'FaultModel', 'FunctionInfo', 'Oracle', 'Campaign'])
+            assertEntityContainsAllOf(y, "Fault injection campaign file '{}'".format(self.__Filename), ['Image', 'ReferenceTrace', 'MaxTraceTime', 'ProgramEntryAddress', 'ProgramEndAddress', 'FaultModel', 'InjectionRangeInfo', 'Oracle', 'Campaign'])
             self.__Image = y['Image']
             self.__ReferenceTrace = y['ReferenceTrace']
             self.__MaxTraceTime = int(y['MaxTraceTime'])
@@ -438,9 +427,9 @@ class FaultInjectionCampaign:
             self.__FaultModel = y['FaultModel']
             if self.FaultModel not in ['InstructionSkip', 'CorruptRegDef']:
                 die("Unsupported fault model '{}' in campaign file '{}'".format(self.FaultModel, self.Filename))
-            self.__FunctionInfo = list()
-            for F in y['FunctionInfo']:
-                self.__FunctionInfo.append(FunctionInfo(F))
+            self.__InjectionRangeInfo = list()
+            for F in y['InjectionRangeInfo']:
+                self.__InjectionRangeInfo.append(InjectionRangeInfo(F))
             self.__Oracle = Oracle(y['Oracle'])
             self.__Campaign = list()
             for F in y['Campaign']:
@@ -475,8 +464,8 @@ class FaultInjectionCampaign:
         return self.__FaultModel
 
     @property
-    def FunctionInfo(self):
-        return self.__FunctionInfo
+    def InjectionRangeInfo(self):
+        return self.__InjectionRangeInfo
 
     @property
     def Campaign(self):
@@ -497,7 +486,7 @@ class FaultInjectionCampaign:
 
     def offsetAllFaultsTimeBy(self, offset):
         assert isinstance(offset, int), "Expecting time offset to be an int"
-        for fi in self.FunctionInfo:
+        for fi in self.InjectionRangeInfo:
             fi.StartTime += offset
             fi.EndTime += offset
         for F in self.Campaign:
@@ -505,7 +494,7 @@ class FaultInjectionCampaign:
 
     def offsetAllFaultsAddressBy(self, offset):
         assert isinstance(offset, int), "Expecting addres offset to be an int"
-        for fi in self.FunctionInfo:
+        for fi in self.InjectionRangeInfo:
             fi.StartAddress += offset
             fi.EndAddress += offset
         for F in self.Campaign:
@@ -531,8 +520,8 @@ class FaultInjectionCampaign:
         str += "ProgramEntryAddress: 0x{:x}\n".format(self.ProgramEntryAddress)
         str += "ProgramEndAddress: 0x{:x}\n".format(self.ProgramEndAddress)
         str += "FaultModel: \"{}\"\n".format(self.FaultModel)
-        str += "FunctionInfo:\n"
-        for fi in self.FunctionInfo:
+        str += "InjectionRangeInfo:\n"
+        for fi in self.InjectionRangeInfo:
             str += "  - {}\n".format(fi)
         str += "Oracle:\n{}\n".format(self.Oracle)
         str += "Campaign:\n"

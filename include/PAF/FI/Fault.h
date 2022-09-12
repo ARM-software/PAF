@@ -157,30 +157,30 @@ class CorruptRegDef : public FaultModelBase {
     std::string FaultedReg; ///< The faulted register
 };
 
-/// The FunctionInfo class describes the function under fault injection.
-class FunctionInfo {
+/// The InjectionRangeInfo class describes the range under fault injection.
+class InjectionRangeInfo {
   public:
-    /// Construct a FunctionInfo.
-    FunctionInfo(const std::string &Name, unsigned long StartTime,
-                 unsigned long EndTime, uint64_t StartAddress,
-                 uint64_t EndAddress, uint64_t CallAddress,
-                 uint64_t ResumeAddress)
+    /// Construct a InjectionRangeInfo.
+    InjectionRangeInfo(const std::string &Name, unsigned long StartTime,
+                       unsigned long EndTime, uint64_t StartAddress,
+                       uint64_t EndAddress)
         : Name(Name), StartTime(StartTime), EndTime(EndTime),
-          StartAddress(StartAddress & ~1UL), EndAddress(EndAddress & ~1UL),
-          CallAddress(CallAddress & ~1UL), ResumeAddress(ResumeAddress & ~1UL) {
-    }
+          StartAddress(StartAddress & ~1UL), EndAddress(EndAddress & ~1UL) {}
 
     /// Dump this FunctionInfo to os.
     void dump(std::ostream &os) const;
 
   private:
-    std::string Name;        ///< The function name.
-    unsigned long StartTime; ///< The cycle at which is the function is entered.
-    unsigned long EndTime;   ///< The cycle at which the function exits.
-    uint64_t StartAddress;   ///< The entry address of this function.
-    uint64_t EndAddress;     ///< The exit address of this function.
-    uint64_t CallAddress;    ///< The address this function was called from.
-    uint64_t ResumeAddress;  ///< The address this function will return to.
+    /// The function name, mostly to be user friendly as this may not correspond to an actual function.
+    std::string Name;
+    /// The cycle at which this injection range starts.
+    unsigned long StartTime;
+    /// The cycle at which this injection range ends.
+    unsigned long EndTime;
+    /// The address at which this injection range starts.
+    uint64_t StartAddress;
+    /// The address at which this injection range ends.
+    uint64_t EndAddress;
 };
 
 /// An InjectionCampaign is a container with all information needed to perform a
@@ -195,7 +195,7 @@ class InjectionCampaign {
                       unsigned long MaxTraceTime, uint64_t ProgramEntryAddress,
                       uint64_t ProgramEndAddress)
         : Faults(), Image(Image), ReferenceTrace(ReferenceTrace),
-          FunctionInformation(), MaxTraceTime(MaxTraceTime),
+          InjectionRangeInformation(), MaxTraceTime(MaxTraceTime),
           ProgramEntryAddress(ProgramEntryAddress),
           ProgramEndAddress(ProgramEndAddress) {}
     InjectionCampaign() = delete;
@@ -203,8 +203,8 @@ class InjectionCampaign {
     InjectionCampaign(const InjectionCampaign &) = default;
 
     /// Add FunctionInfo to this InjectionCampaign.
-    InjectionCampaign &addFunctionInfo(FunctionInfo &&FI) {
-        FunctionInformation.emplace_back(std::move(FI));
+    InjectionCampaign &addInjectionRangeInfo(InjectionRangeInfo &&IRI) {
+        InjectionRangeInformation.emplace_back(std::move(IRI));
         return *this;
     }
 
@@ -232,8 +232,8 @@ class InjectionCampaign {
         Faults;                       ///< The faults to inject.
     const std::string Image;          ///< The ELF image filename.
     const std::string ReferenceTrace; ///< The reference tarmac file.
-    std::vector<FunctionInfo>
-        FunctionInformation;          ///< Describes the functions under test.
+    std::vector<InjectionRangeInfo>
+        InjectionRangeInformation;    ///< Describes the functions under test.
     const unsigned long MaxTraceTime; ///< The maximum trace time.
     uint64_t ProgramEntryAddress;     ///< The program entry address.
     uint64_t ProgramEndAddress;       ///< The PC at maximum trace time.

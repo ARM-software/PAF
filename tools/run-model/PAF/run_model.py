@@ -884,7 +884,7 @@ class FaultInjectionBaseDriver(IrisDriver, ABC):
                 # We still can try to make some educated guess about what happened.
                 if not OracleMet:
                     inCallTree = False
-                    for F in self.Dispatcher.Campaign.FunctionInfo:
+                    for F in self.Dispatcher.Campaign.InjectionRangeInfo:
                         if F.isInCallTree(Pc):
                             # Here we really want to handle the case where the PC is
                             # somewhere in the valid call tree. A longer simulation time

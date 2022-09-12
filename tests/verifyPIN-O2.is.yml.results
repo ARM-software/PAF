@@ -5,8 +5,8 @@ MaxTraceTime: 4235
 ProgramEntryAddress: 0x815c
 ProgramEndAddress: 0x10aca
 FaultModel: "InstructionSkip"
-FunctionInfo:
-  - { Name: "verifyPIN@0", StartTime: 2944, EndTime: 2984, StartAddress: 0x8248, EndAddress: 0x827a, CallAddress: 0x80b0, ResumeAddress: 0x80b4}
+InjectionRangeInfo:
+  - { Name: "verifyPIN@0", StartTime: 2944, EndTime: 2984, StartAddress: 0x8248, EndAddress: 0x827a}
 Oracle:
   - { Pc: 0x8010, Classification: [["success",[]]]}
   - { Pc: 0x8280, Classification: [["crash",[]]]}

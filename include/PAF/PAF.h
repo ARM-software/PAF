@@ -78,6 +78,33 @@ class ExecsOfInterest : public CallTreeVisitor {
     }
 };
 
+/// The CSOfInterest class is used to collect all call and resume sites where a
+/// function was executed in a Tarmac trace.
+///
+/// This encodes the specific operation to be done by the CallTreeVisitor and
+/// is not useful in standalone.
+class CSOfInterest : public CallTreeVisitor {
+
+    std::vector<PAF::ExecutionRange> &CS;
+    const Addr FunctionEntryAddr;
+
+  public:
+    /// Given a calltree CT and a function entry address, construct the object
+    /// that the CallTree visitor can use.
+    CSOfInterest(const CallTree &CT, std::vector<PAF::ExecutionRange> &CS,
+                 Addr FunctionEntryAddr)
+        : CallTreeVisitor(CT), CS(CS), FunctionEntryAddr(FunctionEntryAddr) {}
+
+    /// Action to perform when entering the call site of interest.
+    void onCallSite(const TarmacSite &function_entry,
+                    const TarmacSite &function_exit,
+                    const TarmacSite &call_site, const TarmacSite &resume_site,
+                    const CallTree &TC) {
+        if (function_entry.addr == FunctionEntryAddr)
+            CS.emplace_back(call_site, resume_site);
+    }
+};
+
 /// Access is the base class used to model all accesses: MemoryAccess
 /// (memory accesses) and RegisterAccess (register accesses).
 struct Access {
@@ -544,6 +571,11 @@ class MTAnalyzer : public IndexNavigator {
     /// Get all ExecutionRange where function FunctionName was executed.
     std::vector<PAF::ExecutionRange>
     getInstances(const std::string &FunctionName);
+
+    /// Get all Call and Resume sites where function FunctionName was called
+    /// from / returned to.
+    std::vector<PAF::ExecutionRange>
+    getCallSites(const std::string &FunctionName);
 
     /// Get the value of register reg at time t.
     uint64_t getRegisterValueAtTime(const std::string &reg, Time t) const;

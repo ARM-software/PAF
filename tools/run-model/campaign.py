@@ -25,7 +25,7 @@ from FI.faultcampaign import *
 def main(args):
     """A tool to manipulate campaign files."""
     _version = "0.0.1"
-    _copyright = "Copyright ARM Limited 2020 All Rights Reserved."
+    _copyright = "Copyright Arm Limited 2020-2022."
     parser = argparse.ArgumentParser()
     parser.add_argument("-v", "--verbose",
         help="Be more verbose, may be specified multiple times.",

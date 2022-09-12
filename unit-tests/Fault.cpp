@@ -36,7 +36,7 @@ using std::string;
 using PAF::FI::BreakPoint;
 using PAF::FI::CorruptRegDef;
 using PAF::FI::FaultModelBase;
-using PAF::FI::FunctionInfo;
+using PAF::FI::InjectionRangeInfo;
 using PAF::FI::InjectionCampaign;
 using PAF::FI::InstructionSkip;
 using PAF::FI::Oracle;
@@ -153,15 +153,13 @@ TEST(Fault, CorruptRegDef) {
 }
 
 TEST(Fault, FunctionInfo) {
-    FunctionInfo fi("a_function", /* StartTime: */ 1,
-                    /* EndTime: */ 2, /* StartAddress: */ 0x832a,
-                    /* EndAddress: */ 0x8340, /* CallAddress: */ 0x10346,
-                    /* ResumeAddress: */ 0x1034a);
+    InjectionRangeInfo iri1("a_function", /* StartTime: */ 1,
+                          /* EndTime: */ 2, /* StartAddress: */ 0x832a,
+                          /* EndAddress: */ 0x8340);
     std::ostringstream out;
-    fi.dump(out);
+    iri1.dump(out);
     EXPECT_EQ(out.str(), "{ Name: \"a_function\", StartTime: 1, EndTime: 2, "
-                         "StartAddress: 0x832a, EndAddress: 0x8340, "
-                         "CallAddress: 0x10346, ResumeAddress: 0x1034a}");
+                         "StartAddress: 0x832a, EndAddress: 0x8340}");
 }
 
 TEST(Fault, Campaign) {
@@ -174,26 +172,24 @@ TEST(Fault, Campaign) {
         "1000\nProgramEntryAddress: 0x1000\nProgramEndAddress: "
         "0x1100\nFaultModel: \"unknown\"\nCampaign:\n");
 
-    FunctionInfo fi("a_function", /* StartTime: */ 1,
-                    /* EndTime: */ 2, /* StartAddress: */ 0x832a,
-                    /* EndAddress: */ 0x8340, /* CallAddress: */ 0x10346,
-                    /* ResumeAddress: */ 0x1034a);
-    IC.addFunctionInfo(std::move(fi));
+    InjectionRangeInfo iri("a_function", /* StartTime: */ 1,
+                           /* EndTime: */ 2, /* StartAddress: */ 0x832a,
+                           /* EndAddress: */ 0x8340);
+    IC.addInjectionRangeInfo(std::move(iri));
     IC.addFault(new CorruptRegDef(1000, 0x0832a, 0xe9d63401, 32,
                                   "LDRD r3,r4,[r6,#4]", "r3"));
     IC.addOracle(Oracle());
-    
+
     out.str("");
     IC.dump(out);
     EXPECT_EQ(
         out.str(),
         "Image: \"image.elf\"\nReferenceTrace: \"trace.tarmac\"\nMaxTraceTime: "
         "1000\nProgramEntryAddress: 0x1000\nProgramEndAddress: "
-        "0x1100\nFaultModel: \"CorruptRegDef\"\nFunctionInfo:\n  - { Name: "
+        "0x1100\nFaultModel: \"CorruptRegDef\"\nInjectionRangeInfo:\n  - { Name: "
         "\"a_function\", StartTime: 1, EndTime: 2, StartAddress: 0x832a, "
-        "EndAddress: 0x8340, CallAddress: 0x10346, ResumeAddress: "
-        "0x1034a}\nCampaign:\n  - { Id: 0, Time: 1000, Address: 0x832a, "
-        "Instruction: 0xe9d63401, Width: 32, Disassembly: \"LDRD "
+        "EndAddress: 0x8340}\nCampaign:\n  - { Id: 0, Time: 1000, Address: "
+        "0x832a, Instruction: 0xe9d63401, Width: 32, Disassembly: \"LDRD "
         "r3,r4,[r6,#4]\", FaultedReg: \"R3\"}\n");
 }
 

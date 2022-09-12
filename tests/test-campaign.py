@@ -77,8 +77,8 @@ def main():
     FIC = FI.faultcampaign.FaultInjectionCampaign(testfile)
     offset = 13
     FaultTimesExp = [f.Time + offset for f in FIC.Campaign]
-    FInfoStartTimeExp = FIC.FunctionInfo[0].StartTime  + offset
-    FInfoEndTimeExp = FIC.FunctionInfo[0].EndTime + offset
+    FInfoStartTimeExp = FIC.InjectionRangeInfo[0].StartTime  + offset
+    FInfoEndTimeExp = FIC.InjectionRangeInfo[0].EndTime + offset
     FIC.offsetAllFaultsTimeBy(offset)
     FaultTimes = [f.Time for f in FIC.allFaults()]
     if FaultTimes != FaultTimesExp:
@@ -86,16 +86,16 @@ def main():
         print("Error({}): offsetAllFaultsTimeBy returned :\n> {}\nwhich differs from the expected:\n> {}"
                 .format(TestName, FaultTimes, FaultTimesExp))
 
-    FInfoStartTime = FIC.FunctionInfo[0].StartTime
+    FInfoStartTime = FIC.InjectionRangeInfo[0].StartTime
     if FInfoStartTime != FInfoStartTimeExp:
         ErrorCnt += 1
-        print("Error({}): offsetAllFaultsTimeBy returned :\n> {}\n for FunctionInfo[0].StartTime which differs from the expected:\n> {}"
+        print("Error({}): offsetAllFaultsTimeBy returned :\n> {}\n for InjectionRangeInfo[0].StartTime which differs from the expected:\n> {}"
                 .format(TestName, FInfoStartTime, FInfoStartTimeExp))
 
-    FInfoEndTime = FIC.FunctionInfo[0].EndTime
+    FInfoEndTime = FIC.InjectionRangeInfo[0].EndTime
     if FInfoEndTime != FInfoEndTimeExp:
         ErrorCnt += 1
-        print("Error({}): offsetAllFaultsTimeBy returned :\n> {}\n for FunctionInfo[0].EndTime which differs from the expected:\n> {}"
+        print("Error({}): offsetAllFaultsTimeBy returned :\n> {}\n for InjectionRangeInfo[0].EndTime which differs from the expected:\n> {}"
                 .format(TestName, FInfoEndTime, FInfoEndTimeExp))
 
     # Test addr offseting action
@@ -104,8 +104,8 @@ def main():
     offset = 23
     FaultAddressExp = [f.Address + offset for f in FIC.Campaign]
     BkptAddressExp = [f.BreakpointInfo.Address + offset for f in FIC.Campaign]
-    FInfoStartAddressExp = FIC.FunctionInfo[0].StartAddress  + offset
-    FInfoEndAddressExp = FIC.FunctionInfo[0].EndAddress + offset
+    FInfoStartAddressExp = FIC.InjectionRangeInfo[0].StartAddress  + offset
+    FInfoEndAddressExp = FIC.InjectionRangeInfo[0].EndAddress + offset
     FIC.offsetAllFaultsAddressBy(offset)
     FaultAddress = [f.Address for f in FIC.allFaults()]
     if FaultAddress != FaultAddressExp:
@@ -113,16 +113,16 @@ def main():
         print("Error({}): offsetAllFaultsAddressBy returned :\n> {}\nwhich differs from the expected:\n> {}"
                 .format(TestName, FaultAddresss, FaultAddressExp))
 
-    FInfoStartAddress = FIC.FunctionInfo[0].StartAddress
+    FInfoStartAddress = FIC.InjectionRangeInfo[0].StartAddress
     if FInfoStartAddress != FInfoStartAddressExp:
         ErrorCnt += 1
-        print("Error({}): offsetAllFaultsAddressBy returned :\n> {}\n for FunctionInfo.StartAddress which differs from the expected:\n> {}"
+        print("Error({}): offsetAllFaultsAddressBy returned :\n> {}\n for InjectionRangeInfo.StartAddress which differs from the expected:\n> {}"
                 .format(TestName, FInfoStartAddress, FInfoStartAddressExp))
 
-    FInfoEndAddress = FIC.FunctionInfo[0].EndAddress
+    FInfoEndAddress = FIC.InjectionRangeInfo[0].EndAddress
     if FInfoEndAddress != FInfoEndAddressExp:
         ErrorCnt += 1
-        print("Error({}): offsetAllFaultsAddressBy returned :\n> {}\n for FunctionInfo.EndAddress which differs from the expected:\n> {}"
+        print("Error({}): offsetAllFaultsAddressBy returned :\n> {}\n for InjectionRangeInfo.EndAddress which differs from the expected:\n> {}"
                 .format(TestName, FInfoEndAddress, FInfoEndAddressExp))
 
     BkptAddress = [f.Address for f in FIC.allFaults()]

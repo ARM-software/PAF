@@ -49,6 +49,13 @@ using std::string;
 using std::unique_ptr;
 using std::vector;
 
+using PAF::FI::Classifier;
+using PAF::FI::CorruptRegDef;
+using PAF::FI::InjectionCampaign;
+using PAF::FI::InjectionRangeInfo;
+using PAF::FI::InstructionSkip;
+using PAF::FI::Oracle;
+
 template <> struct PAF::IntervalTraits<TarmacSite> {
     static constexpr uint64_t value(const TarmacSite &ts) { return ts.time; }
     using ValueTy = uint64_t;
@@ -368,27 +375,6 @@ class WLabelCollector : ParseReceiver {
     bool verbose;
 };
 
-class CTVisitor : public CallTreeVisitor {
-    vector<FunctionExecutionInfo> &FEI;
-    const Addr TheFunctionEntryPoint;
-
-  public:
-    CTVisitor(const CallTree &CT, vector<FunctionExecutionInfo> &FEI,
-              Addr TheFunctionEntryPoint)
-        : CallTreeVisitor(CT), FEI(FEI),
-          TheFunctionEntryPoint(TheFunctionEntryPoint) {}
-
-    void onCallSite(const TarmacSite &function_entry,
-                    const TarmacSite &function_exit,
-                    const TarmacSite &call_site, const TarmacSite &resume_site,
-                    const CallTree &TC) {
-        const TarmacSite Entry = TC.getFunctionEntry();
-        const TarmacSite Exit = TC.getFunctionExit();
-        if (Entry.addr == TheFunctionEntryPoint)
-            FEI.emplace_back(Entry, Exit, call_site, resume_site);
-    }
-};
-
 // This call tree visitor will capture the Intervals spent in function starting
 // at a specific time, excluding calls to sub-functions.
 class CTFlatVisitor : public CallTreeVisitor {
@@ -477,16 +463,28 @@ class FaulterInjectionPlanner {
     }
 
     // Add a simple Oracle for now : check the function return value.
-    FaulterInjectionPlanner &addOracle(PAF::FI::Oracle &&O) {
+    FaulterInjectionPlanner &addOracle(Oracle &&O) {
         Campaign.addOracle(std::move(O));
         return *this;
     }
 
-    FaulterInjectionPlanner &addFunctionInfo(const string &FunctionName,
-                                             const FunctionExecutionInfo &FEI) {
-        Campaign.addFunctionInfo(PAF::FI::FunctionInfo(
-            FunctionName, FEI.Entry.time, FEI.Exit.time, FEI.Entry.addr,
-            FEI.Exit.addr, FEI.CallSite.addr, FEI.ResumeSite.addr));
+    FaulterInjectionPlanner &addInjectionRangeInfo(const std::string &Name,
+                                                   unsigned long StartTime,
+                                                   unsigned long EndTime,
+                                                   uint64_t StartAddress,
+                                                   uint64_t EndAddress) {
+        Campaign.addInjectionRangeInfo(InjectionRangeInfo(
+            Name, StartTime, EndTime, StartAddress, EndAddress));
+        return *this;
+    }
+
+    FaulterInjectionPlanner &
+    addInjectionRangeInfo(const std::string &Name, unsigned long StartTime,
+                          unsigned long EndTime, uint64_t StartAddress,
+                          uint64_t EndAddress, uint64_t CallAddress,
+                          uint64_t ResumeAddress) {
+        Campaign.addInjectionRangeInfo(InjectionRangeInfo(
+            Name, StartTime, EndTime, StartAddress, EndAddress));
         return *this;
     }
 
@@ -506,7 +504,7 @@ class FaulterInjectionPlanner {
     const PAF::ArchInfo &CPU;
     BPCollector Breakpoints;
     SuccessorCollector Successors;
-    PAF::FI::InjectionCampaign Campaign;
+    InjectionCampaign Campaign;
     size_t InstCnt;
 };
 
@@ -521,7 +519,7 @@ class InstructionSkipPlanner : public FaulterInjectionPlanner {
                                   ProgramEntryAddress, ProgramEndAddress) {}
 
     virtual void operator()(const PAF::ReferenceInstruction &I) override {
-        PAF::FI::InstructionSkip *theFault = new PAF::FI::InstructionSkip(
+        InstructionSkip *theFault = new InstructionSkip(
             I.time, I.pc, I.instruction, CPU.getNOP(I.width), I.width,
             I.executed, PAF::trimSpacesAndComment(I.disassembly));
         theFault->setBreakpoint(I.pc, Breakpoints.count(I.pc));
@@ -552,7 +550,7 @@ class CorruptRegDefPlanner : public FaulterInjectionPlanner {
         for (const auto &Reg : I.regaccess) {
             if (Reg.access == PAF::RegisterAccess::Type::Write) {
                 faultAdded = true;
-                PAF::FI::CorruptRegDef *theFault = new PAF::FI::CorruptRegDef(
+                CorruptRegDef *theFault = new CorruptRegDef(
                     I.time, I.pc, I.instruction, I.width,
                     PAF::trimSpacesAndComment(I.disassembly), Reg.name);
                 theFault->setBreakpoint(BkptAddr, Breakpoints.count(BkptAddr));
@@ -580,13 +578,6 @@ std::unique_ptr<FaulterInjectionPlanner> FaulterInjectionPlanner::get(
                                      ProgramEntryAddress, ProgramEndAddress));
     }
 }
-
-vector<FunctionExecutionInfo> getFEI(const CallTree &CT, uint64_t SymbAddr) {
-    vector<FunctionExecutionInfo> FEI;
-    CTVisitor CTV(CT, FEI, SymbAddr);
-    CT.visit(CTV);
-    return FEI;
-}
 } // namespace
 
 void Faulter::run(const InjectionRangeSpec &IRS, FaultModel Model,
@@ -611,20 +602,13 @@ void Faulter::run(const InjectionRangeSpec &IRS, FaultModel Model,
 
     case InjectionRangeSpec::NotSet:
         reporter->errx(EXIT_FAILURE,
-                       "No injection range specification profided");
+                       "No injection range specification provided");
 
     case InjectionRangeSpec::Functions:
         for (const auto &S : IRS.included) {
-            string function_name = S.first;
-            uint64_t symb_addr;
-            size_t symb_size;
-            if (!lookup_symbol(function_name, symb_addr, symb_size)) {
-                reporter->warn("Symbol for function '%s' not found",
-                               function_name.c_str());
-                return;
-            }
+            const string function_name = S.first;
 
-            vector<FunctionExecutionInfo> FEI = getFEI(CT, symb_addr);
+            vector<PAF::ExecutionRange> FEI = getInstances(function_name);
 
             if (FEI.size() == 0) {
                 reporter->warn("Function '%s' was not found in the trace",
@@ -636,14 +620,16 @@ void Faulter::run(const InjectionRangeSpec &IRS, FaultModel Model,
                 if (IRS.included.invocation(function_name, i)) {
                     string invocation_name =
                         function_name + "@" + std::to_string(i);
-                    InjectionRanges.insert(FEI[i].Entry, FEI[i].Exit);
-                    FIP->addFunctionInfo(invocation_name, FEI[i]);
+                    InjectionRanges.insert(FEI[i].Start, FEI[i].End);
+                    FIP->addInjectionRangeInfo(
+                        invocation_name, FEI[i].Start.time, FEI[i].End.time,
+                        FEI[i].Start.addr, FEI[i].End.addr);
                     if (verbose) {
                         cout << "Will inject faults on '" << invocation_name
                              << "' : ";
-                        dump(cout, FEI[i].Entry);
+                        dump(cout, FEI[i].Start);
                         cout << " - ";
-                        dump(cout, FEI[i].Exit);
+                        dump(cout, FEI[i].End);
                         cout << '\n';
                     }
                 }
@@ -652,16 +638,9 @@ void Faulter::run(const InjectionRangeSpec &IRS, FaultModel Model,
 
     case InjectionRangeSpec::FlatFunctions:
         for (const auto &S : IRS.included_flat) {
-            string function_name = S.first;
-            uint64_t symb_addr;
-            size_t symb_size;
-            if (!lookup_symbol(function_name, symb_addr, symb_size)) {
-                reporter->warn("Symbol for function '%s' not found",
-                               function_name.c_str());
-                return;
-            }
+            const string function_name = S.first;
 
-            vector<FunctionExecutionInfo> FEI = getFEI(CT, symb_addr);
+            vector<PAF::ExecutionRange> FEI = getInstances(function_name);
 
             if (FEI.size() == 0) {
                 reporter->warn("Function '%s' was not found in the trace",
@@ -673,7 +652,7 @@ void Faulter::run(const InjectionRangeSpec &IRS, FaultModel Model,
                 if (IRS.included_flat.invocation(function_name, i)) {
                     string invocation_name =
                         function_name + "@" + std::to_string(i);
-                    CTFlatVisitor CTF(CT, FEI[i].Entry, FEI[i].Exit);
+                    CTFlatVisitor CTF(CT, FEI[i].Start, FEI[i].End);
                     CT.visit(CTF);
                     unsigned j = 0;
                     bool hasCalls = CTF.getInjectionRanges().size() > 1;
@@ -683,11 +662,10 @@ void Faulter::run(const InjectionRangeSpec &IRS, FaultModel Model,
                         const string range_name(
                             invocation_name +
                             (hasCalls ? " - range " + std::to_string(j) : ""));
-                        FIP->addFunctionInfo(
-                            range_name,
-                            FunctionExecutionInfo(
-                                ir.begin_value(), ir.end_value(),
-                                FEI[i].CallSite, FEI[i].ResumeSite));
+                        FIP->addInjectionRangeInfo(
+                            range_name, ir.begin_value().time,
+                            ir.end_value().time, ir.begin_value().addr,
+                            ir.end_value().addr);
                         if (verbose) {
                             cout << "Will inject faults on '" << range_name
                                  << "' : ";
@@ -756,13 +734,13 @@ void Faulter::run(const InjectionRangeSpec &IRS, FaultModel Model,
             else
                 name += "unknown";
 
-            FIP->addFunctionInfo(
-                name, FunctionExecutionInfo(ir.begin_value(), ir.end_value(),
-                                            TarmacSite(), TarmacSite()));
+            FIP->addInjectionRangeInfo(
+                name, ir.begin_value().time, ir.end_value().time,
+                ir.begin_value().addr, ir.end_value().addr);
         }
     } break;
 
-    case InjectionRangeSpec::Labels: {
+    case InjectionRangeSpec::WLabels: {
         map<uint64_t, string> LabelMap;
         vector<uint64_t> Addresses;
         for (const auto &label : IRS.labels) {
@@ -812,9 +790,9 @@ void Faulter::run(const InjectionRangeSpec &IRS, FaultModel Model,
             if (name.empty())
                 name = "unknown";
 
-            FIP->addFunctionInfo(
-                name, FunctionExecutionInfo(ir.begin_value(), ir.end_value(),
-                                            TarmacSite(), TarmacSite()));
+            FIP->addInjectionRangeInfo(
+                name, ir.begin_value().time, ir.end_value().time,
+                ir.begin_value().addr, ir.end_value().addr);
         }
     } break;
     }
@@ -843,47 +821,63 @@ void Faulter::run(const InjectionRangeSpec &IRS, FaultModel Model,
     // FIXME: these are very simple oracles for now, but at some point, they'll
     // support more complex functions, which will require scavenging values
     // (findRegisterValue or find Memory value) from the trace.
-    PAF::FI::Oracle O;
+    Oracle O;
     if (!O.parse(oracleSpec))
         reporter->errx(EXIT_FAILURE,
                        "Unable to parse the oracle specification");
     // Set the Classifiers symbol's address.
     for (auto &C : O) {
         if (!C.hasAddress()) {
-            const std::string &CSymbName = C.getSymbolName();
-            uint64_t CSymbAddr;
-            size_t CSymbSize;
-            if (!lookup_symbol(CSymbName, CSymbAddr, CSymbSize))
-                reporter->errx(
-                    EXIT_FAILURE,
-                    "Symbol for Classifier at location '%s' not found",
-                    CSymbName.c_str());
-            vector<FunctionExecutionInfo> SymbFEI = getFEI(CT, CSymbAddr);
-            if (SymbFEI.size() == 0 &&
-                C.getKind() != PAF::FI::Classifier::Kind::Entry) {
-                reporter->warn("Classifier '%s' execution not found in the "
+            const string &CSymbName = C.getSymbolName();
+            vector<PAF::ExecutionRange> COI;
+            switch (C.getKind()) {
+            case Classifier::Kind::CallSite:
+            case Classifier::Kind::ResumeSite:
+                COI = getCallSites(CSymbName);
+                break;
+            case Classifier::Kind::Entry:
+            case Classifier::Kind::Return:
+                COI = getInstances(CSymbName);
+                break;
+            }
+
+            // Sanity check.
+            if (COI.size() == 0 && C.getKind() != Classifier::Kind::Entry) {
+                reporter->errx(EXIT_FAILURE,
+                               "Classifier '%s' execution not found in the "
                                "trace. Can not guess "
                                "the Entry, Return, CallSite or ResumeSite",
                                CSymbName.c_str());
-                return;
-            } else if (SymbFEI.size() > 1) {
-                reporter->warn("Multiple execution of Classifier '%s' found in "
-                               "the trace. Only the first one is "
-                               "considered.",
-                               CSymbName.c_str());
+            } else if (COI.size() > 1) {
+                reporter->warnx(
+                    "Multiple execution of Classifier '%s' found in "
+                    "the trace. Only the first one is "
+                    "considered.",
+                    CSymbName.c_str());
             }
+
             switch (C.getKind()) {
-            case PAF::FI::Classifier::Kind::Return:
-                C.setAddress(SymbFEI[0].Exit.addr & ~1UL);
+            case Classifier::Kind::Entry:
+                if (COI.size() == 0) {
+                    uint64_t CSymbAddr;
+                    size_t CSymbSize;
+                    if (!lookup_symbol(CSymbName, CSymbAddr, CSymbSize))
+                        reporter->errx(
+                            EXIT_FAILURE,
+                            "Symbol for Classifier at location '%s' not found",
+                            CSymbName.c_str());
+                    C.setAddress(CSymbAddr & ~1UL);
+                } else
+                    C.setAddress(COI[0].Start.addr & ~1UL);
                 break;
-            case PAF::FI::Classifier::Kind::CallSite:
-                C.setAddress(SymbFEI[0].CallSite.addr & ~1UL);
+            case Classifier::Kind::Return:
+                C.setAddress(COI[0].End.addr & ~1UL);
                 break;
-            case PAF::FI::Classifier::Kind::ResumeSite:
-                C.setAddress(SymbFEI[0].ResumeSite.addr & ~1UL);
+            case Classifier::Kind::CallSite:
+                C.setAddress(COI[0].Start.addr & ~1UL);
                 break;
-            case PAF::FI::Classifier::Kind::Entry:
-                C.setAddress(CSymbAddr & ~1UL);
+            case Classifier::Kind::ResumeSite:
+                C.setAddress(COI[0].End.addr & ~1UL);
                 break;
             }
         }

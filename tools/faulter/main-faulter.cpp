@@ -95,7 +95,7 @@ unsigned add_label_pair(InjectionRangeSpec &IRS, const string &arg) {
 }
 
 unsigned add_window_labels(InjectionRangeSpec &IRS, const string &arg) {
-    IRS.Kind = InjectionRangeSpec::Labels;
+    IRS.Kind = InjectionRangeSpec::WLabels;
     unsigned cnt = 0;
     size_t last = 0;
     size_t pos = 0;
@@ -248,7 +248,7 @@ int main(int argc, char **argv) {
             reporter->errx(EXIT_FAILURE, "Missing end label");
     }
 
-    if (IRS.Kind == InjectionRangeSpec::Labels) {
+    if (IRS.Kind == InjectionRangeSpec::WLabels) {
         if (IRS.window == 0)
             reporter->errx(EXIT_FAILURE, "Unexpected window of size 0");
         if (IRS.labels.empty())
@@ -281,7 +281,7 @@ int main(int argc, char **argv) {
             cout << "Inject faults between labels '" << IRS.start_label
                  << "' and '" << IRS.end_label << "'\n";
             break;
-        case InjectionRangeSpec::Labels:
+        case InjectionRangeSpec::WLabels:
             cout << "Inject faults with a +/- " << IRS.window
                  << " instruction window on labels: ";
             dump(cout, IRS.labels);

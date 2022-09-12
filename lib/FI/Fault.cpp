@@ -30,14 +30,12 @@ using std::ofstream;
 using std::ostream;
 using std::string;
 
-void FunctionInfo::dump(ostream &os) const {
+void InjectionRangeInfo::dump(ostream &os) const {
     os << "{ Name: \"" << Name << '"';
     os << ", StartTime: " << StartTime;
     os << ", EndTime: " << EndTime;
     os << ", StartAddress: 0x" << hex << StartAddress;
     os << ", EndAddress: 0x" << EndAddress;
-    os << ", CallAddress: 0x" << CallAddress;
-    os << ", ResumeAddress: 0x" << ResumeAddress;
     os << dec << '}';
 }
 
@@ -92,9 +90,9 @@ void InjectionCampaign::dump(ostream &os) const {
     os << "FaultModel: \"";
     dumpFaultModel(os);
     os << "\"\n";
-    if (FunctionInformation.size() != 0) {
-        os << "FunctionInfo:\n";
-        for (const auto &fi : FunctionInformation) {
+    if (InjectionRangeInformation.size() != 0) {
+        os << "InjectionRangeInfo:\n";
+        for (const auto &fi : InjectionRangeInformation) {
             os << "  - ";
             fi.dump(os);
             os << '\n';

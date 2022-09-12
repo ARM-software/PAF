@@ -126,6 +126,27 @@ PAF::MTAnalyzer::getInstances(const string &FunctionName) {
     return Functions;
 }
 
+vector<PAF::ExecutionRange>
+PAF::MTAnalyzer::getCallSites(const string &FunctionName) {
+    if (!has_image())
+        reporter->errx(EXIT_FAILURE,
+                       "No image, function '%s' can not be looked up",
+                       FunctionName.c_str());
+
+    uint64_t symb_addr;
+    size_t symb_size;
+    if (!lookup_symbol(FunctionName, symb_addr, symb_size))
+        reporter->errx(EXIT_FAILURE, "Symbol for function '%s' not found",
+                       FunctionName.c_str());
+
+    CallTree CT(*this);
+    vector<PAF::ExecutionRange> CS;
+    PAF::CSOfInterest CSOI(CT, CS, symb_addr);
+    CT.visit(CSOI);
+
+    return CS;
+}
+
 uint64_t PAF::MTAnalyzer::getRegisterValueAtTime(const string &reg,
                                                  Time t) const {
     SeqOrderPayload SOP;

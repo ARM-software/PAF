@@ -5,8 +5,8 @@ MaxTraceTime: 4296
 ProgramEntryAddress: 0x8154
 ProgramEndAddress: 0x10b0a
 FaultModel: "CorruptRegDef"
-FunctionInfo:
-  - { Name: "verifyPIN@0", StartTime: 2944, EndTime: 3045, StartAddress: 0x8248, EndAddress: 0x82bc, CallAddress: 0x80a8, ResumeAddress: 0x80ac}
+InjectionRangeInfo:
+  - { Name: "verifyPIN@0", StartTime: 2944, EndTime: 3045, StartAddress: 0x8248, EndAddress: 0x82bc}
 Oracle:
   - { Pc: 0x8240, Classification: [["success",[]]]}
   - { Pc: 0x82be, Classification: [["crash",[]]]}
