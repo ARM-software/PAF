@@ -56,11 +56,6 @@ using PAF::FI::InjectionRangeInfo;
 using PAF::FI::InstructionSkip;
 using PAF::FI::Oracle;
 
-template <> struct PAF::IntervalTraits<TarmacSite> {
-    static constexpr uint64_t value(const TarmacSite &ts) { return ts.time; }
-    using ValueTy = uint64_t;
-};
-
 namespace {
 
 void dump(ostream &os, const TarmacSite &S) {

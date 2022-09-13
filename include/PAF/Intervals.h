@@ -40,6 +40,12 @@ template <class Ty> struct IntervalTraits {
     using ValueTy = Ty;
 };
 
+/// Specialization of IntervalTraits for the very commonly used TarmacSite.
+template <> struct IntervalTraits<TarmacSite> {
+    static constexpr uint64_t value(const TarmacSite &ts) { return ts.time; }
+    using ValueTy = uint64_t;
+};
+
 /// The interval class represent an interval, i.e. a pair of [start,end] with
 /// start <= end. This provides a helper for manipulating intervals.
 template <typename Ty> class Interval {
