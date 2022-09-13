@@ -19,14 +19,21 @@
  */
 
 #include "PAF/PAF.h"
+#include "PAF/Intervals.h"
 
 #include <cstdlib>
+#include <iostream>
 
+using std::cout;
+using std::dec;
+using std::hex;
+using std::map;
 using std::ostream;
 using std::string;
 using std::vector;
 
-template <class T> static string trimDisassembly(const T &str) {
+namespace {
+template <class T> string trimDisassembly(const T &str) {
     string s(str);
 
     // Remove the comment if any
@@ -54,15 +61,226 @@ template <class T> static string trimDisassembly(const T &str) {
     return s;
 }
 
-string PAF::trimSpacesAndComment(const string &str) {
+// The labelCollector will scan though a range of tarmac lines and try to
+// match Start / End labels.
+class LabelCollector {
+    struct Label {
+        enum LabelKind { START, END } Kind;
+        TarmacSite Site;
+
+        Label(LabelKind K, const TarmacSite &Site) : Kind(START), Site(Site) {}
+        static Label Start(const TarmacSite &Site) {
+            return Label(START, Site);
+        }
+        static Label End(const TarmacSite &Site) { return Label(END, Site); }
+    };
+
+  public:
+    struct EmptyHandler {
+        void event(TarmacSite &ts, const InstructionEvent &ev) {
+            ts = TarmacSite(ev.pc & ~1UL, ev.time);
+        }
+        void event(TarmacSite &, const RegisterEvent &ev) {}
+        void event(TarmacSite &, const MemoryEvent &ev) {}
+        void event(TarmacSite &, const TextOnlyEvent &ev) {}
+    };
+
+    LabelCollector(PAF::Intervals<TarmacSite> &IR,
+                   const std::vector<uint64_t> &StartAddresses,
+                   const std::vector<uint64_t> &EndAddresses,
+                   bool verbose = false)
+        : StartAddresses(StartAddresses), EndAddresses(EndAddresses),
+          exec_stack(), IR(IR), verbose(verbose) {
+        assert(is_sorted(StartAddresses.begin(), StartAddresses.end()) &&
+               "Start addresses must be sorted");
+        assert(is_sorted(EndAddresses.begin(), EndAddresses.end()) &&
+               "End addresses must be sorted");
+    }
+
+    void operator()(const TarmacSite &ts) {
+        if (binary_search(StartAddresses.begin(), StartAddresses.end(),
+                          ts.addr)) {
+            exec_stack.push_back(Label::Start(ts));
+            if (verbose) {
+                cout << "Pushing START ";
+                PAF::dump(cout, ts);
+                cout << '\n';
+            }
+        } else if (binary_search(EndAddresses.begin(), EndAddresses.end(),
+                                 ts.addr)) {
+            if (exec_stack.empty())
+                reporter->errx(
+                    EXIT_FAILURE,
+                    "Empty execution stack, can not match an EndLabel with "
+                    "anything !");
+            if (exec_stack.back().Kind == Label::START) {
+                if (verbose) {
+                    cout << "Matching START / END ";
+                    PAF::dump(cout, exec_stack.back().Site);
+                    cout << " - ";
+                    PAF::dump(cout, ts);
+                    cout << '\n';
+                }
+                IR.insert(exec_stack.back().Site, ts);
+                exec_stack.pop_back();
+                return;
+            } else {
+                reporter->errx(
+                    EXIT_FAILURE,
+                    "Can not match an End label to another End label.");
+            }
+        }
+    }
+
+    void dump(ostream &os) const {
+        for (const auto &ir : IR) {
+            PAF::dump(os, ir.begin_value());
+            os << " - ";
+            PAF::dump(os, ir.end_value());
+            os << '\n';
+        }
+    }
+
+  private:
+    const vector<uint64_t> &StartAddresses;
+    const vector<uint64_t> &EndAddresses;
+    vector<Label> exec_stack;
+    PAF::Intervals<TarmacSite> &IR;
+    bool verbose;
+};
+
+// The WlabelCollector will scan though a range of tarmac lines and collect
+// the + / - N instructions around labels.
+class WLabelCollector : ParseReceiver {
+
+  public:
+    struct EmptyHandler {
+        void event(TarmacSite &ts, const InstructionEvent &ev) {
+            ts = TarmacSite(ev.pc & ~1UL, ev.time);
+        }
+        void event(TarmacSite &, const RegisterEvent &ev) {}
+        void event(TarmacSite &, const MemoryEvent &ev) {}
+        void event(TarmacSite &, const TextOnlyEvent &ev) {}
+    };
+
+    WLabelCollector(PAF::Intervals<TarmacSite> &IR, const IndexNavigator &IN,
+                    unsigned N, const std::vector<uint64_t> &Addresses,
+                    const map<uint64_t, string> &LabelMap,
+                    vector<std::pair<uint64_t, string>> *OutLabels = nullptr,
+                    bool verbose = false)
+        : IN(IN), Addresses(Addresses), IR(IR), buffer(), LabelMap(LabelMap),
+          OutLabels(OutLabels), Window(N), verbose(verbose) {
+        assert(is_sorted(Addresses.begin(), Addresses.end()) &&
+               "Addresses must be sorted");
+    }
+
+    virtual void got_event(InstructionEvent &ev) override {
+        buffer.push_back(TarmacSite(ev.pc & ~1UL, ev.time));
+    }
+
+    void operator()(const TarmacSite &ts) {
+        if (binary_search(Addresses.begin(), Addresses.end(), ts.addr)) {
+            string label = "unknown";
+            map<uint64_t, string>::const_iterator it;
+            if ((it = LabelMap.find(ts.addr)) != LabelMap.end())
+                label = it->second;
+            if (OutLabels)
+                OutLabels->push_back(
+                    std::pair<uint64_t, string>(ts.time, label));
+
+            SeqOrderPayload SOP;
+
+            // Find the start / end time within the window.
+            IN.node_at_time(ts.time, &SOP);
+            SeqOrderPayload StartSOP(SOP);
+            TarmacLineParser TLP(IN.index.isBigEndian(), *this);
+            for (unsigned i = Window; i > 0; i--) {
+                if (!IN.get_previous_node(StartSOP, &StartSOP)) {
+                    reporter->warn(
+                        "Can not move window starting point to the full "
+                        "window.");
+                    break;
+                }
+            }
+            std::vector<std::string> Lines = IN.index.get_trace_lines(StartSOP);
+            for (const std::string &line : Lines)
+                try {
+                    TLP.parse(line);
+                } catch (TarmacParseError err) {
+                    // Ignore parse failures; we just leave the output event
+                    // fields set to null.
+                }
+
+            SeqOrderPayload EndSOP(SOP);
+            for (unsigned i = Window; i > 0; i--) {
+                if (!IN.get_next_node(EndSOP, &EndSOP)) {
+                    reporter->warn("Can not move window end point to the full "
+                                   "window.");
+                    break;
+                }
+            }
+            Lines = IN.index.get_trace_lines(EndSOP);
+            for (const std::string &line : Lines)
+                try {
+                    TLP.parse(line);
+                } catch (TarmacParseError err) {
+                    // Ignore parse failures; we just leave the output event
+                    // fields set to null.
+                }
+
+            if (buffer.size() != 2)
+                reporter->errx(EXIT_FAILURE,
+                               "Not enough TarmacSites to create an Interval");
+            IR.insert(buffer[0], buffer[1]);
+            if (verbose) {
+                cout << "Adding range ";
+                PAF::dump(cout, buffer[0]);
+                cout << " - ";
+                PAF::dump(cout, buffer[1]);
+                cout << '\n';
+            }
+            buffer.clear();
+        }
+    }
+
+    void dump(ostream &os) const {
+        for (const auto &ir : IR) {
+            PAF::dump(os, ir.begin_value());
+            os << " - ";
+            PAF::dump(os, ir.end_value());
+            os << '\n';
+        }
+    }
+
+  private:
+    const IndexNavigator &IN;
+    const vector<uint64_t> &Addresses;
+    PAF::Intervals<TarmacSite> &IR;
+    vector<TarmacSite> buffer;
+    const map<uint64_t, string> &LabelMap;
+    vector<std::pair<uint64_t, string>> *OutLabels;
+    unsigned Window;
+    bool verbose;
+};
+
+} // namespace
+
+namespace PAF {
+
+string trimSpacesAndComment(const string &str) {
     return trimDisassembly<string>(str);
 }
 
-string PAF::trimSpacesAndComment(const char *str) {
+string trimSpacesAndComment(const char *str) {
     return trimDisassembly<const char *>(str);
 }
 
-void PAF::MemoryAccess::dump(ostream &OS) const {
+void dump(ostream &os, const TarmacSite &S) {
+    os << "t:" << S.time << " l:" << S.tarmac_line << " pc=0x" << hex << S.addr
+       << dec;
+}
+
+void MemoryAccess::dump(ostream &OS) const {
     switch (access) {
     case Type::Read:
         OS << 'R';
@@ -77,7 +295,7 @@ void PAF::MemoryAccess::dump(ostream &OS) const {
     OS << std::hex << addr << std::dec;
 }
 
-void PAF::RegisterAccess::dump(ostream &OS) const {
+void RegisterAccess::dump(ostream &OS) const {
     switch (access) {
     case Type::Read:
         OS << 'R';
@@ -90,7 +308,7 @@ void PAF::RegisterAccess::dump(ostream &OS) const {
     OS << '@' << name;
 }
 
-void PAF::ReferenceInstruction::dump(ostream &OS) const {
+void ReferenceInstruction::dump(ostream &OS) const {
     OS << "Time:" << time;
     OS << " Executed:" << executed;
     OS << " PC:0x" << std::hex << pc << std::dec;
@@ -105,8 +323,15 @@ void PAF::ReferenceInstruction::dump(ostream &OS) const {
     }
 }
 
-vector<PAF::ExecutionRange>
-PAF::MTAnalyzer::getInstances(const string &FunctionName) {
+ExecutionRange MTAnalyzer::getFullExecutionRange() const {
+    SeqOrderPayload finalNode;
+    if (!find_buffer_limit(true, &finalNode))
+        reporter->errx(EXIT_FAILURE, "Unable to retrieve tarmac trace end node");
+    return ExecutionRange(TarmacSite(), finalNode);
+}
+
+vector<ExecutionRange>
+MTAnalyzer::getInstances(const string &FunctionName) const {
     if (!has_image())
         reporter->errx(EXIT_FAILURE,
                        "No image, function '%s' can not be looked up",
@@ -126,8 +351,7 @@ PAF::MTAnalyzer::getInstances(const string &FunctionName) {
     return Functions;
 }
 
-vector<PAF::ExecutionRange>
-PAF::MTAnalyzer::getCallSites(const string &FunctionName) {
+vector<ExecutionRange> MTAnalyzer::getCallSites(const string &FunctionName) const {
     if (!has_image())
         reporter->errx(EXIT_FAILURE,
                        "No image, function '%s' can not be looked up",
@@ -147,8 +371,94 @@ PAF::MTAnalyzer::getCallSites(const string &FunctionName) {
     return CS;
 }
 
-uint64_t PAF::MTAnalyzer::getRegisterValueAtTime(const string &reg,
-                                                 Time t) const {
+vector<ExecutionRange>
+MTAnalyzer::getLabelPairs(const string &StartLabel, const string &EndLabel,
+                          map<uint64_t, string> *LabelMap) const {
+    vector<uint64_t> StartAddresses;
+    const auto start_symbs =
+        get_image()->find_all_symbols_starting_with(StartLabel);
+    for (const auto s : start_symbs) {
+        StartAddresses.push_back(s->addr);
+        if (LabelMap)
+            LabelMap->insert(
+                std::pair<uint64_t, string>(s->addr, s->getName()));
+        if (verbose()) {
+            cout << "Adding Start label " << s->getName();
+            cout << " at 0x" << hex << s->addr << dec << '\n';
+        }
+    }
+
+    vector<uint64_t> EndAddresses;
+    const auto end_symbs =
+        get_image()->find_all_symbols_starting_with(EndLabel);
+    for (const auto s : end_symbs) {
+        EndAddresses.push_back(s->addr);
+        if (LabelMap)
+            LabelMap->insert(
+                std::pair<uint64_t, string>(s->addr, s->getName()));
+        if (verbose()) {
+            cout << "Adding End label " << s->getName();
+            cout << " at 0x" << hex << s->addr << dec << '\n';
+        }
+    }
+
+    sort(StartAddresses.begin(), StartAddresses.end());
+    sort(EndAddresses.begin(), EndAddresses.end());
+
+    PAF::Intervals<TarmacSite> IR;
+    LabelCollector Labels(IR, StartAddresses, EndAddresses, verbose());
+    PAF::FromTraceBuilder<TarmacSite, LabelCollector::EmptyHandler,
+                          LabelCollector>
+        LC(*this);
+    LC.build(getFullExecutionRange(), Labels);
+
+    vector<PAF::ExecutionRange> result;
+    for (const auto &ir : IR)
+        result.emplace_back(ir.begin_value(), ir.end_value());
+
+    return result;
+}
+
+vector<ExecutionRange>
+MTAnalyzer::getWLabels(const vector<string> &labels, unsigned N,
+                       vector<std::pair<uint64_t, string>> *OutLabels) const {
+    map<uint64_t, string> LabelMap;
+    vector<uint64_t> Addresses;
+    for (const auto &label : labels) {
+        const auto symbs = get_image()->find_all_symbols_starting_with(label);
+        for (const auto s : symbs) {
+            Addresses.push_back(s->addr);
+            LabelMap.insert(std::pair<uint64_t, string>(s->addr, s->getName()));
+            if (verbose()) {
+                cout << "Adding label " << s->getName();
+                cout << " at 0x" << hex << s->addr << dec << '\n';
+            }
+        }
+    }
+    sort(Addresses.begin(), Addresses.end());
+
+    PAF::Intervals<TarmacSite> IR;
+    WLabelCollector Labels(IR, *this, N, Addresses,
+                           LabelMap, OutLabels, verbose());
+    PAF::FromTraceBuilder<TarmacSite, WLabelCollector::EmptyHandler,
+                          WLabelCollector>
+        WLC(*this);
+    WLC.build(getFullExecutionRange(), Labels);
+
+    // Some Interval may have been merged, so check an invariant:
+    if (OutLabels && IR.size() > OutLabels->size())
+        reporter->errx(
+            EXIT_FAILURE,
+            "Broken invariant, can not have more Intervals than labels !");
+
+    vector<PAF::ExecutionRange> result;
+    for (const auto &ir : IR)
+        result.emplace_back(ir.begin_value(), ir.end_value());
+
+    return result;
+}
+
+uint64_t MTAnalyzer::getRegisterValueAtTime(const string &reg, Time t) const {
     SeqOrderPayload SOP;
     if (!node_at_time(t, &SOP))
         reporter->errx(1, "Can not find node at time %d in this trace", t);
@@ -165,9 +475,9 @@ uint64_t PAF::MTAnalyzer::getRegisterValueAtTime(const string &reg,
     return res.second;
 }
 
-vector<uint8_t> PAF::MTAnalyzer::getMemoryValueAtTime(uint64_t address,
-                                                      size_t num_bytes,
-                                                      Time t) const {
+vector<uint8_t> MTAnalyzer::getMemoryValueAtTime(uint64_t address,
+                                                 size_t num_bytes,
+                                                 Time t) const {
     SeqOrderPayload SOP;
     if (!node_at_time(t, &SOP))
         reporter->errx(1, "Can not find node at time %d in this trace", t);
@@ -183,3 +493,5 @@ vector<uint8_t> PAF::MTAnalyzer::getMemoryValueAtTime(uint64_t address,
 
     return result;
 }
+
+} // namespace PAF

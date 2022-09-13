@@ -58,11 +58,6 @@ using PAF::FI::Oracle;
 
 namespace {
 
-void dump(ostream &os, const TarmacSite &S) {
-    os << "t:" << S.time << " l:" << S.tarmac_line << " pc=0x" << hex << S.addr
-       << dec;
-}
-
 // The BPCollector class collects and accumulates overtime how many time an
 // address has been seen, so that a breakpoint count can be set, for example
 // when one needs to break at the third iteration of a loop.
@@ -159,215 +154,6 @@ class SuccessorCollector {
 
   private:
     vector<Point> Trace;
-};
-
-// The labelCollector will scan though a range of tarmac lines and try to
-// match Start / End labels.
-class LabelCollector {
-    struct Label {
-        enum LabelKind { START, END } Kind;
-        TarmacSite Site;
-
-        Label(LabelKind K, const TarmacSite &Site) : Kind(START), Site(Site) {}
-        static Label Start(const TarmacSite &Site) {
-            return Label(START, Site);
-        }
-        static Label End(const TarmacSite &Site) { return Label(END, Site); }
-    };
-
-  public:
-    struct EmptyHandler {
-        void event(TarmacSite &ts, const InstructionEvent &ev) {
-            ts = TarmacSite(ev.pc & ~1UL, ev.time);
-        }
-        void event(TarmacSite &, const RegisterEvent &ev) {}
-        void event(TarmacSite &, const MemoryEvent &ev) {}
-        void event(TarmacSite &, const TextOnlyEvent &ev) {}
-    };
-
-    LabelCollector(PAF::Intervals<TarmacSite> &IR,
-                   const std::vector<uint64_t> &StartAddresses,
-                   const std::vector<uint64_t> &EndAddresses,
-                   bool verbose = false)
-        : StartAddresses(StartAddresses), EndAddresses(EndAddresses),
-          exec_stack(), IR(IR), verbose(verbose) {
-        assert(is_sorted(StartAddresses.begin(), StartAddresses.end()) &&
-               "Start addresses must be sorted");
-        assert(is_sorted(EndAddresses.begin(), EndAddresses.end()) &&
-               "End addresses must be sorted");
-    }
-
-    void operator()(const TarmacSite &ts) {
-        if (binary_search(StartAddresses.begin(), StartAddresses.end(),
-                          ts.addr)) {
-            exec_stack.push_back(Label::Start(ts));
-            if (verbose) {
-                cout << "Pushing START ";
-                ::dump(cout, ts);
-                cout << '\n';
-            }
-        } else if (binary_search(EndAddresses.begin(), EndAddresses.end(),
-                                 ts.addr)) {
-            if (exec_stack.empty())
-                reporter->errx(
-                    EXIT_FAILURE,
-                    "Empty execution stack, can not match an EndLabel with "
-                    "anything !");
-            if (exec_stack.back().Kind == Label::START) {
-                if (verbose) {
-                    cout << "Matching START / END ";
-                    ::dump(cout, exec_stack.back().Site);
-                    cout << " - ";
-                    ::dump(cout, ts);
-                    cout << '\n';
-                }
-                IR.insert(exec_stack.back().Site, ts);
-                exec_stack.pop_back();
-                return;
-            } else {
-                reporter->errx(
-                    EXIT_FAILURE,
-                    "Can not match an End label to another End label.");
-            }
-        }
-    }
-
-    void dump(ostream &os) const {
-        for (const auto &ir : IR) {
-            ::dump(os, ir.begin_value());
-            os << " - ";
-            ::dump(os, ir.end_value());
-            os << '\n';
-        }
-    }
-
-    void clear() { exec_stack.clear(); }
-
-  private:
-    const std::vector<uint64_t> &StartAddresses;
-    const std::vector<uint64_t> &EndAddresses;
-    std::vector<Label> exec_stack;
-    PAF::Intervals<TarmacSite> &IR;
-    bool verbose;
-};
-
-// The WlabelCollector will scan though a range of tarmac lines and collect
-// the + / - N instructions around labels.
-class WLabelCollector : ParseReceiver {
-
-  public:
-    struct EmptyHandler {
-        void event(TarmacSite &ts, const InstructionEvent &ev) {
-            ts = TarmacSite(ev.pc & ~1UL, ev.time);
-        }
-        void event(TarmacSite &, const RegisterEvent &ev) {}
-        void event(TarmacSite &, const MemoryEvent &ev) {}
-        void event(TarmacSite &, const TextOnlyEvent &ev) {}
-    };
-
-    WLabelCollector(PAF::Intervals<TarmacSite> &IR, IndexNavigator &IN,
-                    unsigned N, const std::vector<uint64_t> &Addresses,
-                    const map<uint64_t, string> &LabelMap, bool verbose = false)
-        : IN(IN), Addresses(Addresses), IR(IR), buffer(), LabelMap(LabelMap),
-          OutLabels(), Window(N), verbose(verbose) {
-        assert(is_sorted(Addresses.begin(), Addresses.end()) &&
-               "Addresses must be sorted");
-    }
-
-    virtual void got_event(InstructionEvent &ev) override {
-        buffer.push_back(TarmacSite(ev.pc & ~1UL, ev.time));
-    }
-
-    void operator()(const TarmacSite &ts) {
-        if (binary_search(Addresses.begin(), Addresses.end(), ts.addr)) {
-            string label = "unknown";
-            map<uint64_t, string>::const_iterator it;
-            if ((it = LabelMap.find(ts.addr)) != LabelMap.end())
-                label = it->second;
-            OutLabels.push_back(std::pair<uint64_t, string>(ts.time, label));
-
-            SeqOrderPayload SOP;
-
-            // Find the start / end time within the window.
-            IN.node_at_time(ts.time, &SOP);
-            SeqOrderPayload StartSOP(SOP);
-            TarmacLineParser TLP(IN.index.isBigEndian(), *this);
-            for (unsigned i = Window; i > 0; i--) {
-                if (!IN.get_previous_node(StartSOP, &StartSOP)) {
-                    reporter->warn(
-                        "Can not move window starting point to the full "
-                        "window.");
-                    break;
-                }
-            }
-            std::vector<std::string> Lines = IN.index.get_trace_lines(StartSOP);
-            for (const std::string &line : Lines)
-                try {
-                    TLP.parse(line);
-                } catch (TarmacParseError err) {
-                    // Ignore parse failures; we just leave the output event
-                    // fields set to null.
-                }
-
-            SeqOrderPayload EndSOP(SOP);
-            for (unsigned i = Window; i > 0; i--) {
-                if (!IN.get_next_node(EndSOP, &EndSOP)) {
-                    reporter->warn("Can not move window end point to the full "
-                                   "window.");
-                    break;
-                }
-            }
-            Lines = IN.index.get_trace_lines(EndSOP);
-            for (const std::string &line : Lines)
-                try {
-                    TLP.parse(line);
-                } catch (TarmacParseError err) {
-                    // Ignore parse failures; we just leave the output event
-                    // fields set to null.
-                }
-
-            if (buffer.size() != 2)
-                reporter->errx(EXIT_FAILURE,
-                               "Not enough TarmacSites to create an Interval");
-            IR.insert(buffer[0], buffer[1]);
-            if (verbose) {
-                cout << "Adding range ";
-                ::dump(cout, buffer[0]);
-                cout << " - ";
-                ::dump(cout, buffer[1]);
-                cout << '\n';
-            }
-            buffer.clear();
-        }
-    }
-
-    void dump(ostream &os) const {
-        for (const auto &ir : IR) {
-            ::dump(os, ir.begin_value());
-            os << " - ";
-            ::dump(os, ir.end_value());
-            os << '\n';
-        }
-    }
-
-    const vector<std::pair<uint64_t, string>> &getOutLabels() const {
-        return OutLabels;
-    }
-
-    void clear() {
-        buffer.clear();
-        OutLabels.clear();
-    }
-
-  private:
-    IndexNavigator &IN;
-    const vector<uint64_t> &Addresses;
-    PAF::Intervals<TarmacSite> &IR;
-    vector<TarmacSite> buffer;
-    const map<uint64_t, string> &LabelMap;
-    vector<std::pair<uint64_t, string>> OutLabels;
-    unsigned Window;
-    bool verbose;
 };
 
 // This call tree visitor will capture the Intervals spent in function starting
@@ -592,68 +378,79 @@ void Faulter::run(const InjectionRangeSpec &IRS, FaultModel Model,
         CT.getFunctionExit().addr);
 
     // Build the intervals where faults have to be injected.
-    PAF::Intervals<TarmacSite> InjectionRanges;
-    switch (IRS.Kind) {
+    vector<PAF::ExecutionRange> ER;
 
+    switch (IRS.Kind) {
     case InjectionRangeSpec::NotSet:
         reporter->errx(EXIT_FAILURE,
                        "No injection range specification provided");
 
-    case InjectionRangeSpec::Functions:
+    case InjectionRangeSpec::Functions: {
+        // Some function calls might be calling others from the list, so ensure
+        // a proper merging of the ExecutionRanges.
+        PAF::Intervals<TarmacSite> IR;
+
         for (const auto &S : IRS.included) {
             const string function_name = S.first;
 
-            vector<PAF::ExecutionRange> FEI = getInstances(function_name);
+            // Use local ExecutionRanges so as not to pollute the global one.
+            vector<PAF::ExecutionRange> LER = getInstances(function_name);
 
-            if (FEI.size() == 0) {
+            if (LER.size() == 0) {
                 reporter->warn("Function '%s' was not found in the trace",
                                function_name.c_str());
                 return;
             }
 
-            for (unsigned i = 0; i < FEI.size(); i++)
+            for (unsigned i = 0; i < LER.size(); i++)
                 if (IRS.included.invocation(function_name, i)) {
                     string invocation_name =
                         function_name + "@" + std::to_string(i);
-                    InjectionRanges.insert(FEI[i].Start, FEI[i].End);
+                    IR.insert(LER[i].Start, LER[i].End);
                     FIP->addInjectionRangeInfo(
-                        invocation_name, FEI[i].Start.time, FEI[i].End.time,
-                        FEI[i].Start.addr, FEI[i].End.addr);
+                        invocation_name, LER[i].Start.time, LER[i].End.time,
+                        LER[i].Start.addr, LER[i].End.addr);
                     if (verbose()) {
                         cout << "Will inject faults on '" << invocation_name
                              << "' : ";
-                        dump(cout, FEI[i].Start);
+                        PAF::dump(cout, LER[i].Start);
                         cout << " - ";
-                        dump(cout, FEI[i].End);
+                        PAF::dump(cout, LER[i].End);
                         cout << '\n';
                     }
                 }
         }
-        break;
 
-    case InjectionRangeSpec::FlatFunctions:
+        /// We now have non overlapping intervals !
+        for (const auto &ir : IR)
+            ER.emplace_back(ir.begin_value(), ir.end_value());
+    } break;
+
+    case InjectionRangeSpec::FlatFunctions: {
+        PAF::Intervals<TarmacSite> IR;
+
         for (const auto &S : IRS.included_flat) {
             const string function_name = S.first;
 
-            vector<PAF::ExecutionRange> FEI = getInstances(function_name);
+            // Use local ExecutionRanges so as not to pollute the global one.
+            vector<PAF::ExecutionRange> LER = getInstances(function_name);
 
-            if (FEI.size() == 0) {
+            if (LER.size() == 0) {
                 reporter->warn("Function '%s' was not found in the trace",
                                function_name.c_str());
                 return;
             }
 
-            for (unsigned i = 0; i < FEI.size(); i++)
+            for (unsigned i = 0; i < LER.size(); i++)
                 if (IRS.included_flat.invocation(function_name, i)) {
                     string invocation_name =
                         function_name + "@" + std::to_string(i);
-                    CTFlatVisitor CTF(CT, FEI[i].Start, FEI[i].End);
+                    CTFlatVisitor CTF(CT, LER[i].Start, LER[i].End);
                     CT.visit(CTF);
                     unsigned j = 0;
                     bool hasCalls = CTF.getInjectionRanges().size() > 1;
                     for (const auto &ir : CTF.getInjectionRanges()) {
-                        InjectionRanges.insert(ir.begin_value(),
-                                               ir.end_value());
+                        IR.insert(ir.begin_value(), ir.end_value());
                         const string range_name(
                             invocation_name +
                             (hasCalls ? " - range " + std::to_string(j) : ""));
@@ -664,119 +461,63 @@ void Faulter::run(const InjectionRangeSpec &IRS, FaultModel Model,
                         if (verbose()) {
                             cout << "Will inject faults on '" << range_name
                                  << "' : ";
-                            dump(cout, ir.begin_value());
+                            PAF::dump(cout, ir.begin_value());
                             cout << " - ";
-                            dump(cout, ir.end_value());
+                            PAF::dump(cout, ir.end_value());
                             cout << '\n';
                         }
                         j++;
                     }
                 }
         }
-        break;
+        /// We now have non overlapping intervals !
+        for (const auto &ir : IR)
+            ER.emplace_back(ir.begin_value(), ir.end_value());
+    } break;
 
     case InjectionRangeSpec::LabelsPair: {
         map<uint64_t, string> LabelMap;
-        vector<uint64_t> StartAddresses;
-        const auto start_symbs =
-            get_image()->find_all_symbols_starting_with(IRS.start_label);
-        for (const auto s : start_symbs) {
-            StartAddresses.push_back(s->addr);
-            LabelMap.insert(std::pair<uint64_t, string>(s->addr, s->getName()));
-            if (verbose()) {
-                cout << "Adding Start label " << s->getName();
-                cout << " at 0x" << hex << s->addr << dec << '\n';
-            }
-        }
+        ER = getLabelPairs(IRS.start_label, IRS.end_label, &LabelMap);
 
-        vector<uint64_t> EndAddresses;
-        const auto end_symbs =
-            get_image()->find_all_symbols_starting_with(IRS.end_label);
-        for (const auto s : end_symbs) {
-            EndAddresses.push_back(s->addr);
-            LabelMap.insert(std::pair<uint64_t, string>(s->addr, s->getName()));
-            if (verbose()) {
-                cout << "Adding End label " << s->getName();
-                cout << " at 0x" << hex << s->addr << dec << '\n';
-            }
-        }
-
-        sort(StartAddresses.begin(), StartAddresses.end());
-        sort(EndAddresses.begin(), EndAddresses.end());
-        LabelCollector Labels(InjectionRanges, StartAddresses, EndAddresses,
-                              verbose());
-        PAF::FromTraceBuilder<TarmacSite, LabelCollector::EmptyHandler,
-                              LabelCollector>
-            LC(*this);
-        LC.build(PAF::ExecutionRange(TarmacSite(), CT.getFunctionExit()),
-                 Labels);
-
-        // Labels don't really correspond to function names, so synthesize a
+        // Labels don't necessarily correspond to function names, so synthesize a
         // 'start_label - end_label' to have a friendly name for the Intervals.
-        for (const auto &ir : InjectionRanges) {
+        for (const auto &er: ER) {
             string name("");
 
             map<uint64_t, string>::const_iterator it;
-            if ((it = LabelMap.find(ir.begin_value().addr)) != LabelMap.end())
+            if ((it = LabelMap.find(er.Start.addr)) != LabelMap.end())
                 name += it->second;
             else
                 name += "unknown";
 
             name += " - ";
 
-            if ((it = LabelMap.find(ir.end_value().addr)) != LabelMap.end())
+            if ((it = LabelMap.find(er.End.addr)) != LabelMap.end())
                 name += it->second;
             else
                 name += "unknown";
 
             FIP->addInjectionRangeInfo(
-                name, ir.begin_value().time, ir.end_value().time,
-                ir.begin_value().addr, ir.end_value().addr);
+                name, er.Start.time, er.End.time,
+                er.Start.addr, er.End.addr);
         }
     } break;
 
     case InjectionRangeSpec::WLabels: {
-        map<uint64_t, string> LabelMap;
-        vector<uint64_t> Addresses;
-        for (const auto &label : IRS.labels) {
-            const auto symbs =
-                get_image()->find_all_symbols_starting_with(label);
-            for (const auto s : symbs) {
-                Addresses.push_back(s->addr);
-                LabelMap.insert(
-                    std::pair<uint64_t, string>(s->addr, s->getName()));
-                if (verbose()) {
-                    cout << "Adding label " << s->getName();
-                    cout << " at 0x" << hex << s->addr << dec << '\n';
-                }
-            }
-        }
-        sort(Addresses.begin(), Addresses.end());
-        WLabelCollector Labels(InjectionRanges, *this, IRS.window, Addresses,
-                               LabelMap, verbose());
-        PAF::FromTraceBuilder<TarmacSite, WLabelCollector::EmptyHandler,
-                              WLabelCollector>
-            WLC(*this);
-        WLC.build(PAF::ExecutionRange(TarmacSite(), CT.getFunctionExit()),
-                  Labels);
-
-        // Some Interval may have been merge, so check an invariant:
-        if (InjectionRanges.size() > Labels.getOutLabels().size())
-            reporter->errx(
-                EXIT_FAILURE,
-                "Broken invariant, can not have more Intervals than labels !");
+        vector<std::pair<uint64_t, string>> OutLabels;
+        ER = getWLabels(IRS.labels, IRS.window, &OutLabels);
 
         // Synthesize a name for describing an Interval.
         // Intervals and OutLabels are both sorted in time/
         vector<std::pair<uint64_t, string>>::const_iterator it =
-            Labels.getOutLabels().begin();
+            OutLabels.begin();
         vector<std::pair<uint64_t, string>>::const_iterator ite =
-            Labels.getOutLabels().end();
-        for (const auto &ir : InjectionRanges) {
+            OutLabels.end();
+        for (const auto &er : ER) {
             string name("");
 
-            while (it != ite && it->first >= ir.begin_value().time &&
-                   it->first <= ir.end_value().time) {
+            while (it != ite && it->first >= er.Start.time &&
+                   it->first <= er.End.time) {
                 if (!name.empty())
                     name += " + ";
                 name += it->second;
@@ -786,30 +527,30 @@ void Faulter::run(const InjectionRangeSpec &IRS, FaultModel Model,
                 name = "unknown";
 
             FIP->addInjectionRangeInfo(
-                name, ir.begin_value().time, ir.end_value().time,
-                ir.begin_value().addr, ir.end_value().addr);
+                name, er.Start.time, er.End.time,
+                er.Start.addr, er.End.addr);
         }
     } break;
     }
 
     // Inject faults into each range.
-    for (const auto &ir : InjectionRanges) {
+    for (const auto &er : ER) {
 
         if (verbose()) {
             cout << "Injecting faults on range ";
-            dump(cout, ir.begin_value());
+            PAF::dump(cout, er.Start);
             cout << " - ";
-            dump(cout, ir.end_value());
+            PAF::dump(cout, er.End);
             cout << '\n';
         }
 
-        FIP->setup(*this, ir.begin_value(), ir.end_value());
+        FIP->setup(*this, er.Start, er.End);
 
         // Inject the faults.
         PAF::FromTraceBuilder<PAF::ReferenceInstruction,
                               PAF::ReferenceInstructionBuilder, decltype(*FIP)>
             FTP(*this);
-        FTP.build(PAF::ExecutionRange(ir.begin_value(), ir.end_value()), *FIP);
+        FTP.build(PAF::ExecutionRange(er.Start, er.End), *FIP);
     }
 
     // Build the Oracle we got from the command line and add it to the Campaign.

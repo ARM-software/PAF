@@ -28,6 +28,7 @@
 #include <algorithm>
 #include <cstdlib>
 #include <iostream>
+#include <map>
 #include <string>
 #include <vector>
 
@@ -35,6 +36,9 @@ namespace PAF {
 
 std::string trimSpacesAndComment(const std::string &str);
 std::string trimSpacesAndComment(const char *str);
+
+/// Dump TarmacSite S to os.
+void dump(std::ostream &os, const TarmacSite &S);
 
 /// The ExecutionRange class models a range of executed instructions [start,
 /// End].
@@ -572,20 +576,32 @@ class MTAnalyzer : public IndexNavigator {
     unsigned verbosity() const { return verbosityLevel; }
     bool verbose() const { return verbosityLevel > 0; }
 
+    /// Get the full execution range for the trace under analysis.
+    PAF::ExecutionRange getFullExecutionRange()const;
+
     /// Get all ExecutionRange where function FunctionName was executed.
+    /// This includes sub-calls to other functions.
     std::vector<PAF::ExecutionRange>
-    getInstances(const std::string &FunctionName);
+    getInstances(const std::string &FunctionName) const;
 
     /// Get all Call and Resume sites where function FunctionName was called
     /// from / returned to.
     std::vector<PAF::ExecutionRange>
-    getCallSites(const std::string &FunctionName);
+    getCallSites(const std::string &FunctionName) const;
 
     /// Get all ExecutionRanges between StartLabel and EndLabel. The labels are
     /// considered to be prefixes, so that one can use labels uniquified by the
     /// assembler.
     std::vector<PAF::ExecutionRange>
-    getLabelPairs(const std::string &StartLabel, const std::string &EndLabel);
+    getLabelPairs(const std::string &StartLabel, const std::string &EndLabel,
+                  std::map<uint64_t, std::string> *LabelMap = nullptr) const;
+
+    /// Get all ExecutionRanges between covering the instructions between the N
+    /// instructions before Label and the N instructions after Label for each
+    /// Labels.
+    std::vector<PAF::ExecutionRange> getWLabels(
+        const std::vector<std::string> &Labels, unsigned N,
+        std::vector<std::pair<uint64_t, std::string>> *OutLabels = nullptr) const;
 
     /// Get the value of register reg at time t.
     uint64_t getRegisterValueAtTime(const std::string &reg, Time t) const;
