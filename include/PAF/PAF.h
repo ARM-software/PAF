@@ -104,7 +104,7 @@ class CSOfInterest : public CallTreeVisitor {
                     const TarmacSite &function_exit,
                     const TarmacSite &call_site, const TarmacSite &resume_site,
                     const CallTree &TC) {
-        if (function_entry.addr == FunctionEntryAddr)
+        if (TC.getFunctionEntry().addr == FunctionEntryAddr)
             CS.emplace_back(call_site, resume_site);
     }
 };
@@ -419,7 +419,7 @@ class FromTraceBuilder : public ParseReceiver, public EventHandlerTy {
         : ParseReceiver(), IN(IN), CurInstr() {}
 
     /// Apply the builder on the ER execution range, with its start / end points
-    /// optionaly shifted by offsets.
+    /// optionally shifted by offsets.
     void build(const ExecutionRange &ER, ContTy &Cont, int StartOffset = 0,
                int EndOffset = 0) {
         TarmacLineParser TLP(IN.index.isBigEndian(), *this);
@@ -587,7 +587,7 @@ class MTAnalyzer : public IndexNavigator {
     /// Get all Call and Resume sites where function FunctionName was called
     /// from / returned to.
     std::vector<PAF::ExecutionRange>
-    getCallSites(const std::string &FunctionName) const;
+    getCallSitesTo(const std::string &FunctionName) const;
 
     /// Get all ExecutionRanges between StartLabel and EndLabel. The labels are
     /// considered to be prefixes, so that one can use labels uniquified by the
@@ -609,6 +609,9 @@ class MTAnalyzer : public IndexNavigator {
     /// Get memory content at time t.
     std::vector<uint8_t> getMemoryValueAtTime(uint64_t address,
                                               size_t num_bytes, Time t) const;
+
+    /// Get the instruction which was processed at time t.
+    bool getInstructionAtTime(ReferenceInstruction &I, Time t) const;
 
   private:
     unsigned verbosityLevel;

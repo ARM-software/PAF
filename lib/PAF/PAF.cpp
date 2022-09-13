@@ -20,6 +20,7 @@
 
 #include "PAF/PAF.h"
 #include "PAF/Intervals.h"
+#include "libtarmac/calltree.hh"
 
 #include <cstdlib>
 #include <iostream>
@@ -61,6 +62,15 @@ template <class T> string trimDisassembly(const T &str) {
     return s;
 }
 
+struct LabelEventHandler {
+    void event(TarmacSite &ts, const InstructionEvent &ev) {
+        ts = TarmacSite(ev.pc & ~1UL, ev.time, 0, 0);
+    }
+    void event(TarmacSite &, const RegisterEvent &ev) {}
+    void event(TarmacSite &, const MemoryEvent &ev) {}
+    void event(TarmacSite &, const TextOnlyEvent &ev) {}
+};
+
 // The labelCollector will scan though a range of tarmac lines and try to
 // match Start / End labels.
 class LabelCollector {
@@ -76,14 +86,6 @@ class LabelCollector {
     };
 
   public:
-    struct EmptyHandler {
-        void event(TarmacSite &ts, const InstructionEvent &ev) {
-            ts = TarmacSite(ev.pc & ~1UL, ev.time);
-        }
-        void event(TarmacSite &, const RegisterEvent &ev) {}
-        void event(TarmacSite &, const MemoryEvent &ev) {}
-        void event(TarmacSite &, const TextOnlyEvent &ev) {}
-    };
 
     LabelCollector(PAF::Intervals<TarmacSite> &IR,
                    const std::vector<uint64_t> &StartAddresses,
@@ -154,14 +156,6 @@ class LabelCollector {
 class WLabelCollector : ParseReceiver {
 
   public:
-    struct EmptyHandler {
-        void event(TarmacSite &ts, const InstructionEvent &ev) {
-            ts = TarmacSite(ev.pc & ~1UL, ev.time);
-        }
-        void event(TarmacSite &, const RegisterEvent &ev) {}
-        void event(TarmacSite &, const MemoryEvent &ev) {}
-        void event(TarmacSite &, const TextOnlyEvent &ev) {}
-    };
 
     WLabelCollector(PAF::Intervals<TarmacSite> &IR, const IndexNavigator &IN,
                     unsigned N, const std::vector<uint64_t> &Addresses,
@@ -175,7 +169,7 @@ class WLabelCollector : ParseReceiver {
     }
 
     virtual void got_event(InstructionEvent &ev) override {
-        buffer.push_back(TarmacSite(ev.pc & ~1UL, ev.time));
+        buffer.push_back(TarmacSite(ev.pc & ~1UL, ev.time, 0, 0));
     }
 
     void operator()(const TarmacSite &ts) {
@@ -344,14 +338,15 @@ MTAnalyzer::getInstances(const string &FunctionName) const {
                        FunctionName.c_str());
 
     CallTree CT(*this);
-    vector<PAF::ExecutionRange> Functions;
+    vector<ExecutionRange> Functions;
     PAF::ExecsOfInterest EOI(CT, Functions, symb_addr);
     CT.visit(EOI);
 
     return Functions;
 }
 
-vector<ExecutionRange> MTAnalyzer::getCallSites(const string &FunctionName) const {
+vector<ExecutionRange>
+MTAnalyzer::getCallSitesTo(const string &FunctionName) const {
     if (!has_image())
         reporter->errx(EXIT_FAILURE,
                        "No image, function '%s' can not be looked up",
@@ -364,7 +359,7 @@ vector<ExecutionRange> MTAnalyzer::getCallSites(const string &FunctionName) cons
                        FunctionName.c_str());
 
     CallTree CT(*this);
-    vector<PAF::ExecutionRange> CS;
+    vector<ExecutionRange> CS;
     PAF::CSOfInterest CSOI(CT, CS, symb_addr);
     CT.visit(CSOI);
 
@@ -387,6 +382,9 @@ MTAnalyzer::getLabelPairs(const string &StartLabel, const string &EndLabel,
             cout << " at 0x" << hex << s->addr << dec << '\n';
         }
     }
+    if (StartAddresses.size() == 0 && verbose()) {
+        std::cout << "No StartAddresses found...\n";
+    }
 
     vector<uint64_t> EndAddresses;
     const auto end_symbs =
@@ -401,15 +399,29 @@ MTAnalyzer::getLabelPairs(const string &StartLabel, const string &EndLabel,
             cout << " at 0x" << hex << s->addr << dec << '\n';
         }
     }
+    if (EndAddresses.size() == 0 && verbose()) {
+        std::cout << "No EndAddresses found...\n";
+    }
+
+    // Enforce invariant that we have pairs...
+    if (StartAddresses.size() != EndAddresses.size())
+        reporter->errx(EXIT_FAILURE,
+                       "Could not find as many '%s' start labels (%d) as '%s' "
+                       "end labels (%d) ",
+                       StartLabel.c_str(), StartAddresses.size(),
+                       EndLabel.c_str(), EndAddresses.size());
+
+    // Exit early if there is nothing to do.
+    if (StartAddresses.size() == 0)
+        return vector<PAF::ExecutionRange>();
 
     sort(StartAddresses.begin(), StartAddresses.end());
     sort(EndAddresses.begin(), EndAddresses.end());
 
     PAF::Intervals<TarmacSite> IR;
     LabelCollector Labels(IR, StartAddresses, EndAddresses, verbose());
-    PAF::FromTraceBuilder<TarmacSite, LabelCollector::EmptyHandler,
-                          LabelCollector>
-        LC(*this);
+    PAF::FromTraceBuilder<TarmacSite, LabelEventHandler, LabelCollector> LC(
+        *this);
     LC.build(getFullExecutionRange(), Labels);
 
     vector<PAF::ExecutionRange> result;
@@ -440,9 +452,8 @@ MTAnalyzer::getWLabels(const vector<string> &labels, unsigned N,
     PAF::Intervals<TarmacSite> IR;
     WLabelCollector Labels(IR, *this, N, Addresses,
                            LabelMap, OutLabels, verbose());
-    PAF::FromTraceBuilder<TarmacSite, WLabelCollector::EmptyHandler,
-                          WLabelCollector>
-        WLC(*this);
+    PAF::FromTraceBuilder<TarmacSite, LabelEventHandler, WLabelCollector> WLC(
+        *this);
     WLC.build(getFullExecutionRange(), Labels);
 
     // Some Interval may have been merged, so check an invariant:
@@ -492,6 +503,27 @@ vector<uint8_t> MTAnalyzer::getMemoryValueAtTime(uint64_t address,
                            address + i);
 
     return result;
+}
+
+bool MTAnalyzer::getInstructionAtTime(ReferenceInstruction &I, Time t) const {
+    SeqOrderPayload SOP;
+    if (!node_at_time(t, &SOP))
+        reporter->errx(1, "Can not find node at time %d in this trace", t);
+
+
+    struct Collect {
+        ReferenceInstruction &Instr;
+        Collect(ReferenceInstruction &I) : Instr(I) {}
+        void operator()(const ReferenceInstruction &I) { Instr = I; }
+    } C(I);
+
+    PAF::FromTraceBuilder<PAF::ReferenceInstruction,
+                          PAF::ReferenceInstructionBuilder, Collect>
+        FTB(*this);
+    TarmacSite ts(0, t, 0, 0);
+    FTB.build(ExecutionRange(ts, ts), C);
+
+    return true;
 }
 
 } // namespace PAF

@@ -25,7 +25,7 @@ BUILDDIR?=build-arm-v7m
 CFLAGS=-O2 -Wall
 LDFLAGS=--specs=rdimon.specs
 
-PROGRAMS=instances
+PROGRAMS=instances labels
 ALL=$(addprefix $(BUILDDIR)/,$(addsuffix .elf,$(PROGRAMS)) $(addsuffix .lst, $(PROGRAMS)))
 
 all: pre $(ALL)

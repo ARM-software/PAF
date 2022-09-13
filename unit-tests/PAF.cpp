@@ -495,8 +495,9 @@ struct TestMTAnalyzer : public PAF::MTAnalyzer {
 
     TestMTAnalyzer(const TestMTAnalyzer &) = delete;
 
-    TestMTAnalyzer(const TracePair &trace, const std::string &image_filename)
-        : MTAnalyzer(trace, image_filename) {}
+    TestMTAnalyzer(const TracePair &trace, const std::string &image_filename,
+                   unsigned verbosity = 0)
+        : MTAnalyzer(trace, image_filename, verbosity) {}
 
     void operator()(PAF::ReferenceInstruction &I) {
         Instructions.push_back(I);
@@ -520,6 +521,7 @@ TEST(MTAnalyzer, base) {
     run_indexer(Inputs, /* big_endian */ false, /*show_progress_meter*/ false);
     TestMTAnalyzer T(Inputs, SAMPLES_SRC_DIR "instances-v7m.elf");
 
+    // getInstances test.
     vector<PAF::ExecutionRange> Instances = T.getInstances("foo");
     EXPECT_EQ(Instances.size(), 4);
 
@@ -545,6 +547,51 @@ TEST(MTAnalyzer, base) {
         EXPECT_EQ(T.Instructions[0].disassembly, string("MUL r3,r0,r0"));
     }
 
+    // getFullExecutionRange test.
+    PAF::ExecutionRange FER = T.getFullExecutionRange();
+    EXPECT_EQ(FER.Start.time, 0);
+    EXPECT_EQ(FER.Start.tarmac_line, 0);
+    EXPECT_EQ(FER.Start.addr, 0);
+
+    ReferenceInstruction LastInstruction;
+    EXPECT_TRUE(T.getInstructionAtTime(LastInstruction, FER.End.time));
+    EXPECT_EQ(LastInstruction.disassembly, "BKPT #0xab");
+
+    // GetCallSites.
+    vector<PAF::ExecutionRange> CallSites = T.getCallSitesTo("foo");
+    EXPECT_EQ(CallSites.size(), 4);
+    for (const auto &cs: CallSites) {
+        ReferenceInstruction CallInstr;
+        EXPECT_TRUE(T.getInstructionAtTime(CallInstr, cs.Start.time));
+        EXPECT_EQ(CallInstr.disassembly.substr(0, 3), "BL ");
+        EXPECT_EQ(cs.End.addr, cs.Start.addr + CallInstr.width/8);
+    }
+}
+
+TEST(MTAnalyzer, labels) {
+    TracePair Inputs(SAMPLES_SRC_DIR "labels-v7m.trace",
+                     "labels-v7m.trace.index");
+    // TODO: do not always rebuild it ?
+    run_indexer(Inputs, /* big_endian */ false, /*show_progress_meter*/ false);
+    TestMTAnalyzer T(Inputs, SAMPLES_SRC_DIR "labels-v7m.elf");
+
+    // getLabelPairs test.
+    vector<PAF::ExecutionRange> LabelPairs =
+        T.getLabelPairs("MYLABEL_START", "MYLABEL_END");
+    EXPECT_EQ(LabelPairs.size(), 4);
+
+    // getWLabels test.
+    vector<PAF::ExecutionRange> WLabels =
+        T.getWLabels({"MYWLABEL"}, 1);
+    EXPECT_EQ(WLabels.size(), 4);
+    for (const auto &cs: WLabels) {
+        ReferenceInstruction WStartInstr, WEndInstr;
+        // 3 instructions are expected (one per cycle).
+        EXPECT_EQ(cs.End.time - cs.Start.time + 1, 3);
+        EXPECT_TRUE(T.getInstructionAtTime(WStartInstr, cs.Start.time));
+        EXPECT_TRUE(T.getInstructionAtTime(WEndInstr, cs.End.time));
+        EXPECT_GT(WEndInstr.pc, WStartInstr.pc);
+    }
 }
 
 std::unique_ptr<Reporter> reporter = make_cli_reporter();

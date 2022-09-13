@@ -569,7 +569,7 @@ void Faulter::run(const InjectionRangeSpec &IRS, FaultModel Model,
             switch (C.getKind()) {
             case Classifier::Kind::CallSite:
             case Classifier::Kind::ResumeSite:
-                COI = getCallSites(CSymbName);
+                COI = getCallSitesTo(CSymbName);
                 break;
             case Classifier::Kind::Entry:
             case Classifier::Kind::Return:

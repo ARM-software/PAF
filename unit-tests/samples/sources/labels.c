@@ -19,11 +19,9 @@
  */
 
 /* The purpose of this test program is to check if PAF can :
-   - count how many times foo is called,
-   - get foo's input parameter value, upon foo entry,
-   - get glob's value at foo's entry,
-   - get foo's call sites,
-   - get the complete range of execution, from start to finish. */
+   - find label pairs,
+   - find windowed labels,
+   - get glob's value at foo's entry. */
 
 volatile unsigned glob = 125;  // Force read and write accesses to glob.
 
@@ -34,8 +32,15 @@ unsigned __attribute__((noinline)) foo(unsigned i) {
     return i * i * i;
 }
 
+#define GLOBAL_LABEL(name) asm volatile(name " : .global " name :)
+
 int main(int argc, char *argv[]) {
-    for (unsigned i = 0; i < 4; i++)
+    for (unsigned i = 0; i < 4; i++) {
+        GLOBAL_LABEL("MYLABEL_START");
         glob += foo(i);
+        GLOBAL_LABEL("MYWLABEL");
+        glob += foo(i+3);
+        GLOBAL_LABEL("MYLABEL_END");
+    }
     return glob;
 }
