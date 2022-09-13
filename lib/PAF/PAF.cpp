@@ -71,28 +71,52 @@ struct LabelEventHandler {
     void event(TarmacSite &, const TextOnlyEvent &ev) {}
 };
 
+class LabeledStack {
+  public:
+    enum ElementKind { START, END };
+    struct Element {
+        ElementKind Kind;
+        TarmacSite Site;
+        Element(ElementKind k, const TarmacSite &ts) : Kind(k), Site(ts) {}
+    };
+
+    LabeledStack() : stack() {}
+
+    bool empty() const { return stack.empty(); }
+    size_t size() const { return stack.size(); }
+
+    TarmacSite pop() {
+        assert(!stack.empty() && "Empty labeledStack");
+        TarmacSite ts = stack.back().Site;
+        stack.pop_back();
+        return ts;
+    }
+
+    const Element &top() const {
+        assert(!stack.empty() && "Empty labeledStack");
+        return stack.back();
+    }
+
+    LabeledStack &push(ElementKind k, const TarmacSite &ts) {
+        stack.push_back(Element(k, ts));
+        return *this;
+    }
+
+  private:
+    vector<Element> stack;
+};
+
 // The labelCollector will scan though a range of tarmac lines and try to
 // match Start / End labels.
 class LabelCollector {
-    struct Label {
-        enum LabelKind { START, END } Kind;
-        TarmacSite Site;
-
-        Label(LabelKind K, const TarmacSite &Site) : Kind(START), Site(Site) {}
-        static Label Start(const TarmacSite &Site) {
-            return Label(START, Site);
-        }
-        static Label End(const TarmacSite &Site) { return Label(END, Site); }
-    };
 
   public:
-
     LabelCollector(PAF::Intervals<TarmacSite> &IR,
                    const std::vector<uint64_t> &StartAddresses,
                    const std::vector<uint64_t> &EndAddresses,
                    bool verbose = false)
         : StartAddresses(StartAddresses), EndAddresses(EndAddresses),
-          exec_stack(), IR(IR), verbose(verbose) {
+          LS(), IR(IR), verbose(verbose) {
         assert(is_sorted(StartAddresses.begin(), StartAddresses.end()) &&
                "Start addresses must be sorted");
         assert(is_sorted(EndAddresses.begin(), EndAddresses.end()) &&
@@ -102,7 +126,7 @@ class LabelCollector {
     void operator()(const TarmacSite &ts) {
         if (binary_search(StartAddresses.begin(), StartAddresses.end(),
                           ts.addr)) {
-            exec_stack.push_back(Label::Start(ts));
+            LS.push(LabeledStack::START, ts);
             if (verbose) {
                 cout << "Pushing START ";
                 PAF::dump(cout, ts);
@@ -110,21 +134,20 @@ class LabelCollector {
             }
         } else if (binary_search(EndAddresses.begin(), EndAddresses.end(),
                                  ts.addr)) {
-            if (exec_stack.empty())
+            if (LS.empty())
                 reporter->errx(
                     EXIT_FAILURE,
                     "Empty execution stack, can not match an EndLabel with "
                     "anything !");
-            if (exec_stack.back().Kind == Label::START) {
+            if (LS.top().Kind == LabeledStack::START) {
                 if (verbose) {
                     cout << "Matching START / END ";
-                    PAF::dump(cout, exec_stack.back().Site);
+                    PAF::dump(cout, LS.top().Site);
                     cout << " - ";
                     PAF::dump(cout, ts);
                     cout << '\n';
                 }
-                IR.insert(exec_stack.back().Site, ts);
-                exec_stack.pop_back();
+                IR.insert(LS.pop(), ts);
                 return;
             } else {
                 reporter->errx(
@@ -146,7 +169,7 @@ class LabelCollector {
   private:
     const vector<uint64_t> &StartAddresses;
     const vector<uint64_t> &EndAddresses;
-    vector<Label> exec_stack;
+    LabeledStack LS;
     PAF::Intervals<TarmacSite> &IR;
     bool verbose;
 };
@@ -196,8 +219,8 @@ class WLabelCollector : ParseReceiver {
                     break;
                 }
             }
-            std::vector<std::string> Lines = IN.index.get_trace_lines(StartSOP);
-            for (const std::string &line : Lines)
+            std::vector<string> Lines = IN.index.get_trace_lines(StartSOP);
+            for (const string &line : Lines)
                 try {
                     TLP.parse(line);
                 } catch (TarmacParseError err) {
@@ -214,7 +237,7 @@ class WLabelCollector : ParseReceiver {
                 }
             }
             Lines = IN.index.get_trace_lines(EndSOP);
-            for (const std::string &line : Lines)
+            for (const string &line : Lines)
                 try {
                     TLP.parse(line);
                 } catch (TarmacParseError err) {
@@ -353,7 +376,7 @@ MTAnalyzer::getCallSitesTo(const string &FunctionName) const {
                        FunctionName.c_str());
 
     uint64_t symb_addr;
-    size_t symb_size;
+    size_t symb_size; // Unused.
     if (!lookup_symbol(FunctionName, symb_addr, symb_size))
         reporter->errx(EXIT_FAILURE, "Symbol for function '%s' not found",
                        FunctionName.c_str());
@@ -367,8 +390,84 @@ MTAnalyzer::getCallSitesTo(const string &FunctionName) const {
 }
 
 vector<ExecutionRange>
+MTAnalyzer::getBetweenFunctionMarkers(const string &StartFunctionName,
+                                      const string &EndFunctionName) const {
+    if (!has_image())
+        reporter->errx(
+            EXIT_FAILURE,
+            "No image, function markers '%s' and '%s' can not be looked up",
+            StartFunctionName.c_str(), EndFunctionName.c_str());
+
+    uint64_t start_symb_addr, end_symb_addr;
+    size_t symb_size; // Unused.
+    if (!lookup_symbol(StartFunctionName, start_symb_addr, symb_size))
+        reporter->errx(EXIT_FAILURE, "Symbol for function '%s' not found",
+                       StartFunctionName.c_str());
+    if (!lookup_symbol(EndFunctionName, end_symb_addr, symb_size))
+        reporter->errx(EXIT_FAILURE, "Symbol for function '%s' not found",
+                       EndFunctionName.c_str());
+
+    const CallTree &CT = getCallTree();
+
+    // Get all StartSites.
+    vector<ExecutionRange> SS;
+    PAF::CSOfInterest SSOI(CT, SS, start_symb_addr);
+    CT.visit(SSOI);
+
+    // Get All EndSites.
+    vector<ExecutionRange> ES;
+    PAF::CSOfInterest ESOI(CT, ES, end_symb_addr);
+    CT.visit(ESOI);
+
+    if (verbose()) {
+        if (SS.size() == 0)
+            cout << "No call to '" << StartFunctionName << "' found...\n";
+        if (ES.size() == 0)
+            cout << "No call to '" << EndFunctionName << "' found...\n";
+    }
+
+    // Sanity check.
+    if (ES.size() != SS.size())
+        reporter->errx(EXIT_FAILURE,
+                       "Number of calls to '%s' (%d) does not match number of "
+                       "calls to '%s' (%d)",
+                       StartFunctionName.c_str(), SS.size(),
+                       EndFunctionName.c_str(), ES.size());
+
+    // Match the Start / End markers.
+    PAF::Intervals<TarmacSite> IR;
+    LabeledStack LS;
+    std::reverse(ES.begin(), ES.end());
+    std::reverse(SS.begin(), SS.end());
+    while (!SS.empty() || !ES.empty()) {
+        if (!SS.empty() && SS.back().End.time < ES.back().Start.time) {
+            LS.push(LabeledStack::START, SS.back().End);
+            SS.pop_back();
+        } else if (!ES.empty()) {
+            IR.insert(LS.pop(), ES.back().Start);
+            ES.pop_back();
+        }
+    }
+
+    if (!LS.empty())
+        reporter->errx(EXIT_FAILURE, "Error in matching function starts / ends");
+
+    vector<ExecutionRange> result;
+    for (const auto &ir : IR)
+        result.emplace_back(ir.begin_value(), ir.end_value());
+
+    return result;
+}
+
+vector<ExecutionRange>
 MTAnalyzer::getLabelPairs(const string &StartLabel, const string &EndLabel,
                           map<uint64_t, string> *LabelMap) const {
+    if (!has_image())
+        reporter->errx(
+            EXIT_FAILURE,
+            "No image, labels '%s' and '%s' can not be looked up",
+            StartLabel.c_str(), EndLabel.c_str());
+
     vector<uint64_t> StartAddresses;
     const auto start_symbs =
         get_image()->find_all_symbols_starting_with(StartLabel);
@@ -382,9 +481,8 @@ MTAnalyzer::getLabelPairs(const string &StartLabel, const string &EndLabel,
             cout << " at 0x" << hex << s->addr << dec << '\n';
         }
     }
-    if (StartAddresses.size() == 0 && verbose()) {
-        std::cout << "No StartAddresses found...\n";
-    }
+    if (StartAddresses.size() == 0 && verbose())
+        cout << "No StartAddresses found...\n";
 
     vector<uint64_t> EndAddresses;
     const auto end_symbs =
@@ -399,9 +497,8 @@ MTAnalyzer::getLabelPairs(const string &StartLabel, const string &EndLabel,
             cout << " at 0x" << hex << s->addr << dec << '\n';
         }
     }
-    if (EndAddresses.size() == 0 && verbose()) {
+    if (EndAddresses.size() == 0 && verbose())
         std::cout << "No EndAddresses found...\n";
-    }
 
     // Enforce invariant that we have pairs...
     if (StartAddresses.size() != EndAddresses.size())
@@ -413,7 +510,7 @@ MTAnalyzer::getLabelPairs(const string &StartLabel, const string &EndLabel,
 
     // Exit early if there is nothing to do.
     if (StartAddresses.size() == 0)
-        return vector<PAF::ExecutionRange>();
+        return vector<ExecutionRange>();
 
     sort(StartAddresses.begin(), StartAddresses.end());
     sort(EndAddresses.begin(), EndAddresses.end());
@@ -424,7 +521,7 @@ MTAnalyzer::getLabelPairs(const string &StartLabel, const string &EndLabel,
         *this);
     LC.build(getFullExecutionRange(), Labels);
 
-    vector<PAF::ExecutionRange> result;
+    vector<ExecutionRange> result;
     for (const auto &ir : IR)
         result.emplace_back(ir.begin_value(), ir.end_value());
 
@@ -434,6 +531,9 @@ MTAnalyzer::getLabelPairs(const string &StartLabel, const string &EndLabel,
 vector<ExecutionRange>
 MTAnalyzer::getWLabels(const vector<string> &labels, unsigned N,
                        vector<std::pair<uint64_t, string>> *OutLabels) const {
+    if (!has_image())
+        reporter->errx(EXIT_FAILURE, "No image, symbols can not be looked up");
+
     map<uint64_t, string> LabelMap;
     vector<uint64_t> Addresses;
     for (const auto &label : labels) {
@@ -462,7 +562,7 @@ MTAnalyzer::getWLabels(const vector<string> &labels, unsigned N,
             EXIT_FAILURE,
             "Broken invariant, can not have more Intervals than labels !");
 
-    vector<PAF::ExecutionRange> result;
+    vector<ExecutionRange> result;
     for (const auto &ir : IR)
         result.emplace_back(ir.begin_value(), ir.end_value());
 

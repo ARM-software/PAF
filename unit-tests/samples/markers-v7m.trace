@@ -1,0 +1,2072 @@
+0 clk E DebugEvent_HaltingDebugState 00000000
+0 clk R cpsr 01000000
+0 clk SIGNAL: SIGNAL=poreset STATE=N
+0 clk SIGNAL: SIGNAL=poreset STATE=N
+0 clk E 000080b4 00000001 CoreEvent_RESET
+0 clk R r13_main 464c457c
+0 clk R MSP 464c457c
+1 clk IT (1) 000080b4 2016 T thread : MOVS     r0,#0x16
+1 clk R r0 00000016
+1 clk R cpsr 01000000
+2 clk IT (2) 000080b6 a131 T thread : ADR      r1,{pc}+0xc6 ; 0x817c
+2 clk R r1 0000817c
+3 clk IT (3) 000080b8 beab T thread : BKPT     #0xab
+3 clk R r0 00000000
+4 clk IT (4) 000080ba 4830 T thread : LDR      r0,{pc}+0xc2 ; 0x817c
+4 clk MR4 0000817c 0001a074
+4 clk R r0 0001a074
+5 clk IT (5) 000080bc 6841 T thread : LDR      r1,[r0,#4]
+5 clk MR4 0001a078 10700000
+5 clk R r1 10700000
+6 clk IT (6) 000080be 2900 T thread : CMP      r1,#0
+6 clk R cpsr 21000000
+7 clk IS (7) 000080c0 d001 T thread : BEQ      {pc}+6 ; 0x80c6
+8 clk IT (8) 000080c2 4a36 T thread : LDR      r2,{pc}+0xda ; 0x819c
+8 clk MR4 0000819c 0001a5c4
+8 clk R r2 0001a5c4
+9 clk IT (9) 000080c4 6011 T thread : STR      r1,[r2,#0]
+9 clk MW4 0001a5c4 10700000
+10 clk IT (10) 000080c6 6801 T thread : LDR      r1,[r0,#0]
+10 clk MR4 0001a074 00000000
+10 clk R r1 00000000
+11 clk IT (11) 000080c8 2900 T thread : CMP      r1,#0
+11 clk R cpsr 61000000
+12 clk IS (12) 000080ca d101 T thread : BNE      {pc}+6 ; 0x80d0
+13 clk IT (13) 000080cc 4932 T thread : LDR      r1,{pc}+0xcc ; 0x8198
+13 clk MR4 00008198 0001ab08
+13 clk R r1 0001ab08
+14 clk IT (14) 000080ce 6001 T thread : STR      r1,[r0,#0]
+14 clk MW4 0001a074 0001ab08
+15 clk IT (15) 000080d0 6881 T thread : LDR      r1,[r0,#8]
+15 clk MR4 0001a07c 10700000
+15 clk R r1 10700000
+16 clk IT (16) 000080d2 68c2 T thread : LDR      r2,[r0,#0xc]
+16 clk MR4 0001a080 10800000
+16 clk R r2 10800000
+17 clk IT (17) 000080d4 4b2a T thread : LDR      r3,{pc}+0xac ; 0x8180
+17 clk MR4 00008180 00000000
+17 clk R r3 00000000
+18 clk IT (18) 000080d6 2900 T thread : CMP      r1,#0
+18 clk R cpsr 21000000
+19 clk IS (19) 000080d8 d000 T thread : BEQ      {pc}+4 ; 0x80dc
+20 clk IT (20) 000080da 460b T thread : MOV      r3,r1
+20 clk R r3 10700000
+21 clk IT (21) 000080dc 469d T thread : MOV      sp,r3
+21 clk R r13_main 10700000
+21 clk R MSP 10700000
+22 clk IT (22) 000080de f7ffffe3 T thread : BL       {pc}-0x36 ; 0x80a8
+22 clk R r14 000080e3
+23 clk IT (23) 000080a8 2a00 T thread : CMP      r2,#0
+23 clk R cpsr 21000000
+24 clk IS (24) 000080aa d001 T thread : BEQ      {pc}+6 ; 0x80b0
+25 clk IT (25) 000080ac f5027a80 T thread : ADD      r10,r2,#0x100
+25 clk R r10 10800100
+26 clk IT (26) 000080b0 4770 T thread : BX       lr
+26 clk R cpsr 21000000
+27 clk IT (27) 000080e2 2100 T thread : MOVS     r1,#0
+27 clk R r1 00000000
+27 clk R cpsr 61000000
+28 clk IT (28) 000080e4 468b T thread : MOV      r11,r1
+28 clk R r11 00000000
+29 clk IT (29) 000080e6 460f T thread : MOV      r7,r1
+29 clk R r7 00000000
+30 clk IT (30) 000080e8 4826 T thread : LDR      r0,{pc}+0x9c ; 0x8184
+30 clk MR4 00008184 0001a9e0
+30 clk R r0 0001a9e0
+31 clk IT (31) 000080ea 4a27 T thread : LDR      r2,{pc}+0x9e ; 0x8188
+31 clk MR4 00008188 0001ab08
+31 clk R r2 0001ab08
+32 clk IT (32) 000080ec 1a12 T thread : SUBS     r2,r2,r0
+32 clk R r2 00000128
+32 clk R cpsr 21000000
+33 clk IT (33) 000080ee f000f891 T thread : BL       {pc}+0x126 ; 0x8214
+33 clk R r14 000080f3
+34 clk IT (34) 00008214 0783 T thread : LSLS     r3,r0,#30
+34 clk R r3 00000000
+34 clk R cpsr 41000000
+35 clk IT (35) 00008216 b530 T thread : PUSH     {r4,r5,lr}
+35 clk MW4 106ffff4 00000000
+35 clk MW4 106ffff8 00000000
+35 clk MW4 106ffffc 000080f3
+35 clk R r13_main 106ffff4
+35 clk R MSP 106ffff4
+36 clk IT (36) 00008218 d048 T thread : BEQ      {pc}+0x94 ; 0x82ac
+37 clk IT (37) 000082ac 4603 T thread : MOV      r3,r0
+37 clk R r3 0001a9e0
+38 clk IT (38) 000082ae 4614 T thread : MOV      r4,r2
+38 clk R r4 00000128
+39 clk IT (39) 000082b0 e7bf T thread : B        {pc}-0x7e ; 0x8232
+40 clk IT (40) 00008232 2c03 T thread : CMP      r4,#3
+40 clk R cpsr 21000000
+41 clk IS (41) 00008234 d92d T thread : BLS      {pc}+0x5e ; 0x8292
+42 clk IT (42) 00008236 b2cd T thread : UXTB     r5,r1
+42 clk R r5 00000000
+43 clk IT (43) 00008238 ea452505 T thread : ORR      r5,r5,r5,LSL #8
+43 clk R r5 00000000
+44 clk IT (44) 0000823c 2c0f T thread : CMP      r4,#0xf
+44 clk R cpsr 21000000
+45 clk IT (45) 0000823e ea454505 T thread : ORR      r5,r5,r5,LSL #16
+45 clk R r5 00000000
+46 clk IS (46) 00008242 d936 T thread : BLS      {pc}+0x70 ; 0x82b2
+47 clk IT (47) 00008244 f1a40210 T thread : SUB      r2,r4,#0x10
+47 clk R r2 00000118
+48 clk IT (48) 00008248 f0220c0f T thread : BIC      r12,r2,#0xf
+48 clk R r12 00000110
+49 clk IT (49) 0000824c f1030e20 T thread : ADD      lr,r3,#0x20
+49 clk R r14 0001aa00
+50 clk IT (50) 00008250 44e6 T thread : ADD      lr,lr,r12
+50 clk R r14 0001ab10
+51 clk IT (51) 00008252 ea4f1c12 T thread : LSR      r12,r2,#4
+51 clk R r12 00000011
+52 clk IT (52) 00008256 f1030210 T thread : ADD      r2,r3,#0x10
+52 clk R r2 0001a9f0
+53 clk IT (53) 0000825a e9425504 T thread : STRD     r5,r5,[r2,#-0x10]
+53 clk MW4 0001a9e0 00000000
+53 clk MW4 0001a9e4 00000000
+54 clk IT (54) 0000825e e9425502 T thread : STRD     r5,r5,[r2,#-8]
+54 clk MW4 0001a9e8 00000000
+54 clk MW4 0001a9ec 00000000
+55 clk IT (55) 00008262 3210 T thread : ADDS     r2,r2,#0x10
+55 clk R r2 0001aa00
+55 clk R cpsr 01000000
+56 clk IT (56) 00008264 4572 T thread : CMP      r2,lr
+56 clk R cpsr 81000000
+57 clk IT (57) 00008266 d1f8 T thread : BNE      {pc}-0xc ; 0x825a
+58 clk IT (58) 0000825a e9425504 T thread : STRD     r5,r5,[r2,#-0x10]
+58 clk MW4 0001a9f0 00000000
+58 clk MW4 0001a9f4 00000000
+59 clk IT (59) 0000825e e9425502 T thread : STRD     r5,r5,[r2,#-8]
+59 clk MW4 0001a9f8 00000000
+59 clk MW4 0001a9fc 00000000
+60 clk IT (60) 00008262 3210 T thread : ADDS     r2,r2,#0x10
+60 clk R r2 0001aa10
+60 clk R cpsr 01000000
+61 clk IT (61) 00008264 4572 T thread : CMP      r2,lr
+61 clk R cpsr 81000000
+62 clk IT (62) 00008266 d1f8 T thread : BNE      {pc}-0xc ; 0x825a
+63 clk IT (63) 0000825a e9425504 T thread : STRD     r5,r5,[r2,#-0x10]
+63 clk MW4 0001aa00 00000000
+63 clk MW4 0001aa04 00000000
+64 clk IT (64) 0000825e e9425502 T thread : STRD     r5,r5,[r2,#-8]
+64 clk MW4 0001aa08 00000000
+64 clk MW4 0001aa0c 00000000
+65 clk IT (65) 00008262 3210 T thread : ADDS     r2,r2,#0x10
+65 clk R r2 0001aa20
+65 clk R cpsr 01000000
+66 clk IT (66) 00008264 4572 T thread : CMP      r2,lr
+66 clk R cpsr 81000000
+67 clk IT (67) 00008266 d1f8 T thread : BNE      {pc}-0xc ; 0x825a
+68 clk IT (68) 0000825a e9425504 T thread : STRD     r5,r5,[r2,#-0x10]
+68 clk MW4 0001aa10 00000000
+68 clk MW4 0001aa14 00000000
+69 clk IT (69) 0000825e e9425502 T thread : STRD     r5,r5,[r2,#-8]
+69 clk MW4 0001aa18 00000000
+69 clk MW4 0001aa1c 00000000
+70 clk IT (70) 00008262 3210 T thread : ADDS     r2,r2,#0x10
+70 clk R r2 0001aa30
+70 clk R cpsr 01000000
+71 clk IT (71) 00008264 4572 T thread : CMP      r2,lr
+71 clk R cpsr 81000000
+72 clk IT (72) 00008266 d1f8 T thread : BNE      {pc}-0xc ; 0x825a
+73 clk IT (73) 0000825a e9425504 T thread : STRD     r5,r5,[r2,#-0x10]
+73 clk MW4 0001aa20 00000000
+73 clk MW4 0001aa24 00000000
+74 clk IT (74) 0000825e e9425502 T thread : STRD     r5,r5,[r2,#-8]
+74 clk MW4 0001aa28 00000000
+74 clk MW4 0001aa2c 00000000
+75 clk IT (75) 00008262 3210 T thread : ADDS     r2,r2,#0x10
+75 clk R r2 0001aa40
+75 clk R cpsr 01000000
+76 clk IT (76) 00008264 4572 T thread : CMP      r2,lr
+76 clk R cpsr 81000000
+77 clk IT (77) 00008266 d1f8 T thread : BNE      {pc}-0xc ; 0x825a
+78 clk IT (78) 0000825a e9425504 T thread : STRD     r5,r5,[r2,#-0x10]
+78 clk MW4 0001aa30 00000000
+78 clk MW4 0001aa34 00000000
+79 clk IT (79) 0000825e e9425502 T thread : STRD     r5,r5,[r2,#-8]
+79 clk MW4 0001aa38 00000000
+79 clk MW4 0001aa3c 00000000
+80 clk IT (80) 00008262 3210 T thread : ADDS     r2,r2,#0x10
+80 clk R r2 0001aa50
+80 clk R cpsr 01000000
+81 clk IT (81) 00008264 4572 T thread : CMP      r2,lr
+81 clk R cpsr 81000000
+82 clk IT (82) 00008266 d1f8 T thread : BNE      {pc}-0xc ; 0x825a
+83 clk IT (83) 0000825a e9425504 T thread : STRD     r5,r5,[r2,#-0x10]
+83 clk MW4 0001aa40 00000000
+83 clk MW4 0001aa44 00000000
+84 clk IT (84) 0000825e e9425502 T thread : STRD     r5,r5,[r2,#-8]
+84 clk MW4 0001aa48 00000000
+84 clk MW4 0001aa4c 00000000
+85 clk IT (85) 00008262 3210 T thread : ADDS     r2,r2,#0x10
+85 clk R r2 0001aa60
+85 clk R cpsr 01000000
+86 clk IT (86) 00008264 4572 T thread : CMP      r2,lr
+86 clk R cpsr 81000000
+87 clk IT (87) 00008266 d1f8 T thread : BNE      {pc}-0xc ; 0x825a
+88 clk IT (88) 0000825a e9425504 T thread : STRD     r5,r5,[r2,#-0x10]
+88 clk MW4 0001aa50 00000000
+88 clk MW4 0001aa54 00000000
+89 clk IT (89) 0000825e e9425502 T thread : STRD     r5,r5,[r2,#-8]
+89 clk MW4 0001aa58 00000000
+89 clk MW4 0001aa5c 00000000
+90 clk IT (90) 00008262 3210 T thread : ADDS     r2,r2,#0x10
+90 clk R r2 0001aa70
+90 clk R cpsr 01000000
+91 clk IT (91) 00008264 4572 T thread : CMP      r2,lr
+91 clk R cpsr 81000000
+92 clk IT (92) 00008266 d1f8 T thread : BNE      {pc}-0xc ; 0x825a
+93 clk IT (93) 0000825a e9425504 T thread : STRD     r5,r5,[r2,#-0x10]
+93 clk MW4 0001aa60 00000000
+93 clk MW4 0001aa64 00000000
+94 clk IT (94) 0000825e e9425502 T thread : STRD     r5,r5,[r2,#-8]
+94 clk MW4 0001aa68 00000000
+94 clk MW4 0001aa6c 00000000
+95 clk IT (95) 00008262 3210 T thread : ADDS     r2,r2,#0x10
+95 clk R r2 0001aa80
+95 clk R cpsr 01000000
+96 clk IT (96) 00008264 4572 T thread : CMP      r2,lr
+96 clk R cpsr 81000000
+97 clk IT (97) 00008266 d1f8 T thread : BNE      {pc}-0xc ; 0x825a
+98 clk IT (98) 0000825a e9425504 T thread : STRD     r5,r5,[r2,#-0x10]
+98 clk MW4 0001aa70 00000000
+98 clk MW4 0001aa74 00000000
+99 clk IT (99) 0000825e e9425502 T thread : STRD     r5,r5,[r2,#-8]
+99 clk MW4 0001aa78 00000000
+99 clk MW4 0001aa7c 00000000
+100 clk IT (100) 00008262 3210 T thread : ADDS     r2,r2,#0x10
+100 clk R r2 0001aa90
+100 clk R cpsr 01000000
+101 clk IT (101) 00008264 4572 T thread : CMP      r2,lr
+101 clk R cpsr 81000000
+102 clk IT (102) 00008266 d1f8 T thread : BNE      {pc}-0xc ; 0x825a
+103 clk IT (103) 0000825a e9425504 T thread : STRD     r5,r5,[r2,#-0x10]
+103 clk MW4 0001aa80 00000000
+103 clk MW4 0001aa84 00000000
+104 clk IT (104) 0000825e e9425502 T thread : STRD     r5,r5,[r2,#-8]
+104 clk MW4 0001aa88 00000000
+104 clk MW4 0001aa8c 00000000
+105 clk IT (105) 00008262 3210 T thread : ADDS     r2,r2,#0x10
+105 clk R r2 0001aaa0
+105 clk R cpsr 01000000
+106 clk IT (106) 00008264 4572 T thread : CMP      r2,lr
+106 clk R cpsr 81000000
+107 clk IT (107) 00008266 d1f8 T thread : BNE      {pc}-0xc ; 0x825a
+108 clk IT (108) 0000825a e9425504 T thread : STRD     r5,r5,[r2,#-0x10]
+108 clk MW4 0001aa90 00000000
+108 clk MW4 0001aa94 00000000
+109 clk IT (109) 0000825e e9425502 T thread : STRD     r5,r5,[r2,#-8]
+109 clk MW4 0001aa98 00000000
+109 clk MW4 0001aa9c 00000000
+110 clk IT (110) 00008262 3210 T thread : ADDS     r2,r2,#0x10
+110 clk R r2 0001aab0
+110 clk R cpsr 01000000
+111 clk IT (111) 00008264 4572 T thread : CMP      r2,lr
+111 clk R cpsr 81000000
+112 clk IT (112) 00008266 d1f8 T thread : BNE      {pc}-0xc ; 0x825a
+113 clk IT (113) 0000825a e9425504 T thread : STRD     r5,r5,[r2,#-0x10]
+113 clk MW4 0001aaa0 00000000
+113 clk MW4 0001aaa4 00000000
+114 clk IT (114) 0000825e e9425502 T thread : STRD     r5,r5,[r2,#-8]
+114 clk MW4 0001aaa8 00000000
+114 clk MW4 0001aaac 00000000
+115 clk IT (115) 00008262 3210 T thread : ADDS     r2,r2,#0x10
+115 clk R r2 0001aac0
+115 clk R cpsr 01000000
+116 clk IT (116) 00008264 4572 T thread : CMP      r2,lr
+116 clk R cpsr 81000000
+117 clk IT (117) 00008266 d1f8 T thread : BNE      {pc}-0xc ; 0x825a
+118 clk IT (118) 0000825a e9425504 T thread : STRD     r5,r5,[r2,#-0x10]
+118 clk MW4 0001aab0 00000000
+118 clk MW4 0001aab4 00000000
+119 clk IT (119) 0000825e e9425502 T thread : STRD     r5,r5,[r2,#-8]
+119 clk MW4 0001aab8 00000000
+119 clk MW4 0001aabc 00000000
+120 clk IT (120) 00008262 3210 T thread : ADDS     r2,r2,#0x10
+120 clk R r2 0001aad0
+120 clk R cpsr 01000000
+121 clk IT (121) 00008264 4572 T thread : CMP      r2,lr
+121 clk R cpsr 81000000
+122 clk IT (122) 00008266 d1f8 T thread : BNE      {pc}-0xc ; 0x825a
+123 clk IT (123) 0000825a e9425504 T thread : STRD     r5,r5,[r2,#-0x10]
+123 clk MW4 0001aac0 00000000
+123 clk MW4 0001aac4 00000000
+124 clk IT (124) 0000825e e9425502 T thread : STRD     r5,r5,[r2,#-8]
+124 clk MW4 0001aac8 00000000
+124 clk MW4 0001aacc 00000000
+125 clk IT (125) 00008262 3210 T thread : ADDS     r2,r2,#0x10
+125 clk R r2 0001aae0
+125 clk R cpsr 01000000
+126 clk IT (126) 00008264 4572 T thread : CMP      r2,lr
+126 clk R cpsr 81000000
+127 clk IT (127) 00008266 d1f8 T thread : BNE      {pc}-0xc ; 0x825a
+128 clk IT (128) 0000825a e9425504 T thread : STRD     r5,r5,[r2,#-0x10]
+128 clk MW4 0001aad0 00000000
+128 clk MW4 0001aad4 00000000
+129 clk IT (129) 0000825e e9425502 T thread : STRD     r5,r5,[r2,#-8]
+129 clk MW4 0001aad8 00000000
+129 clk MW4 0001aadc 00000000
+130 clk IT (130) 00008262 3210 T thread : ADDS     r2,r2,#0x10
+130 clk R r2 0001aaf0
+130 clk R cpsr 01000000
+131 clk IT (131) 00008264 4572 T thread : CMP      r2,lr
+131 clk R cpsr 81000000
+132 clk IT (132) 00008266 d1f8 T thread : BNE      {pc}-0xc ; 0x825a
+133 clk IT (133) 0000825a e9425504 T thread : STRD     r5,r5,[r2,#-0x10]
+133 clk MW4 0001aae0 00000000
+133 clk MW4 0001aae4 00000000
+134 clk IT (134) 0000825e e9425502 T thread : STRD     r5,r5,[r2,#-8]
+134 clk MW4 0001aae8 00000000
+134 clk MW4 0001aaec 00000000
+135 clk IT (135) 00008262 3210 T thread : ADDS     r2,r2,#0x10
+135 clk R r2 0001ab00
+135 clk R cpsr 01000000
+136 clk IT (136) 00008264 4572 T thread : CMP      r2,lr
+136 clk R cpsr 81000000
+137 clk IT (137) 00008266 d1f8 T thread : BNE      {pc}-0xc ; 0x825a
+138 clk IT (138) 0000825a e9425504 T thread : STRD     r5,r5,[r2,#-0x10]
+138 clk MW4 0001aaf0 00000000
+138 clk MW4 0001aaf4 00000000
+139 clk IT (139) 0000825e e9425502 T thread : STRD     r5,r5,[r2,#-8]
+139 clk MW4 0001aaf8 00000000
+139 clk MW4 0001aafc 00000000
+140 clk IT (140) 00008262 3210 T thread : ADDS     r2,r2,#0x10
+140 clk R r2 0001ab10
+140 clk R cpsr 01000000
+141 clk IT (141) 00008264 4572 T thread : CMP      r2,lr
+141 clk R cpsr 61000000
+142 clk IS (142) 00008266 d1f8 T thread : BNE      {pc}-0xc ; 0x825a
+143 clk IT (143) 00008268 f10c0201 T thread : ADD      r2,r12,#1
+143 clk R r2 00000012
+144 clk IT (144) 0000826c f0140f0c T thread : TST      r4,#0xc
+144 clk R cpsr 21000000
+145 clk IT (145) 00008270 eb031202 T thread : ADD      r2,r3,r2,LSL #4
+145 clk R r2 0001ab00
+146 clk IT (146) 00008274 f0040c0f T thread : AND      r12,r4,#0xf
+146 clk R r12 00000008
+147 clk IS (147) 00008278 d013 T thread : BEQ      {pc}+0x2a ; 0x82a2
+148 clk IT (148) 0000827a f1ac0304 T thread : SUB      r3,r12,#4
+148 clk R r3 00000004
+149 clk IT (149) 0000827e f0230303 T thread : BIC      r3,r3,#3
+149 clk R r3 00000004
+150 clk IT (150) 00008282 3304 T thread : ADDS     r3,#4
+150 clk R r3 00000008
+150 clk R cpsr 01000000
+151 clk IT (151) 00008284 4413 T thread : ADD      r3,r3,r2
+151 clk R r3 0001ab08
+152 clk IT (152) 00008286 f8425b04 T thread : STR      r5,[r2],#4
+152 clk MW4 0001ab00 00000000
+152 clk R r2 0001ab04
+153 clk IT (153) 0000828a 4293 T thread : CMP      r3,r2
+153 clk R cpsr 21000000
+154 clk IT (154) 0000828c d1fb T thread : BNE      {pc}-6 ; 0x8286
+155 clk IT (155) 00008286 f8425b04 T thread : STR      r5,[r2],#4
+155 clk MW4 0001ab04 00000000
+155 clk R r2 0001ab08
+156 clk IT (156) 0000828a 4293 T thread : CMP      r3,r2
+156 clk R cpsr 61000000
+157 clk IS (157) 0000828c d1fb T thread : BNE      {pc}-6 ; 0x8286
+158 clk IT (158) 0000828e f00c0403 T thread : AND      r4,r12,#3
+158 clk R r4 00000000
+159 clk IT (159) 00008292 b12c T thread : CBZ      r4,{pc}+0xe ; 0x82a0
+160 clk IT (160) 000082a0 bd30 T thread : POP      {r4,r5,pc}
+160 clk MR4 106ffff4 00000000
+160 clk MR4 106ffff8 00000000
+160 clk MR4 106ffffc 000080f3
+160 clk R r4 00000000
+160 clk R r5 00000000
+160 clk R r13_main 10700000
+160 clk R cpsr 61000000
+160 clk R MSP 10700000
+161 clk IT (161) 000080f2 f000fd4b T thread : BL       {pc}+0xa9a ; 0x8b8c
+161 clk R r14 000080f7
+162 clk IT (162) 00008b8c e92d4ff0 T thread : PUSH     {r4-r11,lr}
+162 clk MW4 106fffdc 00000000
+162 clk MW4 106fffe0 00000000
+162 clk MW4 106fffe4 00000000
+162 clk MW4 106fffe8 00000000
+162 clk MW4 106fffec 00000000
+162 clk MW4 106ffff0 00000000
+162 clk MW4 106ffff4 10800100
+162 clk MW4 106ffff8 00000000
+162 clk MW4 106ffffc 000080f7
+162 clk R r13_main 106fffdc
+162 clk R MSP 106fffdc
+163 clk IT (163) 00008b90 2303 T thread : MOVS     r3,#3
+163 clk R r3 00000003
+163 clk R cpsr 21000000
+164 clk IT (164) 00008b92 2400 T thread : MOVS     r4,#0
+164 clk R r4 00000000
+164 clk R cpsr 61000000
+165 clk IT (165) 00008b94 4e4c T thread : LDR      r6,{pc}+0x134 ; 0x8cc8
+165 clk MR4 00008cc8 0000a030
+165 clk R r6 0000a030
+166 clk IT (166) 00008b96 b085 T thread : SUB      sp,sp,#0x14
+166 clk R r13_main 106fffc8
+166 clk R MSP 106fffc8
+167 clk IT (167) 00008b98 9601 T thread : STR      r6,[sp,#4]
+167 clk MW4 106fffcc 0000a030
+168 clk IT (168) 00008b9a f04f0801 T thread : MOV      r8,#1
+168 clk R r8 00000001
+169 clk IT (169) 00008b9e 9303 T thread : STR      r3,[sp,#0xc]
+169 clk MW4 106fffd4 00000003
+170 clk IT (170) 00008ba0 ad01 T thread : ADD      r5,sp,#4
+170 clk R r5 106fffcc
+171 clk IT (171) 00008ba2 9402 T thread : STR      r4,[sp,#8]
+171 clk MW4 106fffd0 00000000
+172 clk IT (172) 00008ba4 4640 T thread : MOV      r0,r8
+172 clk R r0 00000001
+173 clk IT (173) 00008ba6 4629 T thread : MOV      r1,r5
+173 clk R r1 106fffcc
+174 clk IT (174) 00008ba8 beab T thread : BKPT     #0xab
+174 clk R r0 00000001
+175 clk IT (175) 00008baa 4680 T thread : MOV      r8,r0
+175 clk R r8 00000001
+176 clk IT (176) 00008bac f04f32ff T thread : MOV      r2,#0xffffffff
+176 clk R r2 ffffffff
+177 clk IT (177) 00008bb0 4f46 T thread : LDR      r7,{pc}+0x11c ; 0x8ccc
+177 clk MR4 00008ccc 0001aa28
+177 clk R r7 0001aa28
+178 clk IT (178) 00008bb2 4623 T thread : MOV      r3,r4
+178 clk R r3 00000000
+179 clk IT (179) 00008bb4 4c46 T thread : LDR      r4,{pc}+0x11c ; 0x8cd0
+179 clk MR4 00008cd0 0001aa30
+179 clk R r4 0001aa30
+180 clk IT (180) 00008bb6 f8c78000 T thread : STR      r8,[r7,#0]
+180 clk MW4 0001aa28 00000001
+181 clk IT (181) 00008bba f8442033 T thread : STR      r2,[r4,r3,LSL #3]
+181 clk MW4 0001aa30 ffffffff
+182 clk IT (182) 00008bbe 3301 T thread : ADDS     r3,#1
+182 clk R r3 00000001
+182 clk R cpsr 01000000
+183 clk IT (183) 00008bc0 2b14 T thread : CMP      r3,#0x14
+183 clk R cpsr 81000000
+184 clk IT (184) 00008bc2 d1fa T thread : BNE      {pc}-8 ; 0x8bba
+185 clk IT (185) 00008bba f8442033 T thread : STR      r2,[r4,r3,LSL #3]
+185 clk MW4 0001aa38 ffffffff
+186 clk IT (186) 00008bbe 3301 T thread : ADDS     r3,#1
+186 clk R r3 00000002
+186 clk R cpsr 01000000
+187 clk IT (187) 00008bc0 2b14 T thread : CMP      r3,#0x14
+187 clk R cpsr 81000000
+188 clk IT (188) 00008bc2 d1fa T thread : BNE      {pc}-8 ; 0x8bba
+189 clk IT (189) 00008bba f8442033 T thread : STR      r2,[r4,r3,LSL #3]
+189 clk MW4 0001aa40 ffffffff
+190 clk IT (190) 00008bbe 3301 T thread : ADDS     r3,#1
+190 clk R r3 00000003
+190 clk R cpsr 01000000
+191 clk IT (191) 00008bc0 2b14 T thread : CMP      r3,#0x14
+191 clk R cpsr 81000000
+192 clk IT (192) 00008bc2 d1fa T thread : BNE      {pc}-8 ; 0x8bba
+193 clk IT (193) 00008bba f8442033 T thread : STR      r2,[r4,r3,LSL #3]
+193 clk MW4 0001aa48 ffffffff
+194 clk IT (194) 00008bbe 3301 T thread : ADDS     r3,#1
+194 clk R r3 00000004
+194 clk R cpsr 01000000
+195 clk IT (195) 00008bc0 2b14 T thread : CMP      r3,#0x14
+195 clk R cpsr 81000000
+196 clk IT (196) 00008bc2 d1fa T thread : BNE      {pc}-8 ; 0x8bba
+197 clk IT (197) 00008bba f8442033 T thread : STR      r2,[r4,r3,LSL #3]
+197 clk MW4 0001aa50 ffffffff
+198 clk IT (198) 00008bbe 3301 T thread : ADDS     r3,#1
+198 clk R r3 00000005
+198 clk R cpsr 01000000
+199 clk IT (199) 00008bc0 2b14 T thread : CMP      r3,#0x14
+199 clk R cpsr 81000000
+200 clk IT (200) 00008bc2 d1fa T thread : BNE      {pc}-8 ; 0x8bba
+201 clk IT (201) 00008bba f8442033 T thread : STR      r2,[r4,r3,LSL #3]
+201 clk MW4 0001aa58 ffffffff
+202 clk IT (202) 00008bbe 3301 T thread : ADDS     r3,#1
+202 clk R r3 00000006
+202 clk R cpsr 01000000
+203 clk IT (203) 00008bc0 2b14 T thread : CMP      r3,#0x14
+203 clk R cpsr 81000000
+204 clk IT (204) 00008bc2 d1fa T thread : BNE      {pc}-8 ; 0x8bba
+205 clk IT (205) 00008bba f8442033 T thread : STR      r2,[r4,r3,LSL #3]
+205 clk MW4 0001aa60 ffffffff
+206 clk IT (206) 00008bbe 3301 T thread : ADDS     r3,#1
+206 clk R r3 00000007
+206 clk R cpsr 01000000
+207 clk IT (207) 00008bc0 2b14 T thread : CMP      r3,#0x14
+207 clk R cpsr 81000000
+208 clk IT (208) 00008bc2 d1fa T thread : BNE      {pc}-8 ; 0x8bba
+209 clk IT (209) 00008bba f8442033 T thread : STR      r2,[r4,r3,LSL #3]
+209 clk MW4 0001aa68 ffffffff
+210 clk IT (210) 00008bbe 3301 T thread : ADDS     r3,#1
+210 clk R r3 00000008
+210 clk R cpsr 01000000
+211 clk IT (211) 00008bc0 2b14 T thread : CMP      r3,#0x14
+211 clk R cpsr 81000000
+212 clk IT (212) 00008bc2 d1fa T thread : BNE      {pc}-8 ; 0x8bba
+213 clk IT (213) 00008bba f8442033 T thread : STR      r2,[r4,r3,LSL #3]
+213 clk MW4 0001aa70 ffffffff
+214 clk IT (214) 00008bbe 3301 T thread : ADDS     r3,#1
+214 clk R r3 00000009
+214 clk R cpsr 01000000
+215 clk IT (215) 00008bc0 2b14 T thread : CMP      r3,#0x14
+215 clk R cpsr 81000000
+216 clk IT (216) 00008bc2 d1fa T thread : BNE      {pc}-8 ; 0x8bba
+217 clk IT (217) 00008bba f8442033 T thread : STR      r2,[r4,r3,LSL #3]
+217 clk MW4 0001aa78 ffffffff
+218 clk IT (218) 00008bbe 3301 T thread : ADDS     r3,#1
+218 clk R r3 0000000a
+218 clk R cpsr 01000000
+219 clk IT (219) 00008bc0 2b14 T thread : CMP      r3,#0x14
+219 clk R cpsr 81000000
+220 clk IT (220) 00008bc2 d1fa T thread : BNE      {pc}-8 ; 0x8bba
+221 clk IT (221) 00008bba f8442033 T thread : STR      r2,[r4,r3,LSL #3]
+221 clk MW4 0001aa80 ffffffff
+222 clk IT (222) 00008bbe 3301 T thread : ADDS     r3,#1
+222 clk R r3 0000000b
+222 clk R cpsr 01000000
+223 clk IT (223) 00008bc0 2b14 T thread : CMP      r3,#0x14
+223 clk R cpsr 81000000
+224 clk IT (224) 00008bc2 d1fa T thread : BNE      {pc}-8 ; 0x8bba
+225 clk IT (225) 00008bba f8442033 T thread : STR      r2,[r4,r3,LSL #3]
+225 clk MW4 0001aa88 ffffffff
+226 clk IT (226) 00008bbe 3301 T thread : ADDS     r3,#1
+226 clk R r3 0000000c
+226 clk R cpsr 01000000
+227 clk IT (227) 00008bc0 2b14 T thread : CMP      r3,#0x14
+227 clk R cpsr 81000000
+228 clk IT (228) 00008bc2 d1fa T thread : BNE      {pc}-8 ; 0x8bba
+229 clk IT (229) 00008bba f8442033 T thread : STR      r2,[r4,r3,LSL #3]
+229 clk MW4 0001aa90 ffffffff
+230 clk IT (230) 00008bbe 3301 T thread : ADDS     r3,#1
+230 clk R r3 0000000d
+230 clk R cpsr 01000000
+231 clk IT (231) 00008bc0 2b14 T thread : CMP      r3,#0x14
+231 clk R cpsr 81000000
+232 clk IT (232) 00008bc2 d1fa T thread : BNE      {pc}-8 ; 0x8bba
+233 clk IT (233) 00008bba f8442033 T thread : STR      r2,[r4,r3,LSL #3]
+233 clk MW4 0001aa98 ffffffff
+234 clk IT (234) 00008bbe 3301 T thread : ADDS     r3,#1
+234 clk R r3 0000000e
+234 clk R cpsr 01000000
+235 clk IT (235) 00008bc0 2b14 T thread : CMP      r3,#0x14
+235 clk R cpsr 81000000
+236 clk IT (236) 00008bc2 d1fa T thread : BNE      {pc}-8 ; 0x8bba
+237 clk IT (237) 00008bba f8442033 T thread : STR      r2,[r4,r3,LSL #3]
+237 clk MW4 0001aaa0 ffffffff
+238 clk IT (238) 00008bbe 3301 T thread : ADDS     r3,#1
+238 clk R r3 0000000f
+238 clk R cpsr 01000000
+239 clk IT (239) 00008bc0 2b14 T thread : CMP      r3,#0x14
+239 clk R cpsr 81000000
+240 clk IT (240) 00008bc2 d1fa T thread : BNE      {pc}-8 ; 0x8bba
+241 clk IT (241) 00008bba f8442033 T thread : STR      r2,[r4,r3,LSL #3]
+241 clk MW4 0001aaa8 ffffffff
+242 clk IT (242) 00008bbe 3301 T thread : ADDS     r3,#1
+242 clk R r3 00000010
+242 clk R cpsr 01000000
+243 clk IT (243) 00008bc0 2b14 T thread : CMP      r3,#0x14
+243 clk R cpsr 81000000
+244 clk IT (244) 00008bc2 d1fa T thread : BNE      {pc}-8 ; 0x8bba
+245 clk IT (245) 00008bba f8442033 T thread : STR      r2,[r4,r3,LSL #3]
+245 clk MW4 0001aab0 ffffffff
+246 clk IT (246) 00008bbe 3301 T thread : ADDS     r3,#1
+246 clk R r3 00000011
+246 clk R cpsr 01000000
+247 clk IT (247) 00008bc0 2b14 T thread : CMP      r3,#0x14
+247 clk R cpsr 81000000
+248 clk IT (248) 00008bc2 d1fa T thread : BNE      {pc}-8 ; 0x8bba
+249 clk IT (249) 00008bba f8442033 T thread : STR      r2,[r4,r3,LSL #3]
+249 clk MW4 0001aab8 ffffffff
+250 clk IT (250) 00008bbe 3301 T thread : ADDS     r3,#1
+250 clk R r3 00000012
+250 clk R cpsr 01000000
+251 clk IT (251) 00008bc0 2b14 T thread : CMP      r3,#0x14
+251 clk R cpsr 81000000
+252 clk IT (252) 00008bc2 d1fa T thread : BNE      {pc}-8 ; 0x8bba
+253 clk IT (253) 00008bba f8442033 T thread : STR      r2,[r4,r3,LSL #3]
+253 clk MW4 0001aac0 ffffffff
+254 clk IT (254) 00008bbe 3301 T thread : ADDS     r3,#1
+254 clk R r3 00000013
+254 clk R cpsr 01000000
+255 clk IT (255) 00008bc0 2b14 T thread : CMP      r3,#0x14
+255 clk R cpsr 81000000
+256 clk IT (256) 00008bc2 d1fa T thread : BNE      {pc}-8 ; 0x8bba
+257 clk IT (257) 00008bba f8442033 T thread : STR      r2,[r4,r3,LSL #3]
+257 clk MW4 0001aac8 ffffffff
+258 clk IT (258) 00008bbe 3301 T thread : ADDS     r3,#1
+258 clk R r3 00000014
+258 clk R cpsr 01000000
+259 clk IT (259) 00008bc0 2b14 T thread : CMP      r3,#0x14
+259 clk R cpsr 61000000
+260 clk IS (260) 00008bc2 d1fa T thread : BNE      {pc}-8 ; 0x8bba
+261 clk IT (261) 00008bc4 f8df810c T thread : LDR      r8,{pc}+0x110 ; 0x8cd4
+261 clk MR4 00008cd4 0001a5cc
+261 clk R r8 0001a5cc
+262 clk IT (262) 00008bc8 f8d83000 T thread : LDR      r3,[r8,#0]
+262 clk MR4 0001a5cc ffffffff
+262 clk R r3 ffffffff
+263 clk IT (263) 00008bcc 2b00 T thread : CMP      r3,#0
+263 clk R cpsr a1000000
+264 clk IT (264) 00008bce db54 T thread : BLT      {pc}+0xac ; 0x8c7a
+265 clk IT (265) 00008c7a 2100 T thread : MOVS     r1,#0
+265 clk R r1 00000000
+265 clk R cpsr 61000000
+266 clk IT (266) 00008c7c 2201 T thread : MOVS     r2,#1
+266 clk R r2 00000001
+266 clk R cpsr 21000000
+267 clk IT (267) 00008c7e f8df9060 T thread : LDR      r9,{pc}+0x62 ; 0x8ce0
+267 clk MR4 00008ce0 0001a5c8
+267 clk R r9 0001a5c8
+268 clk IT (268) 00008c82 4668 T thread : MOV      r0,sp
+268 clk R r0 106fffc8
+269 clk IT (269) 00008c84 f8c91000 T thread : STR      r1,[r9,#0]
+269 clk MW4 0001a5c8 00000000
+270 clk IT (270) 00008c88 f8c82000 T thread : STR      r2,[r8,#0]
+270 clk MW4 0001a5cc 00000001
+271 clk IT (271) 00008c8c f7fffeae T thread : BL       {pc}-0x2a0 ; 0x89ec
+271 clk R r14 00008c91
+272 clk IT (272) 000089ec e92d43f0 T thread : PUSH     {r4-r9,lr}
+272 clk MW4 106fffac 0001aa30
+272 clk MW4 106fffb0 106fffcc
+272 clk MW4 106fffb4 0000a030
+272 clk MW4 106fffb8 0001aa28
+272 clk MW4 106fffbc 0001a5cc
+272 clk MW4 106fffc0 0001a5c8
+272 clk MW4 106fffc4 00008c91
+272 clk R r13_main 106fffac
+272 clk R MSP 106fffac
+273 clk IT (273) 000089f0 4607 T thread : MOV      r7,r0
+273 clk R r7 106fffc8
+274 clk IT (274) 000089f2 4688 T thread : MOV      r8,r1
+274 clk R r8 00000000
+275 clk IT (275) 000089f4 483e T thread : LDR      r0,{pc}+0xfc ; 0x8af0
+275 clk MR4 00008af0 0000a018
+275 clk R r0 0000a018
+276 clk IT (276) 000089f6 2100 T thread : MOVS     r1,#0
+276 clk R r1 00000000
+276 clk R cpsr 61000000
+277 clk IT (277) 000089f8 b083 T thread : SUB      sp,sp,#0xc
+277 clk R r13_main 106fffa0
+277 clk R MSP 106fffa0
+278 clk IT (278) 000089fa 4616 T thread : MOV      r6,r2
+278 clk R r6 00000001
+279 clk IT (279) 000089fc f7ffff86 T thread : BL       {pc}-0xf0 ; 0x890c
+279 clk R r14 00008a01
+280 clk IT (280) 0000890c e92d41f0 T thread : PUSH     {r4-r8,lr}
+280 clk MW4 106fff88 0001aa30
+280 clk MW4 106fff8c 106fffcc
+280 clk MW4 106fff90 00000001
+280 clk MW4 106fff94 106fffc8
+280 clk MW4 106fff98 00000000
+280 clk MW4 106fff9c 00008a01
+280 clk R r13_main 106fff88
+280 clk R MSP 106fff88
+281 clk IT (281) 00008910 4603 T thread : MOV      r3,r0
+281 clk R r3 0000a018
+282 clk IT (282) 00008912 2400 T thread : MOVS     r4,#0
+282 clk R r4 00000000
+282 clk R cpsr 61000000
+283 clk IT (283) 00008914 460f T thread : MOV      r7,r1
+283 clk R r7 00000000
+284 clk IT (284) 00008916 4e2f T thread : LDR      r6,{pc}+0xbe ; 0x89d4
+284 clk MR4 000089d4 0001aa30
+284 clk R r6 0001aa30
+285 clk IT (285) 00008918 b098 T thread : SUB      sp,sp,#0x60
+285 clk R r13_main 106fff28
+285 clk R MSP 106fff28
+286 clk IT (286) 0000891a e002 T thread : B        {pc}+8 ; 0x8922
+287 clk IT (287) 00008922 f8565034 T thread : LDR      r5,[r6,r4,LSL #3]
+287 clk MR4 0001aa30 ffffffff
+287 clk R r5 ffffffff
+288 clk IT (288) 00008926 1c68 T thread : ADDS     r0,r5,#1
+288 clk R r0 00000000
+288 clk R cpsr 61000000
+289 clk IS (289) 00008928 d1f8 T thread : BNE      {pc}-0xc ; 0x891c
+290 clk IT (290) 0000892a f4076220 T thread : AND      r2,r7,#0xa00
+290 clk R r2 00000000
+291 clk IT (291) 0000892e f5b26f20 T thread : CMP      r2,#0xa00
+291 clk R cpsr 81000000
+292 clk IT (292) 00008932 f10d0808 T thread : ADD      r8,sp,#8
+292 clk R r8 106fff30
+293 clk IS (293) 00008936 d038 T thread : BEQ      {pc}+0x74 ; 0x89aa
+294 clk IT (294) 00008938 f2406201 T thread : MOV      r2,#0x601
+294 clk R r2 00000601
+295 clk IT (295) 0000893c f3c74500 T thread : UBFX     r5,r7,#16,#1
+295 clk R r5 00000000
+296 clk IT (296) 00008940 07b9 T thread : LSLS     r1,r7,#30
+296 clk R r1 00000000
+296 clk R cpsr 41000000
+297 clk IT (297) 00008942 bf48 T thread : IT       MI
+297 clk R cpsr 41004800
+298 clk IS (298) 00008944 f0450502 T thread : ORRMI    r5,r5,#2
+298 clk R cpsr 41000000
+299 clk IT (299) 00008948 4217 T thread : TST      r7,r2
+299 clk R cpsr 41000000
+300 clk IT (300) 0000894a bf18 T thread : IT       NE
+300 clk R cpsr 41001800
+301 clk IS (301) 0000894c f0450504 T thread : ORRNE    r5,r5,#4
+301 clk R cpsr 41000000
+302 clk IT (302) 00008950 073a T thread : LSLS     r2,r7,#28
+302 clk R r2 00000000
+302 clk R cpsr 41000000
+303 clk IT (303) 00008952 bf48 T thread : IT       MI
+303 clk R cpsr 41004800
+304 clk IS (304) 00008954 f0250504 T thread : BICMI    r5,r5,#4
+304 clk R cpsr 41000000
+305 clk IT (305) 00008958 4618 T thread : MOV      r0,r3
+305 clk R r0 0000a018
+306 clk IT (306) 0000895a bf48 T thread : IT       MI
+306 clk R cpsr 41004800
+307 clk IS (307) 0000895c f0450508 T thread : ORRMI    r5,r5,#8
+307 clk R cpsr 41000000
+308 clk IT (308) 00008960 9302 T thread : STR      r3,[sp,#8]
+308 clk MW4 106fff30 0000a018
+309 clk IT (309) 00008962 f000ff99 T thread : BL       {pc}+0xf36 ; 0x9898
+309 clk R r14 00008967
+310 clk IT (310) 00009898 f0200103 T thread : BIC      r1,r0,#3
+310 clk R r1 0000a018
+311 clk IT (311) 0000989c f0100003 T thread : ANDS     r0,r0,#3
+311 clk R r0 00000000
+311 clk R cpsr 41000000
+312 clk IT (312) 000098a0 f1c00000 T thread : RSB      r0,r0,#0
+312 clk R r0 00000000
+313 clk IT (313) 000098a4 f8513b04 T thread : LDR      r3,[r1],#4
+313 clk MR4 0000a018 6d65733a
+313 clk R r1 0000a01c
+313 clk R r3 6d65733a
+314 clk IT (314) 000098a8 f1000c04 T thread : ADD      r12,r0,#4
+314 clk R r12 00000004
+315 clk IT (315) 000098ac ea4f0ccc T thread : LSL      r12,r12,#3
+315 clk R r12 00000020
+316 clk IT (316) 000098b0 f06f0200 T thread : MVN      r2,#0
+316 clk R r2 ffffffff
+317 clk IT (317) 000098b4 bf1c T thread : ITT      NE
+317 clk R cpsr 41001c00
+318 clk IS (318) 000098b6 fa22f20c T thread : LSRNE    r2,r2,r12
+318 clk R cpsr 41001800
+319 clk IS (319) 000098ba 4313 T thread : ORRNE    r3,r3,r2
+319 clk R cpsr 41000000
+320 clk IT (320) 000098bc f04f0c01 T thread : MOV      r12,#1
+320 clk R r12 00000001
+321 clk IT (321) 000098c0 ea4c2c0c T thread : ORR      r12,r12,r12,LSL #8
+321 clk R r12 00000101
+322 clk IT (322) 000098c4 ea4c4c0c T thread : ORR      r12,r12,r12,LSL #16
+322 clk R r12 01010101
+323 clk IT (323) 000098c8 eba3020c T thread : SUB      r2,r3,r12
+323 clk R r2 6c647239
+324 clk IT (324) 000098cc ea220203 T thread : BIC      r2,r2,r3
+324 clk R r2 00000001
+325 clk IT (325) 000098d0 ea1212cc T thread : ANDS     r2,r2,r12,LSL #7
+325 clk R r2 00000000
+325 clk R cpsr 41000000
+326 clk IT (326) 000098d4 bf04 T thread : ITT      EQ
+326 clk R cpsr 41000400
+327 clk IT (327) 000098d6 f8513b04 T thread : LDREQ    r3,[r1],#4
+327 clk MR4 0000a01c 736f6869
+327 clk R r1 0000a020
+327 clk R r3 736f6869
+327 clk R cpsr 41000800
+328 clk IT (328) 000098da 3004 T thread : ADDEQ    r0,#4
+328 clk R r0 00000004
+328 clk R cpsr 41000000
+329 clk IT (329) 000098dc d0f4 T thread : BEQ      {pc}-0x14 ; 0x98c8
+330 clk IT (330) 000098c8 eba3020c T thread : SUB      r2,r3,r12
+330 clk R r2 726e6768
+331 clk IT (331) 000098cc ea220203 T thread : BIC      r2,r2,r3
+331 clk R r2 00000700
+332 clk IT (332) 000098d0 ea1212cc T thread : ANDS     r2,r2,r12,LSL #7
+332 clk R r2 00000000
+332 clk R cpsr 41000000
+333 clk IT (333) 000098d4 bf04 T thread : ITT      EQ
+333 clk R cpsr 41000400
+334 clk IT (334) 000098d6 f8513b04 T thread : LDREQ    r3,[r1],#4
+334 clk MR4 0000a020 676e6974
+334 clk R r1 0000a024
+334 clk R r3 676e6974
+334 clk R cpsr 41000800
+335 clk IT (335) 000098da 3004 T thread : ADDEQ    r0,#4
+335 clk R r0 00000008
+335 clk R cpsr 41000000
+336 clk IT (336) 000098dc d0f4 T thread : BEQ      {pc}-0x14 ; 0x98c8
+337 clk IT (337) 000098c8 eba3020c T thread : SUB      r2,r3,r12
+337 clk R r2 666d6873
+338 clk IT (338) 000098cc ea220203 T thread : BIC      r2,r2,r3
+338 clk R r2 00010003
+339 clk IT (339) 000098d0 ea1212cc T thread : ANDS     r2,r2,r12,LSL #7
+339 clk R r2 00000000
+339 clk R cpsr 41000000
+340 clk IT (340) 000098d4 bf04 T thread : ITT      EQ
+340 clk R cpsr 41000400
+341 clk IT (341) 000098d6 f8513b04 T thread : LDREQ    r3,[r1],#4
+341 clk MR4 0000a024 6165662d
+341 clk R r1 0000a028
+341 clk R r3 6165662d
+341 clk R cpsr 41000800
+342 clk IT (342) 000098da 3004 T thread : ADDEQ    r0,#4
+342 clk R r0 0000000c
+342 clk R cpsr 41000000
+343 clk IT (343) 000098dc d0f4 T thread : BEQ      {pc}-0x14 ; 0x98c8
+344 clk IT (344) 000098c8 eba3020c T thread : SUB      r2,r3,r12
+344 clk R r2 6064652c
+345 clk IT (345) 000098cc ea220203 T thread : BIC      r2,r2,r3
+345 clk R r2 00000100
+346 clk IT (346) 000098d0 ea1212cc T thread : ANDS     r2,r2,r12,LSL #7
+346 clk R r2 00000000
+346 clk R cpsr 41000000
+347 clk IT (347) 000098d4 bf04 T thread : ITT      EQ
+347 clk R cpsr 41000400
+348 clk IT (348) 000098d6 f8513b04 T thread : LDREQ    r3,[r1],#4
+348 clk MR4 0000a028 65727574
+348 clk R r1 0000a02c
+348 clk R r3 65727574
+348 clk R cpsr 41000800
+349 clk IT (349) 000098da 3004 T thread : ADDEQ    r0,#4
+349 clk R r0 00000010
+349 clk R cpsr 41000000
+350 clk IT (350) 000098dc d0f4 T thread : BEQ      {pc}-0x14 ; 0x98c8
+351 clk IT (351) 000098c8 eba3020c T thread : SUB      r2,r3,r12
+351 clk R r2 64717473
+352 clk IT (352) 000098cc ea220203 T thread : BIC      r2,r2,r3
+352 clk R r2 00010003
+353 clk IT (353) 000098d0 ea1212cc T thread : ANDS     r2,r2,r12,LSL #7
+353 clk R r2 00000000
+353 clk R cpsr 41000000
+354 clk IT (354) 000098d4 bf04 T thread : ITT      EQ
+354 clk R cpsr 41000400
+355 clk IT (355) 000098d6 f8513b04 T thread : LDREQ    r3,[r1],#4
+355 clk MR4 0000a02c 00000073
+355 clk R r1 0000a030
+355 clk R r3 00000073
+355 clk R cpsr 41000800
+356 clk IT (356) 000098da 3004 T thread : ADDEQ    r0,#4
+356 clk R r0 00000014
+356 clk R cpsr 41000000
+357 clk IT (357) 000098dc d0f4 T thread : BEQ      {pc}-0x14 ; 0x98c8
+358 clk IT (358) 000098c8 eba3020c T thread : SUB      r2,r3,r12
+358 clk R r2 fefeff72
+359 clk IT (359) 000098cc ea220203 T thread : BIC      r2,r2,r3
+359 clk R r2 fefeff00
+360 clk IT (360) 000098d0 ea1212cc T thread : ANDS     r2,r2,r12,LSL #7
+360 clk R r2 80808000
+360 clk R cpsr 81000000
+361 clk IT (361) 000098d4 bf04 T thread : ITT      EQ
+361 clk R cpsr 81000400
+362 clk IS (362) 000098d6 f8513b04 T thread : LDREQ    r3,[r1],#4
+362 clk R cpsr 81000800
+363 clk IS (363) 000098da 3004 T thread : ADDEQ    r0,#4
+363 clk R cpsr 81000000
+364 clk IS (364) 000098dc d0f4 T thread : BEQ      {pc}-0x14 ; 0x98c8
+365 clk IT (365) 000098de f1c20100 T thread : RSB      r1,r2,#0
+365 clk R r1 7f7f8000
+366 clk IT (366) 000098e2 ea020201 T thread : AND      r2,r2,r1
+366 clk R r2 00008000
+367 clk IT (367) 000098e6 fab2f282 T thread : CLZ      r2,r2
+367 clk R r2 00000010
+368 clk IT (368) 000098ea f1c2021f T thread : RSB      r2,r2,#0x1f
+368 clk R r2 0000000f
+369 clk IT (369) 000098ee eb0000d2 T thread : ADD      r0,r0,r2,LSR #3
+369 clk R r0 00000015
+370 clk IT (370) 000098f2 4770 T thread : BX       lr
+370 clk R cpsr 81000000
+371 clk IT (371) 00008966 9503 T thread : STR      r5,[sp,#0xc]
+371 clk MW4 106fff34 00000000
+372 clk IT (372) 00008968 9004 T thread : STR      r0,[sp,#0x10]
+372 clk MW4 106fff38 00000015
+373 clk IT (373) 0000896a 2501 T thread : MOVS     r5,#1
+373 clk R r5 00000001
+373 clk R cpsr 01000000
+374 clk IT (374) 0000896c 4628 T thread : MOV      r0,r5
+374 clk R r0 00000001
+375 clk IT (375) 0000896e 4641 T thread : MOV      r1,r8
+375 clk R r1 106fff30
+376 clk IT (376) 00008970 beab T thread : BKPT     #0xab
+376 clk R r0 ffffffff
+377 clk IT (377) 00008972 4605 T thread : MOV      r5,r0
+377 clk R r5 ffffffff
+378 clk IT (378) 00008974 2d00 T thread : CMP      r5,#0
+378 clk R cpsr a1000000
+379 clk IT (379) 00008976 db09 T thread : BLT      {pc}+0x16 ; 0x898c
+380 clk IT (380) 0000898c f000fabe T thread : BL       {pc}+0x580 ; 0x8f0c
+380 clk R r14 00008991
+381 clk IT (381) 00008f0c 4b01 T thread : LDR      r3,{pc}+8 ; 0x8f14
+381 clk MR4 00008f14 0001a190
+381 clk R r3 0001a190
+382 clk IT (382) 00008f0e 6818 T thread : LDR      r0,[r3,#0]
+382 clk MR4 0001a190 0001a198
+382 clk R r0 0001a198
+383 clk IT (383) 00008f10 4770 T thread : BX       lr
+383 clk R cpsr a1000000
+384 clk IT (384) 00008990 2413 T thread : MOVS     r4,#0x13
+384 clk R r4 00000013
+384 clk R cpsr 21000000
+385 clk IT (385) 00008992 2700 T thread : MOVS     r7,#0
+385 clk R r7 00000000
+385 clk R cpsr 61000000
+386 clk IT (386) 00008994 4606 T thread : MOV      r6,r0
+386 clk R r6 0001a198
+387 clk IT (387) 00008996 4620 T thread : MOV      r0,r4
+387 clk R r0 00000013
+388 clk IT (388) 00008998 4639 T thread : MOV      r1,r7
+388 clk R r1 00000000
+389 clk IT (389) 0000899a beab T thread : BKPT     #0xab
+389 clk R r0 00000002
+390 clk IT (390) 0000899c 4607 T thread : MOV      r7,r0
+390 clk R r7 00000002
+391 clk IT (391) 0000899e 462c T thread : MOV      r4,r5
+391 clk R r4 ffffffff
+392 clk IT (392) 000089a0 4620 T thread : MOV      r0,r4
+392 clk R r0 ffffffff
+393 clk IT (393) 000089a2 6037 T thread : STR      r7,[r6,#0]
+393 clk MW4 0001a198 00000002
+394 clk IT (394) 000089a4 b018 T thread : ADD      sp,sp,#0x60
+394 clk R r13_main 106fff88
+394 clk R MSP 106fff88
+395 clk IT (395) 000089a6 e8bd81f0 T thread : POP      {r4-r8,pc}
+395 clk MR4 106fff88 0001aa30
+395 clk MR4 106fff8c 106fffcc
+395 clk MR4 106fff90 00000001
+395 clk MR4 106fff94 106fffc8
+395 clk MR4 106fff98 00000000
+395 clk MR4 106fff9c 00008a01
+395 clk R r4 0001aa30
+395 clk R r5 106fffcc
+395 clk R r6 00000001
+395 clk R r7 106fffc8
+395 clk R r8 00000000
+395 clk R r13_main 106fffa0
+395 clk R cpsr 61000000
+395 clk R MSP 106fffa0
+396 clk IT (396) 00008a00 4604 T thread : MOV      r4,r0
+396 clk R r4 ffffffff
+397 clk IT (397) 00008a02 2100 T thread : MOVS     r1,#0
+397 clk R r1 00000000
+397 clk R cpsr 61000000
+398 clk IT (398) 00008a04 4632 T thread : MOV      r2,r6
+398 clk R r2 00000001
+399 clk IT (399) 00008a06 4638 T thread : MOV      r0,r7
+399 clk R r0 106fffc8
+400 clk IT (400) 00008a08 f7fffc04 T thread : BL       {pc}-0x7f4 ; 0x8214
+400 clk R r14 00008a0d
+401 clk IT (401) 00008214 0783 T thread : LSLS     r3,r0,#30
+401 clk R r3 00000000
+401 clk R cpsr 41000000
+402 clk IT (402) 00008216 b530 T thread : PUSH     {r4,r5,lr}
+402 clk MW4 106fff94 ffffffff
+402 clk MW4 106fff98 106fffcc
+402 clk MW4 106fff9c 00008a0d
+402 clk R r13_main 106fff94
+402 clk R MSP 106fff94
+403 clk IT (403) 00008218 d048 T thread : BEQ      {pc}+0x94 ; 0x82ac
+404 clk IT (404) 000082ac 4603 T thread : MOV      r3,r0
+404 clk R r3 106fffc8
+405 clk IT (405) 000082ae 4614 T thread : MOV      r4,r2
+405 clk R r4 00000001
+406 clk IT (406) 000082b0 e7bf T thread : B        {pc}-0x7e ; 0x8232
+407 clk IT (407) 00008232 2c03 T thread : CMP      r4,#3
+407 clk R cpsr 81000000
+408 clk IT (408) 00008234 d92d T thread : BLS      {pc}+0x5e ; 0x8292
+409 clk IT (409) 00008292 b12c T thread : CBZ      r4,{pc}+0xe ; 0x82a0
+410 clk IT (410) 00008294 b2ca T thread : UXTB     r2,r1
+410 clk R r2 00000000
+411 clk IT (411) 00008296 441c T thread : ADD      r4,r4,r3
+411 clk R r4 106fffc9
+412 clk IT (412) 00008298 f8032b01 T thread : STRB     r2,[r3],#1
+412 clk MW1 106fffc8 00
+412 clk R r3 106fffc9
+413 clk IT (413) 0000829c 429c T thread : CMP      r4,r3
+413 clk R cpsr 61000000
+414 clk IS (414) 0000829e d1fb T thread : BNE      {pc}-6 ; 0x8298
+415 clk IT (415) 000082a0 bd30 T thread : POP      {r4,r5,pc}
+415 clk MR4 106fff94 ffffffff
+415 clk MR4 106fff98 106fffcc
+415 clk MR4 106fff9c 00008a0d
+415 clk R r4 ffffffff
+415 clk R r5 106fffcc
+415 clk R r13_main 106fffa0
+415 clk R cpsr 61000000
+415 clk R MSP 106fffa0
+416 clk IT (416) 00008a0c 1c61 T thread : ADDS     r1,r4,#1
+416 clk R r1 00000000
+416 clk R cpsr 61000000
+417 clk IT (417) 00008a0e d045 T thread : BEQ      {pc}+0x8e ; 0x8a9c
+418 clk IT (418) 00008a9c 4620 T thread : MOV      r0,r4
+418 clk R r0 ffffffff
+419 clk IT (419) 00008a9e b003 T thread : ADD      sp,sp,#0xc
+419 clk R r13_main 106fffac
+419 clk R MSP 106fffac
+420 clk IT (420) 00008aa0 e8bd83f0 T thread : POP      {r4-r9,pc}
+420 clk MR4 106fffac 0001aa30
+420 clk MR4 106fffb0 106fffcc
+420 clk MR4 106fffb4 0000a030
+420 clk MR4 106fffb8 0001aa28
+420 clk MR4 106fffbc 0001a5cc
+420 clk MR4 106fffc0 0001a5c8
+420 clk MR4 106fffc4 00008c91
+420 clk R r4 0001aa30
+420 clk R r5 106fffcc
+420 clk R r6 0000a030
+420 clk R r7 0001aa28
+420 clk R r8 0001a5cc
+420 clk R r9 0001a5c8
+420 clk R r13_main 106fffc8
+420 clk R cpsr 61000000
+420 clk R MSP 106fffc8
+421 clk IT (421) 00008c90 2800 T thread : CMP      r0,#0
+421 clk R cpsr a1000000
+422 clk IT (422) 00008c92 dd13 T thread : BLE      {pc}+0x2a ; 0x8cbc
+423 clk IT (423) 00008cbc f8d83000 T thread : LDR      r3,[r8,#0]
+423 clk MR4 0001a5cc 00000001
+423 clk R r3 00000001
+424 clk IT (424) 00008cc0 e786 T thread : B        {pc}-0xf0 ; 0x8bd0
+425 clk IT (425) 00008bd0 b94b T thread : CBNZ     r3,{pc}+0x16 ; 0x8be6
+426 clk IT (426) 00008be6 f04f0b03 T thread : MOV      r11,#3
+426 clk R r11 00000003
+427 clk IT (427) 00008bea 2304 T thread : MOVS     r3,#4
+427 clk R r3 00000004
+427 clk R cpsr 21000000
+428 clk IT (428) 00008bec 9601 T thread : STR      r6,[sp,#4]
+428 clk MW4 106fffcc 0000a030
+429 clk IT (429) 00008bee f04f0901 T thread : MOV      r9,#1
+429 clk R r9 00000001
+430 clk IT (430) 00008bf2 f8cdb00c T thread : STR      r11,[sp,#0xc]
+430 clk MW4 106fffd4 00000003
+431 clk IT (431) 00008bf6 9302 T thread : STR      r3,[sp,#8]
+431 clk MW4 106fffd0 00000004
+432 clk IT (432) 00008bf8 4648 T thread : MOV      r0,r9
+432 clk R r0 00000001
+433 clk IT (433) 00008bfa 4629 T thread : MOV      r1,r5
+433 clk R r1 106fffcc
+434 clk IT (434) 00008bfc beab T thread : BKPT     #0xab
+434 clk R r0 00000002
+435 clk IT (435) 00008bfe 4682 T thread : MOV      r10,r0
+435 clk R r10 00000002
+436 clk IT (436) 00008c00 2308 T thread : MOVS     r3,#8
+436 clk R r3 00000008
+436 clk R cpsr 21000000
+437 clk IT (437) 00008c02 9601 T thread : STR      r6,[sp,#4]
+437 clk MW4 106fffcc 0000a030
+438 clk IT (438) 00008c04 4e35 T thread : LDR      r6,{pc}+0xd8 ; 0x8cdc
+438 clk MR4 00008cdc 0001aa2c
+438 clk R r6 0001aa2c
+439 clk IT (439) 00008c06 f8cdb00c T thread : STR      r11,[sp,#0xc]
+439 clk MW4 106fffd4 00000003
+440 clk IT (440) 00008c0a f8c6a000 T thread : STR      r10,[r6,#0]
+440 clk MW4 0001aa2c 00000002
+441 clk IT (441) 00008c0e 9302 T thread : STR      r3,[sp,#8]
+441 clk MW4 106fffd0 00000008
+442 clk IT (442) 00008c10 4648 T thread : MOV      r0,r9
+442 clk R r0 00000001
+443 clk IT (443) 00008c12 4629 T thread : MOV      r1,r5
+443 clk R r1 106fffcc
+444 clk IT (444) 00008c14 beab T thread : BKPT     #0xab
+444 clk R r0 ffffffff
+445 clk IT (445) 00008c16 4605 T thread : MOV      r5,r0
+445 clk R r5 ffffffff
+446 clk IT (446) 00008c18 2100 T thread : MOVS     r1,#0
+446 clk R r1 00000000
+446 clk R cpsr 61000000
+447 clk IT (447) 00008c1a f8df90bc T thread : LDR      r9,{pc}+0xbe ; 0x8cd8
+447 clk MR4 00008cd8 0001aa24
+447 clk R r9 0001aa24
+448 clk IT (448) 00008c1e f8d83000 T thread : LDR      r3,[r8,#0]
+448 clk MR4 0001a5cc 00000001
+448 clk R r3 00000001
+449 clk IT (449) 00008c22 f8c95000 T thread : STR      r5,[r9,#0]
+449 clk MW4 0001aa24 ffffffff
+450 clk IT (450) 00008c26 3501 T thread : ADDS     r5,#1
+450 clk R r5 00000000
+450 clk R cpsr 61000000
+451 clk IT (451) 00008c28 bf08 T thread : IT       EQ
+451 clk R cpsr 61000800
+452 clk IT (452) 00008c2a 6832 T thread : LDREQ    r2,[r6,#0]
+452 clk MR4 0001aa2c 00000002
+452 clk R r2 00000002
+452 clk R cpsr 61000000
+453 clk IT (453) 00008c2c 6061 T thread : STR      r1,[r4,#4]
+453 clk MW4 0001aa34 00000000
+454 clk IT (454) 00008c2e bf08 T thread : IT       EQ
+454 clk R cpsr 61000800
+455 clk IT (455) 00008c30 f8c92000 T thread : STREQ    r2,[r9,#0]
+455 clk MW4 0001aa24 00000002
+455 clk R cpsr 61000000
+456 clk IT (456) 00008c34 683a T thread : LDR      r2,[r7,#0]
+456 clk MR4 0001aa28 00000001
+456 clk R r2 00000001
+457 clk IT (457) 00008c36 428b T thread : CMP      r3,r1
+457 clk R cpsr 21000000
+458 clk IT (458) 00008c38 6022 T thread : STR      r2,[r4,#0]
+458 clk MW4 0001aa30 00000001
+459 clk IT (459) 00008c3a da12 T thread : BGE      {pc}+0x28 ; 0x8c62
+460 clk IT (460) 00008c62 b13b T thread : CBZ      r3,{pc}+0x12 ; 0x8c74
+461 clk IT (461) 00008c64 2300 T thread : MOVS     r3,#0
+461 clk R r3 00000000
+461 clk R cpsr 61000000
+462 clk IT (462) 00008c66 f8d92000 T thread : LDR      r2,[r9,#0]
+462 clk MR4 0001aa24 00000002
+462 clk R r2 00000002
+463 clk IT (463) 00008c6a 6831 T thread : LDR      r1,[r6,#0]
+463 clk MR4 0001aa2c 00000002
+463 clk R r1 00000002
+464 clk IT (464) 00008c6c e9c43203 T thread : STRD     r3,r2,[r4,#0xc]
+464 clk MW4 0001aa3c 00000000
+464 clk MW4 0001aa40 00000002
+465 clk IT (465) 00008c70 60a1 T thread : STR      r1,[r4,#8]
+465 clk MW4 0001aa38 00000002
+466 clk IT (466) 00008c72 6163 T thread : STR      r3,[r4,#0x14]
+466 clk MW4 0001aa44 00000000
+467 clk IT (467) 00008c74 b005 T thread : ADD      sp,sp,#0x14
+467 clk R r13_main 106fffdc
+467 clk R MSP 106fffdc
+468 clk IT (468) 00008c76 e8bd8ff0 T thread : POP      {r4-r11,pc}
+468 clk MR4 106fffdc 00000000
+468 clk MR4 106fffe0 00000000
+468 clk MR4 106fffe4 00000000
+468 clk MR4 106fffe8 00000000
+468 clk MR4 106fffec 00000000
+468 clk MR4 106ffff0 00000000
+468 clk MR4 106ffff4 10800100
+468 clk MR4 106ffff8 00000000
+468 clk MR4 106ffffc 000080f7
+468 clk R r4 00000000
+468 clk R r5 00000000
+468 clk R r6 00000000
+468 clk R r7 00000000
+468 clk R r8 00000000
+468 clk R r9 00000000
+468 clk R r10 10800100
+468 clk R r11 00000000
+468 clk R r13_main 10700000
+468 clk R cpsr 61000000
+468 clk R MSP 10700000
+469 clk IT (469) 000080f6 2015 T thread : MOVS     r0,#0x15
+469 clk R r0 00000015
+469 clk R cpsr 21000000
+470 clk IT (470) 000080f8 4926 T thread : LDR      r1,{pc}+0x9c ; 0x8194
+470 clk MR4 00008194 0001a184
+470 clk R r1 0001a184
+471 clk IT (471) 000080fa beab T thread : BKPT     #0xab
+471 clk R r0 00000000
+472 clk IT (472) 000080fc 4925 T thread : LDR      r1,{pc}+0x98 ; 0x8194
+472 clk MR4 00008194 0001a184
+472 clk R r1 0001a184
+473 clk IT (473) 000080fe 6809 T thread : LDR      r1,[r1,#0]
+473 clk MR4 0001a184 0001a084
+473 clk R r1 0001a084
+474 clk IT (474) 00008100 2000 T thread : MOVS     r0,#0
+474 clk R r0 00000000
+474 clk R cpsr 61000000
+475 clk IT (475) 00008102 b401 T thread : PUSH     {r0}
+475 clk MW4 106ffffc 00000000
+475 clk R r13_main 106ffffc
+475 clk R MSP 106ffffc
+476 clk IT (476) 00008104 780b T thread : LDRB     r3,[r1,#0]
+476 clk MR1 0001a084 00
+476 clk R r3 00000000
+477 clk IT (477) 00008106 3101 T thread : ADDS     r1,#1
+477 clk R r1 0001a085
+477 clk R cpsr 01000000
+478 clk IT (478) 00008108 2b00 T thread : CMP      r3,#0
+478 clk R cpsr 61000000
+479 clk IT (479) 0000810a d015 T thread : BEQ      {pc}+0x2e ; 0x8138
+480 clk IT (480) 00008138 4669 T thread : MOV      r1,sp
+480 clk R r1 106ffffc
+481 clk IT (481) 0000813a 0002 T thread : MOVS     r2,r0
+481 clk R r2 00000000
+481 clk R cpsr 61000000
+482 clk IT (482) 0000813c 0092 T thread : LSLS     r2,r2,#2
+482 clk R r2 00000000
+482 clk R cpsr 41000000
+483 clk IT (483) 0000813e 446a T thread : ADD      r2,sp,r2
+483 clk R r2 106ffffc
+484 clk IT (484) 00008140 466b T thread : MOV      r3,sp
+484 clk R r3 106ffffc
+485 clk IT (485) 00008142 429a T thread : CMP      r2,r3
+485 clk R cpsr 61000000
+486 clk IT (486) 00008144 d906 T thread : BLS      {pc}+0x10 ; 0x8154
+487 clk IT (487) 00008154 466c T thread : MOV      r4,sp
+487 clk R r4 106ffffc
+488 clk IT (488) 00008156 2507 T thread : MOVS     r5,#7
+488 clk R r5 00000007
+488 clk R cpsr 21000000
+489 clk IT (489) 00008158 43ac T thread : BICS     r4,r4,r5
+489 clk R r4 106ffff8
+489 clk R cpsr 21000000
+490 clk IT (490) 0000815a 46a5 T thread : MOV      sp,r4
+490 clk R r13_main 106ffff8
+490 clk R MSP 106ffff8
+491 clk IT (491) 0000815c 0004 T thread : MOVS     r4,r0
+491 clk R r4 00000000
+491 clk R cpsr 61000000
+492 clk IT (492) 0000815e 000d T thread : MOVS     r5,r1
+492 clk R r5 106ffffc
+492 clk R cpsr 21000000
+493 clk IT (493) 00008160 480a T thread : LDR      r0,{pc}+0x2c ; 0x818c
+493 clk MR4 0000818c 0000837d
+493 clk R r0 0000837d
+494 clk IT (494) 00008162 2800 T thread : CMP      r0,#0
+494 clk R cpsr 21000000
+495 clk IS (495) 00008164 d002 T thread : BEQ      {pc}+8 ; 0x816c
+496 clk IT (496) 00008166 480a T thread : LDR      r0,{pc}+0x2a ; 0x8190
+496 clk MR4 00008190 00008389
+496 clk R r0 00008389
+497 clk IT (497) 00008168 f000f908 T thread : BL       {pc}+0x214 ; 0x837c
+497 clk R r14 0000816d
+498 clk IT (498) 0000837c 2300 T thread : MOVS     r3,#0
+498 clk R r3 00000000
+498 clk R cpsr 61000000
+499 clk IT (499) 0000837e 4601 T thread : MOV      r1,r0
+499 clk R r1 00008389
+500 clk IT (500) 00008380 461a T thread : MOV      r2,r3
+500 clk R r2 00000000
+501 clk IT (501) 00008382 4618 T thread : MOV      r0,r3
+501 clk R r0 00000000
+502 clk IT (502) 00008384 f000b82a T thread : B.W      {pc}+0x58 ; 0x83dc
+503 clk IT (503) 000083dc e92d47f0 T thread : PUSH     {r4-r10,lr}
+503 clk MW4 106fffd8 00000000
+503 clk MW4 106fffdc 106ffffc
+503 clk MW4 106fffe0 00000000
+503 clk MW4 106fffe4 00000000
+503 clk MW4 106fffe8 00000000
+503 clk MW4 106fffec 00000000
+503 clk MW4 106ffff0 10800100
+503 clk MW4 106ffff4 0000816d
+503 clk R r13_main 106fffd8
+503 clk R MSP 106fffd8
+504 clk IT (504) 000083e0 f8dfa07c T thread : LDR      r10,{pc}+0x80 ; 0x8460
+504 clk MR4 00008460 0001a5c0
+504 clk R r10 0001a5c0
+505 clk IT (505) 000083e4 4606 T thread : MOV      r6,r0
+505 clk R r6 00000000
+506 clk IT (506) 000083e6 f8da0000 T thread : LDR      r0,[r10,#0]
+506 clk MR4 0001a5c0 0001aa04
+506 clk R r0 0001aa04
+507 clk IT (507) 000083ea 4698 T thread : MOV      r8,r3
+507 clk R r8 00000000
+508 clk IT (508) 000083ec 460f T thread : MOV      r7,r1
+508 clk R r7 00008389
+509 clk IT (509) 000083ee 4691 T thread : MOV      r9,r2
+509 clk R r9 00000000
+510 clk IT (510) 000083f0 f7ffffea T thread : BL       {pc}-0x28 ; 0x83c8
+510 clk R r14 000083f5
+511 clk IT (511) 000083c8 4770 T thread : BX       lr
+511 clk R cpsr 61000000
+512 clk IT (512) 000083f4 4b1b T thread : LDR      r3,{pc}+0x70 ; 0x8464
+512 clk MR4 00008464 0000a014
+512 clk R r3 0000a014
+513 clk IT (513) 000083f6 681b T thread : LDR      r3,[r3,#0]
+513 clk MR4 0000a014 0001a198
+513 clk R r3 0001a198
+514 clk IT (514) 000083f8 f8d34148 T thread : LDR      r4,[r3,#0x148]
+514 clk MR4 0001a2e0 00000000
+514 clk R r4 00000000
+515 clk IT (515) 000083fc b324 T thread : CBZ      r4,{pc}+0x4c ; 0x8448
+516 clk IT (516) 00008448 f50374a6 T thread : ADD      r4,r3,#0x14c
+516 clk R r4 0001a2e4
+517 clk IT (517) 0000844c f8c34148 T thread : STR      r4,[r3,#0x148]
+517 clk MW4 0001a2e0 0001a2e4
+518 clk IT (518) 00008450 e7d5 T thread : B        {pc}-0x52 ; 0x83fe
+519 clk IT (519) 000083fe 6865 T thread : LDR      r5,[r4,#4]
+519 clk MR4 0001a2e8 00000000
+519 clk R r5 00000000
+520 clk IT (520) 00008400 2d1f T thread : CMP      r5,#0x1f
+520 clk R cpsr 81000000
+521 clk IS (521) 00008402 dc26 T thread : BGT      {pc}+0x50 ; 0x8452
+522 clk IT (522) 00008404 b95e T thread : CBNZ     r6,{pc}+0x1a ; 0x841e
+523 clk IT (523) 00008406 1c6b T thread : ADDS     r3,r5,#1
+523 clk R r3 00000001
+523 clk R cpsr 01000000
+524 clk IT (524) 00008408 3502 T thread : ADDS     r5,#2
+524 clk R r5 00000002
+524 clk R cpsr 01000000
+525 clk IT (525) 0000840a f8da0000 T thread : LDR      r0,[r10,#0]
+525 clk MR4 0001a5c0 0001aa04
+525 clk R r0 0001aa04
+526 clk IT (526) 0000840e 6063 T thread : STR      r3,[r4,#4]
+526 clk MW4 0001a2e8 00000001
+527 clk IT (527) 00008410 f8447025 T thread : STR      r7,[r4,r5,LSL #2]
+527 clk MW4 0001a2ec 00008389
+528 clk IT (528) 00008414 f7ffffe0 T thread : BL       {pc}-0x3c ; 0x83d8
+528 clk R r14 00008419
+529 clk IT (529) 000083d8 4770 T thread : BX       lr
+529 clk R cpsr 01000000
+530 clk IT (530) 00008418 2000 T thread : MOVS     r0,#0
+530 clk R r0 00000000
+530 clk R cpsr 41000000
+531 clk IT (531) 0000841a e8bd87f0 T thread : POP      {r4-r10,pc}
+531 clk MR4 106fffd8 00000000
+531 clk MR4 106fffdc 106ffffc
+531 clk MR4 106fffe0 00000000
+531 clk MR4 106fffe4 00000000
+531 clk MR4 106fffe8 00000000
+531 clk MR4 106fffec 00000000
+531 clk MR4 106ffff0 10800100
+531 clk MR4 106ffff4 0000816d
+531 clk R r4 00000000
+531 clk R r5 106ffffc
+531 clk R r6 00000000
+531 clk R r7 00000000
+531 clk R r8 00000000
+531 clk R r9 00000000
+531 clk R r10 10800100
+531 clk R r13_main 106ffff8
+531 clk R cpsr 41000000
+531 clk R MSP 106ffff8
+532 clk IT (532) 0000816c f000f82e T thread : BL       {pc}+0x60 ; 0x81cc
+532 clk R r14 00008171
+533 clk IT (533) 000081cc b570 T thread : PUSH     {r4-r6,lr}
+533 clk MW4 106fffe8 00000000
+533 clk MW4 106fffec 106ffffc
+533 clk MW4 106ffff0 00000000
+533 clk MW4 106ffff4 00008171
+533 clk R r13_main 106fffe8
+533 clk R MSP 106fffe8
+534 clk IT (534) 000081ce 4e0d T thread : LDR      r6,{pc}+0x36 ; 0x8204
+534 clk MR4 00008204 0001a064
+534 clk R r6 0001a064
+535 clk IT (535) 000081d0 4d0d T thread : LDR      r5,{pc}+0x38 ; 0x8208
+535 clk MR4 00008208 0001a064
+535 clk R r5 0001a064
+536 clk IT (536) 000081d2 1b76 T thread : SUBS     r6,r6,r5
+536 clk R r6 00000000
+536 clk R cpsr 61000000
+537 clk IT (537) 000081d4 10b6 T thread : ASRS     r6,r6,#2
+537 clk R r6 00000000
+537 clk R cpsr 41000000
+538 clk IT (538) 000081d6 d006 T thread : BEQ      {pc}+0x10 ; 0x81e6
+539 clk IT (539) 000081e6 4e09 T thread : LDR      r6,{pc}+0x26 ; 0x820c
+539 clk MR4 0000820c 0001a06c
+539 clk R r6 0001a06c
+540 clk IT (540) 000081e8 4d09 T thread : LDR      r5,{pc}+0x28 ; 0x8210
+540 clk MR4 00008210 0001a064
+540 clk R r5 0001a064
+541 clk IT (541) 000081ea f7ffff09 T thread : BL       {pc}-0x1ea ; 0x8000
+541 clk R r14 000081ef
+542 clk IT (542) 00008000 b5f8 T thread : PUSH     {r3-r7,lr}
+542 clk MW4 106fffd0 00000001
+542 clk MW4 106fffd4 00000000
+542 clk MW4 106fffd8 0001a064
+542 clk MW4 106fffdc 0001a06c
+542 clk MW4 106fffe0 00000000
+542 clk MW4 106fffe4 000081ef
+542 clk R r13_main 106fffd0
+542 clk R MSP 106fffd0
+543 clk IT (543) 00008002 bf00 T thread : NOP      
+544 clk IT (544) 00008004 bcf8 T thread : POP      {r3-r7}
+544 clk MR4 106fffd0 00000001
+544 clk MR4 106fffd4 00000000
+544 clk MR4 106fffd8 0001a064
+544 clk MR4 106fffdc 0001a06c
+544 clk MR4 106fffe0 00000000
+544 clk R r3 00000001
+544 clk R r4 00000000
+544 clk R r5 0001a064
+544 clk R r6 0001a06c
+544 clk R r7 00000000
+544 clk R r13_main 106fffe4
+544 clk R MSP 106fffe4
+545 clk IT (545) 00008006 bc08 T thread : POP      {r3}
+545 clk MR4 106fffe4 000081ef
+545 clk R r3 000081ef
+545 clk R r13_main 106fffe8
+545 clk R MSP 106fffe8
+546 clk IT (546) 00008008 469e T thread : MOV      lr,r3
+546 clk R r14 000081ef
+547 clk IT (547) 0000800a 4770 T thread : BX       lr
+547 clk R cpsr 41000000
+548 clk IT (548) 000081ee 1b76 T thread : SUBS     r6,r6,r5
+548 clk R r6 00000008
+548 clk R cpsr 21000000
+549 clk IT (549) 000081f0 10b6 T thread : ASRS     r6,r6,#2
+549 clk R r6 00000002
+549 clk R cpsr 01000000
+550 clk IS (550) 000081f2 d006 T thread : BEQ      {pc}+0x10 ; 0x8202
+551 clk IT (551) 000081f4 2400 T thread : MOVS     r4,#0
+551 clk R r4 00000000
+551 clk R cpsr 41000000
+552 clk IT (552) 000081f6 f8553b04 T thread : LDR      r3,[r5],#4
+552 clk MR4 0001a064 00008055
+552 clk R r3 00008055
+552 clk R r5 0001a068
+553 clk IT (553) 000081fa 3401 T thread : ADDS     r4,#1
+553 clk R r4 00000001
+553 clk R cpsr 01000000
+554 clk IT (554) 000081fc 4798 T thread : BLX      r3
+554 clk R r14 000081ff
+554 clk R cpsr 01000000
+555 clk IT (555) 00008054 4b02 T thread : LDR      r3,{pc}+0xc ; 0x8060
+555 clk MR4 00008060 00000000
+555 clk R r3 00000000
+556 clk IT (556) 00008056 b113 T thread : CBZ      r3,{pc}+8 ; 0x805e
+557 clk IT (557) 0000805e 4770 T thread : BX       lr
+557 clk R cpsr 01000000
+558 clk IT (558) 000081fe 42a6 T thread : CMP      r6,r4
+558 clk R cpsr 21000000
+559 clk IT (559) 00008200 d1f9 T thread : BNE      {pc}-0xa ; 0x81f6
+560 clk IT (560) 000081f6 f8553b04 T thread : LDR      r3,[r5],#4
+560 clk MR4 0001a068 0000808d
+560 clk R r3 0000808d
+560 clk R r5 0001a06c
+561 clk IT (561) 000081fa 3401 T thread : ADDS     r4,#1
+561 clk R r4 00000002
+561 clk R cpsr 01000000
+562 clk IT (562) 000081fc 4798 T thread : BLX      r3
+562 clk R r14 000081ff
+562 clk R cpsr 01000000
+563 clk IT (563) 0000808c b508 T thread : PUSH     {r3,lr}
+563 clk MW4 106fffe0 0000808d
+563 clk MW4 106fffe4 000081ff
+563 clk R r13_main 106fffe0
+563 clk R MSP 106fffe0
+564 clk IT (564) 0000808e 4b03 T thread : LDR      r3,{pc}+0xe ; 0x809c
+564 clk MR4 0000809c 00000000
+564 clk R r3 00000000
+565 clk IT (565) 00008090 b11b T thread : CBZ      r3,{pc}+0xa ; 0x809a
+566 clk IT (566) 0000809a bd08 T thread : POP      {r3,pc}
+566 clk MR4 106fffe0 0000808d
+566 clk MR4 106fffe4 000081ff
+566 clk R r3 0000808d
+566 clk R r13_main 106fffe8
+566 clk R cpsr 01000000
+566 clk R MSP 106fffe8
+567 clk IT (567) 000081fe 42a6 T thread : CMP      r6,r4
+567 clk R cpsr 61000000
+568 clk IS (568) 00008200 d1f9 T thread : BNE      {pc}-0xa ; 0x81f6
+569 clk IT (569) 00008202 bd70 T thread : POP      {r4-r6,pc}
+569 clk MR4 106fffe8 00000000
+569 clk MR4 106fffec 106ffffc
+569 clk MR4 106ffff0 00000000
+569 clk MR4 106ffff4 00008171
+569 clk R r4 00000000
+569 clk R r5 106ffffc
+569 clk R r6 00000000
+569 clk R r13_main 106ffff8
+569 clk R cpsr 61000000
+569 clk R MSP 106ffff8
+570 clk IT (570) 00008170 0020 T thread : MOVS     r0,r4
+570 clk R r0 00000000
+570 clk R cpsr 61000000
+571 clk IT (571) 00008172 0029 T thread : MOVS     r1,r5
+571 clk R r1 106ffffc
+571 clk R cpsr 21000000
+572 clk IT (572) 00008174 f7ffff5a T thread : BL       {pc}-0x148 ; 0x802c
+572 clk R r14 00008179
+573 clk IT (573) 0000802c 2100 T thread : MOVS     r1,#0
+573 clk R r1 00000000
+573 clk R cpsr 61000000
+574 clk IT (574) 0000802e b510 T thread : PUSH     {r4,lr}
+574 clk MW4 106ffff0 00000000
+574 clk MW4 106ffff4 00008179
+574 clk R r13_main 106ffff0
+574 clk R MSP 106ffff0
+575 clk IT (575) 00008030 4c07 T thread : LDR      r4,{pc}+0x20 ; 0x8050
+575 clk MR4 00008050 0001a18c
+575 clk R r4 0001a18c
+576 clk IT (576) 00008032 4608 T thread : MOV      r0,r1
+576 clk R r0 00000000
+577 clk IT (577) 00008034 f000f8b4 T thread : BL       {pc}+0x16c ; 0x81a0
+577 clk R r14 00008039
+578 clk IT (578) 000081a0 4a02 T thread : LDR      r2,{pc}+0xc ; 0x81ac
+578 clk MR4 000081ac 0001a18c
+578 clk R r2 0001a18c
+579 clk IT (579) 000081a2 6813 T thread : LDR      r3,[r2,#0]
+579 clk MR4 0001a18c 0000007d
+579 clk R r3 0000007d
+580 clk IT (580) 000081a4 3301 T thread : ADDS     r3,#1
+580 clk R r3 0000007e
+580 clk R cpsr 01000000
+581 clk IT (581) 000081a6 6013 T thread : STR      r3,[r2,#0]
+581 clk MW4 0001a18c 0000007e
+582 clk IT (582) 000081a8 4770 T thread : BX       lr
+582 clk R cpsr 01000000
+583 clk IT (583) 00008038 f000f8c2 T thread : BL       {pc}+0x188 ; 0x81c0
+583 clk R r14 0000803d
+584 clk IT (584) 000081c0 fb00f300 T thread : MUL      r3,r0,r0
+584 clk R r3 00000000
+585 clk IT (585) 000081c4 fb03f000 T thread : MUL      r0,r3,r0
+585 clk R r0 00000000
+586 clk IT (586) 000081c8 4770 T thread : BX       lr
+586 clk R cpsr 01000000
+587 clk IT (587) 0000803c 6823 T thread : LDR      r3,[r4,#0]
+587 clk MR4 0001a18c 0000007e
+587 clk R r3 0000007e
+588 clk IT (588) 0000803e 3101 T thread : ADDS     r1,#1
+588 clk R r1 00000001
+588 clk R cpsr 01000000
+589 clk IT (589) 00008040 4403 T thread : ADD      r3,r3,r0
+589 clk R r3 0000007e
+590 clk IT (590) 00008042 6023 T thread : STR      r3,[r4,#0]
+590 clk MW4 0001a18c 0000007e
+591 clk IT (591) 00008044 f000f8b4 T thread : BL       {pc}+0x16c ; 0x81b0
+591 clk R r14 00008049
+592 clk IT (592) 000081b0 4a02 T thread : LDR      r2,{pc}+0xc ; 0x81bc
+592 clk MR4 000081bc 0001a18c
+592 clk R r2 0001a18c
+593 clk IT (593) 000081b2 6813 T thread : LDR      r3,[r2,#0]
+593 clk MR4 0001a18c 0000007e
+593 clk R r3 0000007e
+594 clk IT (594) 000081b4 3b01 T thread : SUBS     r3,#1
+594 clk R r3 0000007d
+594 clk R cpsr 21000000
+595 clk IT (595) 000081b6 6013 T thread : STR      r3,[r2,#0]
+595 clk MW4 0001a18c 0000007d
+596 clk IT (596) 000081b8 4770 T thread : BX       lr
+596 clk R cpsr 21000000
+597 clk IT (597) 00008048 2904 T thread : CMP      r1,#4
+597 clk R cpsr 81000000
+598 clk IT (598) 0000804a d1f2 T thread : BNE      {pc}-0x18 ; 0x8032
+599 clk IT (599) 00008032 4608 T thread : MOV      r0,r1
+599 clk R r0 00000001
+600 clk IT (600) 00008034 f000f8b4 T thread : BL       {pc}+0x16c ; 0x81a0
+600 clk R r14 00008039
+601 clk IT (601) 000081a0 4a02 T thread : LDR      r2,{pc}+0xc ; 0x81ac
+601 clk MR4 000081ac 0001a18c
+601 clk R r2 0001a18c
+602 clk IT (602) 000081a2 6813 T thread : LDR      r3,[r2,#0]
+602 clk MR4 0001a18c 0000007d
+602 clk R r3 0000007d
+603 clk IT (603) 000081a4 3301 T thread : ADDS     r3,#1
+603 clk R r3 0000007e
+603 clk R cpsr 01000000
+604 clk IT (604) 000081a6 6013 T thread : STR      r3,[r2,#0]
+604 clk MW4 0001a18c 0000007e
+605 clk IT (605) 000081a8 4770 T thread : BX       lr
+605 clk R cpsr 01000000
+606 clk IT (606) 00008038 f000f8c2 T thread : BL       {pc}+0x188 ; 0x81c0
+606 clk R r14 0000803d
+607 clk IT (607) 000081c0 fb00f300 T thread : MUL      r3,r0,r0
+607 clk R r3 00000001
+608 clk IT (608) 000081c4 fb03f000 T thread : MUL      r0,r3,r0
+608 clk R r0 00000001
+609 clk IT (609) 000081c8 4770 T thread : BX       lr
+609 clk R cpsr 01000000
+610 clk IT (610) 0000803c 6823 T thread : LDR      r3,[r4,#0]
+610 clk MR4 0001a18c 0000007e
+610 clk R r3 0000007e
+611 clk IT (611) 0000803e 3101 T thread : ADDS     r1,#1
+611 clk R r1 00000002
+611 clk R cpsr 01000000
+612 clk IT (612) 00008040 4403 T thread : ADD      r3,r3,r0
+612 clk R r3 0000007f
+613 clk IT (613) 00008042 6023 T thread : STR      r3,[r4,#0]
+613 clk MW4 0001a18c 0000007f
+614 clk IT (614) 00008044 f000f8b4 T thread : BL       {pc}+0x16c ; 0x81b0
+614 clk R r14 00008049
+615 clk IT (615) 000081b0 4a02 T thread : LDR      r2,{pc}+0xc ; 0x81bc
+615 clk MR4 000081bc 0001a18c
+615 clk R r2 0001a18c
+616 clk IT (616) 000081b2 6813 T thread : LDR      r3,[r2,#0]
+616 clk MR4 0001a18c 0000007f
+616 clk R r3 0000007f
+617 clk IT (617) 000081b4 3b01 T thread : SUBS     r3,#1
+617 clk R r3 0000007e
+617 clk R cpsr 21000000
+618 clk IT (618) 000081b6 6013 T thread : STR      r3,[r2,#0]
+618 clk MW4 0001a18c 0000007e
+619 clk IT (619) 000081b8 4770 T thread : BX       lr
+619 clk R cpsr 21000000
+620 clk IT (620) 00008048 2904 T thread : CMP      r1,#4
+620 clk R cpsr 81000000
+621 clk IT (621) 0000804a d1f2 T thread : BNE      {pc}-0x18 ; 0x8032
+622 clk IT (622) 00008032 4608 T thread : MOV      r0,r1
+622 clk R r0 00000002
+623 clk IT (623) 00008034 f000f8b4 T thread : BL       {pc}+0x16c ; 0x81a0
+623 clk R r14 00008039
+624 clk IT (624) 000081a0 4a02 T thread : LDR      r2,{pc}+0xc ; 0x81ac
+624 clk MR4 000081ac 0001a18c
+624 clk R r2 0001a18c
+625 clk IT (625) 000081a2 6813 T thread : LDR      r3,[r2,#0]
+625 clk MR4 0001a18c 0000007e
+625 clk R r3 0000007e
+626 clk IT (626) 000081a4 3301 T thread : ADDS     r3,#1
+626 clk R r3 0000007f
+626 clk R cpsr 01000000
+627 clk IT (627) 000081a6 6013 T thread : STR      r3,[r2,#0]
+627 clk MW4 0001a18c 0000007f
+628 clk IT (628) 000081a8 4770 T thread : BX       lr
+628 clk R cpsr 01000000
+629 clk IT (629) 00008038 f000f8c2 T thread : BL       {pc}+0x188 ; 0x81c0
+629 clk R r14 0000803d
+630 clk IT (630) 000081c0 fb00f300 T thread : MUL      r3,r0,r0
+630 clk R r3 00000004
+631 clk IT (631) 000081c4 fb03f000 T thread : MUL      r0,r3,r0
+631 clk R r0 00000008
+632 clk IT (632) 000081c8 4770 T thread : BX       lr
+632 clk R cpsr 01000000
+633 clk IT (633) 0000803c 6823 T thread : LDR      r3,[r4,#0]
+633 clk MR4 0001a18c 0000007f
+633 clk R r3 0000007f
+634 clk IT (634) 0000803e 3101 T thread : ADDS     r1,#1
+634 clk R r1 00000003
+634 clk R cpsr 01000000
+635 clk IT (635) 00008040 4403 T thread : ADD      r3,r3,r0
+635 clk R r3 00000087
+636 clk IT (636) 00008042 6023 T thread : STR      r3,[r4,#0]
+636 clk MW4 0001a18c 00000087
+637 clk IT (637) 00008044 f000f8b4 T thread : BL       {pc}+0x16c ; 0x81b0
+637 clk R r14 00008049
+638 clk IT (638) 000081b0 4a02 T thread : LDR      r2,{pc}+0xc ; 0x81bc
+638 clk MR4 000081bc 0001a18c
+638 clk R r2 0001a18c
+639 clk IT (639) 000081b2 6813 T thread : LDR      r3,[r2,#0]
+639 clk MR4 0001a18c 00000087
+639 clk R r3 00000087
+640 clk IT (640) 000081b4 3b01 T thread : SUBS     r3,#1
+640 clk R r3 00000086
+640 clk R cpsr 21000000
+641 clk IT (641) 000081b6 6013 T thread : STR      r3,[r2,#0]
+641 clk MW4 0001a18c 00000086
+642 clk IT (642) 000081b8 4770 T thread : BX       lr
+642 clk R cpsr 21000000
+643 clk IT (643) 00008048 2904 T thread : CMP      r1,#4
+643 clk R cpsr 81000000
+644 clk IT (644) 0000804a d1f2 T thread : BNE      {pc}-0x18 ; 0x8032
+645 clk IT (645) 00008032 4608 T thread : MOV      r0,r1
+645 clk R r0 00000003
+646 clk IT (646) 00008034 f000f8b4 T thread : BL       {pc}+0x16c ; 0x81a0
+646 clk R r14 00008039
+647 clk IT (647) 000081a0 4a02 T thread : LDR      r2,{pc}+0xc ; 0x81ac
+647 clk MR4 000081ac 0001a18c
+647 clk R r2 0001a18c
+648 clk IT (648) 000081a2 6813 T thread : LDR      r3,[r2,#0]
+648 clk MR4 0001a18c 00000086
+648 clk R r3 00000086
+649 clk IT (649) 000081a4 3301 T thread : ADDS     r3,#1
+649 clk R r3 00000087
+649 clk R cpsr 01000000
+650 clk IT (650) 000081a6 6013 T thread : STR      r3,[r2,#0]
+650 clk MW4 0001a18c 00000087
+651 clk IT (651) 000081a8 4770 T thread : BX       lr
+651 clk R cpsr 01000000
+652 clk IT (652) 00008038 f000f8c2 T thread : BL       {pc}+0x188 ; 0x81c0
+652 clk R r14 0000803d
+653 clk IT (653) 000081c0 fb00f300 T thread : MUL      r3,r0,r0
+653 clk R r3 00000009
+654 clk IT (654) 000081c4 fb03f000 T thread : MUL      r0,r3,r0
+654 clk R r0 0000001b
+655 clk IT (655) 000081c8 4770 T thread : BX       lr
+655 clk R cpsr 01000000
+656 clk IT (656) 0000803c 6823 T thread : LDR      r3,[r4,#0]
+656 clk MR4 0001a18c 00000087
+656 clk R r3 00000087
+657 clk IT (657) 0000803e 3101 T thread : ADDS     r1,#1
+657 clk R r1 00000004
+657 clk R cpsr 01000000
+658 clk IT (658) 00008040 4403 T thread : ADD      r3,r3,r0
+658 clk R r3 000000a2
+659 clk IT (659) 00008042 6023 T thread : STR      r3,[r4,#0]
+659 clk MW4 0001a18c 000000a2
+660 clk IT (660) 00008044 f000f8b4 T thread : BL       {pc}+0x16c ; 0x81b0
+660 clk R r14 00008049
+661 clk IT (661) 000081b0 4a02 T thread : LDR      r2,{pc}+0xc ; 0x81bc
+661 clk MR4 000081bc 0001a18c
+661 clk R r2 0001a18c
+662 clk IT (662) 000081b2 6813 T thread : LDR      r3,[r2,#0]
+662 clk MR4 0001a18c 000000a2
+662 clk R r3 000000a2
+663 clk IT (663) 000081b4 3b01 T thread : SUBS     r3,#1
+663 clk R r3 000000a1
+663 clk R cpsr 21000000
+664 clk IT (664) 000081b6 6013 T thread : STR      r3,[r2,#0]
+664 clk MW4 0001a18c 000000a1
+665 clk IT (665) 000081b8 4770 T thread : BX       lr
+665 clk R cpsr 21000000
+666 clk IT (666) 00008048 2904 T thread : CMP      r1,#4
+666 clk R cpsr 61000000
+667 clk IS (667) 0000804a d1f2 T thread : BNE      {pc}-0x18 ; 0x8032
+668 clk IT (668) 0000804c 6820 T thread : LDR      r0,[r4,#0]
+668 clk MR4 0001a18c 000000a1
+668 clk R r0 000000a1
+669 clk IT (669) 0000804e bd10 T thread : POP      {r4,pc}
+669 clk MR4 106ffff0 00000000
+669 clk MR4 106ffff4 00008179
+669 clk R r4 00000000
+669 clk R r13_main 106ffff8
+669 clk R cpsr 61000000
+669 clk R MSP 106ffff8
+670 clk IT (670) 00008178 f7ffff48 T thread : BL       {pc}-0x16c ; 0x800c
+670 clk R r14 0000817d
+671 clk IT (671) 0000800c b508 T thread : PUSH     {r3,lr}
+671 clk MW4 106ffff0 000000a1
+671 clk MW4 106ffff4 0000817d
+671 clk R r13_main 106ffff0
+671 clk R MSP 106ffff0
+672 clk IT (672) 0000800e 2100 T thread : MOVS     r1,#0
+672 clk R r1 00000000
+672 clk R cpsr 61000000
+673 clk IT (673) 00008010 4604 T thread : MOV      r4,r0
+673 clk R r4 000000a1
+674 clk IT (674) 00008012 f000f951 T thread : BL       {pc}+0x2a6 ; 0x82b8
+674 clk R r14 00008017
+675 clk IT (675) 000082b8 e92d4ff0 T thread : PUSH     {r4-r11,lr}
+675 clk MW4 106fffcc 000000a1
+675 clk MW4 106fffd0 106ffffc
+675 clk MW4 106fffd4 00000000
+675 clk MW4 106fffd8 00000000
+675 clk MW4 106fffdc 00000000
+675 clk MW4 106fffe0 00000000
+675 clk MW4 106fffe4 10800100
+675 clk MW4 106fffe8 00000000
+675 clk MW4 106fffec 00008017
+675 clk R r13_main 106fffcc
+675 clk R MSP 106fffcc
+676 clk IT (676) 000082bc 4683 T thread : MOV      r11,r0
+676 clk R r11 000000a1
+677 clk IT (677) 000082be 4b2d T thread : LDR      r3,{pc}+0xb6 ; 0x8374
+677 clk MR4 00008374 0001a5c0
+677 clk R r3 0001a5c0
+678 clk IT (678) 000082c0 b083 T thread : SUB      sp,sp,#0xc
+678 clk R r13_main 106fffc0
+678 clk R MSP 106fffc0
+679 clk IT (679) 000082c2 6818 T thread : LDR      r0,[r3,#0]
+679 clk MR4 0001a5c0 0001aa04
+679 clk R r0 0001aa04
+680 clk IT (680) 000082c4 460f T thread : MOV      r7,r1
+680 clk R r7 00000000
+681 clk IT (681) 000082c6 f8cdb004 T thread : STR      r11,[sp,#4]
+681 clk MW4 106fffc4 000000a1
+682 clk IT (682) 000082ca f000f87d T thread : BL       {pc}+0xfe ; 0x83c8
+682 clk R r14 000082cf
+683 clk IT (683) 000083c8 4770 T thread : BX       lr
+683 clk R cpsr 61000000
+684 clk IT (684) 000082ce 4b2a T thread : LDR      r3,{pc}+0xaa ; 0x8378
+684 clk MR4 00008378 0000a014
+684 clk R r3 0000a014
+685 clk IT (685) 000082d0 f8d38000 T thread : LDR      r8,[r3,#0]
+685 clk MR4 0000a014 0001a198
+685 clk R r8 0001a198
+686 clk IT (686) 000082d4 f8d86148 T thread : LDR      r6,[r8,#0x148]
+686 clk MR4 0001a2e0 0001a2e4
+686 clk R r6 0001a2e4
+687 clk IT (687) 000082d8 b19e T thread : CBZ      r6,{pc}+0x2a ; 0x8302
+688 clk IT (688) 000082da f04f0901 T thread : MOV      r9,#1
+688 clk R r9 00000001
+689 clk IT (689) 000082de f04f0a00 T thread : MOV      r10,#0
+689 clk R r10 00000000
+690 clk IT (690) 000082e2 6874 T thread : LDR      r4,[r6,#4]
+690 clk MR4 0001a2e8 00000001
+690 clk R r4 00000001
+691 clk IT (691) 000082e4 1e65 T thread : SUBS     r5,r4,#1
+691 clk R r5 00000000
+691 clk R cpsr 61000000
+692 clk IS (692) 000082e6 d40c T thread : BMI      {pc}+0x1c ; 0x8302
+693 clk IT (693) 000082e8 3401 T thread : ADDS     r4,#1
+693 clk R r4 00000002
+693 clk R cpsr 01000000
+694 clk IT (694) 000082ea eb060484 T thread : ADD      r4,r6,r4,LSL #2
+694 clk R r4 0001a2ec
+695 clk IT (695) 000082ee b17f T thread : CBZ      r7,{pc}+0x22 ; 0x8310
+696 clk IT (696) 00008310 6873 T thread : LDR      r3,[r6,#4]
+696 clk MR4 0001a2e8 00000001
+696 clk R r3 00000001
+697 clk IT (697) 00008312 6822 T thread : LDR      r2,[r4,#0]
+697 clk MR4 0001a2ec 00008389
+697 clk R r2 00008389
+698 clk IT (698) 00008314 3b01 T thread : SUBS     r3,#1
+698 clk R r3 00000000
+698 clk R cpsr 61000000
+699 clk IT (699) 00008316 42ab T thread : CMP      r3,r5
+699 clk R cpsr 61000000
+700 clk IT (700) 00008318 bf0c T thread : ITE      EQ
+700 clk R cpsr 61000c00
+701 clk IT (701) 0000831a 6075 T thread : STREQ    r5,[r6,#4]
+701 clk MW4 0001a2e8 00000000
+701 clk R cpsr 61001800
+702 clk IS (702) 0000831c f8c4a000 T thread : STRNE    r10,[r4,#0]
+702 clk R cpsr 61000000
+703 clk IT (703) 00008320 2a00 T thread : CMP      r2,#0
+703 clk R cpsr 21000000
+704 clk IS (704) 00008322 d0e9 T thread : BEQ      {pc}-0x2a ; 0x82f8
+705 clk IT (705) 00008324 f8d60188 T thread : LDR      r0,[r6,#0x188]
+705 clk MR4 0001a46c 00000000
+705 clk R r0 00000000
+706 clk IT (706) 00008328 fa09f105 T thread : LSL      r1,r9,r5
+706 clk R r1 00000001
+707 clk IT (707) 0000832c 4201 T thread : TST      r1,r0
+707 clk R cpsr 61000000
+708 clk IT (708) 0000832e f8d6b004 T thread : LDR      r11,[r6,#4]
+708 clk MR4 0001a2e8 00000000
+708 clk R r11 00000000
+709 clk IS (709) 00008332 d10b T thread : BNE      {pc}+0x1a ; 0x834c
+710 clk IT (710) 00008334 4790 T thread : BLX      r2
+710 clk R r14 00008337
+710 clk R cpsr 61000000
+711 clk IT (711) 00008388 b538 T thread : PUSH     {r3-r5,lr}
+711 clk MW4 106fffb0 00000000
+711 clk MW4 106fffb4 0001a2ec
+711 clk MW4 106fffb8 00000000
+711 clk MW4 106fffbc 00008337
+711 clk R r13_main 106fffb0
+711 clk R MSP 106fffb0
+712 clk IT (712) 0000838a 4b08 T thread : LDR      r3,{pc}+0x22 ; 0x83ac
+712 clk MR4 000083ac 0001a070
+712 clk R r3 0001a070
+713 clk IT (713) 0000838c 4d08 T thread : LDR      r5,{pc}+0x24 ; 0x83b0
+713 clk MR4 000083b0 0001a06c
+713 clk R r5 0001a06c
+714 clk IT (714) 0000838e 1b5b T thread : SUBS     r3,r3,r5
+714 clk R r3 00000004
+714 clk R cpsr 21000000
+715 clk IT (715) 00008390 109c T thread : ASRS     r4,r3,#2
+715 clk R r4 00000001
+715 clk R cpsr 01000000
+716 clk IS (716) 00008392 d007 T thread : BEQ      {pc}+0x12 ; 0x83a4
+717 clk IT (717) 00008394 3b04 T thread : SUBS     r3,#4
+717 clk R r3 00000000
+717 clk R cpsr 61000000
+718 clk IT (718) 00008396 441d T thread : ADD      r5,r5,r3
+718 clk R r5 0001a06c
+719 clk IT (719) 00008398 3c01 T thread : SUBS     r4,#1
+719 clk R r4 00000000
+719 clk R cpsr 61000000
+720 clk IT (720) 0000839a f8553904 T thread : LDR      r3,[r5],#-4
+720 clk MR4 0001a06c 00008069
+720 clk R r3 00008069
+720 clk R r5 0001a068
+721 clk IT (721) 0000839e 4798 T thread : BLX      r3
+721 clk R r14 000083a1
+721 clk R cpsr 61000000
+722 clk IT (722) 00008068 b510 T thread : PUSH     {r4,lr}
+722 clk MW4 106fffa8 00000000
+722 clk MW4 106fffac 000083a1
+722 clk R r13_main 106fffa8
+722 clk R MSP 106fffa8
+723 clk IT (723) 0000806a 4c05 T thread : LDR      r4,{pc}+0x16 ; 0x8080
+723 clk MR4 00008080 0001a9e0
+723 clk R r4 0001a9e0
+724 clk IT (724) 0000806c 7823 T thread : LDRB     r3,[r4,#0]
+724 clk MR1 0001a9e0 00
+724 clk R r3 00000000
+725 clk IT (725) 0000806e b933 T thread : CBNZ     r3,{pc}+0x10 ; 0x807e
+726 clk IT (726) 00008070 4b04 T thread : LDR      r3,{pc}+0x14 ; 0x8084
+726 clk MR4 00008084 00000000
+726 clk R r3 00000000
+727 clk IT (727) 00008072 b113 T thread : CBZ      r3,{pc}+8 ; 0x807a
+728 clk IT (728) 0000807a 2301 T thread : MOVS     r3,#1
+728 clk R r3 00000001
+728 clk R cpsr 21000000
+729 clk IT (729) 0000807c 7023 T thread : STRB     r3,[r4,#0]
+729 clk MW1 0001a9e0 01
+730 clk IT (730) 0000807e bd10 T thread : POP      {r4,pc}
+730 clk MR4 106fffa8 00000000
+730 clk MR4 106fffac 000083a1
+730 clk R r4 00000000
+730 clk R r13_main 106fffb0
+730 clk R cpsr 21000000
+730 clk R MSP 106fffb0
+731 clk IT (731) 000083a0 2c00 T thread : CMP      r4,#0
+731 clk R cpsr 61000000
+732 clk IS (732) 000083a2 d1f9 T thread : BNE      {pc}-0xa ; 0x8398
+733 clk IT (733) 000083a4 e8bd4038 T thread : POP      {r3-r5,lr}
+733 clk MR4 106fffb0 00000000
+733 clk MR4 106fffb4 0001a2ec
+733 clk MR4 106fffb8 00000000
+733 clk MR4 106fffbc 00008337
+733 clk R r3 00000000
+733 clk R r4 0001a2ec
+733 clk R r5 00000000
+733 clk R r14 00008337
+733 clk R r13_main 106fffc0
+733 clk R MSP 106fffc0
+734 clk IT (734) 000083a8 f001be1c T thread : B.W      {pc}+0x1c3c ; 0x9fe4
+735 clk IT (735) 00009fe4 b5f8 T thread : PUSH     {r3-r7,lr}
+735 clk MW4 106fffa8 00000000
+735 clk MW4 106fffac 0001a2ec
+735 clk MW4 106fffb0 00000000
+735 clk MW4 106fffb4 0001a2e4
+735 clk MW4 106fffb8 00000000
+735 clk MW4 106fffbc 00008337
+735 clk R r13_main 106fffa8
+735 clk R MSP 106fffa8
+736 clk IT (736) 00009fe6 bf00 T thread : NOP      
+737 clk IT (737) 00009fe8 bcf8 T thread : POP      {r3-r7}
+737 clk MR4 106fffa8 00000000
+737 clk MR4 106fffac 0001a2ec
+737 clk MR4 106fffb0 00000000
+737 clk MR4 106fffb4 0001a2e4
+737 clk MR4 106fffb8 00000000
+737 clk R r3 00000000
+737 clk R r4 0001a2ec
+737 clk R r5 00000000
+737 clk R r6 0001a2e4
+737 clk R r7 00000000
+737 clk R r13_main 106fffbc
+737 clk R MSP 106fffbc
+738 clk IT (738) 00009fea bc08 T thread : POP      {r3}
+738 clk MR4 106fffbc 00008337
+738 clk R r3 00008337
+738 clk R r13_main 106fffc0
+738 clk R MSP 106fffc0
+739 clk IT (739) 00009fec 469e T thread : MOV      lr,r3
+739 clk R r14 00008337
+740 clk IT (740) 00009fee 4770 T thread : BX       lr
+740 clk R cpsr 61000000
+741 clk IT (741) 00008336 6872 T thread : LDR      r2,[r6,#4]
+741 clk MR4 0001a2e8 00000000
+741 clk R r2 00000000
+742 clk IT (742) 00008338 455a T thread : CMP      r2,r11
+742 clk R cpsr 61000000
+743 clk IS (743) 0000833a d112 T thread : BNE      {pc}+0x28 ; 0x8362
+744 clk IT (744) 0000833c f8d83148 T thread : LDR      r3,[r8,#0x148]
+744 clk MR4 0001a2e0 0001a2e4
+744 clk R r3 0001a2e4
+745 clk IT (745) 00008340 42b3 T thread : CMP      r3,r6
+745 clk R cpsr 61000000
+746 clk IT (746) 00008342 d0d9 T thread : BEQ      {pc}-0x4a ; 0x82f8
+747 clk IT (747) 000082f8 3d01 T thread : SUBS     r5,#1
+747 clk R r5 ffffffff
+747 clk R cpsr 81000000
+748 clk IT (748) 000082fa 1c6b T thread : ADDS     r3,r5,#1
+748 clk R r3 00000000
+748 clk R cpsr 61000000
+749 clk IT (749) 000082fc f1a40404 T thread : SUB      r4,r4,#4
+749 clk R r4 0001a2e8
+750 clk IS (750) 00008300 d1f5 T thread : BNE      {pc}-0x12 ; 0x82ee
+751 clk IT (751) 00008302 4b1c T thread : LDR      r3,{pc}+0x72 ; 0x8374
+751 clk MR4 00008374 0001a5c0
+751 clk R r3 0001a5c0
+752 clk IT (752) 00008304 6818 T thread : LDR      r0,[r3,#0]
+752 clk MR4 0001a5c0 0001aa04
+752 clk R r0 0001aa04
+753 clk IT (753) 00008306 b003 T thread : ADD      sp,sp,#0xc
+753 clk R r13_main 106fffcc
+753 clk R MSP 106fffcc
+754 clk IT (754) 00008308 e8bd4ff0 T thread : POP      {r4-r11,lr}
+754 clk MR4 106fffcc 000000a1
+754 clk MR4 106fffd0 106ffffc
+754 clk MR4 106fffd4 00000000
+754 clk MR4 106fffd8 00000000
+754 clk MR4 106fffdc 00000000
+754 clk MR4 106fffe0 00000000
+754 clk MR4 106fffe4 10800100
+754 clk MR4 106fffe8 00000000
+754 clk MR4 106fffec 00008017
+754 clk R r4 000000a1
+754 clk R r5 106ffffc
+754 clk R r6 00000000
+754 clk R r7 00000000
+754 clk R r8 00000000
+754 clk R r9 00000000
+754 clk R r10 10800100
+754 clk R r11 00000000
+754 clk R r14 00008017
+754 clk R r13_main 106ffff0
+754 clk R MSP 106ffff0
+755 clk IT (755) 0000830c f000b864 T thread : B.W      {pc}+0xcc ; 0x83d8
+756 clk IT (756) 000083d8 4770 T thread : BX       lr
+756 clk R cpsr 61000000
+757 clk IT (757) 00008016 4b04 T thread : LDR      r3,{pc}+0x12 ; 0x8028
+757 clk MR4 00008028 0000a014
+757 clk R r3 0000a014
+758 clk IT (758) 00008018 6818 T thread : LDR      r0,[r3,#0]
+758 clk MR4 0000a014 0001a198
+758 clk R r0 0001a198
+759 clk IT (759) 0000801a 6bc3 T thread : LDR      r3,[r0,#0x3c]
+759 clk MR4 0001a1d4 00000000
+759 clk R r3 00000000
+760 clk IT (760) 0000801c b103 T thread : CBZ      r3,{pc}+4 ; 0x8020
+761 clk IT (761) 00008020 4620 T thread : MOV      r0,r4
+761 clk R r0 000000a1
+762 clk IT (762) 00008022 f000ff43 T thread : BL       {pc}+0xe8a ; 0x8eac
+762 clk R r14 00008027
+763 clk IT (763) 00008eac 4601 T thread : MOV      r1,r0
+763 clk R r1 000000a1
+764 clk IT (764) 00008eae b508 T thread : PUSH     {r3,lr}
+764 clk MW4 106fffe8 00000000
+764 clk MW4 106fffec 00008027
+764 clk R r13_main 106fffe8
+764 clk R MSP 106fffe8
+765 clk IT (765) 00008eb0 f04f30ff T thread : MOV      r0,#0xffffffff
+765 clk R r0 ffffffff
+766 clk IT (766) 00008eb4 4a01 T thread : LDR      r2,{pc}+8 ; 0x8ebc
+766 clk MR4 00008ebc 00020026
+766 clk R r2 00020026
+767 clk IT (767) 00008eb6 f000f803 T thread : BL       {pc}+0xa ; 0x8ec0
+767 clk R r14 00008ebb
+768 clk IT (768) 00008ec0 b500 T thread : PUSH     {lr}
+768 clk MW4 106fffe4 00008ebb
+768 clk R r13_main 106fffe4
+768 clk R MSP 106fffe4
+769 clk IT (769) 00008ec2 b083 T thread : SUB      sp,sp,#0xc
+769 clk R r13_main 106fffd8
+769 clk R MSP 106fffd8
+770 clk IT (770) 00008ec4 e9cd2100 T thread : STRD     r2,r1,[sp,#0]
+770 clk MW4 106fffd8 00020026
+770 clk MW4 106fffdc 000000a1
+771 clk IT (771) 00008ec8 f7fffe18 T thread : BL       {pc}-0x3cc ; 0x8afc
+771 clk R r14 00008ecd
+772 clk IT (772) 00008afc b530 T thread : PUSH     {r4,r5,lr}
+772 clk MW4 106fffcc 000000a1
+772 clk MW4 106fffd0 106ffffc
+772 clk MW4 106fffd4 00008ecd
+772 clk R r13_main 106fffcc
+772 clk R MSP 106fffcc
+773 clk IT (773) 00008afe 4c0f T thread : LDR      r4,{pc}+0x3e ; 0x8b3c
+773 clk MR4 00008b3c 0001a5c8
+773 clk R r4 0001a5c8
+774 clk IT (774) 00008b00 b083 T thread : SUB      sp,sp,#0xc
+774 clk R r13_main 106fffc0
+774 clk R MSP 106fffc0
+775 clk IT (775) 00008b02 6820 T thread : LDR      r0,[r4,#0]
+775 clk MR4 0001a5c8 00000000
+775 clk R r0 00000000
+776 clk IT (776) 00008b04 2800 T thread : CMP      r0,#0
+776 clk R cpsr 61000000
+777 clk IS (777) 00008b06 db01 T thread : BLT      {pc}+6 ; 0x8b0c
+778 clk IT (778) 00008b08 b003 T thread : ADD      sp,sp,#0xc
+778 clk R r13_main 106fffcc
+778 clk R MSP 106fffcc
+779 clk IT (779) 00008b0a bd30 T thread : POP      {r4,r5,pc}
+779 clk MR4 106fffcc 000000a1
+779 clk MR4 106fffd0 106ffffc
+779 clk MR4 106fffd4 00008ecd
+779 clk R r4 000000a1
+779 clk R r5 106ffffc
+779 clk R r13_main 106fffd8
+779 clk R cpsr 61000000
+779 clk R MSP 106fffd8
+780 clk IT (780) 00008ecc 2800 T thread : CMP      r0,#0
+780 clk R cpsr 61000000
+781 clk IT (781) 00008ece bf14 T thread : ITE      NE
+781 clk R cpsr 61001400
+782 clk IS (782) 00008ed0 2420 T thread : MOVNE    r4,#0x20
+782 clk R cpsr 61000800
+783 clk IT (783) 00008ed2 2418 T thread : MOVEQ    r4,#0x18
+783 clk R r4 00000018
+783 clk R cpsr 61000000
+784 clk IT (784) 00008ed4 f7fffe12 T thread : BL       {pc}-0x3d8 ; 0x8afc
+784 clk R r14 00008ed9
+785 clk IT (785) 00008afc b530 T thread : PUSH     {r4,r5,lr}
+785 clk MW4 106fffcc 00000018
+785 clk MW4 106fffd0 106ffffc
+785 clk MW4 106fffd4 00008ed9
+785 clk R r13_main 106fffcc
+785 clk R MSP 106fffcc
+786 clk IT (786) 00008afe 4c0f T thread : LDR      r4,{pc}+0x3e ; 0x8b3c
+786 clk MR4 00008b3c 0001a5c8
+786 clk R r4 0001a5c8
+787 clk IT (787) 00008b00 b083 T thread : SUB      sp,sp,#0xc
+787 clk R r13_main 106fffc0
+787 clk R MSP 106fffc0
+788 clk IT (788) 00008b02 6820 T thread : LDR      r0,[r4,#0]
+788 clk MR4 0001a5c8 00000000
+788 clk R r0 00000000
+789 clk IT (789) 00008b04 2800 T thread : CMP      r0,#0
+789 clk R cpsr 61000000
+790 clk IS (790) 00008b06 db01 T thread : BLT      {pc}+6 ; 0x8b0c
+791 clk IT (791) 00008b08 b003 T thread : ADD      sp,sp,#0xc
+791 clk R r13_main 106fffcc
+791 clk R MSP 106fffcc
+792 clk IT (792) 00008b0a bd30 T thread : POP      {r4,r5,pc}
+792 clk MR4 106fffcc 00000018
+792 clk MR4 106fffd0 106ffffc
+792 clk MR4 106fffd4 00008ed9
+792 clk R r4 00000018
+792 clk R r5 106ffffc
+792 clk R r13_main 106fffd8
+792 clk R cpsr 61000000
+792 clk R MSP 106fffd8
+793 clk IT (793) 00008ed8 b120 T thread : CBZ      r0,{pc}+0xc ; 0x8ee4
+794 clk IT (794) 00008ee4 9d00 T thread : LDR      r5,[sp,#0]
+794 clk MR4 106fffd8 00020026
+794 clk R r5 00020026
+795 clk IT (795) 00008ee6 4620 T thread : MOV      r0,r4
+795 clk R r0 00000018
+796 clk IT (796) 00008ee8 4629 T thread : MOV      r1,r5
+796 clk R r1 00020026
+797 clk IT (797) 00008eea beab T thread : BKPT     #0xab
+796 clk CADI E simulation_stopped

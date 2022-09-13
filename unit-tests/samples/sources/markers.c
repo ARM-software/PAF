@@ -18,12 +18,18 @@
  * This file is part of PAF, the Physical Attack Framework.
  */
 
-/* The purpose of this test program is to check if PAF can :
-   - find label pairs,
-   - find windowed labels,
-   - get glob's value at foo's entry. */
+/* The purpose of this test program is to check if PAF can find function pairs.
+ */
 
 volatile unsigned glob = 125;  // Force read and write accesses to glob.
+
+void __attribute__((noinline)) marker_start() {
+    glob += 1;
+}
+
+void __attribute__((noinline)) marker_end() {
+    glob -= 1;
+}
 
 unsigned __attribute__((noinline)) foo(unsigned i) {
     // FIXME: make this function slightly longer than strictly needed to bypass
@@ -32,15 +38,12 @@ unsigned __attribute__((noinline)) foo(unsigned i) {
     return i * i * i;
 }
 
-#define GLOBAL_LABEL(name) asm volatile(name " : .global " name :)
-
 int main(int argc, char *argv[]) {
     for (unsigned i = 0; i < 4; i++) {
-        GLOBAL_LABEL("MYLABEL_START");
+        marker_start();
         glob += foo(i);
-        GLOBAL_LABEL("MYWLABEL");
-        glob += foo(i+3);
-        GLOBAL_LABEL("MYLABEL_END");
+        marker_end();
     }
+
     return glob;
 }

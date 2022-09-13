@@ -594,6 +594,28 @@ TEST(MTAnalyzer, labels) {
     }
 }
 
+TEST(MTAnalyzer, markers) {
+    TracePair Inputs(SAMPLES_SRC_DIR "markers-v7m.trace",
+                     "markers-v7m.trace.index");
+    // TODO: do not always rebuild it ?
+    run_indexer(Inputs, /* big_endian */ false, /*show_progress_meter*/ false);
+    TestMTAnalyzer T(Inputs, SAMPLES_SRC_DIR "markers-v7m.elf");
+
+    // getBetweenFunctionMarkers test.
+    vector<PAF::ExecutionRange> Markers =
+        T.getBetweenFunctionMarkers("marker_start", "marker_end");
+    EXPECT_EQ(Markers.size(), 4);
+    for (const auto &m : Markers) {
+        EXPECT_GT(m.End.time, m.Start.time);
+        ReferenceInstruction StartInstr;
+        EXPECT_TRUE(T.getInstructionAtTime(StartInstr, m.Start.time - 1));
+        EXPECT_EQ(StartInstr.disassembly.substr(0, 3), "BX ");
+        ReferenceInstruction EndInstr;
+        EXPECT_TRUE(T.getInstructionAtTime(EndInstr, m.End.time));
+        EXPECT_EQ(EndInstr.disassembly.substr(0, 3), "BL ");
+    }
+}
+
 std::unique_ptr<Reporter> reporter = make_cli_reporter();
 
 int main(int argc, char **argv) {

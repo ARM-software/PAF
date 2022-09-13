@@ -603,6 +603,12 @@ class MTAnalyzer : public IndexNavigator {
         const std::vector<std::string> &Labels, unsigned N,
         std::vector<std::pair<uint64_t, std::string>> *OutLabels = nullptr) const;
 
+    /// Get all ExecutionRanges between the return of the StartFunctionName
+    /// function and the call of EndFunctionName.
+    std::vector<PAF::ExecutionRange>
+    getBetweenFunctionMarkers(const std::string &StartFunctionName,
+                              const std::string &EndFunctionName) const;
+
     /// Get the value of register reg at time t.
     uint64_t getRegisterValueAtTime(const std::string &reg, Time t) const;
 
