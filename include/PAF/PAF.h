@@ -411,7 +411,7 @@ template <typename InstructionTy, typename EventHandlerTy = EmptyHandler,
 class FromTraceBuilder : public ParseReceiver, public EventHandlerTy {
   public:
     /// Constructor.
-    FromTraceBuilder(IndexNavigator &IN)
+    FromTraceBuilder(const IndexNavigator &IN)
         : ParseReceiver(), IN(IN), CurInstr() {}
 
     /// Apply the builder on the ER execution range, with its start / end points
@@ -501,7 +501,7 @@ class FromTraceBuilder : public ParseReceiver, public EventHandlerTy {
     }
 
   private:
-    IndexNavigator &IN;
+    const IndexNavigator &IN;
     InstructionTy CurInstr;
 };
 
