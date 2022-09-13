@@ -337,7 +337,7 @@ MTAnalyzer::getInstances(const string &FunctionName) const {
         reporter->errx(EXIT_FAILURE, "Symbol for function '%s' not found",
                        FunctionName.c_str());
 
-    CallTree CT(*this);
+    const CallTree &CT = getCallTree();
     vector<ExecutionRange> Functions;
     PAF::ExecsOfInterest EOI(CT, Functions, symb_addr);
     CT.visit(EOI);
@@ -358,7 +358,7 @@ MTAnalyzer::getCallSitesTo(const string &FunctionName) const {
         reporter->errx(EXIT_FAILURE, "Symbol for function '%s' not found",
                        FunctionName.c_str());
 
-    CallTree CT(*this);
+    const CallTree &CT = getCallTree();
     vector<ExecutionRange> CS;
     PAF::CSOfInterest CSOI(CT, CS, symb_addr);
     CT.visit(CSOI);

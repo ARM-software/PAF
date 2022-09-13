@@ -613,7 +613,16 @@ class MTAnalyzer : public IndexNavigator {
     /// Get the instruction which was processed at time t.
     bool getInstructionAtTime(ReferenceInstruction &I, Time t) const;
 
-  private:
+    /// Get this Index CallTree and cache it for future uses as it is not
+    /// invalidated.
+    const CallTree &getCallTree() const {
+        if (!CT)
+            CT.reset(new CallTree(*this));
+        return *CT;
+    }
+
+  private:  
+    mutable std::unique_ptr<CallTree> CT;
     unsigned verbosityLevel;
 };
 
