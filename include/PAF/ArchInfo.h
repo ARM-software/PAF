@@ -191,7 +191,7 @@ class ArchInfo {
 
     /// Get an estimated cycle count for instruction I.
     ///
-    /// In some cases, this can depend on the neighbouring instructions.
+    /// In some cases, this can depend on the neighbour instructions.
     virtual unsigned
     getCycles(const ReferenceInstruction &I,
               const ReferenceInstruction *Next = nullptr) const = 0;

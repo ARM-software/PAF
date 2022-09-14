@@ -40,7 +40,7 @@ namespace FI {
  The available classifications are:
  \verbatim
     Classification:
-      | success: the fault is classified as successfuly injected.
+      | success: the fault is classified as successfully injected.
       | caught: the fault was caught by some protection mechanism.
       | crash: the fault has somehow created a crash, most probably caught by
                an interruption handler.
@@ -97,7 +97,7 @@ namespace FI {
  Multiple classifiers can be chained with ';' between them.
 
  Examples:
-    - A fault is succcesful if verifyPIN returns a different value:
+    - A fault is succesful if verifyPIN returns a different value:
       <tt>resumesite(verifyPIN){success:[cmpreg(R0,ne)]}</tt>
     - A fault is considered caught if the mitigationHandler is entered:
       <tt>@(mitigationHandler){caught}</tt>
@@ -155,7 +155,7 @@ class Classifier {
     /// Kind describes the ClassificationLocation.
     enum class Kind { CallSite, Entry, Return, ResumeSite };
 
-    /// COnstruct a Classifier for symbol with <tt>ClaasificationLocation</tt>
+    /// Construct a Classifier for symbol with <tt>ClassificationLocation</tt>
     /// K.
     Classifier(const std::string &symbol, Kind K)
         : AddressSet(false), Address(0), SymbolName(symbol), LocKind(K) {}

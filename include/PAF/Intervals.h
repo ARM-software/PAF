@@ -144,13 +144,13 @@ template <typename Ty> class Intervals {
   public:
     /// Construct an empty interval list.
     Intervals() : content() {}
-    /// Construct an Intervals initializead with a single Interval.
+    /// Construct an Intervals initialized with a single Interval.
     Intervals(const Interval<Ty> &I) : content() { content.push_back(I); }
-    /// Construct an Intervals initializead with a single Interval.
+    /// Construct an Intervals initialized with a single Interval.
     Intervals(const Ty &B, const Ty &E) : content() {
         content.emplace_back(B, E);
     }
-    /// Construct an Intervals initializead from a list of Interval.
+    /// Construct an Intervals initialized from a list of Interval.
     Intervals(std::initializer_list<Interval<Ty>> il) : content() {
         for (const auto &i : il)
             insert(i);

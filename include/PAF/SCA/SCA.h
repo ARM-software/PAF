@@ -37,7 +37,7 @@ template <class Ty> unsigned hamming_distance(Ty val1, Ty val2, Ty mask) {
     return __builtin_popcount((val1 & mask) ^ (val2 & mask));
 }
 
-/// The Classification enuml is used to assign a group (or no group) to traces
+/// The Classification enum is used to assign a group (or no group) to traces
 /// for performing a specific t-test.
 enum class Classification : char {
     GROUP_0, ///< Assign this trace to group 0
@@ -57,7 +57,7 @@ std::vector<double> t_test(size_t b, size_t e, size_t nbtraces,
                            const NPArray<double> &group0,
                            const NPArray<double> &group1);
 
-/// Compute the Pearson corrrelation, from samples b to e, with nbtraces traces
+/// Compute the Pearson correlation, from samples b to e, with nbtraces traces
 /// using the intermediate values.
 std::vector<double> correl(size_t b, size_t e, size_t nbtraces,
                            const NPArray<double> &traces,

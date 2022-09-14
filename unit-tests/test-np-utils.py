@@ -432,7 +432,7 @@ class TestMatrixF64(unittest.TestCase, NPUtils):
         self.assertTrue(self.check_content())
 
 if __name__ == '__main__':
-    # Steal np-utils executable name from the commandline.
+    # Steal np-utils executable name from the command line.
     if len(sys.argv) >= 2:
         nputils_exe = sys.argv[1]
         del sys.argv[1]

@@ -47,7 +47,7 @@ struct BreakPoint {
 
     /// Construct an uninitialized BreakPoint.
     BreakPoint() : Address(), Count() {}
-    /// COnstruct a BreakPoint for address Addres and count Count.
+    /// COnstruct a BreakPoint for address Address and count Count.
     BreakPoint(uint64_t Address, unsigned Count)
         : Address(Address), Count(Count) {}
     /// Copy construct a BreakPoint.
@@ -126,7 +126,7 @@ class InstructionSkip : public FaultModelBase {
 
   private:
     uint32_t FaultedInstr; ///< The faulted instruction.
-    bool Executed;         ///< True if the original intruction was executed.
+    bool Executed;         ///< True if the original instruction was executed.
 };
 
 /// The CorruptRegDef class is a fault model where an instruction's output

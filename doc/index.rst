@@ -348,7 +348,7 @@ Another source of side channel leakage are the system's power consumption and
 its electro-magnetic emissions, because the power consumption (and EM emission)
 depends on the instruction being executed as well as the data manipulated by
 this instruction. By recording power trace of the system executing with
-different data, and analyzing their behvior with statistical analysis tools, he
+different data, and analyzing their behavior with statistical analysis tools, he
 might be able to derive some useful information, if not directly a secret
 information. Those type of attacks require manipulating a large amount of
 tabular recorded data, so PAF has not re-created the wheel and reuses a
@@ -669,7 +669,9 @@ attack, that 2 crashed somehow the program and the 28 had no noticeable effect.
 ``paf-faulter``
 ~~~~~~~~~~~~~~~
 
-Given a fault model (e.g. instruction skip), ``paf-faulter`` will analyze a reference instruction trace in the Tarmac format and produce a fault injection campaign file.
+Given a fault model (e.g. instruction skip), ``paf-faulter`` will analyze a
+reference instruction trace in the Tarmac format and produce a fault injection
+campaign file.
 
 The command line syntax looks like:
   ``paf-faulter`` [ *options* ] *TRACEFILE*
@@ -1013,7 +1015,7 @@ can build compute a synthetic power trace with:
 
 ``paf-correl`` will compute the `Pearson correlation coefficient
 <https://en.wikipedia.org/wiki/Pearson_correlation_coefficient>`_ for a trace
-file considering some internmediate values.
+file considering some intermediate values.
 
 The command line syntax looks like:
   ``paf-correl`` [ *options* ] *INDEX*\ ...

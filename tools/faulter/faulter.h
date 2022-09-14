@@ -64,7 +64,7 @@ class FunctionSpec {
 
     // Insert an invocation for function name in the list of functions to
     // consider. This creates a singleton set if the key did not exits, or add
-    // to an exisisting non empty set. If the set was empty, it stays empty to
+    // to an existing non empty set. If the set was empty, it stays empty to
     // designate all invocations are valid.
     FunctionSpec &add(const std::string &name, unsigned num) {
         const auto it = functions.find(name);

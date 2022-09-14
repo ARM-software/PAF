@@ -64,7 +64,7 @@ def dump_encodings(llvm_mc, triple, mattr, asm_file, verbose):
             m = asm_line.match(line)
             if m:
                 if len(encodings) == 0:
-                    sys.exit("Asm stream and encodings lenght do not match.")
+                    sys.exit("Asm stream and encodings length do not match.")
                 asm = m.group(1)
                 operands = m.group(3)
                 TRB_item = "         {{0x" + encodings[0]

@@ -128,13 +128,13 @@ struct Access {
 
 /// The MemoryAccess class models memory accesses.
 ///
-/// A memory access is a read or a write of a value fron a number of bytes at a
+/// A memory access is a read or a write of a value from a number of bytes at a
 /// specific address in memory.
 struct MemoryAccess : public Access {
     size_t size; ///< The access size in bytes.
     Addr addr;   ///< The access address.
 
-    /// Uninitiallized MemoryAccess constructor.
+    /// Uninitialized MemoryAccess constructor.
     MemoryAccess() : Access() {}
     /// MemoryAccess copy constructor.
     MemoryAccess(const MemoryAccess &) = default;
@@ -198,7 +198,7 @@ struct MemoryAccess : public Access {
 struct RegisterAccess : public Access {
     std::string name; ///< Name of the register that was accessed.
 
-    /// Uninitialized RegisterAcess constructor.
+    /// Uninitialized RegisterAccess constructor.
     RegisterAccess() : Access() {}
     /// Construct a RegisterAccess from a register name, a value and a
     /// direction.
@@ -363,7 +363,7 @@ struct ReferenceInstruction {
     void dump(std::ostream &OS) const;
 };
 
-/// The EmptyContinuation class is an emoty continuation operation for the
+/// The EmptyContinuation class is an empty continuation operation for the
 /// tarmac analyzer class.
 class EmptyCont {
   public:
@@ -387,7 +387,7 @@ class EmptyHandler {
     void event(ReferenceInstruction &Instr, const TextOnlyEvent &ev) {}
 };
 
-/// The ReferenceInstructionBuilder class can be used by the Tarmac anaalyzer
+/// The ReferenceInstructionBuilder class can be used by the Tarmac analyzer
 /// to build ReferenceInstruction from a Tarmac trace.
 class ReferenceInstructionBuilder {
   public:

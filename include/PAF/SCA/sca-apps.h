@@ -61,7 +61,8 @@ class OutputBase {
     std::ostream *out = nullptr;
 };
 
-/// Baseclass for all SCA applications, that provides them with the same options and behaviour.
+/// Base class for all SCA applications, that provides them with the same
+/// options and behaviour.
 ///
 /// This extends the Argparse class from the Tarmac trace utilities.
 class SCAApp : public Argparse {
@@ -81,12 +82,12 @@ class SCAApp : public Argparse {
     const std::string &output_filename() const { return output_file; }
     /// Get this application's output type.
     OutputBase::OutputType output_type() const { return output_format; }
-    /// Does this aaplication want to append data to its output ?
+    /// Does this application want to append data to its output ?
     bool append() const { return append_to_output; }
 
-    /// Get the sample number where compuations have to start.
+    /// Get the sample number where computations have to start.
     size_t sample_start() const { return start_sample; }
-    /// Get the sample number where compuations have to stop.
+    /// Get the sample number where computations have to stop.
     size_t sample_end() const { return start_sample + nb_samples; }
     /// Get the number of samples that have to be processed.
     size_t num_samples() const { return nb_samples; }

@@ -61,7 +61,7 @@ TEST(NPArrayBase, base) {
     EXPECT_EQ(c.size(), 4);
     EXPECT_EQ(c.element_size(), 4);
 
-    // Move contruct.
+    // Move construct.
     NPArrayBase d(std::move(c));
     EXPECT_EQ(d.error(), nullptr);
     EXPECT_EQ(d.rows(), 1);
