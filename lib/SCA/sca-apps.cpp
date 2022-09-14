@@ -47,27 +47,24 @@ SCAApp::SCAApp(const char *appname, int argc, char *argv[])
 
     // Output related options.
     optnoval({"-a", "--append"},
-             "append to output_file (instead of overwriting)",
+             "append to output_file (instead of overwriting).",
              [this]() { append_to_output = true; });
     optval({"-o", "--output"}, "FILE",
-           "write output to FILE (instead of stdout)",
+           "write output to FILE (instead of stdout).",
            [this](const string &s) { output_file = s; });
     optnoval({"-p", "--python"},
-             "emit results in a format suitable for importing in python",
+             "emit results in a format suitable for importing in python.",
              [this]() { output_format = OutputBase::OUTPUT_PYTHON; });
     optnoval({"-g", "--gnuplot"}, "emit results in gnuplot compatible format.",
              [this]() { output_format = OutputBase::OUTPUT_GNUPLOT; });
 
     // Select samples to start / end with as well as the number of traces to
     // process.
-    optval({"-f", "--from"}, "S", "start computation at sample S (default: 0)",
+    optval({"-f", "--from"}, "S", "start computation at sample S (default: 0).",
            [this](const string &s) { start_sample = stoull(s, nullptr, 0); });
     optval({"-n", "--numsamples"}, "N",
-           "restrict computation to N samples (default: all)",
+           "restrict computation to N samples (default: all).",
            [this](const string &s) { nb_samples = stoull(s, nullptr, 0); });
-    optval({"-d", "--numtraces"}, "T",
-           "only process the first T traces (default: all)",
-           [this](const string &s) { nb_traces = stoull(s, nullptr, 0); });
 }
 
 void SCAApp::setup() {

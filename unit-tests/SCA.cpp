@@ -93,8 +93,9 @@ namespace {
 // A wrapper for the boilerplate required for a specific T-Test.
 double ttest_wrapper(const NPArray<double> &traces,
                      const NPArray<uint32_t> &inputs, size_t index,
-                     size_t begin, size_t end, size_t num_traces,
-                     size_t *max_t_index, bool verbose = false) {
+                     size_t begin, size_t end, size_t *max_t_index,
+                     bool verbose = false) {
+    size_t num_traces = traces.rows();
     unique_ptr<Classification[]> classifier(new Classification[num_traces]);
     for (size_t tnum = 0; tnum < num_traces; tnum++) {
         uint32_t value = inputs(tnum, index);
@@ -108,8 +109,7 @@ double ttest_wrapper(const NPArray<double> &traces,
             classifier[tnum] = Classification::IGNORE;
     }
 
-    vector<double> tvalues =
-        t_test(begin, end, num_traces, traces, classifier.get());
+    vector<double> tvalues = t_test(begin, end, traces, classifier.get());
 
     double max_t = find_max(tvalues, max_t_index);
 
@@ -125,9 +125,8 @@ double ttest_wrapper(const NPArray<double> &traces,
 // A wrapper for the boilerplate required for a non-specific T-Test.
 double ttest_wrapper(const NPArray<double> &group0,
                      const NPArray<double> &group1, size_t begin, size_t end,
-                     size_t num_traces, size_t *max_t_index,
-                     bool verbose = false) {
-    vector<double> tvalues = t_test(begin, end, num_traces, group0, group1);
+                     size_t *max_t_index, bool verbose = false) {
+    vector<double> tvalues = t_test(begin, end, group0, group1);
 
     double max_t = find_max(tvalues, max_t_index);
 
@@ -143,16 +142,16 @@ double ttest_wrapper(const NPArray<double> &group0,
 // A wrapper for the boilerplate required for a Pearson correlation.
 double correl_wrapper(const NPArray<double> &traces,
                       const NPArray<uint32_t> &inputs, size_t index,
-                      size_t begin, size_t end, size_t num_traces,
-                      size_t *max_c_index, bool verbose = false) {
+                      size_t begin, size_t end, size_t *max_c_index,
+                      bool verbose = false) {
+    size_t num_traces = traces.rows();
     unique_ptr<unsigned[]> intermediate(new unsigned[num_traces]);
     for (size_t tnum = 0; tnum < num_traces; tnum++) {
         uint32_t value = inputs(tnum, index);
         intermediate[tnum] = hamming_weight<uint32_t>(value, -1U);
     }
 
-    vector<double> cvalues =
-        correl(begin, end, num_traces, traces, intermediate.get());
+    vector<double> cvalues = correl(begin, end, traces, intermediate.get());
 
     double max_c = find_max(cvalues, max_c_index);
 
@@ -180,33 +179,31 @@ TEST(TTest, specific) {
     size_t max_t_index;
     double max_t_value;
 
-    max_t_value = ttest_wrapper(traces, inputs, 0, 0, NUM_SAMPLES, NUM_TRACES,
-                                &max_t_index);
+    max_t_value =
+        ttest_wrapper(traces, inputs, 0, 0, NUM_SAMPLES, &max_t_index);
     EXPECT_NEAR(max_t_value, 65.2438, 0.0001);
     EXPECT_EQ(max_t_index, 26);
 
-    max_t_value = ttest_wrapper(traces, inputs, 1, 0, NUM_SAMPLES, NUM_TRACES,
-                                &max_t_index);
+    max_t_value =
+        ttest_wrapper(traces, inputs, 1, 0, NUM_SAMPLES, &max_t_index);
     EXPECT_NEAR(max_t_value, 72.7487, 0.0001);
     EXPECT_EQ(max_t_index, 25);
 
-    max_t_value = ttest_wrapper(traces, inputs, 2, 0, NUM_SAMPLES, NUM_TRACES,
-                                &max_t_index);
+    max_t_value =
+        ttest_wrapper(traces, inputs, 2, 0, NUM_SAMPLES, &max_t_index);
     EXPECT_NEAR(max_t_value, 57.2091, 0.0001);
     EXPECT_EQ(max_t_index, 34);
 
-    max_t_value = ttest_wrapper(traces, inputs, 3, 0, NUM_SAMPLES, NUM_TRACES,
-                                &max_t_index);
+    max_t_value =
+        ttest_wrapper(traces, inputs, 3, 0, NUM_SAMPLES, &max_t_index);
     EXPECT_NEAR(max_t_value, 71.2911, 0.0001);
     EXPECT_EQ(max_t_index, 34);
 
-    max_t_value =
-        ttest_wrapper(traces, inputs, 0, 21, 22, NUM_TRACES, &max_t_index);
+    max_t_value = ttest_wrapper(traces, inputs, 0, 21, 22, &max_t_index);
     EXPECT_NEAR(max_t_value, 20.0409, 0.0001);
     EXPECT_EQ(max_t_index, 0);
 
-    max_t_value =
-        ttest_wrapper(traces, inputs, 1, 21, 22, NUM_TRACES, &max_t_index);
+    max_t_value = ttest_wrapper(traces, inputs, 1, 21, 22, &max_t_index);
     EXPECT_NEAR(max_t_value, 17.9318, 0.0001);
     EXPECT_EQ(max_t_index, 0);
 }
@@ -223,13 +220,11 @@ TEST(TTest, non_specific) {
     size_t max_t_index;
     double max_t_value;
 
-    max_t_value =
-        ttest_wrapper(group0, group1, 0, NUM_SAMPLES, NUM_TRACES, &max_t_index);
+    max_t_value = ttest_wrapper(group0, group1, 0, NUM_SAMPLES, &max_t_index);
     EXPECT_NEAR(max_t_value, -12.5702, 0.0001);
     EXPECT_EQ(max_t_index, 6);
 
-    max_t_value =
-        ttest_wrapper(group0, group1, 7, 20, NUM_TRACES, &max_t_index);
+    max_t_value = ttest_wrapper(group0, group1, 7, 20, &max_t_index);
     EXPECT_NEAR(max_t_value, -11.8445, 0.0001);
     EXPECT_EQ(max_t_index, 8);
 }
@@ -246,33 +241,31 @@ TEST(Correl, correl) {
     size_t max_c_index;
     double max_c_value;
 
-    max_c_value = correl_wrapper(traces, inputs, 0, 0, NUM_SAMPLES, NUM_TRACES,
-                                 &max_c_index);
+    max_c_value =
+        correl_wrapper(traces, inputs, 0, 0, NUM_SAMPLES, &max_c_index);
     EXPECT_NEAR(max_c_value, -0.646646, 0.0001);
     EXPECT_EQ(max_c_index, 26);
 
-    max_c_value = correl_wrapper(traces, inputs, 1, 0, NUM_SAMPLES, NUM_TRACES,
-                                 &max_c_index);
+    max_c_value =
+        correl_wrapper(traces, inputs, 1, 0, NUM_SAMPLES, &max_c_index);
     EXPECT_NEAR(max_c_value, -0.699327, 0.0001);
     EXPECT_EQ(max_c_index, 26);
 
-    max_c_value = correl_wrapper(traces, inputs, 2, 0, NUM_SAMPLES, NUM_TRACES,
-                                 &max_c_index);
+    max_c_value =
+        correl_wrapper(traces, inputs, 2, 0, NUM_SAMPLES, &max_c_index);
     EXPECT_NEAR(max_c_value, -0.589576, 0.0001);
     EXPECT_EQ(max_c_index, 34);
 
-    max_c_value = correl_wrapper(traces, inputs, 3, 0, NUM_SAMPLES, NUM_TRACES,
-                                 &max_c_index);
+    max_c_value =
+        correl_wrapper(traces, inputs, 3, 0, NUM_SAMPLES, &max_c_index);
     EXPECT_NEAR(max_c_value, -0.689161, 0.0001);
     EXPECT_EQ(max_c_index, 34);
 
-    max_c_value =
-        correl_wrapper(traces, inputs, 0, 20, 24, NUM_TRACES, &max_c_index);
+    max_c_value = correl_wrapper(traces, inputs, 0, 20, 24, &max_c_index);
     EXPECT_NEAR(max_c_value, -0.223799, 0.0001);
     EXPECT_EQ(max_c_index, 1);
 
-    max_c_value =
-        correl_wrapper(traces, inputs, 1, 20, 24, NUM_TRACES, &max_c_index);
+    max_c_value = correl_wrapper(traces, inputs, 1, 20, 24, &max_c_index);
     EXPECT_NEAR(max_c_value, -0.207255, 0.0001);
     EXPECT_EQ(max_c_index, 1);
 }

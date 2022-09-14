@@ -30,15 +30,14 @@ using std::vector;
 
 namespace PAF {
 namespace SCA {
-vector<double> t_test(size_t b, size_t e, size_t nbtraces,
-                      const NPArray<double> &traces,
+vector<double> t_test(size_t b, size_t e, const NPArray<double> &traces,
                       const Classification classifier[]) {
 
     assert(b < e && "Wrong begin / end samples");
-    assert(nbtraces <= traces.rows() && "Not that many traces");
     assert(b <= traces.cols() && "Not that many samples in the trace");
     assert(e <= traces.cols() && "Not that many samples in the trace");
 
+    const size_t nbtraces = traces.rows();
     const size_t nbsamples = e - b;
 
     unique_ptr<double[]> mean0(new double[nbsamples]);
@@ -116,13 +115,10 @@ vector<double> t_test(size_t b, size_t e, size_t nbtraces,
     return tvalue;
 }
 
-vector<double> t_test(size_t b, size_t e, size_t nbtraces,
-                      const NPArray<double> &group0,
+vector<double> t_test(size_t b, size_t e, const NPArray<double> &group0,
                       const NPArray<double> &group1) {
 
     assert(b < e && "Wrong begin / end samples");
-    assert(nbtraces <= group0.rows() && "Not that many traces in group0");
-    assert(nbtraces <= group1.rows() && "Not that many traces in group1");
     assert(b <= group0.cols() && "Not that many samples in group0 traces");
     assert(e <= group0.cols() && "Not that many samples in group0 traces");
     assert(b <= group1.cols() && "Not that many samples in group1 traces");
@@ -140,10 +136,10 @@ vector<double> t_test(size_t b, size_t e, size_t nbtraces,
         mean0[sample] = 0.0;
         mean1[sample] = 0.0;
 
-        for (size_t tnum = 0; tnum < nbtraces; tnum++) {
-            mean0[sample] += group0(tnum, b + sample) / double(nbtraces);
-            mean1[sample] += group1(tnum, b + sample) / double(nbtraces);
-        }
+        for (size_t tnum = 0; tnum < group0.rows(); tnum++)
+            mean0[sample] += group0(tnum, b + sample) / double(group0.rows());
+        for (size_t tnum = 0; tnum < group1.rows(); tnum++)
+            mean1[sample] += group1(tnum, b + sample) / double(group1.rows());
     }
 
     unique_ptr<double[]> variance0(new double[nbsamples]);
@@ -153,18 +149,20 @@ vector<double> t_test(size_t b, size_t e, size_t nbtraces,
     for (size_t sample = 0; sample < nbsamples; sample++) {
         variance0[sample] = 0.0;
         variance1[sample] = 0.0;
-        for (size_t tnum = 0; tnum < nbtraces; tnum++) {
+        for (size_t tnum = 0; tnum < group0.rows(); tnum++) {
             double v0 = group0(tnum, b + sample) - mean0[sample];
             variance0[sample] += v0 * v0;
+        }
+        for (size_t tnum = 0; tnum < group1.rows(); tnum++) {
             double v1 = group1(tnum, b + sample) - mean1[sample];
             variance1[sample] += v1 * v1;
         }
 
-        variance0[sample] /= nbtraces - 1;
-        variance1[sample] /= nbtraces - 1;
+        variance0[sample] /= double(group0.rows()) - 1.;
+        variance1[sample] /= double(group1.rows()) - 1.0;
 
-        double tmp0 = variance0[sample] / nbtraces;
-        double tmp1 = variance1[sample] / nbtraces;
+        double tmp0 = variance0[sample] / double(group0.rows());
+        double tmp1 = variance1[sample] / double(group1.rows());
         tvalue[sample] = (mean0[sample] - mean1[sample]) / sqrt(tmp0 + tmp1);
     }
 

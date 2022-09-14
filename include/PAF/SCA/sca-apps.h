@@ -92,8 +92,6 @@ class SCAApp : public Argparse {
     size_t sample_end() const { return start_sample + nb_samples; }
     /// Get the number of samples that have to be processed.
     size_t num_samples() const { return nb_samples; }
-    /// Get the number of traces that have to be processed.
-    size_t num_traces() const { return nb_traces; }
 
     /// Write a sequence of values to this application's output file.
     void output(const std::vector<double> &values) { out->emit(values); }
@@ -107,7 +105,6 @@ class SCAApp : public Argparse {
 
     size_t start_sample = 0;
     size_t nb_samples = std::numeric_limits<size_t>::max();
-    size_t nb_traces = std::numeric_limits<size_t>::max();
     std::unique_ptr<OutputBase> out;
 };
 

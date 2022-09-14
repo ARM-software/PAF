@@ -45,21 +45,21 @@ enum class Classification : char {
     IGNORE   ///< Exclude this traces from the test.
 };
 
-/// Compute the t-test from sample b to e on nbtraces from traces, using the
+/// Compute the t-test from samples b to e on traces, using the
 /// classification from classifier.
-std::vector<double> t_test(size_t b, size_t e, size_t nbtraces,
+std::vector<double> t_test(size_t b, size_t e,
                            const NPArray<double> &traces,
                            const Classification classifier[]);
 
-/// Compute the t-test from sample b to e on nbtraces, assuming the traces have
+/// Compute the t-test from sample b to e on traces, assuming the traces have
 /// been split into group0 and group1.
-std::vector<double> t_test(size_t b, size_t e, size_t nbtraces,
+std::vector<double> t_test(size_t b, size_t e,
                            const NPArray<double> &group0,
                            const NPArray<double> &group1);
 
-/// Compute the Pearson correlation, from samples b to e, with nbtraces traces
+/// Compute the Pearson correlation, from samples b to e, on traces
 /// using the intermediate values.
-std::vector<double> correl(size_t b, size_t e, size_t nbtraces,
+std::vector<double> correl(size_t b, size_t e,
                            const NPArray<double> &traces,
                            const unsigned intermediate[]);
 } // namespace SCA

@@ -85,7 +85,7 @@ int main(int argc, char *argv[]) {
         }
     }
 
-    size_t nbtraces = app.num_traces();
+    size_t nbtraces = std::numeric_limits<size_t>::max();
     size_t sample_to_stop_at = app.sample_end();
     vector<NPArray<double>> traces;
     for (const auto &trace_path : traces_path) {
@@ -118,7 +118,7 @@ int main(int argc, char *argv[]) {
     vector<double> tvalues;
     switch (grouping) {
     case GROUP_BY_NPY:
-        tvalues = t_test(app.sample_start(), sample_to_stop_at, nbtraces,
+        tvalues = t_test(app.sample_start(), sample_to_stop_at,
                          traces[0], traces[1]);
         break;
     case GROUP_INTERLEAVED: {
@@ -130,8 +130,8 @@ int main(int argc, char *argv[]) {
                 classifier[j * nbsamples + i] = i % 2 == 0
                                                     ? Classification::GROUP_0
                                                     : Classification::GROUP_1;
-        tvalues = t_test(app.sample_start(), sample_to_stop_at, nbtraces,
-                         traces[0], classifier.get());
+        tvalues = t_test(app.sample_start(), sample_to_stop_at, traces[0],
+                         classifier.get());
     } break;
     }
     // Output results.

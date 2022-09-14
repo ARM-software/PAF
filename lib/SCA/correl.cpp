@@ -29,15 +29,14 @@ using std::vector;
 
 namespace PAF {
 namespace SCA {
-vector<double> correl(size_t b, size_t e, size_t nbtraces,
-                      const NPArray<double> &traces,
+vector<double> correl(size_t b, size_t e, const NPArray<double> &traces,
                       const unsigned intermediate[]) {
 
     assert(b < e && "Wrong begin / end samples");
-    assert(nbtraces <= traces.rows() && "Not that many traces");
     assert(b <= traces.cols() && "Not that many samples in the trace");
     assert(e <= traces.cols() && "Not that many samples in the trace");
 
+    const size_t nbtraces = traces.rows();
     const size_t nbsamples = e - b;
 
     vector<double> sum_t(nbsamples, 0.0);

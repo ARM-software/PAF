@@ -104,7 +104,7 @@ int main(int argc, char *argv[]) {
         reporter->errx(EXIT_FAILURE, "Error reading inputs from '%s' (%s)",
                        inputs_path.c_str(), inputs.error());
 
-    const size_t nbtraces = min(app.num_traces(), traces.rows());
+    const size_t nbtraces = traces.rows();
 
     if (app.verbose()) {
         cout << "Read " << nbtraces << " traces (" << traces.cols()
@@ -147,8 +147,8 @@ int main(int argc, char *argv[]) {
         }
 
         // Compute the metric.
-        mvalues = correl(app.sample_start(), sample_to_stop_at, nbtraces,
-                         traces, ivalues.get());
+        mvalues = correl(app.sample_start(), sample_to_stop_at, traces,
+                         ivalues.get());
     } break;
     case Metric::T_TEST: {
         // Build the classifier.
@@ -167,8 +167,8 @@ int main(int argc, char *argv[]) {
         }
 
         // Compute the metric.
-        mvalues = t_test(app.sample_start(), sample_to_stop_at, nbtraces,
-                         traces, classifier.get());
+        mvalues = t_test(app.sample_start(), sample_to_stop_at, traces,
+                         classifier.get());
     } break;
     }
 
