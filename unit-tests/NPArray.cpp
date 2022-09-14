@@ -598,6 +598,633 @@ TEST(NPArray, Row) {
     EXPECT_EQ(r[0], 3);
 }
 
+TEST(NPArray, sum_one) {
+    // clang-format off
+    /*
+        $ python3
+        >>> import numpy as np
+        >>> a = np.array(
+                [[0, 1],
+                 [2, 3],
+                 [4, 5],
+                 [6, 7]])
+        >>> np.sum(a, axis=1)
+        array([ 1,  5,  9, 13])
+        >>> np.sum(a, axis=0)
+        array([12, 16])
+    */
+    // clang-format on
+    const int64_t MI64_init[] = {
+        // clang-format off
+        0, 1,
+        2, 3,
+        4, 5,
+        6, 7
+        // clang-format on
+    };
+    NPArray<int64_t> a(MI64_init, 4, 2);
+
+    // Test NPArray::sum.
+    EXPECT_EQ(a.sum(decltype(a)::ROW, 0), 1);
+    EXPECT_EQ(a.sum(decltype(a)::ROW, 1), 5);
+    EXPECT_EQ(a.sum(decltype(a)::ROW, 2), 9);
+    EXPECT_EQ(a.sum(decltype(a)::ROW, 3), 13);
+
+    EXPECT_EQ(a.sum(decltype(a)::COLUMN, 0), 12);
+    EXPECT_EQ(a.sum(decltype(a)::COLUMN, 1), 16);
+
+    // Test sum(NPArray).
+    EXPECT_EQ(sum(a, decltype(a)::ROW, 0), 1);
+    EXPECT_EQ(sum(a, decltype(a)::ROW, 1), 5);
+    EXPECT_EQ(sum(a, decltype(a)::ROW, 2), 9);
+    EXPECT_EQ(sum(a, decltype(a)::ROW, 3), 13);
+
+    EXPECT_EQ(sum(a, decltype(a)::COLUMN, 0), 12);
+    EXPECT_EQ(sum(a, decltype(a)::COLUMN, 1), 16);
+}
+
+TEST(NPArray, sum_range) {
+    // clang-format off
+    /*
+        $ python3
+        >>> import numpy as np
+        >>> a = np.array(
+                [[0,   1,  2,  3],
+                 [4,   5,  6,  7],
+                 [8,   9, 10, 11],
+                 [12, 13, 14, 15]])
+        >>> np.sum(a, axis=1)
+        array([ 6, 22, 38, 54])
+        >>> np.sum(a, axis=0)
+        array([24, 28, 32, 36])
+    */
+    // clang-format on
+    const int64_t MI64_init[] = {
+        // clang-format off
+        0,   1,  2,  3,
+        4,   5,  6,  7,
+        8,   9, 10, 11,
+        12, 13, 14, 15
+        // clang-format on
+    };
+    NPArray<int64_t> a(MI64_init, 4, 4);
+
+    std::vector<int64_t> r;
+
+    // Test NPArray::sum.
+    r = a.sum(decltype(a)::ROW, 1, 3);
+    EXPECT_EQ(r.size(), 2);
+    EXPECT_EQ(r[0], 22);
+    EXPECT_EQ(r[1], 38);
+
+    r = a.sum(decltype(a)::ROW, 3, 4);
+    EXPECT_EQ(r.size(), 1);
+    EXPECT_EQ(r[0], 54);
+
+    r = a.sum(decltype(a)::ROW, 0, 4);
+    EXPECT_EQ(r.size(), 4);
+    EXPECT_EQ(r[0], 6);
+    EXPECT_EQ(r[1], 22);
+    EXPECT_EQ(r[2], 38);
+    EXPECT_EQ(r[3], 54);
+
+    r = a.sum(decltype(a)::COLUMN, 1, 3);
+    EXPECT_EQ(r.size(), 2);
+    EXPECT_EQ(r[0], 28);
+    EXPECT_EQ(r[1], 32);
+
+    r = a.sum(decltype(a)::COLUMN, 3, 4);
+    EXPECT_EQ(r.size(), 1);
+    EXPECT_EQ(r[0], 36);
+
+    r = a.sum(decltype(a)::COLUMN, 0, 4);
+    EXPECT_EQ(r.size(), 4);
+    EXPECT_EQ(r[0], 24);
+    EXPECT_EQ(r[1], 28);
+    EXPECT_EQ(r[2], 32);
+    EXPECT_EQ(r[3], 36);
+
+    // Test sum(NPArray).
+    r = sum(a, decltype(a)::ROW, 1, 3);
+    EXPECT_EQ(r.size(), 2);
+    EXPECT_EQ(r[0], 22);
+    EXPECT_EQ(r[1], 38);
+
+    r = sum(a, decltype(a)::ROW, 3, 4);
+    EXPECT_EQ(r.size(), 1);
+    EXPECT_EQ(r[0], 54);
+
+    r = sum(a, decltype(a)::ROW, 0, 4);
+    EXPECT_EQ(r.size(), 4);
+    EXPECT_EQ(r[0], 6);
+    EXPECT_EQ(r[1], 22);
+    EXPECT_EQ(r[2], 38);
+    EXPECT_EQ(r[3], 54);
+
+    r = sum(a, decltype(a)::COLUMN, 1, 3);
+    EXPECT_EQ(r.size(), 2);
+    EXPECT_EQ(r[0], 28);
+    EXPECT_EQ(r[1], 32);
+
+    r = sum(a, decltype(a)::COLUMN, 3, 4);
+    EXPECT_EQ(r.size(), 1);
+    EXPECT_EQ(r[0], 36);
+
+    r = sum(a, decltype(a)::COLUMN, 0, 4);
+    EXPECT_EQ(r.size(), 4);
+    EXPECT_EQ(r[0], 24);
+    EXPECT_EQ(r[1], 28);
+    EXPECT_EQ(r[2], 32);
+    EXPECT_EQ(r[3], 36);
+}
+
+TEST(NPArray, sum_all) {
+    // clang-format off
+    /*
+        $ python3
+        >>> import numpy as np
+        >>> a = np.array(
+                [[0, 1, 2, 3],
+                 [4, 5, 6, 7]])
+        >>> np.sum(a, axis=1)
+        array([ 6, 22])
+        >>> np.sum(a, axis=0)
+        array([ 4,  6,  8, 10])
+    */
+    // clang-format on
+    const int64_t MI64_init[] = {
+        // clang-format off
+        0, 1, 2, 3,
+        4, 5, 6, 7
+        // clang-format on
+        };
+    NPArray<int64_t> a(MI64_init, 2, 4);
+
+    // Test NPArray::sum.
+    std::vector<int64_t> s = a.sum(decltype(a)::ROW);
+    EXPECT_EQ(s.size(), a.rows());
+    EXPECT_EQ(s[0], 6);
+    EXPECT_EQ(s[1], 22);
+
+    s = a.sum(decltype(a)::COLUMN);
+    EXPECT_EQ(s.size(), a.cols());
+    EXPECT_EQ(s[0], 4);
+    EXPECT_EQ(s[1], 6);
+    EXPECT_EQ(s[2], 8);
+    EXPECT_EQ(s[3], 10);
+
+    // Test sum(NPArray).
+    s = sum(a, decltype(a)::ROW);
+    EXPECT_EQ(s.size(), a.rows());
+    EXPECT_EQ(s[0], 6);
+    EXPECT_EQ(s[1], 22);
+
+    s = sum(a, decltype(a)::COLUMN);
+    EXPECT_EQ(s.size(), a.cols());
+    EXPECT_EQ(s[0], 4);
+    EXPECT_EQ(s[1], 6);
+    EXPECT_EQ(s[2], 8);
+    EXPECT_EQ(s[3], 10);
+}
+
+TEST(NPArray, mean_var_stddev_one) {
+        // clang-format off
+    /*
+        $ python3
+        >>> import numpy as np
+        >>> a = np.array(
+                [[0, 1],
+                 [2, 3],
+                 [4, 5]])
+        >>> np.mean(a, axis=1)
+        array([0.5, 2.5, 4.5])
+        >>> np.mean(a, axis=0)
+        array([2., 3.])
+        >>> np.var(a, axis=1, ddof=1)
+        array([0.5, 0.5, 0.5])
+        >>> np.var(a, axis=1, ddof=0)
+        array([0.25, 0.25, 0.25])
+        >>> np.var(a, axis=0, ddof=1)
+        array([4., 4.])
+        >>> np.var(a, axis=0, ddof=0)
+        array([2.66666667, 2.66666667])
+        >>> np.std(a, axis=1)
+        array([0.5, 0.5, 0.5])
+        >>> np.std(a, axis=0)
+        array([1.63299316, 1.63299316])
+    */
+    // clang-format on
+    const int64_t MI64_init[] = {
+        // clang-format off
+        0, 1,
+        2, 3,
+        4, 5
+        // clang-format on
+    };
+    NPArray<int64_t> a(MI64_init, 3, 2);
+
+    // Test NPArray::mean.
+    EXPECT_EQ(a.mean(decltype(a)::ROW, 0), 0.5);
+    EXPECT_EQ(a.var(decltype(a)::ROW, 0, 0.5, 1), 0.5);
+    EXPECT_EQ(a.var(decltype(a)::ROW, 0, 0.5), 0.25);
+    EXPECT_EQ(a.stddev(decltype(a)::ROW, 0, 0.5), 0.5);
+
+    EXPECT_EQ(a.mean(decltype(a)::ROW, 1), 2.5);
+    EXPECT_EQ(a.var(decltype(a)::ROW, 1, 2.5, 1), 0.5);
+    EXPECT_EQ(a.var(decltype(a)::ROW, 1, 2.5), 0.25);
+    EXPECT_EQ(a.stddev(decltype(a)::ROW, 1, 2.5), 0.5);
+
+    EXPECT_EQ(a.mean(decltype(a)::ROW, 2), 4.5);
+    EXPECT_EQ(a.var(decltype(a)::ROW, 2, 4.5, 1), 0.5);
+    EXPECT_EQ(a.var(decltype(a)::ROW, 2, 4.5), 0.25);
+    EXPECT_EQ(a.stddev(decltype(a)::ROW, 2, 4.5), 0.5);
+
+    EXPECT_EQ(a.mean(decltype(a)::COLUMN, 0), 2.);
+    EXPECT_EQ(a.var(decltype(a)::COLUMN, 0, 2.0, 1), 4.);
+    EXPECT_NEAR(a.var(decltype(a)::COLUMN, 0, 2.0), 2.66667, 0.0001);
+    EXPECT_NEAR(a.stddev(decltype(a)::COLUMN, 0, 2.0), 1.63299, 0.0001);
+
+    EXPECT_EQ(a.mean(decltype(a)::COLUMN, 1), 3.);
+    EXPECT_EQ(a.var(decltype(a)::COLUMN, 1, 3.0, 1), 4.);
+    EXPECT_NEAR(a.var(decltype(a)::COLUMN, 1, 3.0), 2.66667, 0.0001);
+    EXPECT_NEAR(a.stddev(decltype(a)::COLUMN, 1, 3.0), 1.63299, 0.0001);
+
+    // Test mean(NPArray).
+    EXPECT_EQ(mean(a, decltype(a)::ROW, 0), 0.5);
+    EXPECT_EQ(var(a, decltype(a)::ROW, 0, 0.5, 1), 0.5);
+    EXPECT_EQ(var(a, decltype(a)::ROW, 0, 0.5), 0.25);
+    EXPECT_EQ(stddev(a, decltype(a)::ROW, 0, 0.5), 0.5);
+
+    EXPECT_EQ(mean(a, decltype(a)::ROW, 1), 2.5);
+    EXPECT_EQ(var(a, decltype(a)::ROW, 1, 2.5, 1), 0.5);
+    EXPECT_EQ(var(a, decltype(a)::ROW, 1, 2.5), 0.25);
+    EXPECT_EQ(stddev(a, decltype(a)::ROW, 1, 2.5), 0.5);
+
+    EXPECT_EQ(mean(a, decltype(a)::ROW, 2), 4.5);
+    EXPECT_EQ(var(a, decltype(a)::ROW, 2, 4.5, 1), 0.5);
+    EXPECT_EQ(var(a, decltype(a)::ROW, 2, 4.5), 0.25);
+    EXPECT_EQ(stddev(a, decltype(a)::ROW, 2, 4.5), 0.5);
+
+    EXPECT_EQ(mean(a, decltype(a)::COLUMN, 0), 2.);
+    EXPECT_EQ(var(a, decltype(a)::COLUMN, 0, 2.0, 1), 4.);
+    EXPECT_NEAR(var(a, decltype(a)::COLUMN, 0, 2.0), 2.66667, 0.0001);
+    EXPECT_NEAR(stddev(a, decltype(a)::COLUMN, 0, 2.0), 1.63299, 0.0001);
+
+    EXPECT_EQ(mean(a, decltype(a)::COLUMN, 1), 3.);
+    EXPECT_EQ(var(a, decltype(a)::COLUMN, 1, 3.0, 1), 4.);
+    EXPECT_NEAR(var(a, decltype(a)::COLUMN, 1, 3.0), 2.66667, 0.0001);
+    EXPECT_NEAR(stddev(a, decltype(a)::COLUMN, 1, 3.0), 1.63299, 1.66667);
+}
+
+TEST(NPArray, mean_var_stddev_range) {
+    // clang-format off
+    /*
+        $ python3
+        >>> import numpy as np
+        >>> a = np.array(
+                [[0,   1,  2,  3],
+                 [4,   5,  6,  7],
+                 [8,   9, 10, 11],
+                 [12, 13, 14, 15]])
+        >>> np.mean(a, axis=1)
+        array([ 1.5,  5.5,  9.5, 13.5])
+        >>> np.mean(a, axis=0)
+        array([6., 7., 8., 9.])
+        >>> np.var(a, axis=1, ddof=1)
+        array([1.66666667, 1.66666667, 1.66666667, 1.66666667])
+        >>> np.var(a, axis=1, ddof=0)
+        array([1.25, 1.25, 1.25, 1.25])
+        >>> np.var(a, axis=0, ddof=1)
+        array([26.66666667, 26.66666667, 26.66666667, 26.66666667])
+        >>> np.var(a, axis=0, ddof=0)
+        array([20., 20., 20., 20.])
+        >>> np.std(a, axis=1)
+        array([1.11803399, 1.11803399, 1.11803399, 1.11803399])
+        >>> np.std(a, axis=0)
+        array([4.47213595, 4.47213595, 4.47213595, 4.47213595])
+    */
+    // clang-format on
+    const int64_t MI64_init[] = {
+        // clang-format off
+        0,   1,  2,  3,
+        4,   5,  6,  7,
+        8,   9, 10, 11,
+        12, 13, 14, 15
+        // clang-format on
+    };
+    NPArray<int64_t> a(MI64_init, 4, 4);
+
+    std::vector<double> m;  // Mean value
+    std::vector<double> v1; // Variance (with ddof=1)
+    std::vector<double> v0; // Variance
+    std::vector<double> d;  // Standard deviation
+    std::vector<double> expected;
+
+    // Test NPArray::mean.
+    m = a.mean(decltype(a)::ROW, 1, 3);
+    v1 = a.var(decltype(a)::ROW, 1, 3, m, 1);
+    v0 = a.var(decltype(a)::ROW, 1, 3, m);
+    d = a.stddev(decltype(a)::ROW, 1, 3, m);
+    EXPECT_EQ(m.size(), 2);
+    EXPECT_EQ(v1.size(), 2);
+    EXPECT_EQ(v0.size(), 2);
+    EXPECT_EQ(d.size(), 2);
+    EXPECT_EQ(m, std::vector<double>({5.5, 9.5}));
+    expected = std::vector<double>({1.66667, 1.66667});
+    for (size_t i = 0; i < v1.size(); i++)
+        EXPECT_NEAR(v1[i], expected[i], 0.0001);
+    EXPECT_EQ(v0, std::vector<double>({1.25, 1.25}));
+    expected = std::vector<double>({1.11803, 1.11803});
+    for (size_t i = 0; i < d.size(); i++)
+        EXPECT_NEAR(d[i], expected[i], 0.0001);
+
+    m = a.mean(decltype(a)::ROW, 0, 1);
+    v1 = a.var(decltype(a)::ROW, 0, 1, m, 1);
+    v0 = a.var(decltype(a)::ROW, 0, 1, m);
+    d = a.stddev(decltype(a)::ROW, 0, 1, m);
+    EXPECT_EQ(m.size(), 1.);
+    EXPECT_EQ(v1.size(), 1);
+    EXPECT_EQ(v0.size(), 1);
+    EXPECT_EQ(d.size(), 1);
+    EXPECT_EQ(m[0], 1.5);
+    EXPECT_NEAR(v1[0], 1.66667, 0.0001);
+    EXPECT_EQ(v0[0], 1.25);
+    EXPECT_NEAR(d[0], 1.11803, 0.0001);
+
+    m = a.mean(decltype(a)::ROW, 0, 4);
+    v1 = a.var(decltype(a)::ROW, 0, 4, m, 1);
+    v0 = a.var(decltype(a)::ROW, 0, 4, m);
+    d = a.stddev(decltype(a)::ROW, 0, 4, m);
+    EXPECT_EQ(m.size(), 4);
+    EXPECT_EQ(v1.size(), 4);
+    EXPECT_EQ(v0.size(), 4);
+    EXPECT_EQ(d.size(), 4);
+    EXPECT_EQ(m, std::vector<double>({1.5, 5.5, 9.5, 13.5}));
+    expected = std::vector<double>({1.66667, 1.66667, 1.66667, 1.66667});
+    for (size_t i = 0; i < v1.size(); i++)
+        EXPECT_NEAR(v1[i], expected[i], 0.0001);
+    EXPECT_EQ(v0, std::vector<double>({1.25, 1.25, 1.25, 1.25}));
+    expected = std::vector<double>({1.11803, 1.11803, 1.11803, 1.11803});
+    for (size_t i = 0; i < d.size(); i++)
+        EXPECT_NEAR(d[i], expected[i], 0.0001);
+
+    m = a.mean(decltype(a)::COLUMN, 1, 3);
+    v1 = a.var(decltype(a)::COLUMN, 1, 3, m, 1);
+    v0 = a.var(decltype(a)::COLUMN, 1, 3, m);
+    d = a.stddev(decltype(a)::COLUMN, 1, 3, m);
+    EXPECT_EQ(m.size(), 2);
+    EXPECT_EQ(v1.size(), 2);
+    EXPECT_EQ(v0.size(), 2);
+    EXPECT_EQ(d.size(), 2);
+    EXPECT_EQ(m, std::vector<double>({7., 8.}));
+    expected = std::vector<double>({26.6667, 26.6667});
+    for (size_t i = 0; i < v1.size(); i++)
+        EXPECT_NEAR(v1[i], expected[i], 0.0001);
+    EXPECT_EQ(v0, std::vector<double>({20., 20.}));
+    expected = std::vector<double>({4.47214, 4.47214});
+    for (size_t i = 0; i < d.size(); i++)
+        EXPECT_NEAR(d[i], expected[i], 0.0001);
+
+    m = a.mean(decltype(a)::COLUMN, 0, 1);
+    v1 = a.var(decltype(a)::COLUMN, 0, 1, m, 1);
+    v0 = a.var(decltype(a)::COLUMN, 0, 1, m);
+    d = a.stddev(decltype(a)::COLUMN, 0, 1, m);
+    EXPECT_EQ(m.size(), 1);
+    EXPECT_EQ(v1.size(), 1);
+    EXPECT_EQ(v0.size(), 1);
+    EXPECT_EQ(d.size(), 1);
+    EXPECT_EQ(m[0], 6.);
+    EXPECT_NEAR(v1[0], 26.66667, 0.0001);
+    EXPECT_EQ(v0[0], 20.);
+    EXPECT_NEAR(d[0], 4.47214, 0.0001);
+
+    m = a.mean(decltype(a)::COLUMN, 0, 4);
+    v1 = a.var(decltype(a)::COLUMN, 0, 4, m, 1);
+    v0 = a.var(decltype(a)::COLUMN, 0, 4, m);
+    d = a.stddev(decltype(a)::COLUMN, 0, 4, m);
+    EXPECT_EQ(m.size(), 4);
+    EXPECT_EQ(v1.size(), 4);
+    EXPECT_EQ(v0.size(), 4);
+    EXPECT_EQ(d.size(), 4);
+    EXPECT_EQ(m, std::vector<double>({6., 7., 8., 9.}));
+    expected = std::vector<double>({26.6667, 26.6667, 26.6667, 26.6667});
+    for (size_t i = 0; i < v1.size(); i++)
+        EXPECT_NEAR(v1[i], expected[i], 0.0001);
+    EXPECT_EQ(v0, std::vector<double>({20., 20., 20., 20.}));
+    expected = std::vector<double>({4.47214, 4.47214, 4.47214, 4.47214});
+    for (size_t i = 0; i < d.size(); i++)
+        EXPECT_NEAR(d[i], expected[i], 0.0001);
+
+    // Test mean(NPArray) / var(NPArray) / stddev(NPArray).
+    m = mean(a, decltype(a)::ROW, 1, 3);
+    v1 = var(a, decltype(a)::ROW, 1, 3, m, 1);
+    v0 = var(a, decltype(a)::ROW, 1, 3, m);
+    d = stddev(a, decltype(a)::ROW, 1, 3, m);
+    EXPECT_EQ(m.size(), 2);
+    EXPECT_EQ(v1.size(), 2);
+    EXPECT_EQ(v0.size(), 2);
+    EXPECT_EQ(d.size(), 2);
+    EXPECT_EQ(m, std::vector<double>({5.5, 9.5}));
+    expected = std::vector<double>({1.66667, 1.66667});
+    for (size_t i = 0; i < v1.size(); i++)
+        EXPECT_NEAR(v1[i], expected[i], 0.0001);
+    EXPECT_EQ(v0, std::vector<double>({1.25, 1.25}));
+    expected = std::vector<double>({1.11803, 1.11803});
+    for (size_t i = 0; i < d.size(); i++)
+        EXPECT_NEAR(d[i], expected[i], 0.0001);
+
+    m = mean(a, decltype(a)::ROW, 0, 1);
+    v1 = var(a, decltype(a)::ROW, 0, 1, m, 1);
+    v0 = var(a, decltype(a)::ROW, 0, 1, m);
+    d = stddev(a, decltype(a)::ROW, 0, 1, m);
+    EXPECT_EQ(m.size(), 1.);
+    EXPECT_EQ(v1.size(), 1);
+    EXPECT_EQ(v0.size(), 1);
+    EXPECT_EQ(d.size(), 1);
+    EXPECT_EQ(m[0], 1.5);
+    EXPECT_NEAR(v1[0], 1.66667, 0.0001);
+    EXPECT_EQ(v0[0], 1.25);
+    EXPECT_NEAR(d[0], 1.11803, 0.0001);
+
+    m = mean(a, decltype(a)::ROW, 0, 4);
+    v1 = var(a, decltype(a)::ROW, 0, 4, m, 1);
+    v0 = var(a, decltype(a)::ROW, 0, 4, m);
+    d = stddev(a, decltype(a)::ROW, 0, 4, m);
+    EXPECT_EQ(m.size(), 4);
+    EXPECT_EQ(v1.size(), 4);
+    EXPECT_EQ(v0.size(), 4);
+    EXPECT_EQ(d.size(), 4);
+    EXPECT_EQ(m, std::vector<double>({1.5, 5.5, 9.5, 13.5}));
+    expected = std::vector<double>({1.66667, 1.66667, 1.66667, 1.66667});
+    for (size_t i = 0; i < v1.size(); i++)
+        EXPECT_NEAR(v1[i], expected[i], 0.0001);
+    EXPECT_EQ(v0, std::vector<double>({1.25, 1.25, 1.25, 1.25}));
+    expected = std::vector<double>({1.11803, 1.11803, 1.11803, 1.11803});
+    for (size_t i = 0; i < d.size(); i++)
+        EXPECT_NEAR(d[i], expected[i], 0.0001);
+
+    m = mean(a, decltype(a)::COLUMN, 1, 3);
+    v1 = var(a, decltype(a)::COLUMN, 1, 3, m, 1);
+    v0 = var(a, decltype(a)::COLUMN, 1, 3, m);
+    d = stddev(a, decltype(a)::COLUMN, 1, 3, m);
+    EXPECT_EQ(m.size(), 2);
+    EXPECT_EQ(v1.size(), 2);
+    EXPECT_EQ(v0.size(), 2);
+    EXPECT_EQ(d.size(), 2);
+    EXPECT_EQ(m, std::vector<double>({7., 8.}));
+    expected = std::vector<double>({26.6667, 26.6667});
+    for (size_t i = 0; i < v1.size(); i++)
+        EXPECT_NEAR(v1[i], expected[i], 0.0001);
+    EXPECT_EQ(v0, std::vector<double>({20., 20.}));
+    expected = std::vector<double>({4.47214, 4.47214});
+    for (size_t i = 0; i < d.size(); i++)
+        EXPECT_NEAR(d[i], expected[i], 0.0001);
+
+    m = mean(a, decltype(a)::COLUMN, 0, 1);
+    v1 = var(a, decltype(a)::COLUMN, 0, 1, m, 1);
+    v0 = var(a, decltype(a)::COLUMN, 0, 1, m);
+    d = stddev(a, decltype(a)::COLUMN, 0, 1, m);
+    EXPECT_EQ(m.size(), 1);
+    EXPECT_EQ(v1.size(), 1);
+    EXPECT_EQ(v0.size(), 1);
+    EXPECT_EQ(d.size(), 1);
+    EXPECT_EQ(m[0], 6.);
+    EXPECT_NEAR(v1[0], 26.66667, 0.0001);
+    EXPECT_EQ(v0[0], 20.);
+    EXPECT_NEAR(d[0], 4.47214, 0.0001);
+
+    m = mean(a, decltype(a)::COLUMN, 0, 4);
+    v1 = var(a, decltype(a)::COLUMN, 0, 4, m, 1);
+    v0 = var(a, decltype(a)::COLUMN, 0, 4, m);
+    d = stddev(a, decltype(a)::COLUMN, 0, 4, m);
+    EXPECT_EQ(m.size(), 4);
+    EXPECT_EQ(v1.size(), 4);
+    EXPECT_EQ(v0.size(), 4);
+    EXPECT_EQ(d.size(), 4);
+    EXPECT_EQ(m, std::vector<double>({6., 7., 8., 9.}));
+    expected = std::vector<double>({26.6667, 26.6667, 26.6667, 26.6667});
+    for (size_t i = 0; i < v1.size(); i++)
+        EXPECT_NEAR(v1[i], expected[i], 0.0001);
+    EXPECT_EQ(v0, std::vector<double>({20., 20., 20., 20.}));
+    expected = std::vector<double>({4.47214, 4.47214, 4.47214, 4.47214});
+    for (size_t i = 0; i < d.size(); i++)
+        EXPECT_NEAR(d[i], expected[i], 0.0001);
+}
+
+TEST(NPArray, mean_var_stddev_all) {
+    // clang-format off
+    /*
+        $ python3
+        >>> import numpy as np
+        >>> a = np.array(
+                [[0,   1,  2,  3],
+                 [4,   5,  6,  7],
+                 [8,   9, 10, 11]])
+        >>> np.mean(a, axis=1)
+        array([1.5, 5.5, 9.5])
+        >>> np.mean(a, axis=0)
+        array([4., 5., 6., 7.])
+        >>> np.var(a, axis=1, ddof=1)
+        array([1.66666667, 1.66666667, 1.66666667])
+        >>> np.var(a, axis=1, ddof=0)
+        array([1.25, 1.25, 1.25])
+        >>> np.var(a, axis=0, ddof=1)
+        array([16., 16., 16., 16.])
+        >>> np.var(a, axis=0, ddof=0)
+        array([10.66666667, 10.66666667, 10.66666667, 10.66666667])
+        >>> np.std(a, axis=1)
+        array([1.11803399, 1.11803399, 1.11803399])
+        >>> np.std(a, axis=0)
+        array([3.26598632, 3.26598632, 3.26598632, 3.26598632])
+    */
+    // clang-format on    
+    const int64_t MI64_init[] = {
+        // clang-format off
+        0,  1,  2,  3,
+        4,  5,  6,  7,
+        8,  9, 10, 11
+        // clang-format on
+        };
+    NPArray<int64_t> a(MI64_init, 3, 4);
+
+    std::vector<double> m;  // Mean value
+    std::vector<double> v1; // Variance (with ddof=1)
+    std::vector<double> v0; // Variance
+    std::vector<double> d;  // Standard deviation
+    std::vector<double> expected;
+
+    // Test NPArray::mean.
+    m = a.mean(decltype(a)::ROW);
+    v1 = var(a, decltype(a)::ROW, m, 1);
+    v0 = var(a, decltype(a)::ROW, m);
+    d = stddev(a, decltype(a)::ROW, m);
+    EXPECT_EQ(m.size(), a.rows());
+    EXPECT_EQ(v1.size(), a.rows());
+    EXPECT_EQ(v0.size(), a.rows());
+    EXPECT_EQ(d.size(), a.rows());
+    EXPECT_EQ(m, std::vector<double>({1.5, 5.5, 9.5}));
+    expected = std::vector<double>({1.66667, 1.66667, 1.66667});
+    for (size_t i = 0; i < v1.size(); i++)
+        EXPECT_NEAR(v1[i], expected[i], 0.0001);
+    EXPECT_EQ(v0, std::vector<double>({1.25, 1.25, 1.25}));
+    expected = std::vector<double>({1.11803, 1.11803, 1.11803});
+    for (size_t i = 0; i < d.size(); i++)
+        EXPECT_NEAR(d[i], expected[i], 0.0001);
+
+    m = a.mean(decltype(a)::COLUMN);
+    v1 = var(a, decltype(a)::COLUMN, m, 1);
+    v0 = var(a, decltype(a)::COLUMN, m);
+    d = stddev(a, decltype(a)::COLUMN, m);
+    EXPECT_EQ(m.size(), a.cols());
+    EXPECT_EQ(v1.size(), a.cols());
+    EXPECT_EQ(v0.size(), a.cols());
+    EXPECT_EQ(d.size(), a.cols());
+    EXPECT_EQ(m, std::vector<double>({4., 5., 6., 7.}));
+    EXPECT_EQ(v1, std::vector<double>({16., 16., 16., 16.}));
+    expected = std::vector<double>({10.6667, 10.6667, 10.6667, 10.6667});
+    for (size_t i = 0; i < v0.size(); i++)
+        EXPECT_NEAR(v0[i], expected[i], 0.0001);
+    expected = std::vector<double>({3.26598, 3.26598, 3.26598, 3.26598});
+    for (size_t i = 0; i < d.size(); i++)
+        EXPECT_NEAR(d[i], expected[i], 0.0001);
+
+    // Test mean(NPArray).
+    m = mean(a, decltype(a)::ROW);
+    v1 = var(a, decltype(a)::ROW, m, 1);
+    v0 = var(a, decltype(a)::ROW, m);
+    d = stddev(a, decltype(a)::ROW, m);
+    EXPECT_EQ(m.size(), a.rows());
+    EXPECT_EQ(v1.size(), a.rows());
+    EXPECT_EQ(v0.size(), a.rows());
+    EXPECT_EQ(d.size(), a.rows());
+    EXPECT_EQ(m, std::vector<double>({1.5, 5.5, 9.5}));
+    expected = std::vector<double>({1.66667, 1.66667, 1.66667});
+    for (size_t i = 0; i < v1.size(); i++)
+        EXPECT_NEAR(v1[i], expected[i], 0.0001);
+    EXPECT_EQ(v0, std::vector<double>({1.25, 1.25, 1.25}));
+    expected = std::vector<double>({1.11803, 1.11803, 1.11803});
+    for (size_t i = 0; i < d.size(); i++)
+        EXPECT_NEAR(d[i], expected[i], 0.0001);
+
+    m = mean(a, decltype(a)::COLUMN);
+    v1 = var(a, decltype(a)::COLUMN, m, 1);
+    v0 = var(a, decltype(a)::COLUMN, m);
+    d = stddev(a, decltype(a)::COLUMN, m);
+    EXPECT_EQ(m.size(), a.cols());
+    EXPECT_EQ(v1.size(), a.cols());
+    EXPECT_EQ(v0.size(), a.cols());
+    EXPECT_EQ(d.size(), a.cols());
+    EXPECT_EQ(m, std::vector<double>({4., 5., 6., 7.}));
+    EXPECT_EQ(m, std::vector<double>({4., 5., 6., 7.}));
+    EXPECT_EQ(v1, std::vector<double>({16., 16., 16., 16.}));
+    expected = std::vector<double>({10.6667, 10.6667, 10.6667, 10.6667});
+    for (size_t i = 0; i < v0.size(); i++)
+        EXPECT_NEAR(v0[i], expected[i], 0.0001);
+    expected = std::vector<double>({3.26598, 3.26598, 3.26598, 3.26598});
+    for (size_t i = 0; i < d.size(); i++)
+        EXPECT_NEAR(d[i], expected[i], 0.0001);
+}
+
 int main(int argc, char **argv) {
     InitGoogleTest(&argc, argv);
     return RUN_ALL_TESTS();
