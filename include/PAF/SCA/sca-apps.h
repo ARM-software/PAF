@@ -23,6 +23,7 @@
 #include "libtarmac/argparse.hh"
 
 #include <fstream>
+#include <limits>
 #include <memory>
 #include <string>
 #include <vector>
@@ -105,8 +106,8 @@ class SCAApp : public Argparse {
     OutputBase::OutputType output_format = OutputBase::OUTPUT_TERSE;
 
     size_t start_sample = 0;
-    size_t nb_samples = 100;
-    size_t nb_traces = -1UL;
+    size_t nb_samples = std::numeric_limits<size_t>::max();
+    size_t nb_traces = std::numeric_limits<size_t>::max();
     std::unique_ptr<OutputBase> out;
 };
 

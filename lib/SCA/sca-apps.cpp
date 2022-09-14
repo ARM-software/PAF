@@ -62,9 +62,11 @@ SCAApp::SCAApp(const char *appname, int argc, char *argv[])
     // process.
     optval({"-f", "--from"}, "S", "start computation at sample S (default: 0)",
            [this](const string &s) { start_sample = stoull(s, nullptr, 0); });
-    optval({"-n", "--numsamples"}, "N", "restrict computation to N samples",
+    optval({"-n", "--numsamples"}, "N",
+           "restrict computation to N samples (default: all)",
            [this](const string &s) { nb_samples = stoull(s, nullptr, 0); });
-    optval({"-d", "--numtraces"}, "T", "only process the first T traces",
+    optval({"-d", "--numtraces"}, "T",
+           "only process the first T traces (default: all)",
            [this](const string &s) { nb_traces = stoull(s, nullptr, 0); });
 }
 
