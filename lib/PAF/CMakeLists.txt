@@ -20,11 +20,13 @@ set(LIBPAF_PUBLIC_HEADERS
       ${CMAKE_SOURCE_DIR}/include/PAF/ArchInfo.h
       ${CMAKE_SOURCE_DIR}/include/PAF/Intervals.h
       ${CMAKE_SOURCE_DIR}/include/PAF/PAF.h
+      ${CMAKE_SOURCE_DIR}/include/PAF/utils/Misc.h
       ${CMAKE_SOURCE_DIR}/include/PAF/utils/ProgressMonitor.h
       ${CMAKE_SOURCE_DIR}/include/PAF/utils/StopWatch.h)
 
 set(LIBPAF_SOURCES
   ArchInfo.cpp
+  Misc.cpp
   PAF.cpp)
 
 add_paf_library(paf

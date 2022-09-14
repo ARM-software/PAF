@@ -23,6 +23,7 @@
 #include "PAF/SCA/Noise.h"
 #include "PAF/SCA/SCA.h"
 #include "PAF/SCA/Power.h"
+#include "PAF/utils/Misc.h"
 
 #include "libtarmac/argparse.hh"
 #include "libtarmac/reporter.hh"
@@ -33,9 +34,11 @@
 #include <memory>
 #include <random>
 #include <string>
+#include <utility>
 #include <vector>
 
 using std::cout;
+using std::pair;
 using std::string;
 using std::unique_ptr;
 using std::vector;
@@ -47,9 +50,37 @@ using PAF::SCA::PowerAnalysisConfig;
 using PAF::SCA::PowerAnalyzer;
 using PAF::SCA::PowerDumper;
 using PAF::SCA::PowerTrace;
+using PAF::split;
 using PAF::SCA::YAMLTimingInfo;
 
 unique_ptr<Reporter> reporter = make_cli_reporter();
+
+class AnalysisRangeSpecifier {
+  public:
+    enum Kind { NotSet, Function, FunctionMarkers };
+
+    AnalysisRangeSpecifier() : kind(NotSet), function(), markers() {}
+
+    void setFunction(const string &f) {
+        kind = Function;
+        function = f;
+    }
+
+    void setMarkers(const string &startf, const string &endf) {
+        kind = FunctionMarkers;
+        markers = make_pair(startf, endf);
+    }
+
+    Kind getKind() const { return kind; }
+
+    const string &getFunctionName() const { return function; }
+    const pair<string,string> &getMarkers() const { return markers; }
+
+  private:
+    Kind kind;
+    string function;
+    pair<string, string> markers;
+};
 
 int main(int argc, char **argv) {
     string OutputFilename;
@@ -59,7 +90,7 @@ int main(int argc, char **argv) {
     double NoiseLevel = 1.0;
     NoiseSource::Type noiseTy = NoiseSource::Type::NORMAL;
     vector<PowerAnalysisConfig::Selection> PASelect;
-    string FunctionName;
+    AnalysisRangeSpecifier ARS;
     enum class PowerModel {
         HAMMING_WEIGHT,
         HAMMING_DISTANCE
@@ -121,8 +152,30 @@ int main(int argc, char **argv) {
         [&]() {
             PASelect.push_back(PowerAnalysisConfig::WITH_INSTRUCTIONS_OUTPUTS);
         });
-    ap.positional("FUNCTION", "name or hex address of function to analyze",
-                  [&](const string &s) { FunctionName = s; });
+    ap.optval({"--function"}, "FUNCTION",
+              "analyze code running within FUNCTION",
+              [&](const string &s) { ARS.setFunction(s); });
+    ap.optval(
+        {"--between-functions"}, "FUNCTION_START,FUNCTION_END",
+        "analyze code between FUNCTION_START return and FUNCTION_END call",
+        [&](const string &s) {
+            vector<string> markers = split(',', s);
+            switch (markers.size()) {
+            case 0:
+                reporter->errx(EXIT_FAILURE,
+                               "Missing FUNCTION_START,FUNCTION_END markers");
+            case 1:
+                reporter->errx(EXIT_FAILURE, "Missing FUNCTION_END marker");
+            case 2:
+                ARS.setMarkers(markers[0], markers[1]);
+                break;
+            default:
+                reporter->errx(
+                    EXIT_FAILURE,
+                    "Too many function markers specified (need only 2): %s",
+                    s.c_str());
+            }
+        });
 
     TarmacUtilityMT tu(ap);
 
@@ -165,20 +218,36 @@ int main(int argc, char **argv) {
                  << "'\n";
         PowerAnalyzer PA(trace, tu.image_filename);
 
-        vector<PAF::ExecutionRange> Functions = PA.getInstances(FunctionName);
+        vector<PAF::ExecutionRange> ERS;
+        switch (ARS.getKind()) {
+        case AnalysisRangeSpecifier::Function:
+            ERS = PA.getInstances(ARS.getFunctionName());
+            break;
+        case AnalysisRangeSpecifier::FunctionMarkers: {
+            auto markers = ARS.getMarkers();
+            ERS = PA.getBetweenFunctionMarkers(markers.first, markers.second);
+            break;
+        }
+        case AnalysisRangeSpecifier::NotSet:
+            reporter->errx(EXIT_FAILURE,
+                           "Analysis range not specified, use one of "
+                           "--function or --between-functions");
+        }
 
         // Some sanity checks.
-        if (Functions.size() == 0)
+        if (ERS.size() == 0)
             reporter->errx(EXIT_FAILURE,
-                           "Function '%s' was not found in the trace",
-                           FunctionName.c_str());
+                           "Analysis range not found in the trace file");
 
-        for (const PAF::ExecutionRange &ER : Functions) {
-            if (tu.is_verbose())
-                cout << " - Building power trace from " << FunctionName
-                     << " instance at time : " << ER.Start.time << " to "
-                     << ER.End.time << '\n';
-            PowerTrace PTrace = PA.getPowerTrace(*Dumper, Timing, PAConfig, ER);
+        for (const PAF::ExecutionRange &er : ERS) {
+            if (tu.is_verbose()) {
+                cout << " - Building power trace from " << er.Start.time << " to "
+                     << er.End.time;
+                if (ARS.getKind() == AnalysisRangeSpecifier::Function)
+                    cout << " (" << ARS.getFunctionName() << ')';
+                cout << '\n';
+            }
+            PowerTrace PTrace = PA.getPowerTrace(*Dumper, Timing, PAConfig, er);
             PTrace.analyze();
             Dumper->next_trace();
             Timing.next_trace();
