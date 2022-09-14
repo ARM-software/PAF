@@ -95,7 +95,7 @@ double ttest_wrapper(const NPArray<double> &traces,
                      const NPArray<uint32_t> &inputs, size_t index,
                      size_t begin, size_t end, size_t *max_t_index,
                      bool verbose = false) {
-    size_t num_traces = traces.rows();
+    const size_t num_traces = traces.rows();
     unique_ptr<Classification[]> classifier(new Classification[num_traces]);
     for (size_t tnum = 0; tnum < num_traces; tnum++) {
         uint32_t value = inputs(tnum, index);
@@ -111,7 +111,7 @@ double ttest_wrapper(const NPArray<double> &traces,
 
     vector<double> tvalues = t_test(begin, end, traces, classifier.get());
 
-    double max_t = find_max(tvalues, max_t_index);
+    const double max_t = find_max(tvalues, max_t_index);
 
     if (verbose) {
         for (size_t sample = 0; sample < end - begin; sample++)
@@ -123,7 +123,7 @@ double ttest_wrapper(const NPArray<double> &traces,
 }
 
 // A wrapper for the boilerplate required for a non-specific T-Test.
-double ttest_wrapper(const NPArray<double> &group0,
+double nsttest_wrapper(const NPArray<double> &group0,
                      const NPArray<double> &group1, size_t begin, size_t end,
                      size_t *max_t_index, bool verbose = false) {
     vector<double> tvalues = t_test(begin, end, group0, group1);
@@ -220,11 +220,11 @@ TEST(TTest, non_specific) {
     size_t max_t_index;
     double max_t_value;
 
-    max_t_value = ttest_wrapper(group0, group1, 0, NUM_SAMPLES, &max_t_index);
+    max_t_value = nsttest_wrapper(group0, group1, 0, NUM_SAMPLES, &max_t_index);
     EXPECT_NEAR(max_t_value, -12.5702, 0.0001);
     EXPECT_EQ(max_t_index, 6);
 
-    max_t_value = ttest_wrapper(group0, group1, 7, 20, &max_t_index);
+    max_t_value = nsttest_wrapper(group0, group1, 7, 20, &max_t_index);
     EXPECT_NEAR(max_t_value, -11.8445, 0.0001);
     EXPECT_EQ(max_t_index, 8);
 }
