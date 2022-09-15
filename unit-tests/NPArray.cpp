@@ -25,8 +25,10 @@
 #include "gtest/gtest.h"
 
 #include <cstdio>
+#include <initializer_list>
 #include <memory>
 #include <string>
+#include <vector>
 #include <unistd.h>
 
 using namespace PAF::SCA;
@@ -787,442 +789,448 @@ TEST(NPArray, sum_all) {
     EXPECT_EQ(s[3], 10);
 }
 
-TEST(NPArray, mean_var_stddev_one) {
-        // clang-format off
-    /*
-        $ python3
-        >>> import numpy as np
-        >>> a = np.array(
-                [[0, 1],
-                 [2, 3],
-                 [4, 5]])
-        >>> np.mean(a, axis=1)
-        array([0.5, 2.5, 4.5])
-        >>> np.mean(a, axis=0)
-        array([2., 3.])
-        >>> np.var(a, axis=1, ddof=1)
-        array([0.5, 0.5, 0.5])
-        >>> np.var(a, axis=1, ddof=0)
-        array([0.25, 0.25, 0.25])
-        >>> np.var(a, axis=0, ddof=1)
-        array([4., 4.])
-        >>> np.var(a, axis=0, ddof=0)
-        array([2.66666667, 2.66666667])
-        >>> np.std(a, axis=1)
-        array([0.5, 0.5, 0.5])
-        >>> np.std(a, axis=0)
-        array([1.63299316, 1.63299316])
-    */
-    // clang-format on
-    const int64_t MI64_init[] = {
-        // clang-format off
-        0, 1,
-        2, 3,
-        4, 5
-        // clang-format on
-    };
-    NPArray<int64_t> a(MI64_init, 3, 2);
+template <typename Ty, size_t rows, size_t cols> class MeanChecker {
+    static constexpr Ty EPSILON = 0.000001;
 
-    // Test NPArray::mean.
-    EXPECT_EQ(a.mean(decltype(a)::ROW, 0), 0.5);
-    EXPECT_EQ(a.var(decltype(a)::ROW, 0, 0.5, 1), 0.5);
-    EXPECT_EQ(a.var(decltype(a)::ROW, 0, 0.5), 0.25);
-    EXPECT_EQ(a.stddev(decltype(a)::ROW, 0, 0.5), 0.5);
+  public:
+    MeanChecker(const NPArray<Ty> &a, std::initializer_list<Ty> means_by_row,
+                std::initializer_list<Ty> means_by_col,
+                std::initializer_list<Ty> var0_by_row,
+                std::initializer_list<Ty> var1_by_row,
+                std::initializer_list<Ty> var0_by_col,
+                std::initializer_list<Ty> var1_by_col,
+                std::initializer_list<Ty> stddev_by_row,
+                std::initializer_list<Ty> stddev_by_col)
+        : a(a), means_by_row{means_by_row}, means_by_col(means_by_col),
+          var0_by_row(var0_by_row), var1_by_row(var1_by_row),
+          var0_by_col(var0_by_col), var1_by_col(var1_by_col),
+          stddev_by_row(stddev_by_row), stddev_by_col(stddev_by_col) {
+        // Some sanity checks.
+        assert(means_by_row.size() == rows &&
+               "expected row means size mismatch");
+        assert(means_by_col.size() == cols &&
+               "expected cols means size mismatch");
+        assert(var0_by_row.size() == rows && "expected row var0 size mismatch");
+        assert(var1_by_row.size() == rows && "expected row var1 size mismatch");
+        assert(var0_by_col.size() == cols && "expected col var0 size mismatch");
+        assert(var1_by_col.size() == cols && "expected col var1 size mismatch");
+        assert(stddev_by_row.size() == rows &&
+               "expected row stddev size mismatch");
+        assert(stddev_by_col.size() == cols &&
+               "expected col stddev size mismatch");
+        assert(rows == a.rows() && "Matrix & MeanChecker row number mismatch");
+        assert(cols == a.cols() && "Matrix & MeanChecker col number mismatch");
+    }
 
-    EXPECT_EQ(a.mean(decltype(a)::ROW, 1), 2.5);
-    EXPECT_EQ(a.var(decltype(a)::ROW, 1, 2.5, 1), 0.5);
-    EXPECT_EQ(a.var(decltype(a)::ROW, 1, 2.5), 0.25);
-    EXPECT_EQ(a.stddev(decltype(a)::ROW, 1, 2.5), 0.5);
+    enum Metric { MEAN, VAR1, VAR0, STDDEV };
+    Ty expected(Metric M, typename NPArray<Ty>::Axis axis, size_t i) const {
+        switch (axis) {
+        case NPArray<Ty>::ROW:
+            assert(i < rows && "exp mean row access out of bounds");
+            switch (M) {
+            case Metric::MEAN:
+                return means_by_row[i];
+            case Metric::VAR0:
+                return var0_by_row[i];
+            case Metric::VAR1:
+                return var1_by_row[i];
+            case Metric::STDDEV:
+                return stddev_by_row[i];
+            }
+        case NPArray<Ty>::COLUMN:
+            assert(i < cols && "exp mean col access out of bounds");
+            switch (M) {
+            case Metric::MEAN:
+                return means_by_col[i];
+            case Metric::VAR0:
+                return var0_by_col[i];
+            case Metric::VAR1:
+                return var1_by_col[i];
+            case Metric::STDDEV:
+                return stddev_by_col[i];
+            }
+        }
+    }
 
-    EXPECT_EQ(a.mean(decltype(a)::ROW, 2), 4.5);
-    EXPECT_EQ(a.var(decltype(a)::ROW, 2, 4.5, 1), 0.5);
-    EXPECT_EQ(a.var(decltype(a)::ROW, 2, 4.5), 0.25);
-    EXPECT_EQ(a.stddev(decltype(a)::ROW, 2, 4.5), 0.5);
+    // Check an individual row / column.
+    void check(typename NPArray<Ty>::Axis axis, size_t i) const {
+        Ty m, m1;  // Mean
+        Ty v1;     // Variance (ddof=1)
+        Ty v0;     // Variance (ddof=0)
+        Ty stddev; // Standard deviation
 
-    EXPECT_EQ(a.mean(decltype(a)::COLUMN, 0), 2.);
-    EXPECT_EQ(a.var(decltype(a)::COLUMN, 0, 2.0, 1), 4.);
-    EXPECT_NEAR(a.var(decltype(a)::COLUMN, 0, 2.0), 2.66667, 0.0001);
-    EXPECT_NEAR(a.stddev(decltype(a)::COLUMN, 0, 2.0), 1.63299, 0.0001);
+        /* Test #0 */
+        m = a.mean(axis, i);
+        EXPECT_NEAR(m, expected(MEAN, axis, i), EPSILON);
 
-    EXPECT_EQ(a.mean(decltype(a)::COLUMN, 1), 3.);
-    EXPECT_EQ(a.var(decltype(a)::COLUMN, 1, 3.0, 1), 4.);
-    EXPECT_NEAR(a.var(decltype(a)::COLUMN, 1, 3.0), 2.66667, 0.0001);
-    EXPECT_NEAR(a.stddev(decltype(a)::COLUMN, 1, 3.0), 1.63299, 0.0001);
+        m1 = mean(a, axis, i);
+        EXPECT_NEAR(m, expected(MEAN, axis, i), EPSILON);
 
-    // Test mean(NPArray).
-    EXPECT_EQ(mean(a, decltype(a)::ROW, 0), 0.5);
-    EXPECT_EQ(var(a, decltype(a)::ROW, 0, 0.5, 1), 0.5);
-    EXPECT_EQ(var(a, decltype(a)::ROW, 0, 0.5), 0.25);
-    EXPECT_EQ(stddev(a, decltype(a)::ROW, 0, 0.5), 0.5);
+        /* Test #1 */
+        m1 = a.mean(axis, i, &v1, &stddev, 1);
+        EXPECT_EQ(m1, m);
+        EXPECT_NEAR(v1, expected(VAR1, axis, i), EPSILON);
+        EXPECT_NEAR(stddev, expected(STDDEV, axis, i), EPSILON);
 
-    EXPECT_EQ(mean(a, decltype(a)::ROW, 1), 2.5);
-    EXPECT_EQ(var(a, decltype(a)::ROW, 1, 2.5, 1), 0.5);
-    EXPECT_EQ(var(a, decltype(a)::ROW, 1, 2.5), 0.25);
-    EXPECT_EQ(stddev(a, decltype(a)::ROW, 1, 2.5), 0.5);
+        m1 = mean(a, axis, i, &v1, &stddev, 1);
+        EXPECT_EQ(m1, m);
+        EXPECT_NEAR(v1, expected(VAR1, axis, i), EPSILON);
+        EXPECT_NEAR(stddev, expected(STDDEV, axis, i), EPSILON);
 
-    EXPECT_EQ(mean(a, decltype(a)::ROW, 2), 4.5);
-    EXPECT_EQ(var(a, decltype(a)::ROW, 2, 4.5, 1), 0.5);
-    EXPECT_EQ(var(a, decltype(a)::ROW, 2, 4.5), 0.25);
-    EXPECT_EQ(stddev(a, decltype(a)::ROW, 2, 4.5), 0.5);
+        /* Test #2 */
+        m1 = a.mean(axis, i, &v1, nullptr, 1);
+        EXPECT_EQ(m1, m);
+        EXPECT_NEAR(v1, expected(VAR1, axis, i), EPSILON);
 
-    EXPECT_EQ(mean(a, decltype(a)::COLUMN, 0), 2.);
-    EXPECT_EQ(var(a, decltype(a)::COLUMN, 0, 2.0, 1), 4.);
-    EXPECT_NEAR(var(a, decltype(a)::COLUMN, 0, 2.0), 2.66667, 0.0001);
-    EXPECT_NEAR(stddev(a, decltype(a)::COLUMN, 0, 2.0), 1.63299, 0.0001);
+        m1 = mean(a, axis, i, &v1, nullptr, 1);
+        EXPECT_EQ(m1, m);
+        EXPECT_NEAR(v1, expected(VAR1, axis, i), EPSILON);
 
-    EXPECT_EQ(mean(a, decltype(a)::COLUMN, 1), 3.);
-    EXPECT_EQ(var(a, decltype(a)::COLUMN, 1, 3.0, 1), 4.);
-    EXPECT_NEAR(var(a, decltype(a)::COLUMN, 1, 3.0), 2.66667, 0.0001);
-    EXPECT_NEAR(stddev(a, decltype(a)::COLUMN, 1, 3.0), 1.63299, 1.66667);
-}
+        /* Test #3 */
+        m1 = a.mean(axis, i, &v0, &stddev, 0);
+        EXPECT_EQ(m1, m);
+        EXPECT_NEAR(v0, expected(VAR0, axis, i), EPSILON);
+        EXPECT_NEAR(stddev, expected(STDDEV, axis, i), EPSILON);
 
-TEST(NPArray, mean_var_stddev_range) {
+        m1 = mean(a, axis, i, &v0, &stddev, 0);
+        EXPECT_EQ(m1, m);
+        EXPECT_NEAR(v0, expected(VAR0, axis, i), EPSILON);
+        EXPECT_NEAR(stddev, expected(STDDEV, axis, i), EPSILON);
+
+        /* Test #4 */
+        m1 = a.mean(axis, i, &v0, nullptr, 0);
+        EXPECT_EQ(m1, m);
+        EXPECT_NEAR(v0, expected(VAR0, axis, i), EPSILON);
+
+        m1 = mean(a, axis, i, &v0, nullptr, 0);
+        EXPECT_EQ(m1, m);
+        EXPECT_NEAR(v0, expected(VAR0, axis, i), EPSILON);
+
+        m1 = a.mean(axis, i, &v0, nullptr);
+        EXPECT_EQ(m1, m);
+        EXPECT_NEAR(v0, expected(VAR0, axis, i), EPSILON);
+
+        m1 = mean(a, axis, i, &v0, nullptr);
+        EXPECT_EQ(m1, m);
+        EXPECT_NEAR(v0, expected(VAR0, axis, i), EPSILON);
+
+        m1 = a.mean(axis, i, &v0);
+        EXPECT_EQ(m1, m);
+        EXPECT_NEAR(v0, expected(VAR0, axis, i), EPSILON);
+
+        m1 = mean(a, axis, i, &v0);
+        EXPECT_EQ(m1, m);
+        EXPECT_NEAR(v0, expected(VAR0, axis, i), EPSILON);
+
+        /* Test #5 */
+        m1 = a.mean(axis, i, nullptr, nullptr, 0);
+        EXPECT_EQ(m1, m);
+
+        m1 = mean(a, axis, i, nullptr, nullptr, 0);
+        EXPECT_EQ(m1, m);
+
+        /* Test #6 */
+        m1 = a.mean(axis, i, nullptr, nullptr, 1);
+        EXPECT_EQ(m1, m);
+        m1 = mean(a, axis, i, nullptr, nullptr, 1);
+        EXPECT_EQ(m1, m);
+    }
+
+    // Check a range of rows / columns.
+    void check(typename NPArray<Ty>::Axis axis, size_t begin,
+               size_t end) const {
+        assert(begin < end && "improper range");
+        switch (axis) {
+        case NPArray<Ty>::ROW:
+            assert(begin < rows && "Out of range row begin index");
+            assert(end <= rows && "Out of range row end index");
+            break;
+        case NPArray<Ty>::COLUMN:
+            assert(begin < cols && "Out of range col begin index");
+            assert(end <= cols && "Out of range col end index");
+            break;
+        }
+
+        std::vector<Ty> m, m1;  // Mean value
+        std::vector<Ty> v1;     // Variance (with ddof=1)
+        std::vector<Ty> v0;     // Variance (with ddof=0)
+        std::vector<Ty> stddev; // Standard deviation
+        const size_t range = end - begin;
+
+        /* Test #0 */
+        m = a.mean(axis, begin, end);
+        EXPECT_EQ(m.size(), range);
+        for (size_t i = 0; i < range; i++)
+            EXPECT_NEAR(m[i], expected(MEAN, axis, begin + i), EPSILON);
+
+        m1 = mean(a, axis, begin, end);
+        EXPECT_EQ(m1, m);
+
+        /* Test #1 */
+        m1 = a.mean(axis, begin, end, &v1, &stddev, 1);
+        EXPECT_EQ(m1, m);
+        for (size_t i = 0; i < range; i++)
+            EXPECT_NEAR(v1[i], expected(VAR1, axis, begin + i), EPSILON);
+        for (size_t i = 0; i < range; i++)
+            EXPECT_NEAR(stddev[i], expected(STDDEV, axis, begin + i), EPSILON);
+
+        m1 = mean(a, axis, begin, end, &v1, &stddev, 1);
+        EXPECT_EQ(m1, m);
+        for (size_t i = 0; i < range; i++)
+            EXPECT_NEAR(v1[i], expected(VAR1, axis, begin + i), EPSILON);
+        for (size_t i = 0; i < range; i++)
+            EXPECT_NEAR(stddev[i], expected(STDDEV, axis, begin + i), EPSILON);
+
+        /* Test #2 */
+        m1 = a.mean(axis, begin, end, &v1, nullptr, 1);
+        EXPECT_EQ(m1, m);
+        for (size_t i = 0; i < range; i++)
+            EXPECT_NEAR(v1[i], expected(VAR1, axis, begin + i), EPSILON);
+
+        m1 = mean(a, axis, begin, end, &v1, nullptr, 1);
+        EXPECT_EQ(m1, m);
+        for (size_t i = 0; i < range; i++)
+            EXPECT_NEAR(v1[i], expected(VAR1, axis, begin + i), EPSILON);
+
+        /* Test #3 */
+        m1 = a.mean(axis, begin, end, &v0, &stddev, 0);
+        EXPECT_EQ(m1, m);
+        for (size_t i = 0; i < range; i++)
+            EXPECT_NEAR(v0[i], expected(VAR0, axis, begin + i), EPSILON);
+        for (size_t i = 0; i < range; i++)
+            EXPECT_NEAR(stddev[i], expected(STDDEV, axis, begin + i), EPSILON);
+
+        m1 = mean(a, axis, begin, end, &v0, &stddev, 0);
+        EXPECT_EQ(m1, m);
+        for (size_t i = 0; i < range; i++)
+            EXPECT_NEAR(v0[i], expected(VAR0, axis, begin + i), EPSILON);
+        for (size_t i = 0; i < range; i++)
+            EXPECT_NEAR(stddev[i], expected(STDDEV, axis, begin + i), EPSILON);
+
+        /* Test #4 */
+        m1 = a.mean(axis, begin, end, &v0, nullptr, 0);
+        EXPECT_EQ(m1, m);
+        for (size_t i = 0; i < range; i++)
+            EXPECT_NEAR(v0[i], expected(VAR0, axis, begin + i), EPSILON);
+
+        m1 = mean(a, axis, begin, end, &v0, nullptr, 0);
+        EXPECT_EQ(m1, m);
+        for (size_t i = 0; i < range; i++)
+            EXPECT_NEAR(v0[i], expected(VAR0, axis, begin + i), EPSILON);
+
+        m1 = a.mean(axis, begin, end, &v0, nullptr);
+        EXPECT_EQ(m1, m);
+        for (size_t i = 0; i < range; i++)
+            EXPECT_NEAR(v0[i], expected(VAR0, axis, begin + i), EPSILON);
+
+        m1 = mean(a, axis, begin, end, &v0, nullptr);
+        EXPECT_EQ(m1, m);
+        for (size_t i = 0; i < range; i++)
+            EXPECT_NEAR(v0[i], expected(VAR0, axis, begin + i), EPSILON);
+
+        m1 = a.mean(axis, begin, end, &v0);
+        EXPECT_EQ(m1, m);
+        for (size_t i = 0; i < range; i++)
+            EXPECT_NEAR(v0[i], expected(VAR0, axis, begin + i), EPSILON);
+
+        m1 = mean(a, axis, begin, end, &v0);
+        EXPECT_EQ(m1, m);
+        for (size_t i = 0; i < range; i++)
+            EXPECT_NEAR(v0[i], expected(VAR0, axis, begin + i), EPSILON);
+
+        /* Test #5 */
+        m1 = a.mean(axis, begin, end, nullptr, nullptr, 0);
+        EXPECT_EQ(m1, m);
+
+        m1 = mean(a, axis, begin, end, nullptr, nullptr, 0);
+        EXPECT_EQ(m1, m);
+
+        /* Test #6 */
+        m1 = a.mean(axis, begin, end, nullptr, nullptr, 1);
+        EXPECT_EQ(m1, m);
+        m1 = mean(a, axis, begin, end, nullptr, nullptr, 1);
+        EXPECT_EQ(m1, m);
+    }
+
+    // Check a all rows / columns.
+    void check(typename NPArray<Ty>::Axis axis) const {
+
+        std::vector<Ty> m, m1;  // Mean value
+        std::vector<Ty> v1;     // Variance (with ddof=1)
+        std::vector<Ty> v0;     // Variance (with ddof=0)
+        std::vector<Ty> stddev; // Standard deviation
+        size_t range;
+        switch (axis) {
+        case NPArray<Ty>::ROW:
+            range = rows;
+            break;
+        case NPArray<Ty>::COLUMN:
+            range = cols;
+            break;
+        }
+
+        /* Test #0 */
+        m = a.mean(axis);
+        EXPECT_EQ(m.size(), range);
+        for (size_t i = 0; i < range; i++)
+            EXPECT_NEAR(m[i], expected(MEAN, axis, i), EPSILON);
+
+        m1 = mean(a, axis);
+        EXPECT_EQ(m1, m);
+
+        /* Test #1 */
+        m1 = a.mean(axis, &v1, &stddev, 1);
+        EXPECT_EQ(m1, m);
+        for (size_t i = 0; i < range; i++)
+            EXPECT_NEAR(v1[i], expected(VAR1, axis, i), EPSILON);
+        for (size_t i = 0; i < range; i++)
+            EXPECT_NEAR(stddev[i], expected(STDDEV, axis, i), EPSILON);
+
+        m1 = mean(a, axis, &v1, &stddev, 1);
+        EXPECT_EQ(m1, m);
+        for (size_t i = 0; i < range; i++)
+            EXPECT_NEAR(v1[i], expected(VAR1, axis, i), EPSILON);
+        for (size_t i = 0; i < range; i++)
+            EXPECT_NEAR(stddev[i], expected(STDDEV, axis, i), EPSILON);
+
+        /* Test #2 */
+        m1 = a.mean(axis, &v1, nullptr, 1);
+        EXPECT_EQ(m1, m);
+        for (size_t i = 0; i < range; i++)
+            EXPECT_NEAR(v1[i], expected(VAR1, axis, i), EPSILON);
+
+        m1 = mean(a, axis, &v1, nullptr, 1);
+        EXPECT_EQ(m1, m);
+        for (size_t i = 0; i < range; i++)
+            EXPECT_NEAR(v1[i], expected(VAR1, axis, i), EPSILON);
+
+        /* Test #3 */
+        m1 = a.mean(axis, &v0, &stddev, 0);
+        EXPECT_EQ(m1, m);
+        for (size_t i = 0; i < range; i++)
+            EXPECT_NEAR(v0[i], expected(VAR0, axis, i), EPSILON);
+        for (size_t i = 0; i < range; i++)
+            EXPECT_NEAR(stddev[i], expected(STDDEV, axis, i), EPSILON);
+
+        m1 = mean(a, axis, &v0, &stddev, 0);
+        EXPECT_EQ(m1, m);
+        for (size_t i = 0; i < range; i++)
+            EXPECT_NEAR(v0[i], expected(VAR0, axis, i), EPSILON);
+        for (size_t i = 0; i < range; i++)
+            EXPECT_NEAR(stddev[i], expected(STDDEV, axis, i), EPSILON);
+
+        /* Test #4 */
+        m1 = a.mean(axis, &v0, nullptr, 0);
+        EXPECT_EQ(m1, m);
+        for (size_t i = 0; i < range; i++)
+            EXPECT_NEAR(v0[i], expected(VAR0, axis, i), EPSILON);
+
+        m1 = mean(a, axis, &v0, nullptr, 0);
+        EXPECT_EQ(m1, m);
+        for (size_t i = 0; i < range; i++)
+            EXPECT_NEAR(v0[i], expected(VAR0, axis, i), EPSILON);
+
+        m1 = a.mean(axis, &v0, nullptr);
+        EXPECT_EQ(m1, m);
+        for (size_t i = 0; i < range; i++)
+            EXPECT_NEAR(v0[i], expected(VAR0, axis, i), EPSILON);
+
+        m1 = mean(a, axis, &v0, nullptr);
+        EXPECT_EQ(m1, m);
+        for (size_t i = 0; i < range; i++)
+            EXPECT_NEAR(v0[i], expected(VAR0, axis, i), EPSILON);
+
+        m1 = a.mean(axis, &v0);
+        EXPECT_EQ(m1, m);
+        for (size_t i = 0; i < range; i++)
+            EXPECT_NEAR(v0[i], expected(VAR0, axis, i), EPSILON);
+
+        m1 = mean(a, axis, &v0);
+        EXPECT_EQ(m1, m);
+        for (size_t i = 0; i < range; i++)
+            EXPECT_NEAR(v0[i], expected(VAR0, axis, i), EPSILON);
+
+        /* Test #5 */
+        m1 = a.mean(axis, nullptr, nullptr, 0);
+        EXPECT_EQ(m1, m);
+
+        m1 = mean(a, axis, nullptr, nullptr, 0);
+        EXPECT_EQ(m1, m);
+
+        /* Test #6 */
+        m1 = a.mean(axis, nullptr, nullptr, 1);
+        EXPECT_EQ(m1, m);
+        m1 = mean(a, axis, nullptr, nullptr, 1);
+        EXPECT_EQ(m1, m);
+    }
+
+  private:
+    const NPArray<Ty> &a;
+    const std::vector<Ty> means_by_row;
+    const std::vector<Ty> means_by_col;
+    const std::vector<Ty> var0_by_row;
+    const std::vector<Ty> var1_by_row;
+    const std::vector<Ty> var0_by_col;
+    const std::vector<Ty> var1_by_col;
+    const std::vector<Ty> stddev_by_row;
+    const std::vector<Ty> stddev_by_col;
+};
+
+TEST(NPArray, mean) {
     // clang-format off
-    /*
-        $ python3
-        >>> import numpy as np
-        >>> a = np.array(
-                [[0,   1,  2,  3],
-                 [4,   5,  6,  7],
-                 [8,   9, 10, 11],
-                 [12, 13, 14, 15]])
-        >>> np.mean(a, axis=1)
-        array([ 1.5,  5.5,  9.5, 13.5])
-        >>> np.mean(a, axis=0)
-        array([6., 7., 8., 9.])
-        >>> np.var(a, axis=1, ddof=1)
-        array([1.66666667, 1.66666667, 1.66666667, 1.66666667])
-        >>> np.var(a, axis=1, ddof=0)
-        array([1.25, 1.25, 1.25, 1.25])
-        >>> np.var(a, axis=0, ddof=1)
-        array([26.66666667, 26.66666667, 26.66666667, 26.66666667])
-        >>> np.var(a, axis=0, ddof=0)
-        array([20., 20., 20., 20.])
-        >>> np.std(a, axis=1)
-        array([1.11803399, 1.11803399, 1.11803399, 1.11803399])
-        >>> np.std(a, axis=0)
-        array([4.47213595, 4.47213595, 4.47213595, 4.47213595])
-    */
-    // clang-format on
-    const int64_t MI64_init[] = {
-        // clang-format off
-        0,   1,  2,  3,
-        4,   5,  6,  7,
-        8,   9, 10, 11,
-        12, 13, 14, 15
-        // clang-format on
+    // === Generated automatically with 'gen-nparray-test-data.py --rows 6 --columns 6 mean'
+    const double F64_init_a[] = {
+        0.07207337, 0.48998505, 0.53936748, 0.28735428, 0.70574009, 0.03679342,
+        0.62086320, 0.19533648, 0.44514767, 0.95822318, 0.23637722, 0.25017334,
+        0.97221114, 0.35217507, 0.45296642, 0.61774522, 0.34089969, 0.05057236,
+        0.68832331, 0.51729115, 0.23146692, 0.95894154, 0.94716912, 0.56038667,
+        0.86747434, 0.49592748, 0.05756208, 0.66618283, 0.02787998, 0.88659740,
+        0.63543491, 0.19328886, 0.38098240, 0.63729033, 0.25450362, 0.80673554,
     };
-    NPArray<int64_t> a(MI64_init, 4, 4);
+    const NPArray<double> a(F64_init_a, 6, 6);
+    const MeanChecker<double, 6, 6> MCa(
+        a,
+        /* means, by row: */
+        {0.35521895, 0.45102018, 0.46442832, 0.65059645, 0.50027069, 0.48470594},
+        /* means, by col: */
+        {0.64273005, 0.37400068, 0.35124883, 0.68762290, 0.41876162, 0.43187646},
+        /* var0, by row: */
+        {0.06018492, 0.07298687, 0.08010295, 0.06433884, 0.12179607, 0.04972998},
+        /* var1, by row: */
+        {0.07222190, 0.08758424, 0.09612354, 0.07720661, 0.14615529, 0.05967598},
+        /* var0, by col: */
+        {0.08122116, 0.01898412, 0.02600596, 0.05248820, 0.09677781, 0.11638413},
+        /* var1, by col: */
+        {0.09746539, 0.02278094, 0.03120716, 0.06298584, 0.11613337, 0.13966096},
+        /* stddev, by row: */
+        {0.24532615, 0.27016082, 0.28302465, 0.25365102, 0.34899294, 0.22300220},
+        /* stddev, by col: */
+        {0.28499326, 0.13778286, 0.16126365, 0.22910304, 0.31109131, 0.34115118}
+    );
+    // === End of automatically generated portion
+    // clang-format on
 
-    std::vector<double> m;  // Mean value
-    std::vector<double> v1; // Variance (with ddof=1)
-    std::vector<double> v0; // Variance
-    std::vector<double> d;  // Standard deviation
-    std::vector<double> expected;
+    // Check each row or column individually.
+    for (size_t i = 0; i < a.rows(); i++)
+        MCa.check(decltype(a)::ROW, i);
 
-    // Test NPArray::mean.
-    m = a.mean(decltype(a)::ROW, 1, 3);
-    v1 = a.var(decltype(a)::ROW, 1, 3, m, 1);
-    v0 = a.var(decltype(a)::ROW, 1, 3, m);
-    d = a.stddev(decltype(a)::ROW, 1, 3, m);
-    EXPECT_EQ(m.size(), 2);
-    EXPECT_EQ(v1.size(), 2);
-    EXPECT_EQ(v0.size(), 2);
-    EXPECT_EQ(d.size(), 2);
-    EXPECT_EQ(m, std::vector<double>({5.5, 9.5}));
-    expected = std::vector<double>({1.66667, 1.66667});
-    for (size_t i = 0; i < v1.size(); i++)
-        EXPECT_NEAR(v1[i], expected[i], 0.0001);
-    EXPECT_EQ(v0, std::vector<double>({1.25, 1.25}));
-    expected = std::vector<double>({1.11803, 1.11803});
-    for (size_t i = 0; i < d.size(); i++)
-        EXPECT_NEAR(d[i], expected[i], 0.0001);
+    for (size_t i = 0; i < a.cols(); i++)
+        MCa.check(decltype(a)::COLUMN, i);
+    
+    // Check row / column ranges.
+    MCa.check(decltype(a)::ROW, 0, 1);
+    MCa.check(decltype(a)::ROW, a.rows() - 2, a.rows());
+    MCa.check(decltype(a)::ROW, 1, 4);
+    MCa.check(decltype(a)::ROW, 0, a.rows());
 
-    m = a.mean(decltype(a)::ROW, 0, 1);
-    v1 = a.var(decltype(a)::ROW, 0, 1, m, 1);
-    v0 = a.var(decltype(a)::ROW, 0, 1, m);
-    d = a.stddev(decltype(a)::ROW, 0, 1, m);
-    EXPECT_EQ(m.size(), 1.);
-    EXPECT_EQ(v1.size(), 1);
-    EXPECT_EQ(v0.size(), 1);
-    EXPECT_EQ(d.size(), 1);
-    EXPECT_EQ(m[0], 1.5);
-    EXPECT_NEAR(v1[0], 1.66667, 0.0001);
-    EXPECT_EQ(v0[0], 1.25);
-    EXPECT_NEAR(d[0], 1.11803, 0.0001);
+    MCa.check(decltype(a)::COLUMN, 0, 2);
+    MCa.check(decltype(a)::COLUMN, a.cols() - 1, a.cols());
+    MCa.check(decltype(a)::COLUMN, 3, 4);
+    MCa.check(decltype(a)::COLUMN, 0, a.cols());
 
-    m = a.mean(decltype(a)::ROW, 0, 4);
-    v1 = a.var(decltype(a)::ROW, 0, 4, m, 1);
-    v0 = a.var(decltype(a)::ROW, 0, 4, m);
-    d = a.stddev(decltype(a)::ROW, 0, 4, m);
-    EXPECT_EQ(m.size(), 4);
-    EXPECT_EQ(v1.size(), 4);
-    EXPECT_EQ(v0.size(), 4);
-    EXPECT_EQ(d.size(), 4);
-    EXPECT_EQ(m, std::vector<double>({1.5, 5.5, 9.5, 13.5}));
-    expected = std::vector<double>({1.66667, 1.66667, 1.66667, 1.66667});
-    for (size_t i = 0; i < v1.size(); i++)
-        EXPECT_NEAR(v1[i], expected[i], 0.0001);
-    EXPECT_EQ(v0, std::vector<double>({1.25, 1.25, 1.25, 1.25}));
-    expected = std::vector<double>({1.11803, 1.11803, 1.11803, 1.11803});
-    for (size_t i = 0; i < d.size(); i++)
-        EXPECT_NEAR(d[i], expected[i], 0.0001);
-
-    m = a.mean(decltype(a)::COLUMN, 1, 3);
-    v1 = a.var(decltype(a)::COLUMN, 1, 3, m, 1);
-    v0 = a.var(decltype(a)::COLUMN, 1, 3, m);
-    d = a.stddev(decltype(a)::COLUMN, 1, 3, m);
-    EXPECT_EQ(m.size(), 2);
-    EXPECT_EQ(v1.size(), 2);
-    EXPECT_EQ(v0.size(), 2);
-    EXPECT_EQ(d.size(), 2);
-    EXPECT_EQ(m, std::vector<double>({7., 8.}));
-    expected = std::vector<double>({26.6667, 26.6667});
-    for (size_t i = 0; i < v1.size(); i++)
-        EXPECT_NEAR(v1[i], expected[i], 0.0001);
-    EXPECT_EQ(v0, std::vector<double>({20., 20.}));
-    expected = std::vector<double>({4.47214, 4.47214});
-    for (size_t i = 0; i < d.size(); i++)
-        EXPECT_NEAR(d[i], expected[i], 0.0001);
-
-    m = a.mean(decltype(a)::COLUMN, 0, 1);
-    v1 = a.var(decltype(a)::COLUMN, 0, 1, m, 1);
-    v0 = a.var(decltype(a)::COLUMN, 0, 1, m);
-    d = a.stddev(decltype(a)::COLUMN, 0, 1, m);
-    EXPECT_EQ(m.size(), 1);
-    EXPECT_EQ(v1.size(), 1);
-    EXPECT_EQ(v0.size(), 1);
-    EXPECT_EQ(d.size(), 1);
-    EXPECT_EQ(m[0], 6.);
-    EXPECT_NEAR(v1[0], 26.66667, 0.0001);
-    EXPECT_EQ(v0[0], 20.);
-    EXPECT_NEAR(d[0], 4.47214, 0.0001);
-
-    m = a.mean(decltype(a)::COLUMN, 0, 4);
-    v1 = a.var(decltype(a)::COLUMN, 0, 4, m, 1);
-    v0 = a.var(decltype(a)::COLUMN, 0, 4, m);
-    d = a.stddev(decltype(a)::COLUMN, 0, 4, m);
-    EXPECT_EQ(m.size(), 4);
-    EXPECT_EQ(v1.size(), 4);
-    EXPECT_EQ(v0.size(), 4);
-    EXPECT_EQ(d.size(), 4);
-    EXPECT_EQ(m, std::vector<double>({6., 7., 8., 9.}));
-    expected = std::vector<double>({26.6667, 26.6667, 26.6667, 26.6667});
-    for (size_t i = 0; i < v1.size(); i++)
-        EXPECT_NEAR(v1[i], expected[i], 0.0001);
-    EXPECT_EQ(v0, std::vector<double>({20., 20., 20., 20.}));
-    expected = std::vector<double>({4.47214, 4.47214, 4.47214, 4.47214});
-    for (size_t i = 0; i < d.size(); i++)
-        EXPECT_NEAR(d[i], expected[i], 0.0001);
-
-    // Test mean(NPArray) / var(NPArray) / stddev(NPArray).
-    m = mean(a, decltype(a)::ROW, 1, 3);
-    v1 = var(a, decltype(a)::ROW, 1, 3, m, 1);
-    v0 = var(a, decltype(a)::ROW, 1, 3, m);
-    d = stddev(a, decltype(a)::ROW, 1, 3, m);
-    EXPECT_EQ(m.size(), 2);
-    EXPECT_EQ(v1.size(), 2);
-    EXPECT_EQ(v0.size(), 2);
-    EXPECT_EQ(d.size(), 2);
-    EXPECT_EQ(m, std::vector<double>({5.5, 9.5}));
-    expected = std::vector<double>({1.66667, 1.66667});
-    for (size_t i = 0; i < v1.size(); i++)
-        EXPECT_NEAR(v1[i], expected[i], 0.0001);
-    EXPECT_EQ(v0, std::vector<double>({1.25, 1.25}));
-    expected = std::vector<double>({1.11803, 1.11803});
-    for (size_t i = 0; i < d.size(); i++)
-        EXPECT_NEAR(d[i], expected[i], 0.0001);
-
-    m = mean(a, decltype(a)::ROW, 0, 1);
-    v1 = var(a, decltype(a)::ROW, 0, 1, m, 1);
-    v0 = var(a, decltype(a)::ROW, 0, 1, m);
-    d = stddev(a, decltype(a)::ROW, 0, 1, m);
-    EXPECT_EQ(m.size(), 1.);
-    EXPECT_EQ(v1.size(), 1);
-    EXPECT_EQ(v0.size(), 1);
-    EXPECT_EQ(d.size(), 1);
-    EXPECT_EQ(m[0], 1.5);
-    EXPECT_NEAR(v1[0], 1.66667, 0.0001);
-    EXPECT_EQ(v0[0], 1.25);
-    EXPECT_NEAR(d[0], 1.11803, 0.0001);
-
-    m = mean(a, decltype(a)::ROW, 0, 4);
-    v1 = var(a, decltype(a)::ROW, 0, 4, m, 1);
-    v0 = var(a, decltype(a)::ROW, 0, 4, m);
-    d = stddev(a, decltype(a)::ROW, 0, 4, m);
-    EXPECT_EQ(m.size(), 4);
-    EXPECT_EQ(v1.size(), 4);
-    EXPECT_EQ(v0.size(), 4);
-    EXPECT_EQ(d.size(), 4);
-    EXPECT_EQ(m, std::vector<double>({1.5, 5.5, 9.5, 13.5}));
-    expected = std::vector<double>({1.66667, 1.66667, 1.66667, 1.66667});
-    for (size_t i = 0; i < v1.size(); i++)
-        EXPECT_NEAR(v1[i], expected[i], 0.0001);
-    EXPECT_EQ(v0, std::vector<double>({1.25, 1.25, 1.25, 1.25}));
-    expected = std::vector<double>({1.11803, 1.11803, 1.11803, 1.11803});
-    for (size_t i = 0; i < d.size(); i++)
-        EXPECT_NEAR(d[i], expected[i], 0.0001);
-
-    m = mean(a, decltype(a)::COLUMN, 1, 3);
-    v1 = var(a, decltype(a)::COLUMN, 1, 3, m, 1);
-    v0 = var(a, decltype(a)::COLUMN, 1, 3, m);
-    d = stddev(a, decltype(a)::COLUMN, 1, 3, m);
-    EXPECT_EQ(m.size(), 2);
-    EXPECT_EQ(v1.size(), 2);
-    EXPECT_EQ(v0.size(), 2);
-    EXPECT_EQ(d.size(), 2);
-    EXPECT_EQ(m, std::vector<double>({7., 8.}));
-    expected = std::vector<double>({26.6667, 26.6667});
-    for (size_t i = 0; i < v1.size(); i++)
-        EXPECT_NEAR(v1[i], expected[i], 0.0001);
-    EXPECT_EQ(v0, std::vector<double>({20., 20.}));
-    expected = std::vector<double>({4.47214, 4.47214});
-    for (size_t i = 0; i < d.size(); i++)
-        EXPECT_NEAR(d[i], expected[i], 0.0001);
-
-    m = mean(a, decltype(a)::COLUMN, 0, 1);
-    v1 = var(a, decltype(a)::COLUMN, 0, 1, m, 1);
-    v0 = var(a, decltype(a)::COLUMN, 0, 1, m);
-    d = stddev(a, decltype(a)::COLUMN, 0, 1, m);
-    EXPECT_EQ(m.size(), 1);
-    EXPECT_EQ(v1.size(), 1);
-    EXPECT_EQ(v0.size(), 1);
-    EXPECT_EQ(d.size(), 1);
-    EXPECT_EQ(m[0], 6.);
-    EXPECT_NEAR(v1[0], 26.66667, 0.0001);
-    EXPECT_EQ(v0[0], 20.);
-    EXPECT_NEAR(d[0], 4.47214, 0.0001);
-
-    m = mean(a, decltype(a)::COLUMN, 0, 4);
-    v1 = var(a, decltype(a)::COLUMN, 0, 4, m, 1);
-    v0 = var(a, decltype(a)::COLUMN, 0, 4, m);
-    d = stddev(a, decltype(a)::COLUMN, 0, 4, m);
-    EXPECT_EQ(m.size(), 4);
-    EXPECT_EQ(v1.size(), 4);
-    EXPECT_EQ(v0.size(), 4);
-    EXPECT_EQ(d.size(), 4);
-    EXPECT_EQ(m, std::vector<double>({6., 7., 8., 9.}));
-    expected = std::vector<double>({26.6667, 26.6667, 26.6667, 26.6667});
-    for (size_t i = 0; i < v1.size(); i++)
-        EXPECT_NEAR(v1[i], expected[i], 0.0001);
-    EXPECT_EQ(v0, std::vector<double>({20., 20., 20., 20.}));
-    expected = std::vector<double>({4.47214, 4.47214, 4.47214, 4.47214});
-    for (size_t i = 0; i < d.size(); i++)
-        EXPECT_NEAR(d[i], expected[i], 0.0001);
-}
-
-TEST(NPArray, mean_var_stddev_all) {
-    // clang-format off
-    /*
-        $ python3
-        >>> import numpy as np
-        >>> a = np.array(
-                [[0,   1,  2,  3],
-                 [4,   5,  6,  7],
-                 [8,   9, 10, 11]])
-        >>> np.mean(a, axis=1)
-        array([1.5, 5.5, 9.5])
-        >>> np.mean(a, axis=0)
-        array([4., 5., 6., 7.])
-        >>> np.var(a, axis=1, ddof=1)
-        array([1.66666667, 1.66666667, 1.66666667])
-        >>> np.var(a, axis=1, ddof=0)
-        array([1.25, 1.25, 1.25])
-        >>> np.var(a, axis=0, ddof=1)
-        array([16., 16., 16., 16.])
-        >>> np.var(a, axis=0, ddof=0)
-        array([10.66666667, 10.66666667, 10.66666667, 10.66666667])
-        >>> np.std(a, axis=1)
-        array([1.11803399, 1.11803399, 1.11803399])
-        >>> np.std(a, axis=0)
-        array([3.26598632, 3.26598632, 3.26598632, 3.26598632])
-    */
-    // clang-format on    
-    const int64_t MI64_init[] = {
-        // clang-format off
-        0,  1,  2,  3,
-        4,  5,  6,  7,
-        8,  9, 10, 11
-        // clang-format on
-        };
-    NPArray<int64_t> a(MI64_init, 3, 4);
-
-    std::vector<double> m;  // Mean value
-    std::vector<double> v1; // Variance (with ddof=1)
-    std::vector<double> v0; // Variance
-    std::vector<double> d;  // Standard deviation
-    std::vector<double> expected;
-
-    // Test NPArray::mean.
-    m = a.mean(decltype(a)::ROW);
-    v1 = var(a, decltype(a)::ROW, m, 1);
-    v0 = var(a, decltype(a)::ROW, m);
-    d = stddev(a, decltype(a)::ROW, m);
-    EXPECT_EQ(m.size(), a.rows());
-    EXPECT_EQ(v1.size(), a.rows());
-    EXPECT_EQ(v0.size(), a.rows());
-    EXPECT_EQ(d.size(), a.rows());
-    EXPECT_EQ(m, std::vector<double>({1.5, 5.5, 9.5}));
-    expected = std::vector<double>({1.66667, 1.66667, 1.66667});
-    for (size_t i = 0; i < v1.size(); i++)
-        EXPECT_NEAR(v1[i], expected[i], 0.0001);
-    EXPECT_EQ(v0, std::vector<double>({1.25, 1.25, 1.25}));
-    expected = std::vector<double>({1.11803, 1.11803, 1.11803});
-    for (size_t i = 0; i < d.size(); i++)
-        EXPECT_NEAR(d[i], expected[i], 0.0001);
-
-    m = a.mean(decltype(a)::COLUMN);
-    v1 = var(a, decltype(a)::COLUMN, m, 1);
-    v0 = var(a, decltype(a)::COLUMN, m);
-    d = stddev(a, decltype(a)::COLUMN, m);
-    EXPECT_EQ(m.size(), a.cols());
-    EXPECT_EQ(v1.size(), a.cols());
-    EXPECT_EQ(v0.size(), a.cols());
-    EXPECT_EQ(d.size(), a.cols());
-    EXPECT_EQ(m, std::vector<double>({4., 5., 6., 7.}));
-    EXPECT_EQ(v1, std::vector<double>({16., 16., 16., 16.}));
-    expected = std::vector<double>({10.6667, 10.6667, 10.6667, 10.6667});
-    for (size_t i = 0; i < v0.size(); i++)
-        EXPECT_NEAR(v0[i], expected[i], 0.0001);
-    expected = std::vector<double>({3.26598, 3.26598, 3.26598, 3.26598});
-    for (size_t i = 0; i < d.size(); i++)
-        EXPECT_NEAR(d[i], expected[i], 0.0001);
-
-    // Test mean(NPArray).
-    m = mean(a, decltype(a)::ROW);
-    v1 = var(a, decltype(a)::ROW, m, 1);
-    v0 = var(a, decltype(a)::ROW, m);
-    d = stddev(a, decltype(a)::ROW, m);
-    EXPECT_EQ(m.size(), a.rows());
-    EXPECT_EQ(v1.size(), a.rows());
-    EXPECT_EQ(v0.size(), a.rows());
-    EXPECT_EQ(d.size(), a.rows());
-    EXPECT_EQ(m, std::vector<double>({1.5, 5.5, 9.5}));
-    expected = std::vector<double>({1.66667, 1.66667, 1.66667});
-    for (size_t i = 0; i < v1.size(); i++)
-        EXPECT_NEAR(v1[i], expected[i], 0.0001);
-    EXPECT_EQ(v0, std::vector<double>({1.25, 1.25, 1.25}));
-    expected = std::vector<double>({1.11803, 1.11803, 1.11803});
-    for (size_t i = 0; i < d.size(); i++)
-        EXPECT_NEAR(d[i], expected[i], 0.0001);
-
-    m = mean(a, decltype(a)::COLUMN);
-    v1 = var(a, decltype(a)::COLUMN, m, 1);
-    v0 = var(a, decltype(a)::COLUMN, m);
-    d = stddev(a, decltype(a)::COLUMN, m);
-    EXPECT_EQ(m.size(), a.cols());
-    EXPECT_EQ(v1.size(), a.cols());
-    EXPECT_EQ(v0.size(), a.cols());
-    EXPECT_EQ(d.size(), a.cols());
-    EXPECT_EQ(m, std::vector<double>({4., 5., 6., 7.}));
-    EXPECT_EQ(m, std::vector<double>({4., 5., 6., 7.}));
-    EXPECT_EQ(v1, std::vector<double>({16., 16., 16., 16.}));
-    expected = std::vector<double>({10.6667, 10.6667, 10.6667, 10.6667});
-    for (size_t i = 0; i < v0.size(); i++)
-        EXPECT_NEAR(v0[i], expected[i], 0.0001);
-    expected = std::vector<double>({3.26598, 3.26598, 3.26598, 3.26598});
-    for (size_t i = 0; i < d.size(); i++)
-        EXPECT_NEAR(d[i], expected[i], 0.0001);
+    // Check all rows / columns.
+    MCa.check(decltype(a)::ROW);
+    MCa.check(decltype(a)::COLUMN);
 }
 
 int main(int argc, char **argv) {

@@ -40,71 +40,44 @@ vector<double> t_test(size_t b, size_t e, const NPArray<double> &traces,
     const size_t nbtraces = traces.rows();
     const size_t nbsamples = e - b;
 
-    vector<double> mean0(nbsamples, 0.0);
-    vector<double> mean1(nbsamples, 0.0);
-    vector<unsigned> n0(nbsamples, 0);
-    vector<unsigned> n1(nbsamples, 0);
-
-    for (size_t sample = 0; sample < nbsamples; sample++) {
-        for (size_t tnum = 0; tnum < nbtraces; tnum++)
-            switch (classifier[tnum]) {
-            case Classification::GROUP_0:
-                n0[sample] += 1;
-                break;
-            case Classification::GROUP_1:
-                n1[sample] += 1;
-                break;
-            case Classification::IGNORE:
-                break;
-            }
-
-        assert(n0[sample] > 1 && "Group0 must have more than 1 sample");
-        assert(n1[sample] > 1 && "Group1 must have more than 1 sample");
-
-        if (n0[sample] <= 1 || n1[sample] <= 1)
-            return vector<double>();
-
-        for (size_t tnum = 0; tnum < nbtraces; tnum++)
-            switch (classifier[tnum]) {
-            case Classification::GROUP_0:
-                mean0[sample] += traces(tnum, b + sample) / double(n0[sample]);
-                break;
-            case Classification::GROUP_1:
-                mean1[sample] += traces(tnum, b + sample) / double(n1[sample]);
-                break;
-            case Classification::IGNORE:
-                break;
-            }
-    }
-
-    vector<double> variance0(nbsamples, 0.0);
-    vector<double> variance1(nbsamples, 0.0);
     vector<double> tvalue(nbsamples);
 
     for (size_t sample = 0; sample < nbsamples; sample++) {
-        for (size_t tnum = 0; tnum < nbtraces; tnum++) {
+        // Use a numerically stable algorithm to compute the mean and variance.
+        // The one from D. Knuth from "The Art of Computer Programming (1998)"
+        // is used here.
+        double mean0 = 0.0;
+        double mean1 = 0.0;
+        double variance0 = 0.0;
+        double variance1 = 0.0;
+        unsigned n0 = 0;
+        unsigned n1 = 0;
+        double delta1, delta2;
+        for (size_t tnum = 0; tnum < nbtraces; tnum++)
             switch (classifier[tnum]) {
-            case Classification::GROUP_0: {
-                double v = traces(tnum, b + sample) - mean0[sample];
-                variance0[sample] += v * v;
+            case Classification::GROUP_0:
+                n0 += 1;
+                delta1 = traces(tnum, b + sample) - mean0;
+                mean0 += delta1 / double(n0);
+                delta2 = traces(tnum, b + sample) - mean0;
+                variance0 += delta1 * delta2;
                 break;
-            }
-            case Classification::GROUP_1: {
-                double v = traces(tnum, b + sample) - mean1[sample];
-                variance1[sample] += v * v;
+            case Classification::GROUP_1:
+                n1 += 1;
+                delta1 = traces(tnum, b + sample) - mean1;
+                mean1 += delta1 / double(n1);
+                delta2 = traces(tnum, b + sample) - mean1;
+                variance1 += delta1 * delta2;
                 break;
-            }
             case Classification::IGNORE:
                 break;
             }
-        }
 
-        variance0[sample] /= double(n0[sample] - 1);
-        variance1[sample] /= double(n1[sample] - 1);
+        variance0 /= double(n0 - 1);
+        variance1 /= double(n1 - 1);
 
-        tvalue[sample] = (mean0[sample] - mean1[sample]) /
-                         sqrt(variance0[sample] / double(n0[sample]) +
-                              variance1[sample] / double(n1[sample]));
+        tvalue[sample] = (mean0 - mean1) /
+                         sqrt(variance0 / double(n0) + variance1 / double(n1));
     }
 
     return tvalue;
@@ -112,7 +85,6 @@ vector<double> t_test(size_t b, size_t e, const NPArray<double> &traces,
 
 vector<double> t_test(size_t b, size_t e, const NPArray<double> &group0,
                       const NPArray<double> &group1) {
-
     assert(b < e && "Wrong begin / end samples");
     assert(b <= group0.cols() && "Not that many samples in group0 traces");
     assert(e <= group0.cols() && "Not that many samples in group0 traces");
@@ -122,12 +94,13 @@ vector<double> t_test(size_t b, size_t e, const NPArray<double> &group0,
     const size_t nbsamples = e - b;
     assert(nbsamples >= 1 && "More than 1 sample per group is required");
 
-    const vector<double> mean0 = group0.mean(NPArray<double>::COLUMN, b, e);
-    const vector<double> variance0 =
-        group0.var(NPArray<double>::COLUMN, b, e, mean0, /* ddof: */ 1);
-    const vector<double> mean1 = group1.mean(NPArray<double>::COLUMN, b, e);
-    const vector<double> variance1 =
-        group1.var(NPArray<double>::COLUMN, b, e, mean1, /* ddof: */ 1);
+    vector<double> variance0;
+    vector<double> mean0 = group0.mean(NPArray<double>::COLUMN, b, e,
+                                       &variance0, nullptr, /* ddof: */ 1);
+
+    vector<double> variance1;
+    vector<double> mean1 = group1.mean(NPArray<double>::COLUMN, b, e,
+                                       &variance1, nullptr, /* ddof: */ 1);
 
     vector<double> tvalue(nbsamples);
 

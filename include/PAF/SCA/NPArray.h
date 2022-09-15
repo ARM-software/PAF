@@ -458,22 +458,62 @@ template <class Ty> class NPArray : public NPArrayBase {
         }
     }
 
-    /// Compute the mean on row i or column i.
-    double mean(Axis axis, size_t i) const {
-        Ty result = sum(axis, i);
+    /// Compute the mean on row i or column i. It optionally computes the
+    /// variance (taking ddof into account) and the standard deviation.
+    double mean(Axis axis, size_t i, double *var = nullptr,
+                double *stddev = nullptr, unsigned ddof = 0) const {
+        // Use a numerically stable algorithm to compute the mean and variance.
+        // The one from D. Knuth from "The Art of Computer Programming (1998)"
+        // is used here.
+        double m = 0.0; // The mean
+        double v = 0.0; // The variance
+        unsigned n = 0; // Sample number
+        double delta1, delta2;
         switch (axis) {
         case ROW:
-            return double(result) / double(cols());
+            assert(i < rows() &&
+                   "index is out of bound for row access in NPArray::mean");
+            for (size_t col = 0; col < cols(); col++) {
+                n += 1;
+                delta1 = at(i, col) - m;
+                m += delta1 / double(n);
+                delta2 = at(i, col) - m;
+                if (var || stddev)
+                    v += delta1 * delta2;
+            }
+            if (var)
+                *var = v / double(cols() - ddof);
+            if (stddev)
+                *stddev = std::sqrt(v / double(cols()));
+            return m;
         case COLUMN:
-            return double(result) / double(rows());
+            assert(i < cols() &&
+                   "index is out of bound for column access in NPArray::mean");
+            for (size_t row = 0; row < rows(); row++) {
+                n += 1;
+                delta1 = at(row, i) - m;
+                m += delta1 / double(n);
+                delta2 = at(row, i) - m;
+                if (var || stddev)
+                    v += delta1 * delta2;
+            }
+            if (var)
+                *var = v / double(rows() - ddof);
+            if (stddev)
+                *stddev = std::sqrt(v / double(rows()));
+            return m;
         }
     }
 
-    /// Compute the mean on a range of rows or on a range of columns.
-    std::vector<double> mean(Axis axis, size_t begin, size_t end) const {
+    /// Compute the mean on a range of rows or on a range of columns, optionally
+    /// computing the variance (taking into account the ddof) and the standard
+    /// deviation.
+    std::vector<double> mean(Axis axis, size_t begin, size_t end,
+                             std::vector<double> *var = nullptr,
+                             std::vector<double> *stddev = nullptr,
+                             unsigned ddof = 0) const {
         assert(end > begin && "End of a range needs to be strictly greater "
                               "than its begin in NPArray::mean");
-        std::vector<double> result(end - begin);
         switch (axis) {
         case ROW:
             assert(
@@ -481,121 +521,47 @@ template <class Ty> class NPArray : public NPArrayBase {
                 "begin index is out of bound for row access in NPArray::mean");
             assert(end <= rows() &&
                    "end index is out of bound for row access in NPArray::mean");
-            for (size_t row = begin; row < end; row++)
-                result[row - begin] = mean(axis, row);
-            return result;
+            break;
         case COLUMN:
             assert(begin < cols() && "begin index is out of bound for column "
                                      "access in NPArray::mean");
             assert(
                 end <= cols() &&
                 "end index is out of bound for column access in NPArray::mean");
-            for (size_t col = begin; col < end; col++)
-                result[col - begin] = mean(axis, col);
-            return result;
+            break;
         }
-    }
 
-    /// Compute the mean on all rows or all columns.
-    std::vector<double> mean(Axis axis) const {
-        switch (axis) {
-        case ROW:
-            return mean(axis, 0, rows());
-        case COLUMN:
-            return mean(axis, 0, cols());
-        }
-    }
-
-    /// Compute the variance on row i or column i.
-    double var(Axis axis, size_t i, double m, unsigned ddof = 0) const {
-        double result;
-        double d;
-        switch (axis) {
-        case ROW:
-            assert(i < rows() &&
-                   "index is out of bound for row access in NPArray::var");
-            d = double(at(i, 0)) - m;
-            result = d * d;
-            for (size_t col = 1; col < cols(); col++) {
-                d = double(at(i, col)) - m;
-                result += d * d;
-            }
-            return result / (double(cols()) - double(ddof));
-        case COLUMN:
-            assert(i < cols() &&
-                   "index is out of bound for column access in NPArray::var");
-            d = double(at(0, i)) - m;
-            result = d * d;
-            for (size_t row = 1; row < rows(); row++) {
-                d = double(at(row, i)) - m;
-                result += d * d;
-            }
-            return result / (double(rows()) - double(ddof));
-        }
-    }
-
-    /// Compute the variance on a range of rows or on a range of columns.
-    std::vector<double> var(Axis axis, size_t begin, size_t end,
-                            const std::vector<double> &m,
-                            unsigned ddof = 0) const {
-        assert(end > begin && "End of a range needs to be strictly greater "
-                              "than its begin in NPArray::mean");
-        assert(m.size() == end - begin && "Dimension discrepancy");
         std::vector<double> result(end - begin);
-        switch (axis) {
-        case ROW:
-            assert(
-                begin < rows() &&
-                "begin index is out of bound for row access in NPArray::var");
-            assert(end <= rows() &&
-                   "end index is out of bound for row access in NPArray::var");
-            for (size_t row = begin; row < end; row++)
-                result[row - begin] = var(axis, row, m[row - begin], ddof);
-            return result;
-        case COLUMN:
-            assert(begin < cols() && "begin index is out of bound for column "
-                                     "access in NPArray::var");
-            assert(
-                end <= cols() &&
-                "end index is out of bound for column access in NPArray::var");
-            for (size_t col = begin; col < end; col++)
-                result[col - begin] = var(axis, col, m[col - begin], ddof);
-            return result;
+        if (var)
+            var->resize(end - begin);
+        if (stddev)
+            stddev->resize(end - begin);
+        for (size_t i = begin; i < end; i++) {
+            double r;
+            if (!var && !stddev)
+                r = mean(axis, i);
+            else if (var && !stddev)
+                r = mean(axis, i, &(*var)[i - begin], nullptr, ddof);
+            else if (!var && stddev)
+                r = mean(axis, i, nullptr, &(*stddev)[i - begin]);
+            else
+                r = mean(axis, i, &(*var)[i - begin], &(*stddev)[i - begin],
+                         ddof);
+            result[i - begin] = r;
         }
-    }
 
-    /// Compute the variance on all rows or columns.
-    std::vector<double> var(Axis axis, const std::vector<double> &m,
-                            unsigned ddof = 0) const {
-        switch (axis) {
-        case ROW:
-            return var(axis, 0, rows(), m, ddof);
-        case COLUMN:
-            return var(axis, 0, cols(), m, ddof);
-        }
-    }
-
-    /// Compute the stddev on  row i or column i.
-    double stddev(Axis axis, size_t i, double m) const {
-        return std::sqrt(var(axis, i, m, 0));
-    }
-
-    /// Compute the stddev on a range of rows or columns.
-    std::vector<double> stddev(Axis axis, size_t begin, size_t end,
-                               const std::vector<double> &m) const {
-        std::vector<double> result = var(axis, begin, end, m, 0);
-        for (size_t i = 0; i < result.size(); i++)
-            result[i] = std::sqrt(result[i]);
         return result;
     }
 
-    /// Compute the variance on all rows or columns.
-    std::vector<double> stddev(Axis axis, const std::vector<double> &m) const {
+    /// Compute the mean on all rows or all columns.
+    std::vector<double> mean(Axis axis, std::vector<double> *var = nullptr,
+                             std::vector<double> *stddev = nullptr,
+                             unsigned ddof = 0) const {
         switch (axis) {
         case ROW:
-            return stddev(axis, 0, rows(), m);
+            return mean(axis, 0, rows(), var, stddev, ddof);
         case COLUMN:
-            return stddev(axis, 0, cols(), m);
+            return mean(axis, 0, cols(), var, stddev, ddof);
         }
     }
 
@@ -628,72 +594,31 @@ std::vector<Ty> sum(const NPArray<Ty> &npy, typename NPArray<Ty>::Axis axis) {
 }
 
 /// Functional version of 'mean' operation on NPArray on specific row/col.
+/// It optionally computes the
+/// variance (taking ddof into account) and the standard deviation.
 template <class Ty>
-double mean(const NPArray<Ty> &npy, typename NPArray<Ty>::Axis axis, size_t i) {
-    return npy.mean(axis, i);
+double mean(const NPArray<Ty> &npy, typename NPArray<Ty>::Axis axis, size_t i,
+            double *var = nullptr, double *stddev = nullptr,
+            unsigned ddof = 0) {
+    return npy.mean(axis, i, var, stddev, ddof);
 }
 
 /// Functional version of the range 'mean' operation on NPArray.
 template <class Ty>
-std::vector<double> mean(const NPArray<Ty> &npy,
-                         typename NPArray<Ty>::Axis axis, size_t begin,
-                         size_t end) {
-    return npy.mean(axis, begin, end);
+std::vector<double>
+mean(const NPArray<Ty> &npy, typename NPArray<Ty>::Axis axis, size_t begin,
+     size_t end, std::vector<double> *var = nullptr,
+     std::vector<double> *stddev = nullptr, unsigned ddof = 0) {
+    return npy.mean(axis, begin, end, var, stddev, ddof);
 }
 
 /// Functional version of 'mean' operation on NPArray.
 template <class Ty>
-std::vector<double> mean(const NPArray<Ty> &npy,
-                         typename NPArray<Ty>::Axis axis) {
+std::vector<double>
+mean(const NPArray<Ty> &npy, typename NPArray<Ty>::Axis axis,
+     std::vector<double> *var = nullptr, std::vector<double> *stddev = nullptr,
+     unsigned ddof = 0) {
     return npy.mean(axis);
-}
-
-/// Functional version of 'var' operation on NPArray on specific row/col.
-template <class Ty>
-double var(const NPArray<Ty> &npy, typename NPArray<Ty>::Axis axis, size_t i,
-           double m, unsigned ddof = 0) {
-    return npy.var(axis, i, m, ddof);
-}
-
-/// Functional version of 'var' operation on NPArray on a range of rows or
-/// columns.
-template <class Ty>
-std::vector<double> var(const NPArray<Ty> &npy, typename NPArray<Ty>::Axis axis,
-                        size_t begin, size_t end, const std::vector<double> &m,
-                        unsigned ddof = 0) {
-    return npy.var(axis, begin, end, m, ddof);
-}
-
-/// Functional version of 'var' operation on NPArray.
-template <class Ty>
-std::vector<double> var(const NPArray<Ty> &npy, typename NPArray<Ty>::Axis axis,
-                        const std::vector<double> &m,
-                        unsigned ddof = 0) {
-    return npy.var(axis, m, ddof);
-}
-
-/// Functional version of 'stddev' operation on NPArray on specific row/col.
-template <class Ty>
-double stddev(const NPArray<Ty> &npy, typename NPArray<Ty>::Axis axis, size_t i,
-              double m) {
-    return npy.stddev(axis, i, m);
-}
-
-/// Functional version of 'stddev' operation on NPArray on a range of rows or
-/// columns.
-template <class Ty>
-std::vector<double> stddev(const NPArray<Ty> &npy,
-                           typename NPArray<Ty>::Axis axis, size_t begin,
-                           size_t end, const std::vector<double> &m) {
-    return npy.stddev(axis, begin, end, m);
-}
-
-/// Functional version of 'stddev' operation on NPArray.
-template <class Ty>
-std::vector<double> stddev(const NPArray<Ty> &npy,
-                           typename NPArray<Ty>::Axis axis,
-                           const std::vector<double> &m) {
-    return npy.stddev(axis, m);
 }
 
 } // namespace SCA
