@@ -600,197 +600,148 @@ TEST(NPArray, Row) {
     EXPECT_EQ(r[0], 3);
 }
 
-TEST(NPArray, sum_one) {
+static constexpr double EPSILON = 0.000001;
+
+template <typename Ty, size_t rows, size_t cols>
+class SumChecker {
+
+  public:
+    SumChecker(const NPArray<Ty> &a, std::initializer_list<Ty> sums_by_row,
+               std::initializer_list<Ty> sums_by_col)
+        : a(a), sums_by_row{sums_by_row}, sums_by_col(sums_by_col) {
+        // Some sanity checks.
+        assert(sums_by_row.size() == rows &&
+               "expected row means size mismatch");
+        assert(sums_by_col.size() == cols &&
+               "expected cols means size mismatch");
+    }
+
+    Ty expected(typename NPArray<Ty>::Axis axis, size_t i) const {
+        switch (axis) {
+        case NPArray<Ty>::ROW:
+            assert(i < rows && "exp mean row access out of bounds");
+            return sums_by_row[i];
+        case NPArray<Ty>::COLUMN:
+            assert(i < cols && "exp mean col access out of bounds");
+            return sums_by_col[i];
+        }
+    }
+
+    // Check an individual row / column.
+    void check(typename NPArray<Ty>::Axis axis, size_t i) const {
+        // Test NPArray::sum.
+        EXPECT_NEAR(a.sum(axis, i), expected(axis, i), EPSILON);
+
+        // Test sum(NPArray).
+        EXPECT_NEAR(sum(a, axis, i), expected(axis, i), EPSILON);
+    }
+
+    // Check a range of rows / columns.
+    void check(typename NPArray<Ty>::Axis axis, size_t begin,
+               size_t end) const {
+        assert(begin <= end && "improper range");
+        switch (axis) {
+        case NPArray<Ty>::ROW:
+            assert(begin < rows && "Out of range row begin index");
+            assert(end <= rows && "Out of range row end index");
+            break;
+        case NPArray<Ty>::COLUMN:
+            assert(begin < cols && "Out of range col begin index");
+            assert(end <= cols && "Out of range col end index");
+            break;
+        }
+
+        const size_t range = end - begin;
+
+        // Test NPArray::sum.
+        const std::vector<Ty> r = a.sum(axis, begin, end);
+        EXPECT_EQ(r.size(), range);
+        for (size_t i = 0; i < range; i++)
+            EXPECT_NEAR(r[i], expected(axis, begin + i), EPSILON);
+
+        // Test sum(NPArray).
+        const std::vector<Ty> r1 = sum(a, axis, begin, end);
+        EXPECT_EQ(r1.size(), r.size());
+        for (size_t i = 0; i < range; i++)
+            EXPECT_EQ(r1[i], r[i]);
+    }
+
+    // Check a all rows / columns.
+    void check(typename NPArray<Ty>::Axis axis) const {
+        size_t range;
+        switch (axis) {
+        case NPArray<Ty>::ROW:
+            range = rows;
+            break;
+        case NPArray<Ty>::COLUMN:
+            range = cols;
+            break;
+        }
+        const std::vector<Ty> r = a.sum(axis);
+        for (size_t i = 0; i < range; i++)
+            EXPECT_NEAR(r[i], expected(axis, i), EPSILON);
+        const std::vector<Ty> r1 = sum(a, axis);
+        EXPECT_EQ(r1, r);
+    }
+
+  private:
+    const NPArray<Ty> &a;
+    const std::vector<Ty> sums_by_row;
+    const std::vector<Ty> sums_by_col;
+};
+
+TEST(NPArray, sum) {
     // clang-format off
-    /*
-        $ python3
-        >>> import numpy as np
-        >>> a = np.array(
-                [[0, 1],
-                 [2, 3],
-                 [4, 5],
-                 [6, 7]])
-        >>> np.sum(a, axis=1)
-        array([ 1,  5,  9, 13])
-        >>> np.sum(a, axis=0)
-        array([12, 16])
-    */
-    // clang-format on
-    const int64_t MI64_init[] = {
-        // clang-format off
-        0, 1,
-        2, 3,
-        4, 5,
-        6, 7
-        // clang-format on
+    // === Generated automatically with 'gen-nparray-test-data.py --rows 6 --columns 6 sum'
+    const double F64_init_a[] = {
+        0.84029728, 0.98151906, 0.04469348, 0.25572704, 0.82835115, 0.65108071,
+        0.54267503, 0.60212352, 0.27477388, 0.51812206, 0.78730747, 0.20983610,
+        0.32448922, 0.10642370, 0.58956100, 0.28985088, 0.78097569, 0.36846899,
+        0.02900413, 0.11288873, 0.07290856, 0.45787271, 0.69971954, 0.67809697,
+        0.92673387, 0.12799357, 0.66552433, 0.85449880, 0.71882433, 0.62631784,
+        0.11616666, 0.27003550, 0.00438592, 0.67476073, 0.86866704, 0.59454964,
     };
-    NPArray<int64_t> a(MI64_init, 4, 2);
-
-    // Test NPArray::sum.
-    EXPECT_EQ(a.sum(decltype(a)::ROW, 0), 1);
-    EXPECT_EQ(a.sum(decltype(a)::ROW, 1), 5);
-    EXPECT_EQ(a.sum(decltype(a)::ROW, 2), 9);
-    EXPECT_EQ(a.sum(decltype(a)::ROW, 3), 13);
-
-    EXPECT_EQ(a.sum(decltype(a)::COLUMN, 0), 12);
-    EXPECT_EQ(a.sum(decltype(a)::COLUMN, 1), 16);
-
-    // Test sum(NPArray).
-    EXPECT_EQ(sum(a, decltype(a)::ROW, 0), 1);
-    EXPECT_EQ(sum(a, decltype(a)::ROW, 1), 5);
-    EXPECT_EQ(sum(a, decltype(a)::ROW, 2), 9);
-    EXPECT_EQ(sum(a, decltype(a)::ROW, 3), 13);
-
-    EXPECT_EQ(sum(a, decltype(a)::COLUMN, 0), 12);
-    EXPECT_EQ(sum(a, decltype(a)::COLUMN, 1), 16);
-}
-
-TEST(NPArray, sum_range) {
-    // clang-format off
-    /*
-        $ python3
-        >>> import numpy as np
-        >>> a = np.array(
-                [[0,   1,  2,  3],
-                 [4,   5,  6,  7],
-                 [8,   9, 10, 11],
-                 [12, 13, 14, 15]])
-        >>> np.sum(a, axis=1)
-        array([ 6, 22, 38, 54])
-        >>> np.sum(a, axis=0)
-        array([24, 28, 32, 36])
-    */
+    const NPArray<double> a(F64_init_a, 6, 6);
+    const SumChecker<double, 6, 6> C_a(
+        a,
+        /* sums, by row: */
+        {3.60166873, 2.93483805, 2.45976948, 2.05049065, 3.91989274, 2.52856548},
+        /* sums, by col: */
+        {2.77936619, 2.20098408, 1.65184717, 3.05083222, 4.68384522, 3.12835026}
+    );
+    // === End of automatically generated portion
     // clang-format on
-    const int64_t MI64_init[] = {
-        // clang-format off
-        0,   1,  2,  3,
-        4,   5,  6,  7,
-        8,   9, 10, 11,
-        12, 13, 14, 15
-        // clang-format on
-    };
-    NPArray<int64_t> a(MI64_init, 4, 4);
 
-    std::vector<int64_t> r;
+    // Check sum on each row / col
+    for (size_t i = 0; i < a.rows(); i++)
+        C_a.check(decltype(a)::ROW, i);
+    for (size_t i = 0; i < a.cols(); i++)
+        C_a.check(decltype(a)::COLUMN, i);
+    
+    // Check sum on ranges of rows / cols
+    C_a.check(decltype(a)::ROW, 0, 0); // Empty range
+    C_a.check(decltype(a)::ROW, 0, 1);
+    C_a.check(decltype(a)::ROW, 0, 2);
+    C_a.check(decltype(a)::ROW, a.rows()-2, a.rows());
+    C_a.check(decltype(a)::ROW, a.rows()-1, a.rows());  
+    C_a.check(decltype(a)::ROW, 2, 3);
+    C_a.check(decltype(a)::ROW, 2, 5);
 
-    // Test NPArray::sum.
-    r = a.sum(decltype(a)::ROW, 1, 3);
-    EXPECT_EQ(r.size(), 2);
-    EXPECT_EQ(r[0], 22);
-    EXPECT_EQ(r[1], 38);
+    C_a.check(decltype(a)::COLUMN, 0, 0); // Empty range
+    C_a.check(decltype(a)::COLUMN, 0, 1);
+    C_a.check(decltype(a)::COLUMN, 0, 2);
+    C_a.check(decltype(a)::COLUMN, a.cols() - 2, a.cols());
+    C_a.check(decltype(a)::COLUMN, a.cols() - 1, a.cols());
+    C_a.check(decltype(a)::COLUMN, 2, 3);
+    C_a.check(decltype(a)::COLUMN, 2, 5);
 
-    r = a.sum(decltype(a)::ROW, 3, 4);
-    EXPECT_EQ(r.size(), 1);
-    EXPECT_EQ(r[0], 54);
-
-    r = a.sum(decltype(a)::ROW, 0, 4);
-    EXPECT_EQ(r.size(), 4);
-    EXPECT_EQ(r[0], 6);
-    EXPECT_EQ(r[1], 22);
-    EXPECT_EQ(r[2], 38);
-    EXPECT_EQ(r[3], 54);
-
-    r = a.sum(decltype(a)::COLUMN, 1, 3);
-    EXPECT_EQ(r.size(), 2);
-    EXPECT_EQ(r[0], 28);
-    EXPECT_EQ(r[1], 32);
-
-    r = a.sum(decltype(a)::COLUMN, 3, 4);
-    EXPECT_EQ(r.size(), 1);
-    EXPECT_EQ(r[0], 36);
-
-    r = a.sum(decltype(a)::COLUMN, 0, 4);
-    EXPECT_EQ(r.size(), 4);
-    EXPECT_EQ(r[0], 24);
-    EXPECT_EQ(r[1], 28);
-    EXPECT_EQ(r[2], 32);
-    EXPECT_EQ(r[3], 36);
-
-    // Test sum(NPArray).
-    r = sum(a, decltype(a)::ROW, 1, 3);
-    EXPECT_EQ(r.size(), 2);
-    EXPECT_EQ(r[0], 22);
-    EXPECT_EQ(r[1], 38);
-
-    r = sum(a, decltype(a)::ROW, 3, 4);
-    EXPECT_EQ(r.size(), 1);
-    EXPECT_EQ(r[0], 54);
-
-    r = sum(a, decltype(a)::ROW, 0, 4);
-    EXPECT_EQ(r.size(), 4);
-    EXPECT_EQ(r[0], 6);
-    EXPECT_EQ(r[1], 22);
-    EXPECT_EQ(r[2], 38);
-    EXPECT_EQ(r[3], 54);
-
-    r = sum(a, decltype(a)::COLUMN, 1, 3);
-    EXPECT_EQ(r.size(), 2);
-    EXPECT_EQ(r[0], 28);
-    EXPECT_EQ(r[1], 32);
-
-    r = sum(a, decltype(a)::COLUMN, 3, 4);
-    EXPECT_EQ(r.size(), 1);
-    EXPECT_EQ(r[0], 36);
-
-    r = sum(a, decltype(a)::COLUMN, 0, 4);
-    EXPECT_EQ(r.size(), 4);
-    EXPECT_EQ(r[0], 24);
-    EXPECT_EQ(r[1], 28);
-    EXPECT_EQ(r[2], 32);
-    EXPECT_EQ(r[3], 36);
+    // Check sum of all rows / all columns.
+    C_a.check(decltype(a)::ROW);
+    C_a.check(decltype(a)::COLUMN);
 }
 
-TEST(NPArray, sum_all) {
-    // clang-format off
-    /*
-        $ python3
-        >>> import numpy as np
-        >>> a = np.array(
-                [[0, 1, 2, 3],
-                 [4, 5, 6, 7]])
-        >>> np.sum(a, axis=1)
-        array([ 6, 22])
-        >>> np.sum(a, axis=0)
-        array([ 4,  6,  8, 10])
-    */
-    // clang-format on
-    const int64_t MI64_init[] = {
-        // clang-format off
-        0, 1, 2, 3,
-        4, 5, 6, 7
-        // clang-format on
-        };
-    NPArray<int64_t> a(MI64_init, 2, 4);
-
-    // Test NPArray::sum.
-    std::vector<int64_t> s = a.sum(decltype(a)::ROW);
-    EXPECT_EQ(s.size(), a.rows());
-    EXPECT_EQ(s[0], 6);
-    EXPECT_EQ(s[1], 22);
-
-    s = a.sum(decltype(a)::COLUMN);
-    EXPECT_EQ(s.size(), a.cols());
-    EXPECT_EQ(s[0], 4);
-    EXPECT_EQ(s[1], 6);
-    EXPECT_EQ(s[2], 8);
-    EXPECT_EQ(s[3], 10);
-
-    // Test sum(NPArray).
-    s = sum(a, decltype(a)::ROW);
-    EXPECT_EQ(s.size(), a.rows());
-    EXPECT_EQ(s[0], 6);
-    EXPECT_EQ(s[1], 22);
-
-    s = sum(a, decltype(a)::COLUMN);
-    EXPECT_EQ(s.size(), a.cols());
-    EXPECT_EQ(s[0], 4);
-    EXPECT_EQ(s[1], 6);
-    EXPECT_EQ(s[2], 8);
-    EXPECT_EQ(s[3], 10);
-}
-
-template <typename Ty, size_t rows, size_t cols> class MeanChecker {
-    static constexpr Ty EPSILON = 0.000001;
+template <typename Ty, size_t rows, size_t cols>
+class MeanChecker {
 
   public:
     MeanChecker(const NPArray<Ty> &a, std::initializer_list<Ty> means_by_row,
@@ -801,10 +752,11 @@ template <typename Ty, size_t rows, size_t cols> class MeanChecker {
                 std::initializer_list<Ty> var1_by_col,
                 std::initializer_list<Ty> stddev_by_row,
                 std::initializer_list<Ty> stddev_by_col)
-        : a(a), means_by_row{means_by_row}, means_by_col(means_by_col),
-          var0_by_row(var0_by_row), var1_by_row(var1_by_row),
-          var0_by_col(var0_by_col), var1_by_col(var1_by_col),
-          stddev_by_row(stddev_by_row), stddev_by_col(stddev_by_col) {
+        : a(a), means_by_row{means_by_row},
+          means_by_col(means_by_col), var0_by_row(var0_by_row),
+          var1_by_row(var1_by_row), var0_by_col(var0_by_col),
+          var1_by_col(var1_by_col), stddev_by_row(stddev_by_row),
+          stddev_by_col(stddev_by_col) {
         // Some sanity checks.
         assert(means_by_row.size() == rows &&
                "expected row means size mismatch");
@@ -818,8 +770,6 @@ template <typename Ty, size_t rows, size_t cols> class MeanChecker {
                "expected row stddev size mismatch");
         assert(stddev_by_col.size() == cols &&
                "expected col stddev size mismatch");
-        assert(rows == a.rows() && "Matrix & MeanChecker row number mismatch");
-        assert(cols == a.cols() && "Matrix & MeanChecker col number mismatch");
     }
 
     enum Metric { MEAN, VAR1, VAR0, STDDEV };
@@ -939,7 +889,7 @@ template <typename Ty, size_t rows, size_t cols> class MeanChecker {
     // Check a range of rows / columns.
     void check(typename NPArray<Ty>::Axis axis, size_t begin,
                size_t end) const {
-        assert(begin < end && "improper range");
+        assert(begin <= end && "improper range");
         switch (axis) {
         case NPArray<Ty>::ROW:
             assert(begin < rows && "Out of range row begin index");
@@ -1188,7 +1138,7 @@ TEST(NPArray, mean) {
         0.63543491, 0.19328886, 0.38098240, 0.63729033, 0.25450362, 0.80673554,
     };
     const NPArray<double> a(F64_init_a, 6, 6);
-    const MeanChecker<double, 6, 6> MCa(
+    const MeanChecker<double, 6, 6> C_a(
         a,
         /* means, by row: */
         {0.35521895, 0.45102018, 0.46442832, 0.65059645, 0.50027069, 0.48470594},
@@ -1212,25 +1162,27 @@ TEST(NPArray, mean) {
 
     // Check each row or column individually.
     for (size_t i = 0; i < a.rows(); i++)
-        MCa.check(decltype(a)::ROW, i);
+        C_a.check(decltype(a)::ROW, i);
 
     for (size_t i = 0; i < a.cols(); i++)
-        MCa.check(decltype(a)::COLUMN, i);
+        C_a.check(decltype(a)::COLUMN, i);
     
     // Check row / column ranges.
-    MCa.check(decltype(a)::ROW, 0, 1);
-    MCa.check(decltype(a)::ROW, a.rows() - 2, a.rows());
-    MCa.check(decltype(a)::ROW, 1, 4);
-    MCa.check(decltype(a)::ROW, 0, a.rows());
+    C_a.check(decltype(a)::ROW, 0, 0); // Empty range
+    C_a.check(decltype(a)::ROW, 0, 1);
+    C_a.check(decltype(a)::ROW, a.rows() - 2, a.rows());
+    C_a.check(decltype(a)::ROW, 1, 4);
+    C_a.check(decltype(a)::ROW, 0, a.rows());
 
-    MCa.check(decltype(a)::COLUMN, 0, 2);
-    MCa.check(decltype(a)::COLUMN, a.cols() - 1, a.cols());
-    MCa.check(decltype(a)::COLUMN, 3, 4);
-    MCa.check(decltype(a)::COLUMN, 0, a.cols());
+    C_a.check(decltype(a)::COLUMN, 0, 0); // Empty range
+    C_a.check(decltype(a)::COLUMN, 0, 2);
+    C_a.check(decltype(a)::COLUMN, a.cols() - 1, a.cols());
+    C_a.check(decltype(a)::COLUMN, 3, 4);
+    C_a.check(decltype(a)::COLUMN, 0, a.cols());
 
     // Check all rows / columns.
-    MCa.check(decltype(a)::ROW);
-    MCa.check(decltype(a)::COLUMN);
+    C_a.check(decltype(a)::ROW);
+    C_a.check(decltype(a)::COLUMN);
 }
 
 int main(int argc, char **argv) {

@@ -32,16 +32,8 @@ class Matrix:
         self.name = name
         self.ty = ty
         self.initializer = "F64_init_{}".format(name)
-        self.checker = "MC{}".format(name)
+        self.checker = "C_{}".format(name)
         self.cmd_line = cmd_line
-        self.mean_by_row = np.mean(self.M, axis=1).tolist()
-        self.mean_by_col = np.mean(self.M, axis=0).tolist()
-        self.var0_by_row = np.var(self.M, axis=1, ddof=0).tolist()
-        self.var1_by_row = np.var(self.M, axis=1, ddof=1).tolist()
-        self.var0_by_col = np.var(self.M, axis=0, ddof=0).tolist()
-        self.var1_by_col = np.var(self.M, axis=0, ddof=1).tolist()
-        self.stddev_by_row = np.std(self.M, axis=1).tolist()
-        self.stddev_by_col = np.std(self.M, axis=0).tolist()
 
     def matrix(self, indent):
         t = indent * ' '
@@ -55,7 +47,7 @@ class Matrix:
                      self.initializer, self.rows, self.cols))
         return lines
 
-    def stat(self, t, comment, s, last=False):
+    def expected(self, t, comment, s, last=False):
         lines = list()
         lines.append(t + "/* {}: */".format(comment))
         l = "{{{}}}".format(", ".join("{:1.8f}".format(e) for e in s))
@@ -64,36 +56,69 @@ class Matrix:
         lines.append(t + l)
         return lines
         
-    def mcchecker(self, indent):
+    def sum(self, indent):
+        t = indent * ' '
+        lines = list()
+        lines.append(t + "const SumChecker<{}, {}, {}> {}(".format(self.ty,
+                     self.rows, self.cols, self.checker))
+        lines.append(
+            t+t + "{},".format(self.name))
+        lines.extend(self.expected(t+t, "sums, by row",
+                     np.sum(self.M, axis=1)))
+        lines.extend(self.expected(t+t, "sums, by col",
+                     np.sum(self.M, axis=0), True))
+        lines.append(t + ");")
+        return lines
+
+    def mean(self, indent):
         t = indent * ' '
         lines = list()
         lines.append(t + "const MeanChecker<{}, {}, {}> {}(".format(self.ty,
                      self.rows, self.cols, self.checker))
         lines.append(
             t+t + "{},".format(self.name))
-        lines.extend(self.stat(t+t, "means, by row", self.mean_by_row))
-        lines.extend(self.stat(t+t, "means, by col", self.mean_by_col))
-        lines.extend(self.stat(t+t, "var0, by row", self.var0_by_row))
-        lines.extend(self.stat(t+t, "var1, by row", self.var1_by_row))
-        lines.extend(self.stat(t+t, "var0, by col", self.var0_by_col))
-        lines.extend(self.stat(t+t, "var1, by col", self.var1_by_col))
-        lines.extend(self.stat(t+t, "stddev, by row", self.stddev_by_row))
-        lines.extend(self.stat(t+t, "stddev, by col", self.stddev_by_col, True))
+        lines.extend(self.expected(t+t, "means, by row",
+                     np.mean(self.M, axis=1)))
+        lines.extend(self.expected(t+t, "means, by col",
+                     np.mean(self.M, axis=0)))
+        lines.extend(self.expected(t+t, "var0, by row",
+                     np.var(self.M, axis=1, ddof=0)))
+        lines.extend(self.expected(t+t, "var1, by row",
+                     np.var(self.M, axis=1, ddof=1)))
+        lines.extend(self.expected(t+t, "var0, by col",
+                     np.var(self.M, axis=0, ddof=0)))
+        lines.extend(self.expected(t+t, "var1, by col",
+                     np.var(self.M, axis=0, ddof=1)))
+        lines.extend(self.expected(t+t, "stddev, by row",
+                     np.std(self.M, axis=1)))
+        lines.extend(self.expected(t+t, "stddev, by col",
+                     np.std(self.M, axis=0), True))
         lines.append(t + ");")
         return lines
 
-    def __repr__(self):
+    def test_header(self, t):
         lines = list()
-        indent = 4
-        t = indent * ' '
         lines.append(t + "// clang-format off")
         lines.append(
             t + "// === Generated automatically with '{}'".format(self.cmd_line))
-        lines.extend(self.matrix(indent))
-        lines.extend(self.mcchecker(indent))
+        return lines
+
+    def test_tail(self, t):
+        lines = list()
         lines.append(
             t + "// === End of automatically generated portion")
         lines.append(t + "// clang-format on")
+        return lines
+
+    def emit(self, test):
+        indent = 4
+        t = indent * ' '
+        lines = list()
+        lines.extend(self.test_header(t))
+        lines.extend(self.matrix(indent))
+        test = getattr(self, test)
+        lines.extend(test(indent))
+        lines.extend(self.test_tail(t))
         return "\n".join(lines)
 
 def main():
@@ -134,13 +159,13 @@ like mean, variance, standard deviation, ...
                         help="Set the matrix element type to TYPE (default: %(default)s)",
                         default="double")
     parser.add_argument("TEST",
-                        choices=['mean'],
+                        choices=['mean', 'sum'],
                         help="Generate expected values for TEST")
     options = parser.parse_args()
 
     M = Matrix(options.name, options.type, options.rows, options.columns,
                "{} --rows {} --columns {} {}".format(_prog, options.rows, options.columns, options.TEST))
-    print(M)
+    print(M.emit(options.TEST))
 
     return 0
 

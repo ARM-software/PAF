@@ -422,8 +422,11 @@ template <class Ty> class NPArray : public NPArrayBase {
 
     /// Sum elements in an NPArray on a range of rows or columns.
     std::vector<Ty> sum(Axis axis, size_t begin, size_t end) const {
-        assert(end > begin && "End of a range needs to be strictly greater "
-                              "than its begin in NPArray::sum");
+        assert(begin <= end && "End of a range needs to be strictly greater "
+                               "than its begin in NPArray::sum");
+        // Deal gracefully without bogus ranges and return empty results.
+        if (begin >= end)
+            return std::vector<Ty>();
         std::vector<Ty> result(end - begin);
         switch (axis) {
         case ROW:
@@ -512,8 +515,8 @@ template <class Ty> class NPArray : public NPArrayBase {
                              std::vector<double> *var = nullptr,
                              std::vector<double> *stddev = nullptr,
                              unsigned ddof = 0) const {
-        assert(end > begin && "End of a range needs to be strictly greater "
-                              "than its begin in NPArray::mean");
+        assert(begin <= end && "End of a range needs to be strictly greater "
+                               "than its begin in NPArray::mean");
         switch (axis) {
         case ROW:
             assert(
@@ -529,6 +532,15 @@ template <class Ty> class NPArray : public NPArrayBase {
                 end <= cols() &&
                 "end index is out of bound for column access in NPArray::mean");
             break;
+        }
+
+        // Deal gracefully without bogus ranges and return empty results.
+        if (begin >= end) {
+            if (var)
+                var->resize(0);
+            if (stddev)
+                stddev->resize(0);
+            return std::vector<double>();
         }
 
         std::vector<double> result(end - begin);
