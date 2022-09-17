@@ -45,22 +45,28 @@ enum class Classification : char {
     IGNORE   ///< Exclude this traces from the test.
 };
 
-/// Compute the t-test from samples b to e on traces, using the
+/// Compute Welsh t-test from sample b to e on traces, using the
 /// classification from classifier.
 std::vector<double> t_test(size_t b, size_t e,
                            const NPArray<double> &traces,
                            const Classification classifier[]);
 
-/// Compute the t-test from sample b to e on traces, assuming the traces have
+/// Compute Welsh's t-test from sample b to e on traces, assuming the traces have
 /// been split into group0 and group1.
 std::vector<double> t_test(size_t b, size_t e,
                            const NPArray<double> &group0,
                            const NPArray<double> &group1);
 
-/// Compute the Pearson correlation, from samples b to e, on traces
-/// using the intermediate values.
-std::vector<double> correl(size_t b, size_t e,
-                           const NPArray<double> &traces,
+/// Compute Student's t-test for samples s on traces.
+double t_test(size_t s, double m0, const NPArray<double> &traces);
+
+/// Compute Student's t-test from samples b to e on traces.
+std::vector<double> t_test(size_t b, size_t e, const std::vector<double> &m0,
+                           const NPArray<double> &traces);
+
+/// Compute the Pearson correlation, from samples b to
+/// e, on traces using the intermediate values.
+std::vector<double> correl(size_t b, size_t e, const NPArray<double> &traces,
                            const unsigned intermediate[]);
 } // namespace SCA
 } // namespace PAF

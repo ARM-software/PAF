@@ -96,6 +96,22 @@ class Matrix:
         lines.append(t + ");")
         return lines
 
+    def student(self, indent):
+        t = indent * ' '
+        lines = list()
+        lines.append(t + "const StudentChecker<{}, {}, {}> {}(".format(self.ty,
+                     self.rows, self.cols, self.checker))
+        lines.append(
+            t+t + "{},".format(self.name))
+        m0 = np.random.rand(1, self.cols)
+        lines.extend(self.expected(t+t, "m0", m0[0]))
+        m = np.mean(self.M, axis=0)
+        v = np.var(self.M, axis=0, ddof=1)
+        tvalues = np.sqrt(self.rows) * (m - m0) / np.sqrt(v)
+        lines.extend(self.expected(t+t, "tvalues", tvalues[0], True))
+        lines.append(t + ");")
+        return lines
+
     def test_header(self, t):
         lines = list()
         lines.append(t + "// clang-format off")
@@ -159,7 +175,7 @@ like mean, variance, standard deviation, ...
                         help="Set the matrix element type to TYPE (default: %(default)s)",
                         default="double")
     parser.add_argument("TEST",
-                        choices=['mean', 'sum'],
+                        choices=['mean', 'sum', 'student'],
                         help="Generate expected values for TEST")
     options = parser.parse_args()
 

@@ -112,5 +112,30 @@ vector<double> t_test(size_t b, size_t e, const NPArray<double> &group0,
 
     return tvalue;
 }
+
+double t_test(size_t s, double m0, const NPArray<double> &traces) {
+    assert(s <= traces.cols() && "Out of bound sample access in traces");
+
+    double var;
+    double m = traces.mean(NPArray<double>::COLUMN, s, &var, nullptr, 1);
+    return sqrt(traces.rows()) * (m - m0) / sqrt(var);
+}
+
+vector<double> t_test(size_t b, size_t e, const vector<double> &m0,
+                      const NPArray<double> &traces) {
+    assert(b <= e && "Wrong begin / end samples");
+    assert(b < traces.cols() && "Not that many samples in traces");
+    assert(e <= traces.cols() && "Not that many samples in traces");
+    assert(m0.size() >= e - b && "Number of means in m0 must match range");
+
+    if (b == e)
+        return vector<double>();
+
+    vector<double> tvalue(e - b);
+    for (size_t s = b; s < e; s++)
+        tvalue[s - b] = t_test(s, m0[s - b], traces);
+
+    return tvalue;
+}
 } // namespace SCA
 } // namespace PAF
