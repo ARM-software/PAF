@@ -26,6 +26,7 @@
 #include <cstring>
 #include <fstream>
 #include <functional>
+#include <initializer_list>
 #include <memory>
 #include <ostream>
 #include <string>
@@ -67,7 +68,8 @@ class NPArrayBase {
                 unsigned elt_size)
         : data(new char[num_rows * num_columns * elt_size]), num_rows(num_rows),
           num_columns(num_columns), elt_size(elt_size), errstr(nullptr) {
-        memcpy(data.get(), buf, num_rows * num_columns * elt_size);
+        if (buf)
+            memcpy(data.get(), buf, num_rows * num_columns * elt_size);
     }
 
     /// Copy construct an NPArrayBase.
@@ -185,6 +187,13 @@ class NPArrayBase {
         return reinterpret_cast<Ty *>(data.get());
     }
 
+    /// Fill our internal buffer with externally provided data.
+    template <class Ty> void fill(const char *buf, size_t size) {
+        assert(size <= num_rows * num_columns * elt_size &&
+               "data buffer size mismatch");
+        memcpy(data.get(), buf, size);
+    }
+
   private:
     std::unique_ptr<char> data;
     size_t num_rows, num_columns; //< Number of rows and columns.
@@ -225,6 +234,15 @@ template <class Ty> class NPArray : public NPArrayBase {
     NPArray(const Ty buf[], size_t num_rows, size_t num_columns)
         : NPArrayBase(reinterpret_cast<const char *>(buf), num_rows,
                       num_columns, sizeof(Ty)) {}
+
+    /// Construct an NPArray from an initializer_list and number of
+    /// rows and columns.
+    NPArray(std::initializer_list<Ty> init, size_t num_rows, size_t num_columns)
+        : NPArrayBase(nullptr, num_rows, num_columns, sizeof(Ty)) {
+        std::vector<Ty> tmp(init);
+        fill<Ty>(reinterpret_cast<const char *>(tmp.data()),
+                 tmp.size() * sizeof(Ty));
+    }
 
     /// Copy construct an NParray.
     NPArray(const NPArray &Other) : NPArrayBase(Other) {}

@@ -31,20 +31,18 @@ class Matrix:
         self.cols = cols
         self.name = name
         self.ty = ty
-        self.initializer = "F64_init_{}".format(name)
         self.checker = "C_{}".format(name)
         self.cmd_line = cmd_line
 
     def matrix(self, indent):
         t = indent * ' '
         lines = list()
-        lines.append(
-            t + "const {} {}[] = {{".format(self.ty, self.initializer))
+        lines.append(t + "const NPArray<{}> {}(".format(self.ty, self.name))
+        lines.append(t+t + "{")
         for row in self.M:
-            lines.append(t+t + ", ".join("{:1.8f}".format(e) for e in row)+',')
-        lines.append(t + "};")
-        lines.append(t + "const NPArray<{}> {}({}, {}, {});".format(self.ty, self.name,
-                     self.initializer, self.rows, self.cols))
+            lines.append(t+t+t + ", ".join("{:1.8f}".format(e) for e in row)+',')
+        lines.append(t+t + "},");
+        lines.append(t+t + "{}, {});".format(self.rows, self.cols))
         return lines
 
     def expected(self, t, comment, s, last=False):
