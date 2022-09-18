@@ -42,7 +42,7 @@ namespace SCA {
 SCAApp::SCAApp(const char *appname, int argc, char *argv[])
     : Argparse(appname, argc, argv) {
     optnoval({"-v", "--verbose"},
-             "increase verbosity level (can be specified multiple times)",
+             "increase verbosity level (can be specified multiple times).",
              [this]() { verbosity_level += 1; });
 
     // Output related options.
@@ -57,6 +57,8 @@ SCAApp::SCAApp(const char *appname, int argc, char *argv[])
              [this]() { output_format = OutputBase::OUTPUT_PYTHON; });
     optnoval({"-g", "--gnuplot"}, "emit results in gnuplot compatible format.",
              [this]() { output_format = OutputBase::OUTPUT_GNUPLOT; });
+    optnoval({"--perfect"}, "assume perfect inputs (i.e. no noise).",
+             [this]() { perfect = true; });
 
     // Select samples to start / end with as well as the number of traces to
     // process.

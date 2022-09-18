@@ -75,7 +75,6 @@ std::vector<double> t_test(size_t b, size_t e, const std::vector<double> &m0,
                            const NPArray<double> &traces,
                            std::function<bool(size_t)> select);
 
-
 /// Compute the Pearson correlation, from samples \p b to
 /// \p e, on \p traces using the \p intermediate values.
 std::vector<double> correl(size_t b, size_t e, const NPArray<double> &traces,

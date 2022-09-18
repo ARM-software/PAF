@@ -96,6 +96,9 @@ class SCAApp : public Argparse {
     /// Write a sequence of values to this application's output file.
     void output(const std::vector<double> &values) { out->emit(values); }
 
+    /// Do we assume perfect inputs ?
+    bool is_perfect() const { return perfect; }
+
   private:
     unsigned verbosity_level = 0;
 
@@ -106,6 +109,7 @@ class SCAApp : public Argparse {
     size_t start_sample = 0;
     size_t nb_samples = std::numeric_limits<size_t>::max();
     std::unique_ptr<OutputBase> out;
+    bool perfect = false;
 };
 
 } // namespace SCA
