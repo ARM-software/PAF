@@ -600,6 +600,36 @@ TEST(NPArray, Row) {
     EXPECT_EQ(r[0], 3);
 }
 
+TEST(NPArray, all) {
+    const int64_t MI64_init[] = {1, 1, 1, 1, 1, 1, 1, 1, 0};
+    NPArray<int64_t> a(MI64_init, 3, 3);
+
+    auto one = [&](int64_t v) { return v == a(0,0);};
+
+    // Check each row / each column.
+    EXPECT_TRUE(a.all(decltype(a)::COLUMN, 0, one));
+    EXPECT_TRUE(a.all(decltype(a)::COLUMN, 1, one));
+    EXPECT_FALSE(a.all(decltype(a)::COLUMN, 2, one));
+    EXPECT_TRUE(a.all(decltype(a)::ROW, 0, one));
+    EXPECT_TRUE(a.all(decltype(a)::ROW, 1, one));
+    EXPECT_FALSE(a.all(decltype(a)::ROW, 2, one));
+
+    // Check column / row ranges.
+    EXPECT_FALSE(a.all(decltype(a)::COLUMN, 0, 0, one)); // Empty range.
+    EXPECT_TRUE(a.all(decltype(a)::COLUMN, 0, 1, one));
+    EXPECT_TRUE(a.all(decltype(a)::COLUMN, 0, 2, one));
+    EXPECT_FALSE(a.all(decltype(a)::COLUMN, 0, 3, one));
+    EXPECT_FALSE(a.all(decltype(a)::COLUMN, 1, 3, one));
+    EXPECT_FALSE(a.all(decltype(a)::COLUMN, 2, 3, one));
+
+    EXPECT_FALSE(a.all(decltype(a)::ROW, 0, 0, one)); // Empty range.
+    EXPECT_TRUE(a.all(decltype(a)::ROW, 0, 1, one));
+    EXPECT_TRUE(a.all(decltype(a)::ROW, 0, 2, one));
+    EXPECT_FALSE(a.all(decltype(a)::ROW, 0, 3, one));
+    EXPECT_FALSE(a.all(decltype(a)::ROW, 1, 3, one));
+    EXPECT_FALSE(a.all(decltype(a)::ROW, 2, 3, one));
+}
+
 static constexpr double EPSILON = 0.000001;
 
 template <typename Ty, size_t rows, size_t cols>

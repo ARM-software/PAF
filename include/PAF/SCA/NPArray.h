@@ -399,6 +399,39 @@ template <class Ty> class NPArray : public NPArrayBase {
         COLUMN ///< Process data along the Column axis.
     };
 
+    /// Test if all elements in row i or column i satisfy predicate pred.
+    bool all(Axis axis, size_t i, std::function<bool(Ty)> pred) const {
+        switch (axis) {
+        case ROW:
+            assert(i < rows() &&
+                   "index is out of bound for row access in NPArray::all");
+            for (size_t col = 0; col < cols(); col++)
+                if (!pred(at(i, col)))
+                    return false;
+            return true;
+        case COLUMN:
+            assert(i < cols() &&
+                   "index is out of bound column access in NPArray::all");
+            for (size_t row = 0; row < rows(); row++)
+                if (!pred(at(row, i)))
+                    return false;
+            return true;
+        }
+    }
+
+    /// Test if all elements in row i or column i satisfy predicate pred.
+    bool all(Axis axis, size_t begin, size_t end,
+             std::function<bool(Ty)> pred) const {
+        assert(begin <= end && "End of a range needs to be strictly greater "
+                               "than its begin in NPArray::all");
+        if (begin >= end)
+            return false;
+        for (size_t i = begin; i < end; i++)
+            if (!all(axis, i, pred))
+                return false;
+        return true;
+    }
+
     /// Sum elements in an NPArray in row i or column i.
     Ty sum(Axis axis, size_t i) const {
         Ty result;
