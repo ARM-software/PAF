@@ -122,7 +122,7 @@ class NPArrayBase {
     }
 
     /// Are those NPArray equal ?
-    bool operator==(const NPArrayBase &Other) const {
+    bool operator==(const NPArrayBase &Other) const noexcept {
         if (element_size() != Other.element_size() || rows() != Other.rows() ||
             cols() != Other.cols())
             return false;
@@ -131,24 +131,24 @@ class NPArrayBase {
     }
 
     /// Are those NPArray different ?
-    bool operator!=(const NPArrayBase &Other) const {
+    bool operator!=(const NPArrayBase &Other) const noexcept {
         return !(*this == Other);
     }
 
     /// Get the number of rows.
-    size_t rows() const { return num_rows; }
+    size_t rows() const noexcept { return num_rows; }
 
     /// Get the number of columns.
-    size_t cols() const { return num_columns; }
+    size_t cols() const noexcept { return num_columns; }
 
     /// Get the number of elements.
-    size_t size() const { return num_rows * num_columns; }
+    size_t size() const noexcept { return num_rows * num_columns; }
 
     /// Get the underlying element size in bytes.
-    unsigned element_size() const { return elt_size; }
+    unsigned element_size() const noexcept { return elt_size; }
 
     /// Get the status of this NPArray.
-    bool good() const { return errstr == nullptr; }
+    bool good() const noexcept { return errstr == nullptr; }
 
     /// Insert (uninitialized) rows at position row.
     NPArrayBase &insert_rows(size_t row, size_t rows);
@@ -164,7 +164,7 @@ class NPArrayBase {
 
     /// Get a string describing the last error (if any).
     /// Especially useful when initializing from a file.
-    const char *error() const { return errstr; }
+    const char *error() const noexcept { return errstr; }
 
     /// Get information from the file header.
     static bool get_information(std::ifstream &ifs, unsigned &major,
@@ -179,16 +179,16 @@ class NPArrayBase {
 
   protected:
     /// Get a pointer to type Ty to the array (const version).
-    template <class Ty> const Ty *getAs() const {
+    template <class Ty> const Ty *getAs() const noexcept {
         return reinterpret_cast<Ty *>(data.get());
     }
     /// Get a pointer to type Ty to the array.
-    template <class Ty> Ty *getAs() {
+    template <class Ty> Ty *getAs() noexcept {
         return reinterpret_cast<Ty *>(data.get());
     }
 
     /// Fill our internal buffer with externally provided data.
-    template <class Ty> void fill(const char *buf, size_t size) {
+    template <class Ty> void fill(const char *buf, size_t size) noexcept {
         assert(size <= num_rows * num_columns * elt_size &&
                "data buffer size mismatch");
         memcpy(data.get(), buf, size);
@@ -270,7 +270,7 @@ template <class Ty> class NPArray : public NPArrayBase {
     }
 
     /// Get element located at [ \p row, \p col].
-    Ty &operator()(size_t row, size_t col) {
+    Ty &operator()(size_t row, size_t col) noexcept {
         assert(row < rows() && "Row is out-of-range");
         assert(col < cols() && "Col is out-of-range");
         Ty *p = getAs<Ty>();
@@ -278,7 +278,7 @@ template <class Ty> class NPArray : public NPArrayBase {
     }
 
     /// Get element located at [ \p row, \p col] (const version).
-    Ty operator()(size_t row, size_t col) const {
+    Ty operator()(size_t row, size_t col) const noexcept {
         assert(row < rows() && "Row is out-of-range");
         assert(col < cols() && "Col is out-of-range");
         const Ty *p = getAs<Ty>();
@@ -286,7 +286,7 @@ template <class Ty> class NPArray : public NPArrayBase {
     }
 
     /// Get a pointer to row \p row.
-    const Ty *operator()(size_t row) const {
+    const Ty *operator()(size_t row) const noexcept {
         assert(row < rows() && "Row is out-of-range");
         const Ty *p = getAs<Ty>();
         return &p[row * cols()];
@@ -358,34 +358,35 @@ template <class Ty> class NPArray : public NPArrayBase {
         Row() = delete;
 
         /// Construct a Row view of nparray.
-        Row(const NPArray<DataTy> &nparray, size_t row)
+        Row(const NPArray<DataTy> &nparray, size_t row) noexcept
             : nparray(&nparray), row(row) {}
 
         /// Copy constructor.
-        Row(const Row &Other) : nparray(Other.nparray), row(Other.row) {}
+        Row(const Row &Other) noexcept
+            : nparray(Other.nparray), row(Other.row) {}
 
         /// Copy assignment.
-        Row &operator=(const Row &Other) {
+        Row &operator=(const Row &Other) noexcept {
             nparray = Other.nparray;
             row = Other.row;
             return *this;
         }
 
         /// Pre-increment this Row (move to the next row).
-        Row &operator++() {
+        Row &operator++() noexcept {
             row++;
             return *this;
         }
 
         /// Post-increment this Row (move to the next row)
-        const Row operator++(int) {
+        const Row operator++(int) noexcept {
             Row copy(*this);
             row++;
             return copy;
         }
 
         /// Get the ith element in this Row.
-        DataTy operator[](size_t ith) const {
+        DataTy operator[](size_t ith) const noexcept {
             assert(row < nparray->rows() &&
                    "NPArray::Row out of bound row access");
             assert(ith < nparray->cols() &&
@@ -396,14 +397,14 @@ template <class Ty> class NPArray : public NPArrayBase {
         /// Compare 2 rows for equality (as iterators).
         ///
         /// This compares the rows as iterators, but not the rows' content.
-        bool operator==(const Row &Other) const {
+        bool operator==(const Row &Other) const noexcept {
             return nparray == Other.nparray && row == Other.row;
         }
 
         /// Compare 2 rows for inequality (as iterators).
         ///
         /// This compares the rows as iterators, but not the rows' content.
-        bool operator!=(const Row &Other) const {
+        bool operator!=(const Row &Other) const noexcept {
             return nparray != Other.nparray || row != Other.row;
         }
 
@@ -413,10 +414,10 @@ template <class Ty> class NPArray : public NPArrayBase {
     };
 
     /// Get the first row from this NPArray.
-    Row row_begin() const { return Row(*this, 0); }
+    Row row_begin() const noexcept { return Row(*this, 0); }
 
     /// Get a past-the-end row for this NPArray.
-    Row row_end() const { return Row(*this, rows()); }
+    Row row_end() const noexcept { return Row(*this, rows()); }
 
     /// The Axis enumeration is used to describe along which axis an operation
     /// has to be performed.
