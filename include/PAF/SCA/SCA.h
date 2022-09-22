@@ -27,12 +27,13 @@
 namespace PAF {
 namespace SCA {
 
-/// Compute the hamming weight of val, masked with mask.
+/// Compute the hamming weight of \p val, masked with \p mask.
 template <class Ty> unsigned hamming_weight(Ty val, Ty mask) {
     return __builtin_popcount(val & mask);
 }
 
-/// Compute the hamming distance from val1 to val2 with mask applied to each.
+/// Compute the hamming distance from \p val1 to \p val2 with \p mask applied to
+/// each.
 template <class Ty> unsigned hamming_distance(Ty val1, Ty val2, Ty mask) {
     return __builtin_popcount((val1 & mask) ^ (val2 & mask));
 }
@@ -45,27 +46,25 @@ enum class Classification : char {
     IGNORE   ///< Exclude this traces from the test.
 };
 
-/// Compute Welsh t-test from sample b to e on traces, using the
-/// classification from classifier.
-std::vector<double> t_test(size_t b, size_t e,
-                           const NPArray<double> &traces,
+/// Compute Welsh t-test from sample \p b to \p e on \p traces, using the
+/// classification from \p classifier.
+std::vector<double> t_test(size_t b, size_t e, const NPArray<double> &traces,
                            const Classification classifier[]);
 
-/// Compute Welsh's t-test from sample b to e on traces, assuming the traces have
-/// been split into group0 and group1.
-std::vector<double> t_test(size_t b, size_t e,
-                           const NPArray<double> &group0,
+/// Compute Welsh's t-test from sample b to e on traces, assuming the traces
+/// have been split into \p group0 and \p group1.
+std::vector<double> t_test(size_t b, size_t e, const NPArray<double> &group0,
                            const NPArray<double> &group1);
 
-/// Compute Student's t-test for samples s on traces.
+/// Compute Student's t-test for samples \p s all traces in \p traces.
 double t_test(size_t s, double m0, const NPArray<double> &traces);
 
-/// Compute Student's t-test from samples b to e on traces.
+/// Compute Student's t-test from samples \p b to \p e in \p traces.
 std::vector<double> t_test(size_t b, size_t e, const std::vector<double> &m0,
                            const NPArray<double> &traces);
 
-/// Compute the Pearson correlation, from samples b to
-/// e, on traces using the intermediate values.
+/// Compute the Pearson correlation, from samples \p b to
+/// \p e, on \p traces using the \p intermediate values.
 std::vector<double> correl(size_t b, size_t e, const NPArray<double> &traces,
                            const unsigned intermediate[]);
 } // namespace SCA
