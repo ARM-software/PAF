@@ -614,7 +614,7 @@ TEST(NPArray, Row) {
 TEST(NPArray, all) {
     NPArray<int64_t> a({1, 1, 1, 1, 1, 1, 1, 1, 0}, 3, 3);
 
-    auto one = [&](int64_t v) { return v == a(0,0);};
+    std::function<bool(int64_t)> one = [&](int64_t v) { return v == a(0, 0); };
 
     // Check each row / each column.
     EXPECT_TRUE(a.all(decltype(a)::COLUMN, 0, one));
@@ -623,6 +623,14 @@ TEST(NPArray, all) {
     EXPECT_TRUE(a.all(decltype(a)::ROW, 0, one));
     EXPECT_TRUE(a.all(decltype(a)::ROW, 1, one));
     EXPECT_FALSE(a.all(decltype(a)::ROW, 2, one));
+
+    // Check each row / each column (functional version).
+    EXPECT_TRUE(all(a, decltype(a)::COLUMN, 0, one));
+    EXPECT_TRUE(all(a, decltype(a)::COLUMN, 1, one));
+    EXPECT_FALSE(all(a, decltype(a)::COLUMN, 2, one));
+    EXPECT_TRUE(all(a, decltype(a)::ROW, 0, one));
+    EXPECT_TRUE(all(a, decltype(a)::ROW, 1, one));
+    EXPECT_FALSE(all(a, decltype(a)::ROW, 2, one));
 
     // Check column / row ranges.
     EXPECT_FALSE(a.all(decltype(a)::COLUMN, 0, 0, one)); // Empty range.
@@ -638,6 +646,21 @@ TEST(NPArray, all) {
     EXPECT_FALSE(a.all(decltype(a)::ROW, 0, 3, one));
     EXPECT_FALSE(a.all(decltype(a)::ROW, 1, 3, one));
     EXPECT_FALSE(a.all(decltype(a)::ROW, 2, 3, one));
+
+    // Check column / row ranges (functional version).
+    EXPECT_FALSE(all(a, decltype(a)::COLUMN, 0, 0, one)); // Empty range.
+    EXPECT_TRUE(all(a, decltype(a)::COLUMN, 0, 1, one));
+    EXPECT_TRUE(all(a, decltype(a)::COLUMN, 0, 2, one));
+    EXPECT_FALSE(all(a, decltype(a)::COLUMN, 0, 3, one));
+    EXPECT_FALSE(all(a, decltype(a)::COLUMN, 1, 3, one));
+    EXPECT_FALSE(all(a, decltype(a)::COLUMN, 2, 3, one));
+
+    EXPECT_FALSE(all(a, decltype(a)::ROW, 0, 0, one)); // Empty range.
+    EXPECT_TRUE(all(a, decltype(a)::ROW, 0, 1, one));
+    EXPECT_TRUE(all(a, decltype(a)::ROW, 0, 2, one));
+    EXPECT_FALSE(all(a, decltype(a)::ROW, 0, 3, one));
+    EXPECT_FALSE(all(a, decltype(a)::ROW, 1, 3, one));
+    EXPECT_FALSE(all(a, decltype(a)::ROW, 2, 3, one));
 }
 
 static constexpr double EPSILON = 0.000001;

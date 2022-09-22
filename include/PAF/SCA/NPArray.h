@@ -638,6 +638,21 @@ template <class Ty> class NPArray : public NPArrayBase {
     Ty at(size_t row, size_t col) const { return (*this)(row, col); }
 };
 
+/// Functional version of 'all' predicate checker on an NPArray for row / column
+/// i.
+template <class Ty>
+bool all(const NPArray<Ty> &npy, typename NPArray<Ty>::Axis axis, size_t i,
+         std::function<bool(Ty)> pred) {
+    return npy.all(axis, i, pred);
+}
+
+/// Functional version of 'all' predicate checker for a range of rows / columns.
+template <class Ty>
+bool all(const NPArray<Ty> &npy, typename NPArray<Ty>::Axis axis, size_t begin,
+         size_t end, std::function<bool(Ty)> pred) {
+    return npy.all(axis, begin, end, pred);
+}
+
 /// Functional version of 'sum' operation on NPArray on specific row/col.
 template <class Ty>
 Ty sum(const NPArray<Ty> &npy, typename NPArray<Ty>::Axis axis, size_t i) {
