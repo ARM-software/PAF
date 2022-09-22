@@ -167,6 +167,17 @@ TEST(NPArray, base) {
     EXPECT_EQ(WI(0, 1), 1);
     EXPECT_EQ(WI(1, 0), 2);
     EXPECT_EQ(WI(1, 1), 3);
+
+    // Uninitialized NPArray.
+    NPArray<uint64_t> UI(3, 2);
+    EXPECT_EQ(UI.rows(), 3);
+    EXPECT_EQ(UI.cols(), 2);
+    EXPECT_EQ(UI.size(), 6);
+    EXPECT_EQ(UI.element_size(), sizeof(uint64_t));
+    UI(1, 1) = 1;
+    UI(0, 0) = 0;
+    EXPECT_EQ(UI(1, 1), 1);
+    EXPECT_EQ(UI(0, 0), 0);
 }
 
 TEST(NPArray, index_setter) {

@@ -220,6 +220,12 @@ template <class Ty> class NPArray : public NPArrayBase {
         : NPArrayBase(filename.c_str(), std::is_floating_point<Ty>(),
                       sizeof(Ty)) {}
 
+    /// Construct an uninitialized NPArray with rows and columns.
+    NPArray(size_t num_rows, size_t num_columns)
+        : NPArrayBase(std::unique_ptr<char>(
+                          new char[num_rows * num_columns * sizeof(Ty)]),
+                      num_rows, num_columns, sizeof(Ty)) {}
+
     /// Construct an NPArray from memory (std::unique_ptr version) and number of
     /// rows and columns.
     ///
