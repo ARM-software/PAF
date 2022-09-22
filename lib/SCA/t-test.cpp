@@ -24,8 +24,8 @@
 #include <cmath>
 #include <memory>
 
+using std::function;
 using std::sqrt;
-using std::unique_ptr;
 using std::vector;
 
 namespace PAF {
@@ -121,6 +121,34 @@ double t_test(size_t s, double m0, const NPArray<double> &traces) {
     return sqrt(traces.rows()) * (m - m0) / sqrt(var);
 }
 
+double t_test(size_t s, double m0, const NPArray<double> &traces,
+              function<bool(size_t)> select) {
+    assert(s <= traces.cols() && "Not that many samples in the trace");
+
+    // Use a numerically stable algorithm to compute the mean and variance.
+    // The one from D. Knuth from "The Art of Computer Programming (1998)"
+    // is used here.
+    double mean = 0.0;
+    double variance = 0.0;
+    unsigned n = 0;
+    double delta1, delta2;
+    for (size_t tnum = 0; tnum < traces.rows(); tnum++)
+        if (select(tnum)) {
+            n += 1;
+            delta1 = traces(tnum, s) - mean;
+            mean += delta1 / double(n);
+            delta2 = traces(tnum, s) - mean;
+            variance += delta1 * delta2;
+        }
+
+    if (n <= 1)
+        return std::nan("");
+
+    variance /= double(n - 1);
+
+    return sqrt(double(n)) * (mean - m0) / sqrt(variance);
+}
+
 vector<double> t_test(size_t b, size_t e, const vector<double> &m0,
                       const NPArray<double> &traces) {
     assert(b <= e && "Wrong begin / end samples");
@@ -137,5 +165,24 @@ vector<double> t_test(size_t b, size_t e, const vector<double> &m0,
 
     return tvalue;
 }
+
+vector<double> t_test(size_t b, size_t e, const vector<double> &m0,
+                      const NPArray<double> &traces,
+                      function<bool(size_t)> select) {
+    assert(b <= e && "Wrong begin / end samples");
+    assert(b < traces.cols() && "Not that many samples in traces");
+    assert(e <= traces.cols() && "Not that many samples in traces");
+    assert(m0.size() >= e - b && "Number of means in m0 must match range");
+
+    if (b == e)
+        return vector<double>();
+
+    vector<double> tvalue(e - b);
+    for (size_t s = b; s < e; s++)
+        tvalue[s - b] = t_test(s, m0[s - b], traces, select);
+
+    return tvalue;
+}
+
 } // namespace SCA
 } // namespace PAF

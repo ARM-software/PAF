@@ -106,7 +106,15 @@ class Matrix:
         m = np.mean(self.M, axis=0)
         v = np.var(self.M, axis=0, ddof=1)
         tvalues = np.sqrt(self.rows) * (m - m0) / np.sqrt(v)
-        lines.extend(self.expected(t+t, "tvalues", tvalues[0], True))
+        lines.extend(self.expected(t+t, "tvalues (complete column)", tvalues[0]))
+        m = np.mean(self.M[0::2], axis=0)
+        v = np.var(self.M[0::2], axis=0, ddof=1)
+        tvalues = np.sqrt(self.rows / 2.0) * (m - m0) / np.sqrt(v)
+        lines.extend(self.expected(t+t, "tvalues (even traces)", tvalues[0]))
+        m = np.mean(self.M[1::2], axis=0)
+        v = np.var(self.M[1::2], axis=0, ddof=1)
+        tvalues = np.sqrt(self.rows / 2.0) * (m - m0) / np.sqrt(v)
+        lines.extend(self.expected(t+t, "tvalues (odd traces)", tvalues[0], True))
         lines.append(t + ");")
         return lines
 

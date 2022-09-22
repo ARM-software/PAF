@@ -22,6 +22,7 @@
 
 #include "PAF/SCA/NPArray.h"
 
+#include <functional>
 #include <vector>
 
 namespace PAF {
@@ -59,9 +60,21 @@ std::vector<double> t_test(size_t b, size_t e, const NPArray<double> &group0,
 /// Compute Student's t-test for samples \p s all traces in \p traces.
 double t_test(size_t s, double m0, const NPArray<double> &traces);
 
+/// Compute Student's t-test for samples \p s in traces for which \p select
+/// returns true.
+double t_test(size_t s, double m0, const NPArray<double> &traces,
+              std::function<bool(size_t)> select);
+
 /// Compute Student's t-test from samples \p b to \p e in \p traces.
 std::vector<double> t_test(size_t b, size_t e, const std::vector<double> &m0,
                            const NPArray<double> &traces);
+
+/// Compute Student's t-test from samples \p b to \p e in \p traces for traces
+/// for which \p select returns true.
+std::vector<double> t_test(size_t b, size_t e, const std::vector<double> &m0,
+                           const NPArray<double> &traces,
+                           std::function<bool(size_t)> select);
+
 
 /// Compute the Pearson correlation, from samples \p b to
 /// \p e, on \p traces using the \p intermediate values.
