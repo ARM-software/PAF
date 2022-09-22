@@ -57,8 +57,8 @@ class NPArrayBase {
     /// misc other information.
     ///
     /// Takes ownership of data buffer.
-    NPArrayBase(std::unique_ptr<char> &&data, size_t num_rows, size_t num_columns,
-                unsigned elt_size)
+    NPArrayBase(std::unique_ptr<char> &&data, size_t num_rows,
+                size_t num_columns, unsigned elt_size)
         : data(std::move(data)), num_rows(num_rows), num_columns(num_columns),
           elt_size(elt_size), errstr(nullptr) {}
 
@@ -210,24 +210,25 @@ template <class Ty> class NPArray : public NPArrayBase {
     static_assert(std::is_arithmetic<DataTy>(),
                   "expecting an integral or floating point type");
 
-    /// Construct an NPArray from data store in file filename.
+    /// Construct an NPArray from data stored in file \p filename.
     NPArray(const char *filename)
         : NPArrayBase(filename, std::is_floating_point<Ty>(), sizeof(Ty)) {}
 
-    /// Construct an NPArray from data store in file filename (std::string
+    /// Construct an NPArray from data stored in file \p filename (std::string
     /// version).
     NPArray(const std::string &filename)
         : NPArrayBase(filename.c_str(), std::is_floating_point<Ty>(),
                       sizeof(Ty)) {}
 
-    /// Construct an uninitialized NPArray with rows and columns.
+    /// Construct an uninitialized NPArray with \p num_rows rows and \p
+    /// num_columns columns.
     NPArray(size_t num_rows, size_t num_columns)
         : NPArrayBase(std::unique_ptr<char>(
                           new char[num_rows * num_columns * sizeof(Ty)]),
                       num_rows, num_columns, sizeof(Ty)) {}
 
-    /// Construct an NPArray from memory (std::unique_ptr version) and number of
-    /// rows and columns.
+    /// Construct an NPArray from memory (std::unique_ptr version) with \p
+    /// num_rows rows and \p num_columns columns.
     ///
     /// This object takes ownership of the memory.
     NPArray(std::unique_ptr<Ty[]> &&data, size_t num_rows, size_t num_columns)
@@ -235,8 +236,8 @@ template <class Ty> class NPArray : public NPArrayBase {
               std::unique_ptr<char>(reinterpret_cast<char *>(data.release())),
               num_rows, num_columns, sizeof(Ty)) {}
 
-    /// Construct an NPArray from memory (raw pointer version) and number of
-    /// rows and columns.
+    /// Construct an NPArray from memory (raw pointer version) and \p num_rows
+    /// rows and \p num_columns columns.
     NPArray(const Ty buf[], size_t num_rows, size_t num_columns)
         : NPArrayBase(reinterpret_cast<const char *>(buf), num_rows,
                       num_columns, sizeof(Ty)) {}
@@ -268,7 +269,7 @@ template <class Ty> class NPArray : public NPArrayBase {
         return *this;
     }
 
-    /// Get element located at [row, col].
+    /// Get element located at [ \p row, \p col].
     Ty &operator()(size_t row, size_t col) {
         assert(row < rows() && "Row is out-of-range");
         assert(col < cols() && "Col is out-of-range");
@@ -276,7 +277,7 @@ template <class Ty> class NPArray : public NPArrayBase {
         return p[row * cols() + col];
     }
 
-    /// Get element located at [row, col] (const version).
+    /// Get element located at [ \p row, \p col] (const version).
     Ty operator()(size_t row, size_t col) const {
         assert(row < rows() && "Row is out-of-range");
         assert(col < cols() && "Col is out-of-range");
@@ -284,19 +285,19 @@ template <class Ty> class NPArray : public NPArrayBase {
         return p[row * cols() + col];
     }
 
-    /// Get a pointer to row row.
+    /// Get a pointer to row \p row.
     const Ty *operator()(size_t row) const {
         assert(row < rows() && "Row is out-of-range");
         const Ty *p = getAs<Ty>();
         return &p[row * cols()];
     }
 
-    /// Dump an ascii representation of the NPY array to os.
+    /// Dump an ascii representation of the NPY array to \p os.
     ///
-    /// The number of rows (resp. columns) printed can be set with num_rows
-    /// (resp. num_columns). If num_rows (resp. num_columns) is set to 0, then
-    /// alls rows (resp. columns) will be dumped. The dump can use an optional
-    /// name for the array to improve the user experience.
+    /// The number of rows (resp. columns) printed can be set with \p num_rows
+    /// (resp. \p num_columns). If \p num_rows (resp. \p num_columns) is set to
+    /// 0, then alls rows (resp. columns) will be dumped. The dump can use an
+    /// optional \p name for the array to improve the user experience.
     void dump(std::ostream &os, size_t num_rows = 0, size_t num_columns = 0,
               const char *name = nullptr) const {
         const size_t J = num_rows == 0 ? rows() : std::min(num_rows, rows());
@@ -324,7 +325,7 @@ template <class Ty> class NPArray : public NPArrayBase {
         os.flags(saved_flags);
     }
 
-    /// Save to file filename, in NPY format.
+    /// Save to file \p filename, in NPY format.
     bool save(const char *filename) const {
         std::string descr;
         if (std::is_floating_point<DataTy>())
@@ -345,7 +346,7 @@ template <class Ty> class NPArray : public NPArrayBase {
         return this->NPArrayBase::save(filename, descr, shape);
     }
 
-    /// Save to file filename, in NPY format.
+    /// Save to file \p filename, in NPY format.
     bool save(const std::string &filename) const {
         return save(filename.c_str());
     }
@@ -424,7 +425,8 @@ template <class Ty> class NPArray : public NPArrayBase {
         COLUMN ///< Process data along the Column axis.
     };
 
-    /// Test if all elements in row i or column i satisfy predicate pred.
+    /// Test if all elements in row \p i or column \p i satisfy predicate \p
+    /// pred.
     bool all(Axis axis, size_t i, std::function<bool(Ty)> pred) const {
         switch (axis) {
         case ROW:
@@ -444,7 +446,8 @@ template <class Ty> class NPArray : public NPArrayBase {
         }
     }
 
-    /// Test if all elements in row i or column i satisfy predicate pred.
+    /// Test if all elements in row \p i or column \p i satisfy predicate \p
+    /// pred.
     bool all(Axis axis, size_t begin, size_t end,
              std::function<bool(Ty)> pred) const {
         assert(begin <= end && "End of a range needs to be strictly greater "
@@ -457,7 +460,7 @@ template <class Ty> class NPArray : public NPArrayBase {
         return true;
     }
 
-    /// Sum elements in an NPArray in row i or column i.
+    /// Sum elements in an NPArray in row \p i or column \p i.
     Ty sum(Axis axis, size_t i) const {
         Ty result;
         switch (axis) {
@@ -508,8 +511,8 @@ template <class Ty> class NPArray : public NPArrayBase {
         }
     }
 
-    /// Sum elements in an NPArray along an axis --- for all rows/cols on that
-    /// axis.
+    /// Sum elements in an NPArray along an \p axis --- for all rows/cols on
+    /// that axis.
     std::vector<Ty> sum(Axis axis) const {
         switch (axis) {
         case ROW:
@@ -519,8 +522,8 @@ template <class Ty> class NPArray : public NPArrayBase {
         }
     }
 
-    /// Compute the mean on row i or column i. It optionally computes the
-    /// variance (taking ddof into account) and the standard deviation.
+    /// Compute the mean on row \p i or column \p i. It optionally computes the
+    /// variance (taking \p ddof into account) and the standard deviation.
     double mean(Axis axis, size_t i, double *var = nullptr,
                 double *stddev = nullptr, unsigned ddof = 0) const {
         // Use a numerically stable algorithm to compute the mean and variance.
@@ -567,8 +570,8 @@ template <class Ty> class NPArray : public NPArrayBase {
     }
 
     /// Compute the mean on a range of rows or on a range of columns, optionally
-    /// computing the variance (taking into account the ddof) and the standard
-    /// deviation.
+    /// computing the variance (taking into account the \p ddof) and the
+    /// standard deviation.
     std::vector<double> mean(Axis axis, size_t begin, size_t end,
                              std::vector<double> *var = nullptr,
                              std::vector<double> *stddev = nullptr,
