@@ -22,6 +22,7 @@
 
 #include "libtarmac/argparse.hh"
 
+#include <cassert>
 #include <fstream>
 #include <limits>
 #include <memory>
@@ -43,7 +44,8 @@ class OutputBase {
     OutputBase(const std::string &filename, bool append = true);
 
     /// Abstract method to write some values to this output.
-    virtual void emit(const std::vector<double> &values) = 0;
+    virtual void emit(const std::vector<double> &values, unsigned decimate,
+                      unsigned offset) = 0;
     virtual ~OutputBase();
 
     /// The different output formats supported by SCA applications.
@@ -94,7 +96,13 @@ class SCAApp : public Argparse {
     size_t num_samples() const { return nb_samples; }
 
     /// Write a sequence of values to this application's output file.
-    void output(const std::vector<double> &values) { out->emit(values); }
+    void output(const std::vector<double> &values, unsigned decimate = 1,
+                unsigned offset = 0) {
+        assert(decimate > 0 && "Decimate must not be 0");
+        assert(offset < decimate &&
+               "Offset must be strictly lower than decimate");
+        out->emit(values, decimate, offset);
+    }
 
     /// Do we assume perfect inputs ?
     bool is_perfect() const { return perfect; }

@@ -23,6 +23,7 @@
 
 #include "libtarmac/reporter.hh"
 
+#include <cassert>
 #include <cmath>
 #include <cstdlib>
 #include <iostream>
@@ -97,10 +98,13 @@ class TerseOutput : public OutputBase {
     TerseOutput(const std::string &filename, bool append = true)
         : OutputBase(filename, append) {}
 
-    virtual void emit(const std::vector<double> &values) override {
+    virtual void emit(const std::vector<double> &values, unsigned decimate,
+                      unsigned offset) override {
+        assert(decimate > 0 && "decimate can not be 0");
         size_t max_index;
-        double max_v = find_max(values, &max_index);
-        *out << "# max = " << max_v << " at index " << max_index << '\n';
+        double max_v = find_max(values, &max_index, decimate, offset);
+        *out << "# max = " << max_v << " at index " << (max_index / decimate)
+             << '\n';
     }
 };
 
@@ -108,14 +112,17 @@ class GnuplotOutput : public OutputBase {
   public:
     GnuplotOutput(const std::string &filename, bool append = true)
         : OutputBase(filename, append) {}
-    virtual void emit(const std::vector<double> &values) override {
+    virtual void emit(const std::vector<double> &values, unsigned decimate,
+                      unsigned offset) override {
+        assert(decimate > 0 && "decimate can not be 0");
         size_t max_index;
-        double max_v = find_max(values, &max_index);
+        double max_v = find_max(values, &max_index, decimate, offset);
 
-        for (size_t i = 0; i < values.size(); i++)
-            *out << i << "  " << values[i] << '\n';
+        for (size_t i = offset; i < values.size(); i += decimate)
+            *out << (i / decimate) << "  " << values[i] << '\n';
 
-        *out << "# max = " << max_v << " at index " << max_index << '\n';
+        *out << "# max = " << max_v << " at index " << (max_index / decimate)
+             << '\n';
     }
 };
 
@@ -123,11 +130,12 @@ class PythonOutput : public OutputBase {
   public:
     PythonOutput(const std::string &filename, bool append = true)
         : OutputBase(filename, append) {}
-    virtual void emit(const std::vector<double> &values) override {
+    virtual void emit(const std::vector<double> &values, unsigned decimate,
+                      unsigned offset) override {
         *out << "waves.append(Waveform([";
         const char *sep = "";
-        for (const auto &value : values) {
-            *out << sep << fabs(value);
+        for (size_t i = offset; i < values.size(); i += decimate) {
+            *out << sep << values[i];
             sep = ", ";
         }
         *out << "]))\n";

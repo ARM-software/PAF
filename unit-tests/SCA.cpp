@@ -86,7 +86,28 @@ TEST(Utils, find_max) {
     vector<double> a4;
     max_v = find_max(a4, &max_index);
     EXPECT_EQ(max_v, 0.0);
-    EXPECT_EQ(max_index, -1);    
+    EXPECT_EQ(max_index, -1);
+
+    // Test with decimation.
+    max_v = find_max(a1, &max_index, 2, 0);
+    EXPECT_EQ(max_v, 2.0);
+    EXPECT_EQ(max_index, 2);
+
+    max_v = find_max(a1, &max_index, 2, 1);
+    EXPECT_EQ(max_v, 3.0);
+    EXPECT_EQ(max_index, 3);
+
+    max_v = find_max(a3, &max_index, 3, 0);
+    EXPECT_EQ(max_v, 6.0);
+    EXPECT_EQ(max_index, 0);
+
+    max_v = find_max(a3, &max_index, 3, 1);
+    EXPECT_EQ(max_v, -1.0);
+    EXPECT_EQ(max_index, 1);
+
+    max_v = find_max(a3, &max_index, 3, 2);
+    EXPECT_EQ(max_v, -3.0);
+    EXPECT_EQ(max_index, 2);
 }
 
 namespace {

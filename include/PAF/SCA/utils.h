@@ -28,7 +28,8 @@ namespace SCA {
 
 // Returns the maximum value in data[0:n( and update index with the offset
 // where it was found in the array.
-double find_max(const std::vector<double> &data, size_t *index);
+double find_max(const std::vector<double> &data, size_t *index,
+                unsigned decimate = 1, unsigned offset = 0);
 
 } // namespace SCA
 } // namespace PAF

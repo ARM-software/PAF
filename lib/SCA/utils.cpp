@@ -20,6 +20,7 @@
 
 #include "PAF/SCA/utils.h"
 
+#include <cassert>
 #include <cmath>
 
 using std::fabs;
@@ -28,17 +29,20 @@ using std::vector;
 namespace PAF {
 namespace SCA {
 
-double find_max(const vector<double> &data, size_t *index) {
+double find_max(const vector<double> &data, size_t *index, unsigned decimate,
+                unsigned offset) {
+    assert(decimate > 0 && "decimate can not be 0");
+    assert(offset < decimate && "offset must be strictly lower than decimate");
 
     if (data.empty()) {
         *index = -1;
         return 0.0;
     }
 
-    double max_v = data[0];
-    *index = 0;
+    double max_v = data[offset];
+    *index = offset;
 
-    for (size_t i = 1; i < data.size(); i++)
+    for (size_t i = decimate + offset; i < data.size(); i += decimate)
         if (fabs(data[i]) > fabs(max_v)) {
             max_v = data[i];
             *index = i;
