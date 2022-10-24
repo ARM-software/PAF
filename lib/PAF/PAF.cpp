@@ -574,6 +574,9 @@ uint64_t MTAnalyzer::getRegisterValueAtTime(const string &reg, Time t) const {
     if (!node_at_time(t, &SOP))
         reporter->errx(1, "Can not find node at time %d in this trace", t);
 
+    if (reg == "pc")
+        return SOP.pc;
+
     RegisterId r;
     if (!lookup_reg_name(r, reg))
         reporter->errx(1, "Can not find register '%s'", reg.c_str());

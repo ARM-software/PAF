@@ -1217,10 +1217,8 @@ unsigned V7MInfo::registerId(string name) const {
         if (name.size() == 2 && name[1] >= '0' && name[1] <= '9')
             return name[1] - '0';
         if (name.size() == 3 && name[1] == '1') {
-            if (name[2] >= '0' && name[2] <= '2')
+            if (name[2] >= '0' && name[2] <= '5')
                 return unsigned(Register::R10) + name[2] - '0';
-            if (name[2] == '4')
-                return unsigned(Register::LR);
         }
         break;
     case 'l':

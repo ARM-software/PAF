@@ -91,10 +91,8 @@ int main(int argc, char **argv) {
     NoiseSource::Type noiseTy = NoiseSource::NORMAL;
     vector<PowerAnalysisConfig::Selection> PASelect;
     AnalysisRangeSpecifier ARS;
-    enum class PowerModel {
-        HAMMING_WEIGHT,
-        HAMMING_DISTANCE
-    } PwrModel = PowerModel::HAMMING_WEIGHT;
+    PowerAnalysisConfig::PowerModel PwrModel =
+        PowerAnalysisConfig::HAMMING_WEIGHT;
     enum class OutputFormat { CSV, NPY } OutFmt = OutputFormat::CSV;
 
     Argparse ap("paf-power", argc, argv);
@@ -121,37 +119,68 @@ int main(int argc, char **argv) {
               [&](const string &s) { NoiseLevel = stod(s); });
     ap.optnoval({"--uniform-noise"}, "Use a uniform distribution noise source",
                 [&]() { noiseTy = NoiseSource::UNIFORM; });
-    ap.optnoval({"--hamming-weight"}, "use the hamming weight power model",
-                [&]() { PwrModel = PowerModel::HAMMING_WEIGHT; });
+    ap.optnoval({"--hamming-weight"},
+                "use the hamming weight power model (default)",
+                [&]() { PwrModel = PowerAnalysisConfig::HAMMING_WEIGHT; });
     ap.optnoval({"--hamming-distance"}, "use the hamming distance power model",
-                [&]() { PwrModel = PowerModel::HAMMING_DISTANCE; });
-    ap.optnoval({"--with-pc"},
-                "include the program counter contribution to the power",
-                [&]() { PASelect.push_back(PowerAnalysisConfig::WITH_PC); });
+                [&]() { PwrModel = PowerAnalysisConfig::HAMMING_DISTANCE; });
     ap.optnoval(
-        {"--with-opcode"},
+        {"--with-pc"},
+        "include the program counter contribution to the power (HW, HD)",
+        [&]() { PASelect.push_back(PowerAnalysisConfig::WITH_PC); });
+    ap.optnoval(
+        {"--with-opcode (HW, HD)"},
         "include the instruction encoding contribution to the power",
         [&]() { PASelect.push_back(PowerAnalysisConfig::WITH_OPCODE); });
     ap.optnoval(
         {"--with-mem-address"},
-        "include the memory accesses address contribution to the power",
+        "include the memory accesses address contribution to the power (HW, "
+        "HD)",
         [&]() { PASelect.push_back(PowerAnalysisConfig::WITH_MEM_ADDRESS); });
     ap.optnoval(
         {"--with-mem-data"},
-        "include the memory accesses data contribution to the power",
+        "include the memory accesses data contribution to the power (HW, HD)",
         [&]() { PASelect.push_back(PowerAnalysisConfig::WITH_MEM_DATA); });
+    ap.optnoval({"--with-instruction-inputs"},
+                "include the instructions input operands contribution to the "
+                "power (HW only)",
+                [&]() {
+                    PASelect.push_back(
+                        PowerAnalysisConfig::WITH_INSTRUCTIONS_INPUTS);
+                });
+    ap.optnoval({"--with-instruction-outputs"},
+                "include the instructions output operands contribution to the "
+                "power (HW, HD)",
+                [&]() {
+                    PASelect.push_back(
+                        PowerAnalysisConfig::WITH_INSTRUCTIONS_OUTPUTS);
+                });
+    ap.optnoval({"--with-load-to-load-transitions"},
+                "include load to load accesses contribution to the power (HD)",
+                [&]() {
+                    PASelect.push_back(
+                        PowerAnalysisConfig::WITH_LOAD_TO_LOAD_TRANSITIONS);
+                });
     ap.optnoval(
-        {"--with-instruction-inputs"},
-        "include the instructions input operands contribution to the power",
+        {"--with-store-to-store-transitions"},
+        "include store to store accesses contribution to the power (HD)",
         [&]() {
-            PASelect.push_back(PowerAnalysisConfig::WITH_INSTRUCTIONS_INPUTS);
+            PASelect.push_back(
+                PowerAnalysisConfig::WITH_STORE_TO_STORE_TRANSITIONS);
         });
     ap.optnoval(
-        {"--with-instruction-outputs"},
-        "include the instructions output operands contribution to the power",
+        {"--with-all-memory-accesses-transitions"},
+        "include all consecutive memory accesses contribution to the power "
+        "(HD)",
         [&]() {
-            PASelect.push_back(PowerAnalysisConfig::WITH_INSTRUCTIONS_OUTPUTS);
+            PASelect.push_back(
+                PowerAnalysisConfig::WITH_LAST_MEMORY_ACCESSES_TRANSITIONS);
         });
+    ap.optnoval({"--with-memory-update-transitions"},
+                "include memory update contribution to the power (HD)", [&]() {
+                    PASelect.push_back(
+                        PowerAnalysisConfig::WITH_MEMORY_UPDATE_TRANSITIONS);
+                });
     ap.optval({"--function"}, "FUNCTION",
               "analyze code running within FUNCTION",
               [&](const string &s) { ARS.setFunction(s); });
@@ -185,7 +214,7 @@ int main(int argc, char **argv) {
     // Process the contributions sources if any. Default to all of them if none
     // was specified.
     PowerAnalysisConfig PAConfig(NoiseSource::getSource(noiseTy, NoiseLevel),
-                                 PowerAnalysisConfig::WITH_ALL);
+                                 PowerAnalysisConfig::WITH_ALL, PwrModel);
     if (dontAddNoise)
         PAConfig.setWithoutNoise();
     if (!PASelect.empty()) {
