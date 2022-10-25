@@ -26,6 +26,7 @@
 
 #include <cassert>
 #include <memory>
+#include <string>
 #include <vector>
 
 namespace PAF {
@@ -201,6 +202,8 @@ class ArchInfo {
 
     /// Get this register name.
     virtual const char *registerName(unsigned reg) const = 0;
+    /// Get this register id.
+    virtual unsigned registerId(std::string name) const = 0;
 
     /// Is register named reg a status register for this CPU ?
     virtual bool isStatusRegister(const std::string &reg) const = 0;
@@ -259,6 +262,9 @@ class V7MInfo : public ArchInfo {
 
     /// Get this register name.
     const char *registerName(unsigned reg) const override;
+    /// Get this register id.
+    unsigned registerId(std::string name) const override;
+
     /// Get this register name.
     static const char *name(Register reg);
 
@@ -302,6 +308,8 @@ class V8AInfo : public ArchInfo {
     unsigned numRegisters() const override;
     /// Get this register name.
     const char *registerName(unsigned reg) const override;
+    /// Get this register id.
+    unsigned registerId(std::string name) const override;
     /// Get this register name.
     static const char *name(Register reg);
 

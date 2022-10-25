@@ -1207,6 +1207,46 @@ const char *V7MInfo::registerName(unsigned reg) const {
     return V7MRegisterNames[reg];
 }
 
+unsigned V7MInfo::registerId(string name) const {
+    if (name.size() < 2)
+        reporter->errx(EXIT_FAILURE, "Weird register name %s", name.c_str());
+    std::transform(name.begin(), name.end(), name.begin(),
+                   [](unsigned char c) { return std::tolower(c); });
+    switch (name[0]) {
+    case 'r':
+        if (name.size() == 2 && name[1] >= '0' && name[1] <= '9')
+            return name[1] - '0';
+        if (name.size() == 3 && name[1] == '1') {
+            if (name[2] >= '0' && name[2] <= '2')
+                return unsigned(Register::R10) + name[2] - '0';
+            if (name[2] == '4')
+                return unsigned(Register::LR);
+        }
+        break;
+    case 'l':
+        if (name[1] == 'r')
+            return unsigned(Register::LR);
+        break;
+    case 'p':
+        if (name.size() == 2 && name[1] == 'c')
+            return unsigned(Register::PC);
+        if (name == "psr")
+            return unsigned(Register::PSR);
+        break;
+    case 'c':
+        if (name == "cpsr")
+            return unsigned(Register::CPSR);
+        break;
+    case 'm':
+        if (name == "msp")
+            return unsigned(Register::MSP);
+        break;
+    default:
+        break;
+    }
+    reporter->errx(EXIT_FAILURE, "Unknown register name %s", name.c_str());
+}
+
 const char *V7MInfo::name(Register reg) {
     return V7MRegisterNames[unsigned(reg)];
 }
@@ -1270,6 +1310,10 @@ unsigned V8AInfo::numRegisters() const {
 const char *V8AInfo::registerName(unsigned reg) const {
     // TODO: Implement !
     return "";
+}
+
+unsigned V8AInfo::registerId(string name) const {
+    reporter->errx(EXIT_FAILURE, "V8A is not implemented yet");
 }
 
 const char *V8AInfo::name(Register reg) {

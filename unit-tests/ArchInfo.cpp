@@ -170,45 +170,64 @@ TEST(V7MCPUInfo, getCycles) {
 
 TEST(V7MCPUInfo, registers) {
     unique_ptr<V7MInfo> CPU(new V7MInfo);
-    EXPECT_EQ(CPU->numRegisters(),
-              unsigned(V7MInfo::Register::NUM_REGISTERS));
+    EXPECT_EQ(CPU->numRegisters(), unsigned(V7MInfo::Register::NUM_REGISTERS));
 
-    EXPECT_STREQ(V7MInfo::name(V7MInfo::Register::R0),
-                 "r0");
-    EXPECT_STREQ(V7MInfo::name(V7MInfo::Register::R1),
-                 "r1");
-    EXPECT_STREQ(V7MInfo::name(V7MInfo::Register::R2),
-                 "r2");
-    EXPECT_STREQ(V7MInfo::name(V7MInfo::Register::R3),
-                 "r3");
-    EXPECT_STREQ(V7MInfo::name(V7MInfo::Register::R4),
-                 "r4");
-    EXPECT_STREQ(V7MInfo::name(V7MInfo::Register::R5),
-                 "r5");
-    EXPECT_STREQ(V7MInfo::name(V7MInfo::Register::R6),
-                 "r6");
-    EXPECT_STREQ(V7MInfo::name(V7MInfo::Register::R7),
-                 "r7");
-    EXPECT_STREQ(V7MInfo::name(V7MInfo::Register::R8),
-                 "r8");
-    EXPECT_STREQ(V7MInfo::name(V7MInfo::Register::R9),
-                 "r9");
-    EXPECT_STREQ(V7MInfo::name(V7MInfo::Register::R10),
-                 "r10");
-    EXPECT_STREQ(V7MInfo::name(V7MInfo::Register::R11),
-                 "r11");
-    EXPECT_STREQ(V7MInfo::name(V7MInfo::Register::R12),
-                 "r12");
-    EXPECT_STREQ(V7MInfo::name(V7MInfo::Register::MSP),
-                 "MSP");
-    EXPECT_STREQ(V7MInfo::name(V7MInfo::Register::LR),
-                 "r14");
-    EXPECT_STREQ(V7MInfo::name(V7MInfo::Register::PC),
-                 "pc");
-    EXPECT_STREQ(V7MInfo::name(V7MInfo::Register::CPSR),
-                 "cpsr");
-    EXPECT_STREQ(V7MInfo::name(V7MInfo::Register::PSR),
-                 "psr");
+    EXPECT_STREQ(V7MInfo::name(V7MInfo::Register::R0), "r0");
+    EXPECT_STREQ(V7MInfo::name(V7MInfo::Register::R1), "r1");
+    EXPECT_STREQ(V7MInfo::name(V7MInfo::Register::R2), "r2");
+    EXPECT_STREQ(V7MInfo::name(V7MInfo::Register::R3), "r3");
+    EXPECT_STREQ(V7MInfo::name(V7MInfo::Register::R4), "r4");
+    EXPECT_STREQ(V7MInfo::name(V7MInfo::Register::R5), "r5");
+    EXPECT_STREQ(V7MInfo::name(V7MInfo::Register::R6), "r6");
+    EXPECT_STREQ(V7MInfo::name(V7MInfo::Register::R7), "r7");
+    EXPECT_STREQ(V7MInfo::name(V7MInfo::Register::R8), "r8");
+    EXPECT_STREQ(V7MInfo::name(V7MInfo::Register::R9), "r9");
+    EXPECT_STREQ(V7MInfo::name(V7MInfo::Register::R10), "r10");
+    EXPECT_STREQ(V7MInfo::name(V7MInfo::Register::R11), "r11");
+    EXPECT_STREQ(V7MInfo::name(V7MInfo::Register::R12), "r12");
+    EXPECT_STREQ(V7MInfo::name(V7MInfo::Register::MSP), "MSP");
+    EXPECT_STREQ(V7MInfo::name(V7MInfo::Register::LR), "r14");
+    EXPECT_STREQ(V7MInfo::name(V7MInfo::Register::PC), "pc");
+    EXPECT_STREQ(V7MInfo::name(V7MInfo::Register::CPSR), "cpsr");
+    EXPECT_STREQ(V7MInfo::name(V7MInfo::Register::PSR), "psr");
+
+    EXPECT_STREQ(CPU->registerName(unsigned(V7MInfo::Register::R0)), "r0");
+    EXPECT_STREQ(CPU->registerName(unsigned(V7MInfo::Register::R1)), "r1");
+    EXPECT_STREQ(CPU->registerName(unsigned(V7MInfo::Register::R2)), "r2");
+    EXPECT_STREQ(CPU->registerName(unsigned(V7MInfo::Register::R3)), "r3");
+    EXPECT_STREQ(CPU->registerName(unsigned(V7MInfo::Register::R4)), "r4");
+    EXPECT_STREQ(CPU->registerName(unsigned(V7MInfo::Register::R5)), "r5");
+    EXPECT_STREQ(CPU->registerName(unsigned(V7MInfo::Register::R6)), "r6");
+    EXPECT_STREQ(CPU->registerName(unsigned(V7MInfo::Register::R7)), "r7");
+    EXPECT_STREQ(CPU->registerName(unsigned(V7MInfo::Register::R8)), "r8");
+    EXPECT_STREQ(CPU->registerName(unsigned(V7MInfo::Register::R9)), "r9");
+    EXPECT_STREQ(CPU->registerName(unsigned(V7MInfo::Register::R10)), "r10");
+    EXPECT_STREQ(CPU->registerName(unsigned(V7MInfo::Register::R11)), "r11");
+    EXPECT_STREQ(CPU->registerName(unsigned(V7MInfo::Register::R12)), "r12");
+    EXPECT_STREQ(CPU->registerName(unsigned(V7MInfo::Register::MSP)), "MSP");
+    EXPECT_STREQ(CPU->registerName(unsigned(V7MInfo::Register::LR)), "r14");
+    EXPECT_STREQ(CPU->registerName(unsigned(V7MInfo::Register::PC)), "pc");
+    EXPECT_STREQ(CPU->registerName(unsigned(V7MInfo::Register::CPSR)), "cpsr");
+    EXPECT_STREQ(CPU->registerName(unsigned(V7MInfo::Register::PSR)), "psr");
+
+    EXPECT_EQ(CPU->registerId("r0"), unsigned(V7MInfo::Register::R0));
+    EXPECT_EQ(CPU->registerId("r1"), unsigned(V7MInfo::Register::R1));
+    EXPECT_EQ(CPU->registerId("r2"), unsigned(V7MInfo::Register::R2));
+    EXPECT_EQ(CPU->registerId("r3"), unsigned(V7MInfo::Register::R3));
+    EXPECT_EQ(CPU->registerId("r4"), unsigned(V7MInfo::Register::R4));
+    EXPECT_EQ(CPU->registerId("r5"), unsigned(V7MInfo::Register::R5));
+    EXPECT_EQ(CPU->registerId("r6"), unsigned(V7MInfo::Register::R6));
+    EXPECT_EQ(CPU->registerId("r7"), unsigned(V7MInfo::Register::R7));
+    EXPECT_EQ(CPU->registerId("r8"), unsigned(V7MInfo::Register::R8));
+    EXPECT_EQ(CPU->registerId("r9"), unsigned(V7MInfo::Register::R9));
+    EXPECT_EQ(CPU->registerId("r10"), unsigned(V7MInfo::Register::R10));
+    EXPECT_EQ(CPU->registerId("R11"), unsigned(V7MInfo::Register::R11));
+    EXPECT_EQ(CPU->registerId("r12"), unsigned(V7MInfo::Register::R12));
+    EXPECT_EQ(CPU->registerId("MSP"), unsigned(V7MInfo::Register::MSP));
+    EXPECT_EQ(CPU->registerId("r14"), unsigned(V7MInfo::Register::LR));
+    EXPECT_EQ(CPU->registerId("pc"), unsigned(V7MInfo::Register::PC));
+    EXPECT_EQ(CPU->registerId("cPsr"), unsigned(V7MInfo::Register::CPSR));
+    EXPECT_EQ(CPU->registerId("psR"), unsigned(V7MInfo::Register::PSR));
 }
 
 // Helper to test InstrInfo.
