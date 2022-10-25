@@ -32,7 +32,6 @@
 #include <fstream>
 #include <iostream>
 #include <memory>
-#include <random>
 #include <sstream>
 #include <string>
 #include <vector>
@@ -405,16 +404,10 @@ TEST(PowerTrace, base) {
 
 class PowerAnalysisConfigWithNoise : public PowerAnalysisConfig {
   public:
-    PowerAnalysisConfigWithNoise()
-        : PowerAnalysisConfig(), RD(), MT(RD()), NoiseDist(0.0, 1.0) {}
+    PowerAnalysisConfigWithNoise() : PowerAnalysisConfig() {}
     PowerAnalysisConfigWithNoise(PowerAnalysisConfig::Selection s)
-        : PowerAnalysisConfig(s), RD(), MT(RD()), NoiseDist(0.0, 1.0) {}
-    virtual double getNoise() override { return NoiseDist(MT); }
-
-  private:
-    std::random_device RD;
-    std::mt19937 MT;
-    std::uniform_real_distribution<> NoiseDist;
+        : PowerAnalysisConfig(s, PowerAnalysisConfig::HAMMING_WEIGHT) {}
+    virtual double getNoise() override { return 1.0; }
 };
 
 TEST(PowerTrace, withNoise) {
