@@ -380,6 +380,8 @@ TEST(ReferenceInstruction, base) {
     EXPECT_EQ(i1.regaccess[1].name, "cpsr");
     EXPECT_EQ(i1.regaccess[1].value, 0x61000000);
     EXPECT_EQ(i1.regaccess[1].access, RegisterAccess::Type::Write);
+    EXPECT_TRUE(i1 == i1);
+    EXPECT_FALSE(i1 != i1);
 
     const ReferenceInstruction i2(
         58, true, 0x08326, ARM, 32, 0xe9425504, "STRD     r5,r5,[r2,#-0x10]",
@@ -402,6 +404,36 @@ TEST(ReferenceInstruction, base) {
     EXPECT_EQ(i2.memaccess[1].addr, 0x021b00);
     EXPECT_EQ(i2.memaccess[1].value, 0);
     EXPECT_EQ(i2.memaccess[1].access, MemoryAccess::Type::Write);
+    EXPECT_TRUE(i2 == i2);
+    EXPECT_FALSE(i2 != i2);
+
+    EXPECT_FALSE(i1 == i2);
+    EXPECT_TRUE(i1 != i2);
+
+    // Only differs in execution time (and asm string).
+    const ReferenceInstruction i3(
+        30, true, 0x0818a, THUMB, 16, 0x02100, "MOVS r1,#0", {},
+        {
+            RegisterAccess("r1", 0, RegisterAccess::Type::Write),
+            RegisterAccess("cpsr", 0x61000000, RegisterAccess::Type::Write),
+        });
+    EXPECT_TRUE(i1 == i3);
+
+    // Only differs in reg values.
+    const ReferenceInstruction i4(
+        27, true, 0x0818a, THUMB, 16, 0x02100, "MOVS     r1,#0", {},
+        {
+            RegisterAccess("r1", 10, RegisterAccess::Type::Write),
+            RegisterAccess("cpsr", 0x61000FFF, RegisterAccess::Type::Write),
+        });
+    EXPECT_TRUE(i1 == i4);
+
+    const ReferenceInstruction i5(
+        58, true, 0x08326, ARM, 32, 0xe9425504, "STRD     r5,r5,[r2,#-0x10]",
+        {MemoryAccess(4, 0x00000afc, 10, MemoryAccess::Type::Write),
+         MemoryAccess(4, 0x00000b00, 20, MemoryAccess::Type::Write)},
+        {});
+    EXPECT_TRUE(i2 == i5);
 }
 
 TEST(ReferenceInstruction, parsing) {

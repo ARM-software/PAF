@@ -343,6 +343,21 @@ struct ReferenceInstruction {
         return *this;
     }
 
+    /// Compare 2 instructions for equality. This only takes into account the
+    /// static values of this instructions (pc, opcode, ...) and not the runtime
+    /// values (register values, memory addresses).
+    bool operator==(const ReferenceInstruction &RHS) const {
+        return pc == RHS.pc && iset == RHS.iset && width == RHS.width &&
+               instruction == RHS.instruction;
+    }
+
+    /// Compare 2 instructions for inequality. This only takes into account the
+    /// static values of this instructions (pc, opcode, ...) and not the runtime
+    /// values (register values, memory addresses).
+    bool operator!=(const ReferenceInstruction &RHS) const {
+        return !(*this == RHS);
+    }
+
     /// Add a MemoryAccess to this instruction.
     ReferenceInstruction &add(const MemoryAccess &M) {
         memaccess.insert(
