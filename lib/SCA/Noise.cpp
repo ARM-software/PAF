@@ -20,19 +20,72 @@
 
 #include "PAF/SCA/Noise.h"
 
+#include <random>
+
 namespace PAF {
 namespace SCA {
+
+class ConstantNoiseSource : public NoiseSource {
+  public:
+    ConstantNoiseSource(double value) : value(value) {}
+    virtual ~ConstantNoiseSource() {}
+    virtual double get() override { return value; }
+
+  private:
+    double value;
+};
+
+class NullNoise : public ConstantNoiseSource {
+  public:
+    NullNoise() : ConstantNoiseSource(0.0) {}
+    virtual ~NullNoise() {}
+    virtual double get() override { return 0.0; }
+};
+
+class RandomNoiseSource : public NoiseSource {
+  public:
+    RandomNoiseSource() : NoiseSource(), RD(), MT(RD()) {}
+
+  protected:
+    std::random_device RD;
+    std::mt19937 MT;
+};
+
+class UniformNoise : public RandomNoiseSource {
+  public:
+    UniformNoise(double NoiseLevel)
+        : RandomNoiseSource(), NoiseDist(-NoiseLevel / 2.0, NoiseLevel / 2.0) {}
+
+    virtual double get() override { return NoiseDist(MT); }
+
+  private:
+    std::uniform_real_distribution<double> NoiseDist;
+};
+
+class NormalNoise : public RandomNoiseSource {
+  public:
+    NormalNoise(double NoiseLevel)
+        : RandomNoiseSource(), NoiseDist(0.0, NoiseLevel / 2.0) {}
+
+    virtual double get() override { return NoiseDist(MT); }
+
+  private:
+    std::normal_distribution<double> NoiseDist;
+};
 
 std::unique_ptr<NoiseSource> NoiseSource::getSource(Type noiseTy,
                                                     double noiseLevel) {
     switch (noiseTy) {
-    case NoiseSource::Type::ZERO:
+    case NoiseSource::ZERO:
         return std::unique_ptr<PAF::SCA::NoiseSource>(
             new PAF::SCA::NullNoise());
-    case NoiseSource::Type::UNIFORM:
+    case NoiseSource::CONSTANT:
+        return std::unique_ptr<PAF::SCA::NoiseSource>(
+            new PAF::SCA::ConstantNoiseSource(noiseLevel));
+    case NoiseSource::UNIFORM:
         return std::unique_ptr<PAF::SCA::NoiseSource>(
             new PAF::SCA::UniformNoise(noiseLevel));
-    case NoiseSource::Type::NORMAL:
+    case NoiseSource::NORMAL:
         return std::unique_ptr<PAF::SCA::NoiseSource>(
             new PAF::SCA::NormalNoise(noiseLevel));
     }

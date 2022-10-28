@@ -199,10 +199,12 @@ class PowerAnalysisConfig {
 
     /// Default constructor, consider all power sources.
     PowerAnalysisConfig()
-        : noiseSource(new NullNoise()), config(WITH_ALL), noise(true) {}
+        : noiseSource(NoiseSource::getSource(NoiseSource::ZERO, 0.)),
+          config(WITH_ALL), noise(true) {}
     /// Constructor for the case with a single power source.
     PowerAnalysisConfig(Selection s)
-        : noiseSource(new NullNoise()), config(s), noise(true) {}
+        : noiseSource(NoiseSource::getSource(NoiseSource::ZERO, 0.)), config(s),
+          noise(true) {}
     /// Constructor with a custom NoiseSource and a single power source.
     PowerAnalysisConfig(std::unique_ptr<NoiseSource> &&ns, Selection s)
         : noiseSource(std::move(ns)), config(s), noise(true) {}

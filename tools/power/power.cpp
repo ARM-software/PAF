@@ -88,7 +88,7 @@ int main(int argc, char **argv) {
     bool detailed_output = false;
     bool dontAddNoise = false;
     double NoiseLevel = 1.0;
-    NoiseSource::Type noiseTy = NoiseSource::Type::NORMAL;
+    NoiseSource::Type noiseTy = NoiseSource::NORMAL;
     vector<PowerAnalysisConfig::Selection> PASelect;
     AnalysisRangeSpecifier ARS;
     enum class PowerModel {
@@ -114,13 +114,13 @@ int main(int argc, char **argv) {
     ap.optnoval({"--dont-add-noise"}, "Do not add noise to the power trace",
                 [&]() {
                     dontAddNoise = true;
-                    noiseTy = NoiseSource::Type::ZERO;
+                    noiseTy = NoiseSource::ZERO;
                 });
     ap.optval({"--noise-level"}, "Value",
               "Level of noise to add (default: 1.0)",
               [&](const string &s) { NoiseLevel = stod(s); });
     ap.optnoval({"--uniform-noise"}, "Use a uniform distribution noise source",
-                [&]() { noiseTy = NoiseSource::Type::UNIFORM; });
+                [&]() { noiseTy = NoiseSource::UNIFORM; });
     ap.optnoval({"--hamming-weight"}, "use the hamming weight power model",
                 [&]() { PwrModel = PowerModel::HAMMING_WEIGHT; });
     ap.optnoval({"--hamming-distance"}, "use the hamming distance power model",

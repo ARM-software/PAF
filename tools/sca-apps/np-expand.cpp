@@ -43,7 +43,7 @@ int main(int argc, char *argv[]) {
     size_t newColNumber = 0;
     size_t newRowNumber = 0;
     double noiseLevel = 0.0;
-    NoiseSource::Type noiseTy = NoiseSource::Type::ZERO;
+    NoiseSource::Type noiseTy = NoiseSource::ZERO;
     unsigned verbose = 0;
 
     Argparse argparser("paf-np-expand", argc, argv);
@@ -68,10 +68,10 @@ int main(int argc, char *argv[]) {
                      [&](const string &s) { noiseLevel = stod(s); });
     argparser.optnoval({"--uniform-noise"},
                        "Use a uniform distribution noise source",
-                       [&]() { noiseTy = NoiseSource::Type::UNIFORM; });
+                       [&]() { noiseTy = NoiseSource::UNIFORM; });
     argparser.optnoval({"--normal-noise"},
                        "Use a normal distribution noise source",
-                       [&]() { noiseTy = NoiseSource::Type::NORMAL; });
+                       [&]() { noiseTy = NoiseSource::NORMAL; });
     argparser.positional(
         "NPY", "input file in NPY format",
         [&](const string &s) { inputFileName = s; }, /* Required: */ true);

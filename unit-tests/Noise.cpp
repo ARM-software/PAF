@@ -30,14 +30,26 @@ using namespace testing;
 using std::unique_ptr;
 
 TEST(Noise, NullNoise) {
-    unique_ptr<NoiseSource> NS(new NullNoise());
+    unique_ptr<NoiseSource> NS(NoiseSource::getSource(NoiseSource::ZERO, 3.14));
 
     for (size_t i = 0; i < 10; i++)
         EXPECT_DOUBLE_EQ(NS->get(), 0.0);
+}
 
-    NS = NoiseSource::getSource(NoiseSource::Type::ZERO, 3.14);
+TEST(Noise, ConstantNoise) {
+    unique_ptr<NoiseSource> NS(
+        NoiseSource::getSource(NoiseSource::CONSTANT, 3.14));
+
     for (size_t i = 0; i < 10; i++)
-        EXPECT_DOUBLE_EQ(NS->get(), 0.0);
+        EXPECT_DOUBLE_EQ(NS->get(), 3.14);
+}
+
+TEST(Noise, OtherNoiseSource) {
+    /// The random noise sources are harder to test, so for now only
+    /// check they can be constructed.
+    unique_ptr<NoiseSource> NS(
+        NoiseSource::getSource(NoiseSource::UNIFORM, 5.));
+    NS = NoiseSource::getSource(NoiseSource::NORMAL, 5.);
 }
 
 int main(int argc, char **argv) {

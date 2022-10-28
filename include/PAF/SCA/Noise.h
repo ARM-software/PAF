@@ -21,58 +21,42 @@
 #pragma once
 
 #include <memory>
-#include <random>
 
 namespace PAF {
 namespace SCA {
 
+/// This class models a noise source. This is the base class for all suported
+/// noise sources, and it provides a static factory method to get one of the
+/// supported noise source:
+///  - ZERO: a no-noise noise source
+///  - CONSTANT: a noise source of a constant level
+///  - UNIFORM: a noise source with a uniform distribution
+///  - NORMAL: a noise source with a normal distribution
 class NoiseSource {
   public:
-    enum class Type { ZERO, UNIFORM, NORMAL };
+    /// The noise source type.
+    enum Type {
+        /// A no noise source, a specific case of CONSTANT.
+        ZERO,
+        /// A noise source that returns a constant value.
+        CONSTANT,
+        /// A noise source where the noise level follows a uniform distribution.
+        UNIFORM,
+        /// A noise source where the noise level level follows a normal
+        /// distribution.
+        NORMAL
+    };
 
+    /// Default constructor.
     NoiseSource() {}
+    /// Destructor.
     virtual ~NoiseSource() {}
+
+    /// Get the noise value.
     virtual double get() = 0;
 
+    /// Factory method to get one of the supported noise sources.
     static std::unique_ptr<NoiseSource> getSource(Type, double noiseLevel);
-};
-
-class NullNoise : public NoiseSource {
-  public:
-    NullNoise() {}
-    virtual ~NullNoise() {}
-    virtual double get() override { return 0.0; }
-};
-
-class RandomNoiseSource : public NoiseSource {
-  public:
-    RandomNoiseSource() : NoiseSource(), RD(), MT(RD()) {}
-
-  protected:
-    std::random_device RD;
-    std::mt19937 MT;
-};
-
-class UniformNoise : public RandomNoiseSource {
-  public:
-    UniformNoise(double NoiseLevel)
-        : RandomNoiseSource(), NoiseDist(-NoiseLevel / 2.0, NoiseLevel / 2.0) {}
-
-    virtual double get() override { return NoiseDist(MT); }
-
-  private:
-    std::uniform_real_distribution<double> NoiseDist;
-};
-
-class NormalNoise : public RandomNoiseSource {
-  public:
-    NormalNoise(double NoiseLevel)
-        : RandomNoiseSource(), NoiseDist(0.0, NoiseLevel / 2.0) {}
-
-    virtual double get() override { return NoiseDist(MT); }
-
-  private:
-    std::normal_distribution<double> NoiseDist;
 };
 
 } // namespace SCA
