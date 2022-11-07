@@ -17,12 +17,5 @@
 # This file is part of PAF, the Physical Attack Framework.
 
 /.vscode
-/Makefile
 /compile_commands.json
-/*.ninja
-/.ninja_*
-/CMakeFiles
-/CMakeCache.txt
-/cmake_install.cmake
-/CTestTestfile.cmake
 build/
