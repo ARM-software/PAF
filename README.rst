@@ -63,8 +63,8 @@ The simplest way to build PAF is:
 
 .. code-block:: bash
 
-  $ cmake .
-  $ cmake --build .
+  $ cmake -S . -B build
+  $ cmake --build build
 
 A slightly more evolved way of building and testing PAF, in release mode with
 debug info, using the ``clang`` compiler, ``Ninja`` build system and producing
