@@ -31,6 +31,11 @@ set(CMAKE_CXX_STANDARD 14)
 
 project(PAF LANGUAGES CXX)
 
+# Force a build type if none was specified.
+if(NOT DEFINED CMAKE_BUILD_TYPE OR NOT DEFINED ${CMAKE_BUILD_TYPE})
+  set(CMAKE_BUILD_TYPE "Debug")
+endif()
+
 # Set path for custom modules, and load modules.
 set(CMAKE_MODULE_PATH
   ${CMAKE_MODULE_PATH}
@@ -66,16 +71,28 @@ foreach(executable ${TARMAC_EXECUTABLES})
 endforeach()
 
 # PAF unit testing is relying on the googletest framework.
+# The googletest framework install itself following the GNU Coding Standards
+# on a number of platforms, so add some heuristics to support those.
+set(LIBDIR_SUFFIX "")
+if(CMAKE_SYSTEM_NAME MATCHES "^(Linux|kFreeBSD|GNU)$")
+  if (NOT EXISTS "/etc/alpine-release" AND NOT EXISTS "/etc/arch-release" AND NOT EXISTS "/etc/debian_version")
+    # Not debian, alpine or arch so rely on CMAKE_SIZEOF_VOID_P:
+    if("${CMAKE_SIZEOF_VOID_P}" EQUAL "8")
+      set(LIBDIR_SUFFIX "64")
+    endif()
+  endif()
+endif()
+
 ExternalProject_Add(googletest
   PREFIX "third_party"
   GIT_REPOSITORY "https://github.com/google/googletest"
   GIT_TAG "release-1.12.1"
   GIT_SHALLOW TRUE
   CMAKE_ARGS ${EXTERNAL_PROJECT_CMAKE_ARGS}
-  BUILD_BYPRODUCTS "${CMAKE_BINARY_DIR}/lib/${CMAKE_STATIC_LIBRARY_PREFIX}gtest${CMAKE_STATIC_LIBRARY_SUFFIX}"
+  BUILD_BYPRODUCTS "${CMAKE_BINARY_DIR}/lib${LIBDIR_SUFFIX}/${CMAKE_STATIC_LIBRARY_PREFIX}gtest${CMAKE_STATIC_LIBRARY_SUFFIX}"
   )
 add_library(gtest STATIC IMPORTED)
-set_target_properties(gtest PROPERTIES IMPORTED_LOCATION "${CMAKE_BINARY_DIR}/lib/${CMAKE_STATIC_LIBRARY_PREFIX}gtest${CMAKE_STATIC_LIBRARY_SUFFIX}")
+set_target_properties(gtest PROPERTIES IMPORTED_LOCATION "${CMAKE_BINARY_DIR}/lib${LIBDIR_SUFFIX}/${CMAKE_STATIC_LIBRARY_PREFIX}gtest${CMAKE_STATIC_LIBRARY_SUFFIX}")
 add_dependencies(gtest googletest)
 
 # Install ourselves a python virtualenv. Python is used in the run-model part
