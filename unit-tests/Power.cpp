@@ -406,7 +406,7 @@ class PowerAnalysisConfigWithNoise : public PowerAnalysisConfig {
   public:
     PowerAnalysisConfigWithNoise() : PowerAnalysisConfig() {}
     PowerAnalysisConfigWithNoise(PowerAnalysisConfig::Selection s)
-        : PowerAnalysisConfig(s, PowerAnalysisConfig::HAMMING_WEIGHT) {}
+        : PowerAnalysisConfig(s) {}
     virtual double getNoise() override { return 1.0; }
 };
 
