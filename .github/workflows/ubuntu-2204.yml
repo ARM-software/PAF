@@ -28,7 +28,7 @@ env:
   CMAKE_BUILD_TYPE: Debug
 
 jobs:
-  gcc_configure_build_test_doc:
+  configure_build_test_doc:
     name: "gcc: configure, build, test and build doc"
     runs-on: ubuntu-22.04
     steps:
@@ -37,32 +37,22 @@ jobs:
       run: sudo apt-get update
     - name: Install dependencies for apps with a GUI, doxygen and Ninja
       run: sudo apt-get install pkg-config libwxgtk3.0-gtk3-dev doxygen graphviz ninja-build
-    - name: Configure
+    - name: Configure with gcc
       run: CC=gcc CXX=g++ cmake -B ${{github.workspace}}/build-gcc -DCMAKE_BUILD_TYPE:STRING=${{env.CMAKE_BUILD_TYPE}} -DPAF_BUILD_DOCUMENTAION:BOOL=ON -G Ninja
-    - name: Build
+    - name: Build with gcc
       working-directory: ${{github.workspace}}/build-gcc
       run: ninja
-    - name: Test
+    - name: Test with gcc
       working-directory: ${{github.workspace}}/build-gcc
+      run: ninja test
+    - name: Configure with clang
+      run: CC=clang CXX=clang++ cmake -B ${{github.workspace}}/build-clang -DCMAKE_BUILD_TYPE:STRING=${{env.CMAKE_BUILD_TYPE}} -G Ninja
+    - name: Build with clang
+      working-directory: ${{github.workspace}}/build-clang
+      run: ninja
+    - name: Test with clang
+      working-directory: ${{github.workspace}}/build-clang
       run: ninja test
     - name: Documentation
       working-directory: ${{github.workspace}}/build-gcc
       run: ninja doc
-
-  clang_configure_build_test:
-    name: "clang: configure, build and test"
-    runs-on: ubuntu-22.04
-    steps:
-    - uses: actions/checkout@v3
-    - name: apt update
-      run: sudo apt-get update
-    - name: Install dependencies for apps with a GUI, doxygen and Ninja
-      run: sudo apt-get install pkg-config libwxgtk3.0-gtk3-dev doxygen graphviz ninja-build
-    - name: Configure
-      run: CC=clang CXX=clang++ cmake -B ${{github.workspace}}/build-clang -DCMAKE_BUILD_TYPE:STRING=${{env.CMAKE_BUILD_TYPE}} -G Ninja
-    - name: Build
-      working-directory: ${{github.workspace}}/build-clang
-      run: ninja
-    - name: Test
-      working-directory: ${{github.workspace}}/build-clang
-      run: ninja test
