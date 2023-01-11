@@ -26,12 +26,11 @@ on:
 
 env:
   CMAKE_BUILD_TYPE: Debug
-  OS: ubuntu-22.04
 
 jobs:
   setup:
     name: "Setup"
-    runs-on: ${{env.OS}}
+    runs-on: ubuntu-22.04
     steps:
     - uses: actions/checkout@v3
     - name: apt update
@@ -41,7 +40,7 @@ jobs:
 
   gcc_configure_build_test_doc:
     name: "gcc: configure, build, test and build doc"
-    runs-on: ${{env.OS}}
+    runs-on: ubuntu-22.04
     needs: setup
     steps:
     - uses: actions/checkout@v3
@@ -59,7 +58,7 @@ jobs:
 
   clang_configure_build_test:
     name: "clang: configure, build and test"
-    runs-on: ${{env.OS}}
+    runs-on: ubuntu-22.04
     needs: setup
     steps:
     - uses: actions/checkout@v3
