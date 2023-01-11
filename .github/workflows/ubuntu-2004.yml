@@ -1,4 +1,4 @@
-# SPDX-FileCopyrightText: <text>Copyright 2021,2022 Arm Limited and/or its
+# SPDX-FileCopyrightText: <text>Copyright 2023 Arm Limited and/or its
 # affiliates <open-source-office@arm.com></text>
 # SPDX-License-Identifier: Apache-2.0
 #
@@ -16,7 +16,7 @@
 #
 # This file is part of PAF, the Physical Attack Framework.
 
-name: "Ubuntu 20.04 + gcc"
+name: "Ubuntu 20.04"
 
 on:
   push:
@@ -26,28 +26,33 @@ on:
 
 env:
   CMAKE_BUILD_TYPE: Debug
-  CC: gcc
-  CXX: g++
 
 jobs:
-
-  configure_build_test:
-    name: "Install, configure, build and test"
+  configure_build_test_doc:
+    name: "Install dependencies, configure, build, test and build doc"
     runs-on: ubuntu-20.04
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v3
     - name: apt update
       run: sudo apt-get update
     - name: Install dependencies for apps with a GUI, doxygen and Ninja
       run: sudo apt-get install pkg-config libwxgtk3.0-gtk3-dev doxygen graphviz ninja-build
-    - name: Configure
-      run: CC=${{env.CC}} CXX=${{env.CXX}} cmake -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE:STRING=${{env.CMAKE_BUILD_TYPE}} -DPAF_BUILD_DOCUMENTAION:BOOL=ON -G Ninja
-    - name: Build
-      working-directory: ${{github.workspace}}/build
+    - name: Configure with clang
+      run: CC=clang CXX=clang++ cmake -B ${{github.workspace}}/build-clang -DCMAKE_BUILD_TYPE:STRING=${{env.CMAKE_BUILD_TYPE}} -G Ninja
+    - name: Build with clang
+      working-directory: ${{github.workspace}}/build-clang
       run: ninja
-    - name: Test
-      working-directory: ${{github.workspace}}/build
+    - name: Test with clang
+      working-directory: ${{github.workspace}}/build-clang
       run: ninja test
-    - name: Documentation
-      working-directory: ${{github.workspace}}/build
+    - name: Configure with gcc
+      run: CC=gcc CXX=g++ cmake -B ${{github.workspace}}/build-gcc -DCMAKE_BUILD_TYPE:STRING=${{env.CMAKE_BUILD_TYPE}} -DPAF_BUILD_DOCUMENTAION:BOOL=ON -G Ninja
+    - name: Build with gcc
+      working-directory: ${{github.workspace}}/build-gcc
+      run: ninja
+    - name: Test with gcc
+      working-directory: ${{github.workspace}}/build-gcc
+      run: ninja test
+    - name: Build documentation
+      working-directory: ${{github.workspace}}/build-gcc
       run: ninja doc

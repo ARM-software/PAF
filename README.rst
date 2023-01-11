@@ -23,13 +23,13 @@
    :alt: PAF licence
    :target: https://github.com/ARM-software/PAF/blob/main/LICENSE.txt
 
-.. |CIUbuntu2004gcc| image:: https://github.com/ARM-software/PAF/actions/workflows/ubuntu-2004-gcc.yml/badge.svg
-   :alt: Last build status on Ubuntu 20.04 with gcc
-   :target: https://github.com/ARM-software/PAF/actions/workflows/ubuntu-2004-gcc.yml
+.. |CIUbuntu2004gcc| image:: https://github.com/ARM-software/PAF/actions/workflows/ubuntu-2004.yml/badge.svg
+   :alt: Last build status on Ubuntu 20.04
+   :target: https://github.com/ARM-software/PAF/actions/workflows/ubuntu-2004.yml
 
-.. |CIUbuntu2004clang| image:: https://github.com/ARM-software/PAF/actions/workflows/ubuntu-2004-clang.yml/badge.svg
-   :alt: Last build status on Ubuntu 20.04 with clang
-   :target: https://github.com/ARM-software/PAF/actions/workflows/ubuntu-2004-clang.yml
+.. |CIUbuntu2004clang| image:: https://github.com/ARM-software/PAF/actions/workflows/ubuntu-2204.yml/badge.svg
+   :alt: Last build status on Ubuntu 22.04
+   :target: https://github.com/ARM-software/PAF/actions/workflows/ubuntu-2204.yml
 
 ===============================================================================
 PAF, the Physical Attack Framework
