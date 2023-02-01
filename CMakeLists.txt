@@ -57,7 +57,7 @@ endif()
 ExternalProject_Add(tarmac-trace-utilities
   PREFIX "third_party"
   GIT_REPOSITORY "https://github.com/ARM-software/tarmac-trace-utilities"
-  GIT_TAG "e5b6b13fef0c6214c8e11b32bb87b57b9ad36861"
+  GIT_TAG "d6a93683966f1e2231db12e466146f6c9ce4c9b0"
   CMAKE_ARGS "${EXTERNAL_PROJECT_CMAKE_ARGS}"
   BUILD_BYPRODUCTS "${CMAKE_BINARY_DIR}/lib/${CMAKE_STATIC_LIBRARY_PREFIX}tarmac${CMAKE_STATIC_LIBRARY_SUFFIX}"
   )
