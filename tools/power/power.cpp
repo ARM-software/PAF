@@ -30,6 +30,7 @@
 #include "libtarmac/tarmacutil.hh"
 
 #include <cstdlib>
+#include <fstream>
 #include <iostream>
 #include <memory>
 #include <random>
@@ -38,6 +39,7 @@
 #include <vector>
 
 using std::cout;
+using std::ifstream;
 using std::pair;
 using std::string;
 using std::unique_ptr;
@@ -184,7 +186,27 @@ int main(int argc, char **argv) {
     ap.optval({"--function"}, "FUNCTION",
               "analyze code running within FUNCTION",
               [&](const string &s) { ARS.setFunction(s); });
-    ap.optval(
+    ap.optval({"--via-file"}, "FILE", "read command line arguments from FILE",
+              [&](const string &filename) {
+                  ifstream viafile(filename.c_str());
+                  if (!viafile)
+                    reporter->errx(
+                        EXIT_FAILURE,
+                        "Error opening via-file '%s'",
+                        filename.c_str());
+                  vector<string> words;
+                  while (!viafile.eof()) {
+                      string word;
+                      viafile >> word;
+                      if (!word.empty())
+                        words.push_back(word);
+                  }
+                  while (!words.empty()) {
+                      ap.prepend_cmdline_word(words.back());
+                      words.pop_back();
+                  }
+              });
+     ap.optval(
         {"--between-functions"}, "FUNCTION_START,FUNCTION_END",
         "analyze code between FUNCTION_START return and FUNCTION_END call",
         [&](const string &s) {
