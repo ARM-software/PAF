@@ -130,13 +130,16 @@ class CSVPowerDumper : public PowerDumper {
 
     /// Update state when switching to next trace.
     void next_trace() override;
+
     /// Called at the beginning of a trace.
     void predump() override;
+
     /// Called for each sample in the trace.
     void dump(double total, double pc, double instr, double oreg, double ireg,
               double addr, double data,
               const PAF::ReferenceInstruction *I) override;
 
+    /// Destruct this CSVPowerDumper.
     virtual ~CSVPowerDumper() override;
 
   private:
@@ -167,6 +170,7 @@ class NPYPowerDumper : public PowerDumper {
               const PAF::ReferenceInstruction *I) override;
 
     virtual ~NPYPowerDumper() override;
+    /// Destruct this NPYPowerDumper.
 
   private:
     const std::string filename; ///< The NPY file name.
@@ -180,7 +184,8 @@ class NPYPowerDumper : public PowerDumper {
 /// the program counter, ...
 class PowerAnalysisConfig {
   public:
-    /// The PowerModel enumeration selects the power model to use: Hamming weight or Hamming distance.
+    /// The PowerModel enumeration selects the power model to use: Hamming
+    /// weight or Hamming distance.
     enum PowerModel {
         /// Hamming weight.
         HAMMING_WEIGHT,
@@ -208,7 +213,8 @@ class PowerAnalysisConfig {
         WITH_LOAD_TO_LOAD_TRANSITIONS = 1 << 6,
         /// Include store to store accesses hamming distance (HD).
         WITH_STORE_TO_STORE_TRANSITIONS = 1 << 7,
-        /// Include consecutive memory accesses (load or store) hamming distance (HD).
+        /// Include consecutive memory accesses (load or store) hamming distance
+        /// (HD).
         WITH_LAST_MEMORY_ACCESSES_TRANSITIONS = 1 << 8,
         /// Include memory update hamming distance (HD).
         WITH_MEMORY_UPDATE_TRANSITIONS = 1 << 9,
@@ -274,7 +280,8 @@ class PowerAnalysisConfig {
     bool withInstructionsInputs() const {
         return has(WITH_INSTRUCTIONS_INPUTS);
     }
-    /// Does this config include the instructions' output operands contribution ?
+    /// Does this config include the instructions' output operands contribution
+    /// ?
     bool withInstructionsOutputs() const {
         return has(WITH_INSTRUCTIONS_OUTPUTS);
     }
@@ -431,9 +438,7 @@ class PowerTrace {
     }
 
     /// Add a new instruction to the trace.
-    void add(const PAF::ReferenceInstruction &I) {
-        Instructions.push_back(I);
-    }
+    void add(const PAF::ReferenceInstruction &I) { Instructions.push_back(I); }
 
     /// Get this power trace size in number of instructions.
     size_t size() const { return Instructions.size(); }
@@ -443,9 +448,9 @@ class PowerTrace {
         return Instructions[i];
     }
 
-    /// Perform the analysis on the ExecutionRange, dispatching power information
-    /// to our Dumper which will be in charge of formatting the results to the
-    /// user's taste.
+    /// Perform the analysis on the ExecutionRange, dispatching power
+    /// information to our Dumper which will be in charge of formatting the
+    /// results to the user's taste.
     void analyze();
 
     /// Get this PowerTrace ArchInfo.

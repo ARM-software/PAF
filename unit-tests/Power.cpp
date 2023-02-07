@@ -183,6 +183,7 @@ std::ostream &operator<<(std::ostream &os, const PowerFields &pf) {
     return os;
 }
 
+// A mock for testing power dumps.
 struct TestPowerDumper : public PowerDumper {
 
     TestPowerDumper() : PowerDumper(), pwf() {}

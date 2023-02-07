@@ -19,10 +19,10 @@
  *
  */
 
+#include "PAF/SCA/Power.h"
 #include "PAF/PAF.h"
 #include "PAF/SCA/Noise.h"
 #include "PAF/SCA/SCA.h"
-#include "PAF/SCA/Power.h"
 #include "PAF/utils/Misc.h"
 
 #include "libtarmac/argparse.hh"
@@ -45,6 +45,7 @@ using std::string;
 using std::unique_ptr;
 using std::vector;
 
+using PAF::split;
 using PAF::SCA::CSVPowerDumper;
 using PAF::SCA::NoiseSource;
 using PAF::SCA::NPYPowerDumper;
@@ -52,7 +53,6 @@ using PAF::SCA::PowerAnalysisConfig;
 using PAF::SCA::PowerAnalyzer;
 using PAF::SCA::PowerDumper;
 using PAF::SCA::PowerTrace;
-using PAF::split;
 using PAF::SCA::YAMLTimingInfo;
 
 unique_ptr<Reporter> reporter = make_cli_reporter();
@@ -76,7 +76,7 @@ class AnalysisRangeSpecifier {
     Kind getKind() const { return kind; }
 
     const string &getFunctionName() const { return function; }
-    const pair<string,string> &getMarkers() const { return markers; }
+    const pair<string, string> &getMarkers() const { return markers; }
 
   private:
     Kind kind;
@@ -190,23 +190,22 @@ int main(int argc, char **argv) {
               [&](const string &filename) {
                   ifstream viafile(filename.c_str());
                   if (!viafile)
-                    reporter->errx(
-                        EXIT_FAILURE,
-                        "Error opening via-file '%s'",
-                        filename.c_str());
+                      reporter->errx(EXIT_FAILURE,
+                                     "Error opening via-file '%s'",
+                                     filename.c_str());
                   vector<string> words;
                   while (!viafile.eof()) {
                       string word;
                       viafile >> word;
                       if (!word.empty())
-                        words.push_back(word);
+                          words.push_back(word);
                   }
                   while (!words.empty()) {
                       ap.prepend_cmdline_word(words.back());
                       words.pop_back();
                   }
               });
-     ap.optval(
+    ap.optval(
         {"--between-functions"}, "FUNCTION_START,FUNCTION_END",
         "analyze code between FUNCTION_START return and FUNCTION_END call",
         [&](const string &s) {
@@ -292,8 +291,8 @@ int main(int argc, char **argv) {
 
         for (const PAF::ExecutionRange &er : ERS) {
             if (tu.is_verbose()) {
-                cout << " - Building power trace from " << er.Start.time << " to "
-                     << er.End.time;
+                cout << " - Building power trace from " << er.Start.time
+                     << " to " << er.End.time;
                 if (ARS.getKind() == AnalysisRangeSpecifier::Function)
                     cout << " (" << ARS.getFunctionName() << ')';
                 cout << '\n';
