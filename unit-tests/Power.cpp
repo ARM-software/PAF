@@ -32,6 +32,7 @@
 #include <fstream>
 #include <initializer_list>
 #include <iostream>
+#include <map>
 #include <memory>
 #include <sstream>
 #include <string>
@@ -39,20 +40,24 @@
 
 using namespace testing;
 
+using std::map;
 using std::pair;
 using std::string;
 using std::unique_ptr;
 using std::vector;
 
+using PAF::ArchInfo;
 using PAF::MemoryAccess;
 using PAF::ReferenceInstruction;
 using PAF::RegisterAccess;
 using PAF::SCA::CSVPowerDumper;
 using PAF::SCA::NPArray;
 using PAF::SCA::NPYPowerDumper;
+using PAF::SCA::NPYRegBankDumper;
 using PAF::SCA::PowerAnalysisConfig;
 using PAF::SCA::PowerDumper;
 using PAF::SCA::PowerTrace;
+using PAF::SCA::RegBankDumper;
 using PAF::SCA::TimingInfo;
 using PAF::SCA::YAMLTimingInfo;
 
@@ -127,7 +132,7 @@ TEST_F(YAMLTimingInfoF, Base) {
         "  ave: 8",
         "  max: 8",
         "  cycles: [ [ 0x7b, 0 ], [ 0x7c, 2 ], [ 0x7d, 3 ] ]"
-        // clang-format off
+        // clang-format on
         }));
 }
 
@@ -200,8 +205,155 @@ struct TestPowerDumper : public PowerDumper {
     vector<PowerFields> pwf;
 };
 
-// clang-format off
+// A mock for testing register bank traces.
+class TestRegBankDumper : public RegBankDumper {
+  public:
+    TestRegBankDumper(bool enabled = false)
+        : RegBankDumper(enabled), regbank(), NR(0) {}
+
+    void reset() {
+        NR = 0;
+        regbank.clear();
+    }
+
+    void next_trace() override { regbank.push_back(vector<uint64_t>()); }
+
+    void dump(const std::vector<uint64_t> &regs) override {
+        if (regbank.empty()) {
+            NR = regs.size();
+            next_trace();
+        }
+        regbank.back().insert(regbank.back().end(), regs.begin(), regs.end());
+    }
+
+    AssertionResult check(size_t trace, size_t idx,
+                          const vector<uint64_t> &ref) const {
+        if (trace >= regbank.size())
+            return report_error("trace index out of bound");
+        if (idx >= regbank[trace].size())
+            return report_error("snapshot index out of bound");
+        if (ref.size() != NR)
+            return report_error("size discrepancy");
+        for (size_t i = 0; i < ref.size(); i++)
+            if (ref[i] != regbank[trace][idx * NR + i])
+                return report_error("regbank error", ref, regbank.back());
+        return AssertionSuccess();
+    }
+
+    static void dump(AssertionResult &AR, const char *msg,
+                     const vector<uint64_t> &regs) {
+        AR << msg;
+        for (const auto &v : regs)
+            AR << ' ' << v;
+        AR << '\n';
+    }
+
+    AssertionResult report_error(const char *msg) const {
+        return AssertionFailure() << msg;
+    }
+    AssertionResult report_error(const char *msg,
+                                 const vector<uint64_t> &expected,
+                                 const vector<uint64_t> &actual) const {
+        AssertionResult AR = AssertionFailure();
+        AR << msg << "\n";
+        dump(AR, "Expected:", expected);
+        dump(AR, "Actual:", actual);
+        return AR;
+    }
+
+    size_t num_snapshots() const {
+        return regbank.empty() ? 0 : regbank.back().size() / NR;
+    }
+    size_t num_traces() const { return regbank.size(); }
+
+    void dump() const {
+        std::cout << "NR: " << NR << '\n';
+        std::cout << "Num traces: " << num_traces() << '\n';
+        std::cout << "Num snapshots: " << num_snapshots() << '\n';
+    }
+
+  private:
+    vector<vector<uint64_t>> regbank;
+    size_t NR;
+};
+
+class TestOracle : public PowerTrace::OracleBase {
+  public:
+    TestOracle(const ReferenceInstruction Inst[], size_t N)
+        : PowerTrace::OracleBase(), registers(), NR(0), DefaultValue(0) {
+        // Gather how many registers we have in this instruction sequence.
+        // And check time is strictly monotonically increasing.
+        Time t;
+        for (size_t i = 0; i < N; i++) {
+            if (i != 0)
+                assert(Inst[i].time > t && "Time must be strictly monotonic");
+            t = Inst[i].time;
+            for (const auto &RA : Inst[i].regaccess)
+                if (RA.access == PAF::RegisterAccess::Type::Write)
+                    if (registers.count(RA.name) == 0)
+                        registers[RA.name] = registers.size();
+        }
+        NR = registers.size();
+
+        // Build the different register bank states.
+        for (size_t i = 0; i < N; i++) {
+            // Extend the trace with a copy of the last snapshot.
+            if (!regbank.empty()) {
+                regbank[Inst[i].time] = regbank.rbegin()->second;
+            } else
+                regbank[Inst[i].time] = vector<uint64_t>(NR, DefaultValue);
+
+            // Add register updates to the snapshot
+            for (const auto &RA : Inst[i].regaccess) {
+                if (RA.access == PAF::RegisterAccess::Type::Write) {
+                    assert(registers.count(RA.name) != 0 &&
+                           "Unknown register name");
+                    regbank.rbegin()->second[registers[RA.name]] = RA.value;
+                }
+            }
+        }
+    }
+
+    std::vector<uint64_t> getRegBankState(Time t) const override {
+        if (regbank.empty() || t < regbank.begin()->first)
+            return vector<uint64_t>(NR, DefaultValue);
+        const auto it = regbank.find(t);
+        if (it == regbank.end())
+            return regbank.rend()->second;
+        return it->second;
+    }
+
+    uint64_t getMemoryState(Addr address, size_t size, Time t) const override {
+        assert(false &&
+               "TestOracle does not yet have getMemoryState implementation");
+        return 0;
+    }
+
+    void dump() const {
+        std::cout << "DefaultValue: " << DefaultValue << '\n';
+        std::cout << "Nun regs: " << NR << '\n';
+        std::cout << "Registers:";
+        for (const auto &r : registers)
+            std::cout << ' ' << r.first << '=' << r.second;
+        std::cout << '\n';
+        std::cout << "Regbank snapshots:\n";
+        for (const auto &s : regbank) {
+            std::cout << " - " << s.first << ':';
+            for (const auto &v : s.second)
+                std::cout << ' ' << v;
+            std::cout << '\n';
+        }
+    }
+
+  private:
+    map<string, unsigned> registers;
+    map<Time, vector<uint64_t>> regbank;
+    size_t NR;
+    const uint64_t DefaultValue;
+};
+
 static const ReferenceInstruction Insts[] = {
+    // clang-format off
     {
         27, true, 0x089bc, THUMB, 16, 0x02105, "MOVS r1,#5",
         {},
@@ -237,8 +389,8 @@ static const ReferenceInstruction Insts[] = {
             RegisterAccess("r4", 0x00021f64, RegisterAccess::Type::Write)
         }
     },
+    // clang-format on
 };
-// clang-format on
 
 TEST(PowerDumper, base) {
     TestPowerDumper TPD;
@@ -322,6 +474,53 @@ TEST_F(NPYPowerDumperF, base) {
     for (size_t col = 0; col < npy.cols(); col++)
         for (size_t row = 0; row < npy.rows(); row++)
             EXPECT_EQ(npy(row, col), double((row + 1) * (col + 1)));
+}
+
+TEST(RegBankDumper, base) {
+    TestRegBankDumper TRBD(true);
+
+    TRBD.predump();
+    TRBD.dump({0, 1, 2, 3});
+    TRBD.postdump();
+    TRBD.next_trace();
+
+    TRBD.predump();
+    TRBD.dump({4, 5, 6, 7});
+    TRBD.postdump();
+    TRBD.next_trace();
+
+    EXPECT_EQ(TRBD.num_traces(), 3);
+    EXPECT_TRUE(TRBD.check(0, 0, {0, 1, 2, 3}));
+    EXPECT_TRUE(TRBD.check(1, 0, {4, 5, 6, 7}));
+}
+
+// Create the test fixture for NPYRegBankDumper.
+TestWithTempFile(NPYRegBankDumperF, "test-RegBank.npy.XXXXXX");
+
+TEST_F(NPYRegBankDumperF, base) {
+    {
+        NPYRegBankDumper NRBD(getTemporaryFilename(), 2);
+        NRBD.predump();
+        NRBD.dump({0, 1, 2, 3, 4});
+        NRBD.dump({5, 6, 7, 8, 9});
+        NRBD.postdump();
+        NRBD.next_trace();
+
+        NRBD.predump();
+        NRBD.dump({10, 11, 12, 13, 14});
+        NRBD.dump({15, 16, 17, 18, 19});
+        NRBD.postdump();
+        NRBD.next_trace();
+    }
+
+    NPArray<uint64_t> npy(getTemporaryFilename().c_str());
+    EXPECT_TRUE(npy.error() == nullptr);
+    EXPECT_EQ(npy.rows(), 2);
+    EXPECT_EQ(npy.cols(), 10);
+    EXPECT_EQ(npy.element_size(), sizeof(uint64_t));
+    for (size_t row = 0; row < npy.rows(); row++)
+        for (size_t col = 0; col < npy.cols(); col++)
+            EXPECT_EQ(npy(row, col), row * npy.cols() + col);
 }
 
 TEST(PowerAnalysisConfig, base) {
@@ -496,29 +695,41 @@ TEST(PowerAnalysisConfig, base) {
 
 TEST(PowerTrace, base) {
     TestPowerDumper TPD;
+    TestRegBankDumper TRBD(true);
     TestTimingInfo TTI;
     PowerAnalysisConfig PAC;
+    unique_ptr<ArchInfo> CPU(new PAF::V7MInfo());
+    TestOracle Oracle(Insts, sizeof(Insts)/sizeof(Insts[0]));
 
-    PowerTrace PT(TPD, TTI, PAC, std::make_unique<PAF::V7MInfo>());
+    PowerTrace PT(TPD, TTI, TRBD, PAC, CPU.get());
     EXPECT_STREQ(PT.getArchInfo()->description(), "Arm V7M ISA");
     PT.add(Insts[0]);
     EXPECT_EQ(PT.size(), 1);
     EXPECT_EQ(PT[0], Insts[0]);
-    PT.analyze();
+    PT.analyze(Oracle);
     EXPECT_EQ(TPD.pwf.size(), 1);
     EXPECT_EQ(TPD.pwf[0], PowerFields(17, 8, 4, 4, 0, 0, 0, &Insts[0]));
+    EXPECT_EQ(TRBD.num_traces(), 1);
+    EXPECT_EQ(TRBD.num_snapshots(), 1);
+    EXPECT_TRUE(TRBD.check(0, 0, {5, 0x21000000, 0, 0, 0}));
 
     TPD.reset();
+    TRBD.reset();
     PT.add(Insts[1]);
     EXPECT_EQ(PT.size(), 2);
     EXPECT_EQ(PT[0], Insts[0]);
     EXPECT_EQ(PT[1], Insts[1]);
-    PT.analyze();
+    PT.analyze(Oracle);
     EXPECT_EQ(TPD.pwf.size(), 2);
     EXPECT_EQ(TPD.pwf[0], PowerFields(17, 8, 4, 4, 0, 0, 0, &Insts[0]));
     EXPECT_EQ(TPD.pwf[1], PowerFields(22, 9, 5, 2, 2, 0, 0, &Insts[1]));
+    EXPECT_EQ(TRBD.num_traces(), 1);
+    EXPECT_EQ(TRBD.num_snapshots(), 2);
+    EXPECT_TRUE(TRBD.check(0, 0, {5, 0x21000000, 0, 0, 0}));
+    EXPECT_TRUE(TRBD.check(0, 1, {5, 0x21000000, 5, 0, 0}));
 
     TPD.reset();
+    TRBD.reset();
     PT.add(Insts[2]);
     PT.add(Insts[3]);
     EXPECT_EQ(PT.size(), 4);
@@ -526,7 +737,7 @@ TEST(PowerTrace, base) {
     EXPECT_EQ(PT[1], Insts[1]);
     EXPECT_EQ(PT[2], Insts[2]);
     EXPECT_EQ(PT[3], Insts[3]);
-    PT.analyze();
+    PT.analyze(Oracle);
     EXPECT_EQ(TPD.pwf.size(),
               4 + 2); // 4 instructions, 2 extra cycles for LDRD and STRD.
     EXPECT_EQ(TPD.pwf[0], PowerFields(17, 8, 4, 4, 0, 0, 0, &Insts[0]));
@@ -535,12 +746,19 @@ TEST(PowerTrace, base) {
     EXPECT_EQ(TPD.pwf[3], PowerFields(28, 6, 12, 0, 0, 5, 2, nullptr));
     EXPECT_EQ(TPD.pwf[4], PowerFields(40, 6, 14, 2, 0, 10, 2, &Insts[3]));
     EXPECT_EQ(TPD.pwf[5], PowerFields(65.6, 6, 14, 9, 0, 8, 9, nullptr));
+    EXPECT_EQ(TRBD.num_traces(), 1);
+    EXPECT_EQ(TRBD.num_snapshots(), 4);
+    EXPECT_TRUE(TRBD.check(0, 0, {5, 0x21000000, 0, 0, 0}));
+    EXPECT_TRUE(TRBD.check(0, 1, {5, 0x21000000, 5, 0, 0}));
+    EXPECT_TRUE(TRBD.check(0, 2, {5, 0x21000000, 5, 0, 0}));
+    EXPECT_TRUE(TRBD.check(0, 3, {5, 0x21000000, 5, 3, 139108}));
 
     // Move construct.
     PowerTrace PT2(std::move(PT));
     TPD.reset();
+    TRBD.reset();
     PT2.add(Insts[0]);
-    PT2.analyze();
+    PT2.analyze(Oracle);
     EXPECT_EQ(TPD.pwf.size(), 7);
     EXPECT_EQ(TPD.pwf[0], PowerFields(17, 8, 4, 4, 0, 0, 0, &Insts[0]));
     EXPECT_EQ(TPD.pwf[1], PowerFields(22, 9, 5, 2, 2, 0, 0, &Insts[1]));
@@ -553,11 +771,12 @@ TEST(PowerTrace, base) {
     // Move assign.
     TestPowerDumper TPD2;
     TestTimingInfo TTI2;
-    PowerTrace PT3(TPD, TTI, PAC, std::make_unique<PAF::V7MInfo>());
+    PowerTrace PT3(TPD, TTI, TRBD, PAC, CPU.get());
     PT3 = std::move(PT2);
     TPD.reset();
+    TRBD.reset();
     PT3.add(Insts[0]);
-    PT3.analyze();
+    PT3.analyze(Oracle);
     EXPECT_EQ(TPD.pwf.size(), 8);
     EXPECT_EQ(TPD.pwf[0], PowerFields(17, 8, 4, 4, 0, 0, 0, &Insts[0]));
     EXPECT_EQ(TPD.pwf[1], PowerFields(22, 9, 5, 2, 2, 0, 0, &Insts[1]));
@@ -579,31 +798,39 @@ class PowerAnalysisConfigWithNoise : public PowerAnalysisConfig {
 
 TEST(PowerTrace, withNoise) {
     TestPowerDumper TPD;
+    TestRegBankDumper TRBD;
     TestTimingInfo TTI;
     PowerAnalysisConfigWithNoise PAC;
+    unique_ptr<ArchInfo> CPU(new PAF::V7MInfo());
+    TestOracle Oracle(Insts, sizeof(Insts)/sizeof(Insts[0]));
 
-    PowerTrace PT(TPD, TTI, PAC, std::make_unique<PAF::V7MInfo>());
+    PowerTrace PT(TPD, TTI, TRBD, PAC, CPU.get());
     PT.add(Insts[0]);
-    PT.analyze();
+    PT.analyze(Oracle);
     PAC.setWithoutNoise();
-    PT.analyze();
+    PT.analyze(Oracle);
     EXPECT_EQ(TPD.pwf.size(), 2);
     EXPECT_GT(PowerFields::noise(TPD.pwf[1], TPD.pwf[0]), 0.0);
+    EXPECT_EQ(TRBD.num_traces(), 0);
+    EXPECT_EQ(TRBD.num_snapshots(), 0);
 }
 
 TEST(PowerTrace, HammingWeightWithConfig) {
     // Tests that only the source contributing to the power have non zero power.
     TestPowerDumper TPD;
+    TestRegBankDumper TRBD(true);
     TestTimingInfo TTI;
     PowerAnalysisConfig PAC;
+    unique_ptr<ArchInfo> CPU(new PAF::V7MInfo());
+    TestOracle Oracle(Insts, sizeof(Insts)/sizeof(Insts[0]));
 
     PAC.clear().set(PowerAnalysisConfig::WITH_PC);
-    PowerTrace PT1(TPD, TTI, PAC, std::make_unique<PAF::V7MInfo>());
+    PowerTrace PT1(TPD, TTI, TRBD, PAC, CPU.get());
     PT1.add(Insts[0]);
     PT1.add(Insts[1]);
     PT1.add(Insts[2]);
     PT1.add(Insts[3]);
-    PT1.analyze();
+    PT1.analyze(Oracle);
     EXPECT_EQ(TPD.pwf.size(),
               6); // 4 instructions, 2 extra cycles.
     EXPECT_EQ(TPD.pwf[0], PowerFields(8, 8, 0, 0, 0, 0, 0, &Insts[0]));
@@ -612,15 +839,22 @@ TEST(PowerTrace, HammingWeightWithConfig) {
     EXPECT_EQ(TPD.pwf[3], PowerFields(6, 6, 0, 0, 0, 0, 0, nullptr));
     EXPECT_EQ(TPD.pwf[4], PowerFields(6, 6, 0, 0, 0, 0, 0, &Insts[3]));
     EXPECT_EQ(TPD.pwf[5], PowerFields(6, 6, 0, 0, 0, 0, 0, nullptr));
+    EXPECT_EQ(TRBD.num_traces(), 1);
+    EXPECT_EQ(TRBD.num_snapshots(), 4);
+    EXPECT_TRUE(TRBD.check(0, 0, {5, 0x21000000, 0, 0, 0}));
+    EXPECT_TRUE(TRBD.check(0, 1, {5, 0x21000000, 5, 0, 0}));
+    EXPECT_TRUE(TRBD.check(0, 2, {5, 0x21000000, 5, 0, 0}));
+    EXPECT_TRUE(TRBD.check(0, 3, {5, 0x21000000, 5, 3, 139108}));
 
     TPD.reset();
+    TRBD.reset();
     PAC.clear().set(PowerAnalysisConfig::WITH_MEM_ADDRESS);
-    PowerTrace PT2(TPD, TTI, PAC, std::make_unique<PAF::V7MInfo>());
+    PowerTrace PT2(TPD, TTI, TRBD, PAC, CPU.get());
     PT2.add(Insts[0]);
     PT2.add(Insts[1]);
     PT2.add(Insts[2]);
     PT2.add(Insts[3]);
-    PT2.analyze();
+    PT2.analyze(Oracle);
     EXPECT_EQ(TPD.pwf.size(),
               6); // 4 instructions, 2 extra cycles.
     EXPECT_EQ(TPD.pwf[0], PowerFields(0, 0, 0, 0, 0, 0, 0, &Insts[0]));
@@ -631,13 +865,14 @@ TEST(PowerTrace, HammingWeightWithConfig) {
     EXPECT_EQ(TPD.pwf[5], PowerFields(9.6, 0, 0, 0, 0, 8, 0, nullptr));
 
     TPD.reset();
+    TRBD.reset();
     PAC.clear().set(PowerAnalysisConfig::WITH_MEM_DATA);
-    PowerTrace PT3(TPD, TTI, PAC, std::make_unique<PAF::V7MInfo>());
+    PowerTrace PT3(TPD, TTI, TRBD, PAC, CPU.get());
     PT3.add(Insts[0]);
     PT3.add(Insts[1]);
     PT3.add(Insts[2]);
     PT3.add(Insts[3]);
-    PT3.analyze();
+    PT3.analyze(Oracle);
     EXPECT_EQ(TPD.pwf.size(),
               6); // 4 instructions, 2 extra cycles.
     EXPECT_EQ(TPD.pwf[0], PowerFields(0, 0, 0, 0, 0, 0, 0, &Insts[0]));
@@ -648,13 +883,14 @@ TEST(PowerTrace, HammingWeightWithConfig) {
     EXPECT_EQ(TPD.pwf[5], PowerFields(18, 0, 0, 0, 0, 0, 9, nullptr));
 
     TPD.reset();
+    TRBD.reset();
     PAC.clear().set(PowerAnalysisConfig::WITH_OPCODE);
-    PowerTrace PT4(TPD, TTI, PAC, std::make_unique<PAF::V7MInfo>());
+    PowerTrace PT4(TPD, TTI, TRBD, PAC, CPU.get());
     PT4.add(Insts[0]);
     PT4.add(Insts[1]);
     PT4.add(Insts[2]);
     PT4.add(Insts[3]);
-    PT4.analyze();
+    PT4.analyze(Oracle);
     EXPECT_EQ(TPD.pwf.size(),
               6); // 4 instructions, 2 extra cycles.
     EXPECT_EQ(TPD.pwf[0], PowerFields(4, 0, 4, 0, 0, 0, 0, &Insts[0]));
@@ -665,13 +901,14 @@ TEST(PowerTrace, HammingWeightWithConfig) {
     EXPECT_EQ(TPD.pwf[5], PowerFields(14, 0, 14, 0, 0, 0, 0, nullptr));
 
     TPD.reset();
+    TRBD.reset();
     PAC.clear().set(PowerAnalysisConfig::WITH_INSTRUCTIONS_INPUTS);
-    PowerTrace PT5(TPD, TTI, PAC, std::make_unique<PAF::V7MInfo>());
+    PowerTrace PT5(TPD, TTI, TRBD, PAC, CPU.get());
     PT5.add(Insts[0]);
     PT5.add(Insts[1]);
     PT5.add(Insts[2]);
     PT5.add(Insts[3]);
-    PT5.analyze();
+    PT5.analyze(Oracle);
     EXPECT_EQ(TPD.pwf.size(),
               6); // 4 instructions, 2 extra cycles.
     EXPECT_EQ(TPD.pwf[0], PowerFields(0, 0, 0, 0, 0, 0, 0, &Insts[0]));
@@ -682,13 +919,14 @@ TEST(PowerTrace, HammingWeightWithConfig) {
     EXPECT_EQ(TPD.pwf[5], PowerFields(0, 0, 0, 0, 0, 0, 0, nullptr));
 
     TPD.reset();
+    TRBD.reset();
     PAC.clear().set(PowerAnalysisConfig::WITH_INSTRUCTIONS_OUTPUTS);
-    PowerTrace PT6(TPD, TTI, PAC, std::make_unique<PAF::V7MInfo>());
+    PowerTrace PT6(TPD, TTI, TRBD, PAC, CPU.get());
     PT6.add(Insts[0]);
     PT6.add(Insts[1]);
     PT6.add(Insts[2]);
     PT6.add(Insts[3]);
-    PT6.analyze();
+    PT6.analyze(Oracle);
     EXPECT_EQ(TPD.pwf.size(),
               6); // 4 instructions, 2 extra cycles.
     EXPECT_EQ(TPD.pwf[0], PowerFields(5, 0, 0, 4, 0, 0, 0, &Insts[0]));
@@ -772,7 +1010,7 @@ static const ReferenceInstruction Insts2[] = {
 TEST(PowerTrace, HammingDistanceWithConfig) {
 
     // For use with Insts sequence.
-    class InstsStateOracle : public PAF::SCA::PowerTrace::OracleBase {
+    class InstsStateOracle : public PowerTrace::OracleBase {
       public:
         InstsStateOracle(std::initializer_list<uint64_t> il)
             : RegBankInitialState(il) {}
@@ -788,7 +1026,7 @@ TEST(PowerTrace, HammingDistanceWithConfig) {
     };
 
     // For use with Insts2 sequence.
-    class Insts2StateOracle : public PAF::SCA::PowerTrace::OracleBase {
+    class Insts2StateOracle : public PowerTrace::OracleBase {
       public:
         Insts2StateOracle(std::initializer_list<uint64_t> il)
             : RegBankInitialState(il) {}
@@ -814,18 +1052,19 @@ TEST(PowerTrace, HammingDistanceWithConfig) {
 
     // Tests that only the source contributing to the power have non zero power.
     TestPowerDumper TPD;
+    TestRegBankDumper TRBD;
     TestTimingInfo TTI;
+    unique_ptr<ArchInfo> CPU(new PAF::V7MInfo());
     PowerAnalysisConfig PAC(PowerAnalysisConfig::HAMMING_DISTANCE);
     EXPECT_TRUE(PAC.isHammingDistance());
 
     PAC.clear().set(PowerAnalysisConfig::WITH_PC);
-    PowerTrace PT1(TPD, TTI, PAC, std::make_unique<PAF::V7MInfo>(),
-                   std::make_unique<InstsStateOracle>());
+    PowerTrace PT1(TPD, TTI, TRBD, PAC, CPU.get());
     PT1.add(Insts[0]);
     PT1.add(Insts[1]);
     PT1.add(Insts[2]);
     PT1.add(Insts[3]);
-    PT1.analyze();
+    PT1.analyze(InstsStateOracle());
     EXPECT_EQ(TPD.pwf.size(),
               6); // 4 instructions, 2 extra cycles.
     EXPECT_EQ(TPD.pwf[0], PowerFields(8, 8, 0, 0, 0, 0, 0, &Insts[0]));
@@ -836,14 +1075,14 @@ TEST(PowerTrace, HammingDistanceWithConfig) {
     EXPECT_EQ(TPD.pwf[5], PowerFields(2, 2, 0, 0, 0, 0, 0, nullptr));
 
     TPD.reset();
+    TRBD.reset();
     PAC.clear().set(PowerAnalysisConfig::WITH_OPCODE);
-    PowerTrace PT2(TPD, TTI, PAC, std::make_unique<PAF::V7MInfo>(),
-                   std::make_unique<InstsStateOracle>());
+    PowerTrace PT2(TPD, TTI, TRBD, PAC, CPU.get());
     PT2.add(Insts[0]);
     PT2.add(Insts[1]);
     PT2.add(Insts[2]);
     PT2.add(Insts[3]);
-    PT2.analyze();
+    PT2.analyze(InstsStateOracle());
     EXPECT_EQ(TPD.pwf.size(),
               6); // 4 instructions, 2 extra cycles.
     EXPECT_EQ(TPD.pwf[0], PowerFields(4, 0, 4, 0, 0, 0, 0, &Insts[0]));
@@ -855,14 +1094,14 @@ TEST(PowerTrace, HammingDistanceWithConfig) {
 
     // Instructions' inputs are ignored in the Hamming distance power model.
     TPD.reset();
+    TRBD.reset();
     PAC.clear().set(PowerAnalysisConfig::WITH_INSTRUCTIONS_INPUTS);
-    PowerTrace PT3(TPD, TTI, PAC, std::make_unique<PAF::V7MInfo>(),
-                   std::make_unique<InstsStateOracle>());
+    PowerTrace PT3(TPD, TTI, TRBD, PAC, CPU.get());
     PT3.add(Insts[0]);
     PT3.add(Insts[1]);
     PT3.add(Insts[2]);
     PT3.add(Insts[3]);
-    PT3.analyze();
+    PT3.analyze(InstsStateOracle());
     EXPECT_EQ(TPD.pwf.size(),
               6); // 4 instructions, 2 extra cycles.
     EXPECT_EQ(TPD.pwf[0], PowerFields(0, 0, 0, 0, 0, 0, 0, &Insts[0]));
@@ -873,31 +1112,31 @@ TEST(PowerTrace, HammingDistanceWithConfig) {
     EXPECT_EQ(TPD.pwf[5], PowerFields(0, 0, 0, 0, 0, 0, 0, nullptr));
 
     TPD.reset();
+    TRBD.reset();
     PAC.clear().set(PowerAnalysisConfig::WITH_INSTRUCTIONS_OUTPUTS);
-    PowerTrace PT4(TPD, TTI, PAC, std::make_unique<PAF::V7MInfo>(),
-                   std::unique_ptr<InstsStateOracle>(new InstsStateOracle{{/* R0: */ 0,
-                                                          /* R1: */ 0,
-                                                          /* R2: */ 3,
-                                                          /* R3: */ 0,
-                                                          /* R4: */ 0,
-                                                          /* R5: */ 0,
-                                                          /* R6: */ 0,
-                                                          /* R7: */ 0,
-                                                          /* R8: */ 0,
-                                                          /* R9: */ 0,
-                                                          /* R10: */ 0,
-                                                          /* R11: */ 0,
-                                                          /* R12: */ 0,
-                                                          /* MSP: */ 0,
-                                                          /* LR: */ 0,
-                                                          /* PC: */ 0,
-                                                          /* CPSR: */ 0,
-                                                          /* PSR: */ 0}}));
+    PowerTrace PT4(TPD, TTI, TRBD, PAC, CPU.get());
     PT4.add(Insts[0]);
     PT4.add(Insts[1]);
     PT4.add(Insts[2]);
     PT4.add(Insts[3]);
-    PT4.analyze();
+    PT4.analyze(InstsStateOracle{{/* R0: */ 0,
+                                  /* R1: */ 0,
+                                  /* R2: */ 3,
+                                  /* R3: */ 0,
+                                  /* R4: */ 0,
+                                  /* R5: */ 0,
+                                  /* R6: */ 0,
+                                  /* R7: */ 0,
+                                  /* R8: */ 0,
+                                  /* R9: */ 0,
+                                  /* R10: */ 0,
+                                  /* R11: */ 0,
+                                  /* R12: */ 0,
+                                  /* MSP: */ 0,
+                                  /* LR: */ 0,
+                                  /* PC: */ 0,
+                                  /* CPSR: */ 0,
+                                  /* PSR: */ 0}});
     EXPECT_EQ(TPD.pwf.size(),
               6); // 4 instructions, 2 extra cycles.
     EXPECT_EQ(TPD.pwf[0], PowerFields(5, 0, 0, 4, 0, 0, 0, &Insts[0]));
@@ -908,15 +1147,15 @@ TEST(PowerTrace, HammingDistanceWithConfig) {
     EXPECT_EQ(TPD.pwf[5], PowerFields(18, 0, 0, 9, 0, 0, 0, nullptr));
 
     TPD.reset();
+    TRBD.reset();
     PAC.clear().set(PowerAnalysisConfig::WITH_MEM_ADDRESS,
                     PowerAnalysisConfig::WITH_LAST_MEMORY_ACCESSES_TRANSITIONS);
-    PowerTrace PT5(TPD, TTI, PAC, std::make_unique<PAF::V7MInfo>(),
-                   std::make_unique<InstsStateOracle>());
+    PowerTrace PT5(TPD, TTI, TRBD, PAC, CPU.get());
     PT5.add(Insts[0]);
     PT5.add(Insts[1]);
     PT5.add(Insts[2]);
     PT5.add(Insts[3]);
-    PT5.analyze();
+    PT5.analyze(InstsStateOracle());
     EXPECT_EQ(TPD.pwf.size(),
               6); // 4 instructions, 2 extra cycles.
     EXPECT_EQ(TPD.pwf[0], PowerFields(0, 0, 0, 0, 0, 0, 0, &Insts[0]));
@@ -927,15 +1166,15 @@ TEST(PowerTrace, HammingDistanceWithConfig) {
     EXPECT_EQ(TPD.pwf[5], PowerFields(4.8, 0, 0, 0, 0, 4, 0, nullptr));
 
     TPD.reset();
+    TRBD.reset();
     PAC.clear().set(PowerAnalysisConfig::WITH_MEM_DATA,
                     PowerAnalysisConfig::WITH_LAST_MEMORY_ACCESSES_TRANSITIONS);
-    PowerTrace PT6(TPD, TTI, PAC, std::make_unique<PAF::V7MInfo>(),
-                   std::make_unique<InstsStateOracle>());
+    PowerTrace PT6(TPD, TTI, TRBD, PAC, CPU.get());
     PT6.add(Insts[0]);
     PT6.add(Insts[1]);
     PT6.add(Insts[2]);
     PT6.add(Insts[3]);
-    PT6.analyze();
+    PT6.analyze(InstsStateOracle());
     EXPECT_EQ(TPD.pwf.size(),
               6); // 4 instructions, 2 extra cycles.
     EXPECT_EQ(TPD.pwf[0], PowerFields(0, 0, 0, 0, 0, 0, 0, &Insts[0]));
@@ -946,11 +1185,11 @@ TEST(PowerTrace, HammingDistanceWithConfig) {
     EXPECT_EQ(TPD.pwf[5], PowerFields(22, 0, 0, 0, 0, 0, 11, nullptr));
 
     TPD.reset();
+    TRBD.reset();
     PAC.clear().set(PowerAnalysisConfig::WITH_MEM_ADDRESS,
                     PowerAnalysisConfig::WITH_LOAD_TO_LOAD_TRANSITIONS,
                     PowerAnalysisConfig::WITH_STORE_TO_STORE_TRANSITIONS);
-    PowerTrace PT7(TPD, TTI, PAC, std::make_unique<PAF::V7MInfo>(),
-                   std::make_unique<Insts2StateOracle>());
+    PowerTrace PT7(TPD, TTI, TRBD, PAC, CPU.get());
     PT7.add(Insts2[0]);
     PT7.add(Insts2[1]);
     PT7.add(Insts2[2]);
@@ -958,7 +1197,7 @@ TEST(PowerTrace, HammingDistanceWithConfig) {
     PT7.add(Insts2[4]);
     PT7.add(Insts2[5]);
     PT7.add(Insts2[6]);
-    PT7.analyze();
+    PT7.analyze(Insts2StateOracle());
     EXPECT_EQ(TPD.pwf.size(),
               7); // 7 instructions.
     EXPECT_EQ(TPD.pwf[0], PowerFields(0, 0, 0, 0, 0, 0, 0, &Insts2[0]));
@@ -970,11 +1209,11 @@ TEST(PowerTrace, HammingDistanceWithConfig) {
     EXPECT_EQ(TPD.pwf[6], PowerFields(6, 0, 0, 0, 0, 5, 0, &Insts2[6]));
 
     TPD.reset();
+    TRBD.reset();
     PAC.clear().set(PowerAnalysisConfig::WITH_MEM_DATA,
                     PowerAnalysisConfig::WITH_LOAD_TO_LOAD_TRANSITIONS,
                     PowerAnalysisConfig::WITH_STORE_TO_STORE_TRANSITIONS);
-    PowerTrace PT8(TPD, TTI, PAC, std::make_unique<PAF::V7MInfo>(),
-                   std::make_unique<Insts2StateOracle>());
+    PowerTrace PT8(TPD, TTI, TRBD, PAC, CPU.get());
     PT8.add(Insts2[0]);
     PT8.add(Insts2[1]);
     PT8.add(Insts2[2]);
@@ -982,7 +1221,7 @@ TEST(PowerTrace, HammingDistanceWithConfig) {
     PT8.add(Insts2[4]);
     PT8.add(Insts2[5]);
     PT8.add(Insts2[6]);
-    PT8.analyze();
+    PT8.analyze(Insts2StateOracle());
     EXPECT_EQ(TPD.pwf.size(),
               7); // 7 instructions.
     EXPECT_EQ(TPD.pwf[0], PowerFields(0, 0, 0, 0, 0, 0, 0, &Insts2[0]));
@@ -994,10 +1233,10 @@ TEST(PowerTrace, HammingDistanceWithConfig) {
     EXPECT_EQ(TPD.pwf[6], PowerFields(6, 0, 0, 0, 0, 0, 3, &Insts2[6]));
 
     TPD.reset();
+    TRBD.reset();
     PAC.clear().set(PowerAnalysisConfig::WITH_MEM_DATA,
                     PowerAnalysisConfig::WITH_MEMORY_UPDATE_TRANSITIONS);
-    PowerTrace PT9(TPD, TTI, PAC, std::make_unique<PAF::V7MInfo>(),
-                   std::make_unique<Insts2StateOracle>());
+    PowerTrace PT9(TPD, TTI, TRBD, PAC, CPU.get());
     PT9.add(Insts2[0]);
     PT9.add(Insts2[1]);
     PT9.add(Insts2[2]);
@@ -1005,7 +1244,7 @@ TEST(PowerTrace, HammingDistanceWithConfig) {
     PT9.add(Insts2[4]);
     PT9.add(Insts2[5]);
     PT9.add(Insts2[6]);
-    PT9.analyze();
+    PT9.analyze(Insts2StateOracle());
     EXPECT_EQ(TPD.pwf.size(),
               7); // 7 instructions.
     EXPECT_EQ(TPD.pwf[0], PowerFields(0, 0, 0, 0, 0, 0, 0, &Insts2[0]));
@@ -1021,14 +1260,17 @@ TEST(PowerTrace, withConfigAndNoise) {
     // Tests that only the sources contributing to the overall power get some
     // noise.
     TestPowerDumper TPD;
+    TestRegBankDumper TRBD;
     TestTimingInfo TTI;
+    unique_ptr<ArchInfo> CPU(new PAF::V7MInfo());
     PowerAnalysisConfigWithNoise PAC(PowerAnalysisConfig::WITH_OPCODE);
+    PowerTrace::OracleBase Oracle;
 
-    PowerTrace PT(TPD, TTI, PAC, std::make_unique<PAF::V7MInfo>());
+    PowerTrace PT(TPD, TTI, TRBD, PAC, CPU.get());
     PT.add(Insts[0]);
-    PT.analyze();
+    PT.analyze(Oracle);
     PAC.setWithoutNoise();
-    PT.analyze();
+    PT.analyze(Oracle);
     EXPECT_EQ(TPD.pwf.size(), 2);
     EXPECT_GT(PowerFields::noise(TPD.pwf[1], TPD.pwf[0]), 0.0);
     EXPECT_EQ(TPD.pwf[0].addr, 0.0);
@@ -1040,11 +1282,12 @@ TEST(PowerTrace, withConfigAndNoise) {
     PAC.clear().set(PowerAnalysisConfig::WITH_INSTRUCTIONS_OUTPUTS);
     PAC.setWithNoise();
     TPD.reset();
-    PowerTrace PT2(TPD, TTI, PAC, std::make_unique<PAF::V7MInfo>());
+    TRBD.reset();
+    PowerTrace PT2(TPD, TTI, TRBD, PAC, CPU.get());
     PT2.add(Insts[0]);
-    PT2.analyze();
+    PT2.analyze(Oracle);
     PAC.setWithoutNoise();
-    PT2.analyze();
+    PT2.analyze(Oracle);
     EXPECT_EQ(TPD.pwf.size(), 2);
     EXPECT_GT(PowerFields::noise(TPD.pwf[1], TPD.pwf[0]), 0.0);
     EXPECT_EQ(TPD.pwf[0].addr, 0.0);

@@ -20,6 +20,7 @@
  */
 
 #include "PAF/SCA/Power.h"
+#include "PAF/ArchInfo.h"
 #include "PAF/PAF.h"
 #include "PAF/SCA/Noise.h"
 #include "PAF/SCA/SCA.h"
@@ -87,6 +88,7 @@ class AnalysisRangeSpecifier {
 int main(int argc, char **argv) {
     string OutputFilename;
     string TimingFilename;
+    string RegBankTraceFilename;
     bool detailed_output = false;
     bool dontAddNoise = false;
     double NoiseLevel = 1.0;
@@ -183,6 +185,9 @@ int main(int argc, char **argv) {
                     PASelect.push_back(
                         PowerAnalysisConfig::WITH_MEMORY_UPDATE_TRANSITIONS);
                 });
+    ap.optval({"--register-trace"}, "FILENAME",
+              "Dump a trace of the register bank content to FILENAME",
+              [&](const string &s) { RegBankTraceFilename = s; });
     ap.optval({"--function"}, "FUNCTION",
               "analyze code running within FUNCTION",
               [&](const string &s) { ARS.setFunction(s); });
@@ -245,28 +250,32 @@ int main(int argc, char **argv) {
     }
 
     // Setup the power trace emitter.
-    unique_ptr<PowerDumper> Dumper;
+    unique_ptr<PowerDumper> PwrDumper;
     switch (OutFmt) {
     case OutputFormat::CSV:
-        Dumper.reset(
-            new CSVPowerDumper(OutputFilename, detailed_output));
+        PwrDumper.reset(new CSVPowerDumper(OutputFilename, detailed_output));
         break;
     case OutputFormat::NPY:
         if (OutputFilename.empty())
             reporter->errx(
                 EXIT_FAILURE,
                 "Output file name can not be empty with the npy format");
-        Dumper.reset(
-            new NPYPowerDumper(OutputFilename, tu.traces.size()));
+        PwrDumper.reset(new NPYPowerDumper(OutputFilename, tu.traces.size()));
         break;
     }
 
     PAF::SCA::YAMLTimingInfo Timing; // Setup Timing information.
+    unique_ptr<PAF::SCA::NPYRegBankDumper> RbDumper(
+        new PAF::SCA::NPYRegBankDumper(
+            RegBankTraceFilename,
+            tu.traces.size())); // Our register bank dumper.
+
     for (const auto &trace : tu.traces) {
         if (tu.is_verbose())
             cout << "Running analysis on trace '" << trace.tarmac_filename
                  << "'\n";
         PowerAnalyzer PA(trace, tu.image_filename);
+        unique_ptr<PAF::ArchInfo> CPU(PAF::getCPU(PA.index));
 
         vector<PAF::ExecutionRange> ERS;
         switch (ARS.getKind()) {
@@ -289,6 +298,12 @@ int main(int argc, char **argv) {
             reporter->errx(EXIT_FAILURE,
                            "Analysis range not found in the trace file");
 
+
+        unique_ptr<PowerTrace::OracleBase> Oracle(
+            (PAConfig.isHammingDistance() || RbDumper->enabled())
+                ? new PowerTrace::MTAOracle(PA, CPU.get())
+                : new PowerTrace::OracleBase());
+
         for (const PAF::ExecutionRange &er : ERS) {
             if (tu.is_verbose()) {
                 cout << " - Building power trace from " << er.Start.time
@@ -297,9 +312,11 @@ int main(int argc, char **argv) {
                     cout << " (" << ARS.getFunctionName() << ')';
                 cout << '\n';
             }
-            PowerTrace PTrace = PA.getPowerTrace(*Dumper, Timing, PAConfig, er);
-            PTrace.analyze();
-            Dumper->next_trace();
+            PowerTrace PTrace =
+                PA.getPowerTrace(*PwrDumper, Timing, *RbDumper, PAConfig, CPU.get(), er);
+            PTrace.analyze(*Oracle.get());
+            PwrDumper->next_trace();
+            RbDumper->next_trace();
             Timing.next_trace();
         }
     }

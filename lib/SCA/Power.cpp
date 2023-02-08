@@ -19,8 +19,8 @@
  */
 
 #include "PAF/SCA/Power.h"
+#include "PAF/ArchInfo.h"
 #include "PAF/PAF.h"
-#include "PAF/SCA/NPArray.h"
 #include "PAF/SCA/SCA.h"
 
 #include <cassert>
@@ -257,11 +257,12 @@ class HammingDistancePM : public PowerModelBase {
   public:
     HammingDistancePM() = delete;
     HammingDistancePM(PAF::SCA::PowerDumper &Dumper, const PAF::ArchInfo &CPU,
-                      PAF::SCA::PowerAnalysisConfig &Config, Time t0,
-                      const PAF::SCA::PowerTrace::OracleBase &O)
+                      PAF::SCA::PowerAnalysisConfig &Config,
+                      const PAF::SCA::PowerTrace::OracleBase &O,
+                      vector<uint64_t> &&regs)
         : PowerModelBase(Dumper, CPU, Config), Oracle(O), HDPC(Config.withPC()),
-          HDInstr(Config.withOpcode()), Regs(Config.withInstructionsOutputs(),
-                                             Oracle.getRegBankState(t0 - 1)),
+          HDInstr(Config.withOpcode()),
+          Regs(Config.withInstructionsOutputs(), std::move(regs)),
           lastLoad(nullptr), lastStore(nullptr), lastAccess(nullptr) {}
 
     void add(const PAF::ReferenceInstruction &I) override {
@@ -394,7 +395,7 @@ namespace PAF {
     }
 
     CSVPowerDumper::CSVPowerDumper(const string &filename, bool detailed_output)
-        : PowerDumper(), filename(filename), os(&std::cout), sep(","),
+        : FilePowerDumper(filename), os(&std::cout), sep(","),
           detailed_output(detailed_output) {
         if (filename.size() != 0)
             os = new std::ofstream(filename.c_str(), std::ofstream::out);
@@ -403,7 +404,7 @@ namespace PAF {
     }
 
     CSVPowerDumper::CSVPowerDumper(ostream &s, bool detailed_output)
-        : PowerDumper(), filename(""), os(&s), sep(","),
+        : FilePowerDumper(""), os(&s), sep(","),
           detailed_output(detailed_output) {
         *os << std::fixed << std::setprecision(2);
     }
@@ -475,49 +476,9 @@ namespace PAF {
         }
     }
 
-    NPYPowerDumper::NPYPowerDumper(const string &filename, size_t num_traces)
-        : PowerDumper(), filename(filename), cur_trace(0), max_trace_length(0),
-          samples(num_traces) {}
-
-    // Switch column when changing trace.
-    void NPYPowerDumper::next_trace() {
-        max_trace_length =
-            std::max(max_trace_length, samples[cur_trace].size());
-        cur_trace += 1;
-        if (cur_trace == samples.size())
-            samples.emplace_back(vector<double>());
-        samples[cur_trace].reserve(max_trace_length);
-    }
-
-    void NPYPowerDumper::dump(double total, double pc, double instr,
-                              double oreg, double ireg, double addr,
-                              double data, const PAF::ReferenceInstruction *I) {
-        if (cur_trace >= samples.size())
-            return;
-        samples[cur_trace].push_back(total);
-    }
-
-    NPYPowerDumper::~NPYPowerDumper() {
-        // Last trace may be empty and shall be skipped.
-        size_t num_traces = samples.size();
-        if (num_traces == 0)
-            return; // Nothing to save !
-
-        if (samples[num_traces - 1].empty())
-            num_traces -= 1;
-        unique_ptr<double[]> matrix(new double[num_traces * max_trace_length]);
-        PAF::SCA::NPArray<double> npy(std::move(matrix), num_traces,
-                                      max_trace_length);
-        for (size_t row = 0; row < num_traces; row++)
-            for (size_t col = 0; col < max_trace_length; col++)
-                npy(row, col) =
-                    col < samples[row].size() ? samples[row][col] : 0.0;
-        npy.save(filename);
-    }
-
     PowerAnalysisConfig::~PowerAnalysisConfig() {}
 
-    void PowerTrace::analyze() {
+    void PowerTrace::analyze(const OracleBase &Oracle) {
 
         if (Instructions.empty())
             return;
@@ -525,16 +486,18 @@ namespace PAF {
         unique_ptr<PowerModelBase> pwr;
         switch (Config.getPowerModel()) {
         case PowerAnalysisConfig::HAMMING_WEIGHT:
-            pwr.reset(new HammingWeightPM(Dumper, *CPU.get(), Config));
+            pwr.reset(new HammingWeightPM(PwrDumper, *CPU, Config));
             break;
         case PowerAnalysisConfig::HAMMING_DISTANCE:
-            pwr.reset(new HammingDistancePM(Dumper, *CPU.get(), Config,
-                                            Instructions[0].time,
-                                            *Oracle.get()));
+            pwr.reset(new HammingDistancePM(
+                PwrDumper, *CPU, Config, Oracle,
+                Oracle.getRegBankState(Instructions[0].time - 1)));
             break;
         }
 
-        Dumper.predump();
+        PwrDumper.predump();
+        if (RbDumper.enabled())
+            RbDumper.predump();
 
         for (unsigned i = 0; i < Instructions.size(); i++) {
             const PAF::ReferenceInstruction &I = Instructions[i];
@@ -542,6 +505,8 @@ namespace PAF {
             unsigned cycles = pwr->cycles();
             Timing.add(I.pc, cycles);
             pwr->dump(&I);
+            if (RbDumper.enabled())
+                RbDumper.dump(Oracle.getRegBankState(I.time));
 
             // Insert dummy cycles when needed if we are not at the end of the
             // sequence.
@@ -557,30 +522,34 @@ namespace PAF {
             }
         }
 
-        Dumper.postdump();
+        PwrDumper.postdump();
+        if (RbDumper.enabled())
+            RbDumper.postdump();
     }
 
-    PowerTrace PowerAnalyzer::getPowerTrace(PowerDumper &Dumper,
+    PowerTrace PowerAnalyzer::getPowerTrace(PowerDumper &PwrDumper,
                                             TimingInfo &Timing,
+                                            RegBankDumper &RbDumper,
                                             PowerAnalysisConfig &Config,
+                                            const ArchInfo *CPU,
                                             const PAF::ExecutionRange &ER) {
 
         struct PTCont {
             PAF::MTAnalyzer &MTA;
             PowerTrace &PT;
             const PowerAnalysisConfig &Config;
-            const ArchInfo *CPU;
+            const ArchInfo &CPU;
 
             PTCont(PAF::MTAnalyzer &MTA, PowerTrace &PT,
                    const PowerAnalysisConfig &Config)
-                : MTA(MTA), PT(PT), Config(Config), CPU(PT.getArchInfo()) {}
+                : MTA(MTA), PT(PT), Config(Config), CPU(*PT.getArchInfo()) {}
 
             void operator()(PAF::ReferenceInstruction &I) {
                 if (Config.withInstructionsInputs()) {
-                    const InstrInfo II = CPU->getInstrInfo(I);
+                    const InstrInfo II = CPU.getInstrInfo(I);
                     for (const auto &r :
                          II.getUniqueInputRegisters(/* Implicit: */ false)) {
-                        const char *name = CPU->registerName(r);
+                        const char *name = CPU.registerName(r);
                         uint32_t value =
                             MTA.getRegisterValueAtTime(name, I.time - 1);
                         I.add(RegisterAccess(name, value,
@@ -592,9 +561,7 @@ namespace PAF {
             }
         };
 
-        PowerTrace PT(Dumper, Timing, Config, PAF::getCPU(index));
-        if (Config.isHammingDistance())
-            PT.setOracle(new PowerTrace::MTAOracle(*this, *PT.getArchInfo()));
+        PowerTrace PT(PwrDumper, Timing, RbDumper, Config, CPU);
         PTCont PTC(*this, PT, Config);
         PAF::FromTraceBuilder<PAF::ReferenceInstruction,
                               PAF::ReferenceInstructionBuilder, PTCont>

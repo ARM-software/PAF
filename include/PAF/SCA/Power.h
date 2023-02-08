@@ -22,6 +22,7 @@
 
 #include "PAF/ArchInfo.h"
 #include "PAF/PAF.h"
+#include "PAF/SCA/NPArray.h"
 #include "PAF/SCA/Noise.h"
 
 #include "libtarmac/misc.hh"
@@ -91,14 +92,75 @@ class YAMLTimingInfo : public TimingInfo {
     virtual void save(std::ostream &os) const override;
 };
 
-/// PowerDumper is an abstract base class for emitting a power trace.
-///
-/// Subclasssing it enables to support various power trace outputs like CSV or
-/// NPY.
-class PowerDumper {
+/// NPYAdapter is a wrapper that allows to build a 2-dimension array, without
+/// knowing a priori the size, and to it in NPY format. It is made generic so it
+/// can be used for dumping power figures or register bank content.
+template <class DataTy> class NPYAdapter {
   public:
-    /// Default constructor.
-    PowerDumper() {}
+    /// Construct an NPYAdapter with num_rows rows.
+    NPYAdapter(size_t num_rows)
+        : current_row(0), max_row_length(0), w(num_rows) {}
+
+    /// Move to next row.
+    void next() {
+        max_row_length = std::max(max_row_length, w[current_row].size());
+        current_row += 1;
+        if (current_row == w.size())
+            w.emplace_back(std::vector<DataTy>());
+        w[current_row].reserve(max_row_length);
+    }
+
+    /// Append values to the current row.
+    void append(const std::vector<DataTy> &values) {
+        if (current_row >= w.size())
+            return;
+        w[current_row].insert(w[current_row].end(), values.begin(),
+                              values.end());
+    }
+
+    /// Append value to the current row.
+    void append(DataTy value) {
+        if (current_row >= w.size())
+            return;
+        w[current_row].push_back(value);
+    }
+
+    /// Save this into filename in the NPY format.
+    void save(const std::string &filename) const {
+        // Last trace may be empty and shall be skipped.
+        size_t num_traces = w.size();
+        if (num_traces == 0)
+            return; // Nothing to save !
+
+        if (w[num_traces - 1].empty())
+            num_traces -= 1;
+        std::unique_ptr<DataTy[]> matrix(
+            new DataTy[num_traces * max_row_length]);
+        PAF::SCA::NPArray<DataTy> npy(std::move(matrix), num_traces,
+                                      max_row_length);
+        for (size_t row = 0; row < num_traces; row++)
+            for (size_t col = 0; col < max_row_length; col++)
+                npy(row, col) = col < w[row].size() ? w[row][col] : 0.0;
+        npy.save(filename);
+    }
+
+  private:
+    size_t current_row;
+    size_t max_row_length;
+    std::vector<std::vector<DataTy>> w;
+};
+
+/// Dumper is an abstract base class for emitting some kind of trace.
+class Dumper {
+  public:
+    /// Construct a basic Dumper.
+    Dumper(bool enable) : enable(enable) {}
+
+    /// Copy constructor.
+    Dumper(const Dumper &) = default;
+
+    /// Assignment constructor.
+    Dumper &operator=(const Dumper &) = default;
 
     /// Update state when switching to next trace.
     virtual void next_trace() {}
@@ -106,20 +168,55 @@ class PowerDumper {
     /// Called at the beginning of a trace.
     virtual void predump() {}
 
+    /// Called at the end of a trace.
+    virtual void postdump() {}
+
+    /// Destruct this Dumper.
+    virtual ~Dumper() {}
+
+    /// Is dumping enabled ?
+    bool enabled() const { return enable; }
+
+  protected:
+    /// Enable dumping or not.
+    bool enable;
+};
+
+/// PowerDumper is a base class for emitting a power trace.
+///
+/// Subclasssing it enables to support various power trace outputs like CSV or
+/// NPY.
+class PowerDumper : public Dumper {
+  public:
+    /// Default constructor.
+    PowerDumper() : Dumper(true) {}
+
     /// Called for each sample in the trace.
     virtual void dump(double total, double pc, double instr, double oreg,
                       double ireg, double addr, double data,
                       const PAF::ReferenceInstruction *I) = 0;
 
-    /// Called at the end of a trace.
-    virtual void postdump() {}
-
+    /// Destruct this PowerDumper
     virtual ~PowerDumper() {}
+};
+
+/// FilePowerDumper is a base class for emitting a power trace to a file.
+class FilePowerDumper : public PowerDumper {
+  public:
+    /// Construct a basic Dumper.
+    FilePowerDumper(const std::string &filename)
+        : PowerDumper(), filename(filename) {}
+
+    /// Destruct this FilePowerDumper.
+    virtual ~FilePowerDumper() {}
+
+  protected:
+    std::string filename;
 };
 
 /// CSVPowerDumper is a PowerDumper specialization for writing the power trace
 /// in CSV format.
-class CSVPowerDumper : public PowerDumper {
+class CSVPowerDumper : public FilePowerDumper {
   public:
     /// Construct a power trace that will be dumped in CSV format to file
     /// filename.
@@ -143,7 +240,6 @@ class CSVPowerDumper : public PowerDumper {
     virtual ~CSVPowerDumper() override;
 
   private:
-    const std::string filename; ///< The CSV file name, empty string for stdout.
     std::ostream *os;           ///< Our output stream.
     const char *sep;            ///< CVS column separator.
     const bool detailed_output; ///< Use a detailed output format.
@@ -151,32 +247,83 @@ class CSVPowerDumper : public PowerDumper {
 
 /// NPYPowerDumper is a PowerDumper specialization for writing the power trace
 /// in NPY format.
-class NPYPowerDumper : public PowerDumper {
+class NPYPowerDumper : public FilePowerDumper {
   public:
     /// Construct a power trace that will be dumped in NPY format to file
     /// filename.
-    NPYPowerDumper(const std::string &filename, size_t num_traces);
+    NPYPowerDumper(const std::string &filename, size_t num_traces)
+        : FilePowerDumper(filename), NpyA(num_traces) {}
 
     /// Construct a power trace that will be dumped in NPY format to stream
     /// os.
     NPYPowerDumper(std::ostream &os, size_t num_traces);
 
     /// Update state when switching to next trace.
-    void next_trace() override;
+    void next_trace() override { NpyA.next(); }
 
     /// Called for each sample in the trace.
     void dump(double total, double pc, double instr, double oreg, double ireg,
               double addr, double data,
-              const PAF::ReferenceInstruction *I) override;
+              const PAF::ReferenceInstruction *I) override {
+        NpyA.append(total);
+    }
 
-    virtual ~NPYPowerDumper() override;
     /// Destruct this NPYPowerDumper.
+    virtual ~NPYPowerDumper() override { NpyA.save(filename); };
 
   private:
-    const std::string filename; ///< The NPY file name.
-    size_t cur_trace;
-    size_t max_trace_length;
-    std::vector<std::vector<double>> samples;
+    NPYAdapter<double> NpyA;
+};
+
+/// RegBankDumper is used to dump a trace of the register bank content.
+class RegBankDumper : public Dumper {
+  public:
+    /// Construct a RegBankDumper.
+    RegBankDumper(bool enable) : Dumper(enable) {}
+
+    /// Dump the register bank content.
+    virtual void dump(const std::vector<uint64_t> &regs) = 0;
+
+    /// Destruct this RegBankDumper.
+    virtual ~RegBankDumper() {}
+};
+
+///
+class FileRegBankDumper : public RegBankDumper {
+  public:
+    /// Construct a FileRegBankDumper.
+    FileRegBankDumper(const std::string &filename)
+        : RegBankDumper(!filename.empty()), filename(filename) {}
+
+    /// Destruct this FileRegBankDumper.
+    virtual ~FileRegBankDumper() {}
+
+  protected:
+    std::string filename;
+};
+
+class NPYRegBankDumper : public FileRegBankDumper {
+  public:
+    NPYRegBankDumper(const std::string &filename, size_t num_traces)
+        : FileRegBankDumper(filename), NpyA(num_traces) {}
+
+    /// Update state when switching to next trace.
+    void next_trace() override {
+        if (enabled())
+            NpyA.next();
+    }
+
+    /// Dump the register bank content.
+    void dump(const std::vector<uint64_t> &regs) override { NpyA.append(regs); }
+
+    /// Destruct this NPYRegBankDumper, saving the NPY file along the way.
+    virtual ~NPYRegBankDumper() {
+        if (enabled())
+            NpyA.save(filename);
+    }
+
+  private:
+    NPYAdapter<uint64_t> NpyA;
 };
 
 /// The PowerAnalysisConfig class is used to configure a power analysis run. It
@@ -369,18 +516,18 @@ class PowerTrace {
 
     class MTAOracle : public OracleBase {
       public:
-        MTAOracle(const PAF::MTAnalyzer &MTA, const PAF::ArchInfo &CPU)
+        MTAOracle(const PAF::MTAnalyzer &MTA, const PAF::ArchInfo *CPU)
             : OracleBase(), MTA(MTA), CPU(CPU) {}
-        virtual std::vector<uint64_t> getRegBankState(Time t) const override {
-            const unsigned NR = CPU.numRegisters();
+        std::vector<uint64_t> getRegBankState(Time t) const override {
+            const unsigned NR = CPU->numRegisters();
             std::vector<uint64_t> regbankInitialState(NR);
             for (unsigned r = 0; r < NR; r++)
                 regbankInitialState[r] =
-                    MTA.getRegisterValueAtTime(CPU.registerName(r), t);
+                    MTA.getRegisterValueAtTime(CPU->registerName(r), t);
             return regbankInitialState;
         }
-        virtual uint64_t getMemoryState(Addr address, size_t size,
-                                        Time t) const override {
+        uint64_t getMemoryState(Addr address, size_t size,
+                                Time t) const override {
             std::vector<uint8_t> mem =
                 MTA.getMemoryValueAtTime(address, size, t);
 
@@ -397,43 +544,30 @@ class PowerTrace {
 
       private:
         const PAF::MTAnalyzer &MTA;
-        const PAF::ArchInfo &CPU;
+        const PAF::ArchInfo *CPU;
     };
 
     /// Construct a PowerTrace.
-    PowerTrace(PowerDumper &Dumper, TimingInfo &Timing,
-               PowerAnalysisConfig &Config,
-               std::unique_ptr<PAF::ArchInfo> &&CPU)
-        : Oracle(new OracleBase()), Dumper(Dumper), Timing(Timing),
-          Config(Config), Instructions(), CPU(std::move(CPU)) {}
-
-    /// Construct a PowerTrace with a user provided Oracle.
-    PowerTrace(PowerDumper &Dumper, TimingInfo &Timing,
-               PowerAnalysisConfig &Config,
-               std::unique_ptr<PAF::ArchInfo> &&CPU,
-               std::unique_ptr<OracleBase> Oracle)
-        : Oracle(std::move(Oracle)), Dumper(Dumper), Timing(Timing),
-          Config(Config), Instructions(), CPU(std::move(CPU)) {}
+    PowerTrace(PowerDumper &PwrDumper, TimingInfo &Timing,
+               RegBankDumper &RbDumper, PowerAnalysisConfig &Config,
+               const PAF::ArchInfo *CPU)
+        : PwrDumper(PwrDumper), RbDumper(RbDumper), Timing(Timing),
+          Config(Config), Instructions(), CPU(CPU) {}
 
     /// Move construct a PowerTrace.
     PowerTrace(PowerTrace &&PT)
-        : Oracle(std::move(PT.Oracle)), Dumper(PT.Dumper), Timing(PT.Timing),
+        : PwrDumper(PT.PwrDumper), RbDumper(PT.RbDumper), Timing(PT.Timing),
           Config(PT.Config), Instructions(std::move(PT.Instructions)),
-          CPU(std::move(PT.CPU)) {}
+          CPU(PT.CPU) {}
 
     /// Move assign a PowerTrace.
     PowerTrace &operator=(PowerTrace &&PT) {
-        Oracle.reset(PT.Oracle.release());
-        Dumper = PT.Dumper;
+        PwrDumper = PT.PwrDumper;
+        RbDumper = PT.RbDumper;
         Timing = PT.Timing;
         Config = std::move(PT.Config);
         Instructions = std::move(PT.Instructions);
-        CPU.reset(PT.CPU.release());
-        return *this;
-    }
-
-    PowerTrace &setOracle(OracleBase *O) {
-        Oracle.reset(O);
+        CPU = PT.CPU;
         return *this;
     }
 
@@ -451,18 +585,18 @@ class PowerTrace {
     /// Perform the analysis on the ExecutionRange, dispatching power
     /// information to our Dumper which will be in charge of formatting the
     /// results to the user's taste.
-    void analyze();
+    void analyze(const OracleBase &Oracle);
 
     /// Get this PowerTrace ArchInfo.
-    const PAF::ArchInfo *getArchInfo() const { return CPU.get(); }
+    const PAF::ArchInfo *getArchInfo() const { return CPU; }
 
   private:
-    std::unique_ptr<OracleBase> Oracle;
-    PowerDumper &Dumper;
+    PowerDumper &PwrDumper;
+    RegBankDumper &RbDumper;
     TimingInfo &Timing;
     PowerAnalysisConfig &Config;
     std::vector<PAF::ReferenceInstruction> Instructions;
-    std::unique_ptr<const PAF::ArchInfo> CPU;
+    const PAF::ArchInfo *CPU;
 };
 
 /// The PowerAnalyzer class is used to create a PowerTrace.
@@ -475,8 +609,9 @@ class PowerAnalyzer : public PAF::MTAnalyzer {
         : MTAnalyzer(trace, image_filename) {}
 
     /// Get a PowerTrace from the analyzer.
-    PowerTrace getPowerTrace(PowerDumper &Dumper, TimingInfo &Timing,
-                             PowerAnalysisConfig &Config,
+    PowerTrace getPowerTrace(PowerDumper &PwrDumper, TimingInfo &Timing,
+                             RegBankDumper &RbDumper,
+                             PowerAnalysisConfig &Config, const ArchInfo *CPU,
                              const PAF::ExecutionRange &ER);
 };
 
