@@ -30,6 +30,12 @@ class TestWithTemporaryFile : public ::testing::Test {
     /// Construct an instance with a temporary filename matching template tpl.
     TestWithTemporaryFile(const char *tpl);
 
+    /// Turn verbosity on / off.
+    void verbosity(bool v) { verbose = v; }
+
+    /// Remove temporary file.
+    void cleanup(bool c) { remove = c; }
+
     /// Get the temporary file name.
     const std::string &getTemporaryFilename() const { return tmpFileName; };
 
@@ -39,12 +45,14 @@ class TestWithTemporaryFile : public ::testing::Test {
   protected:
     /// Cleanup after ourselves.
     void TearDown() override {
-        if (tmpFileName.size() != 0)
+        if (remove && tmpFileName.size() != 0)
             std::remove(tmpFileName.c_str());
     }
 
   private:
     std::string tmpFileName;
+    bool verbose;
+    bool remove;
 };
 
 #define TestWithTempFile(FIXTURENAME, FILENAME)                                \

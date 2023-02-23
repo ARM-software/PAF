@@ -23,6 +23,7 @@
 #include <cstdlib>
 #include <cstring>
 #include <fstream>
+#include <iostream>
 #include <memory>
 #include <string>
 #include <vector>
@@ -30,8 +31,10 @@
 using std::string;
 using std::vector;
 using std::unique_ptr;
+using std::cerr;
 
-TestWithTemporaryFile::TestWithTemporaryFile(const char *tpl) : tmpFileName() {
+TestWithTemporaryFile::TestWithTemporaryFile(const char *tpl)
+    : tmpFileName(), verbose(false), remove(true) {
     string tmpTplStr = std::string(testing::TempDir()) + tpl;
     unique_ptr<char[]> tmpTpl(new char[tmpTplStr.size() + 1]);
     std::memcpy(tmpTpl.get(), tmpTplStr.c_str(), tmpTplStr.size());
@@ -50,8 +53,11 @@ bool TestWithTemporaryFile::checkFileContent(const vector<string> &exp) const {
     std::ifstream f(tmpFileName.c_str());
 
     // Ensure the file is in a good state (it exists, ...).
-    if (!f.good())
+    if (!f.good()) {
+        if (verbose)
+            cerr << tmpFileName << " is not in a good state.\n";
         return false;
+    }
 
     // Read the file line by line.
     vector<string> lines;
@@ -60,13 +66,20 @@ bool TestWithTemporaryFile::checkFileContent(const vector<string> &exp) const {
         lines.emplace_back(line);
 
     // Ensure we have the same number of lines.
-    if (lines.size() != exp.size())
+    if (lines.size() != exp.size()) {
+        if (verbose)
+            cerr << tmpFileName << " does not have the expected number of lines.\n";
         return false;
+    }
 
     // Compare each line with the expected one.
     for (size_t i = 0; i < exp.size(); i++)
-        if (lines[i] != exp[i])
+        if (lines[i] != exp[i]) {
+            cerr << "Mismatch at line " << i << " :\n";
+            cerr << "+ " << lines[i] << '\n';
+            cerr << "- " << exp[i] << '\n';
             return false;
+        }
 
     // If everything is good so far, all is fine !
     return true;
