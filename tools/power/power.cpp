@@ -89,6 +89,7 @@ int main(int argc, char **argv) {
     string OutputFilename;
     string TimingFilename;
     string RegBankTraceFilename;
+    string MemoryAccessesTraceFilename;
     bool detailed_output = false;
     bool dontAddNoise = false;
     double NoiseLevel = 1.0;
@@ -188,6 +189,9 @@ int main(int argc, char **argv) {
     ap.optval({"--register-trace"}, "FILENAME",
               "Dump a trace of the register bank content to FILENAME",
               [&](const string &s) { RegBankTraceFilename = s; });
+    ap.optval({"--memory-accesses-trace"}, "FILENAME",
+              "Dump a trace of memory accesses to FILENAME",
+              [&](const string &s) { MemoryAccessesTraceFilename = s; });
     ap.optval({"--function"}, "FUNCTION",
               "analyze code running within FUNCTION",
               [&](const string &s) { ARS.setFunction(s); });
@@ -269,6 +273,8 @@ int main(int argc, char **argv) {
         new PAF::SCA::NPYRegBankDumper(
             RegBankTraceFilename,
             tu.traces.size())); // Our register bank dumper.
+    unique_ptr<PAF::SCA::YAMLMemoryAccessesDumper> MADumper(
+        new PAF::SCA::YAMLMemoryAccessesDumper(MemoryAccessesTraceFilename));
 
     for (const auto &trace : tu.traces) {
         if (tu.is_verbose())
@@ -313,10 +319,12 @@ int main(int argc, char **argv) {
                 cout << '\n';
             }
             PowerTrace PTrace =
-                PA.getPowerTrace(*PwrDumper, Timing, *RbDumper, PAConfig, CPU.get(), er);
+                PA.getPowerTrace(*PwrDumper, Timing, *RbDumper, *MADumper,
+                                 PAConfig, CPU.get(), er);
             PTrace.analyze(*Oracle.get());
             PwrDumper->next_trace();
             RbDumper->next_trace();
+            MADumper->next_trace();
             Timing.next_trace();
         }
     }

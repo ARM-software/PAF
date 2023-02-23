@@ -476,6 +476,93 @@ namespace PAF {
         }
     }
 
+    FileMemoryAccessesDumper::FileMemoryAccessesDumper(
+        const std::string &filename)
+        : MemoryAccessesDumper(!filename.empty()), filename(filename),
+          os(&std::cout) {
+        if (filename.size() != 0)
+            os = new std::ofstream(filename.c_str(), std::ofstream::out);
+    }
+
+    FileMemoryAccessesDumper::FileMemoryAccessesDumper(
+        const std::string &filename, std::ostream *os)
+        : MemoryAccessesDumper(!filename.empty()), filename(filename), os(os) {}
+
+    FileMemoryAccessesDumper::~FileMemoryAccessesDumper() {
+        if (filename.size() != 0)
+            delete os;
+    }
+
+    void FileMemoryAccessesDumper::flush() { os->flush(); }
+
+    YAMLMemoryAccessesDumper::YAMLMemoryAccessesDumper(
+        const std::string &filename)
+        : FileMemoryAccessesDumper(filename), sep("  - ") {
+        *os << "memaccess:\n";
+    }
+
+    YAMLMemoryAccessesDumper::YAMLMemoryAccessesDumper(std::ostream *os)
+        : FileMemoryAccessesDumper("", os), sep("  - ") {
+        *os << "memaccess:\n";
+    }
+
+    void YAMLMemoryAccessesDumper::next_trace() { sep = "  - "; }
+
+    void YAMLMemoryAccessesDumper::dump(uint64_t PC,
+                                        const std::vector<MemoryAccess> &MA) {
+        // Lazily emit the trace separator, so that the yaml file does not end
+        // with an empty array element.
+        if (sep) {
+            *os << sep << '\n';
+            sep = nullptr;
+        }
+
+        if (MA.empty())
+            return;
+
+        bool has_loads = false;
+        bool has_stores = false;
+        for (const auto &a : MA)
+            switch (a.access) {
+            case Access::Type::Read:
+                has_loads = true;
+                break;
+            case Access::Type::Write:
+                has_stores = true;
+                break;
+            }
+
+        if (!has_loads && !has_stores)
+            return;
+
+        *os << "    - { pc: 0x" << std::hex << PC;
+        if (has_loads) {
+            *os << ", loads: [";
+            const char *sep = "";
+            for (const auto &a : MA)
+                if (a.access == Access::Type::Read) {
+                    *os << sep << "[0x" << a.addr;
+                    *os << ", " << std::dec << a.size << std::hex;
+                    *os << ", 0x" << a.value << ']';
+                    sep = ", ";
+                }
+            *os << ']';
+        }
+        if (has_stores) {
+            *os << ", stores: [";
+            const char *sep = "";
+            for (const auto &a : MA)
+                if (a.access == Access::Type::Write) {
+                    *os << sep << "[0x" << a.addr;
+                    *os << ", " << std::dec << a.size << std::hex;
+                    *os << ", 0x" << a.value << ']';
+                    sep = ", ";
+                }
+            *os << ']';
+        }
+        *os << "}\n" << std::dec;
+    }
+
     PowerAnalysisConfig::~PowerAnalysisConfig() {}
 
     void PowerTrace::analyze(const OracleBase &Oracle) {
@@ -498,6 +585,8 @@ namespace PAF {
         PwrDumper.predump();
         if (RbDumper.enabled())
             RbDumper.predump();
+        if (MADumper.enabled())
+            MADumper.postdump();
 
         for (unsigned i = 0; i < Instructions.size(); i++) {
             const PAF::ReferenceInstruction &I = Instructions[i];
@@ -507,6 +596,8 @@ namespace PAF {
             pwr->dump(&I);
             if (RbDumper.enabled())
                 RbDumper.dump(Oracle.getRegBankState(I.time));
+            if (MADumper.enabled())
+                MADumper.dump(I.pc, I.memaccess);
 
             // Insert dummy cycles when needed if we are not at the end of the
             // sequence.
@@ -525,11 +616,14 @@ namespace PAF {
         PwrDumper.postdump();
         if (RbDumper.enabled())
             RbDumper.postdump();
+        if (MADumper.enabled())
+            MADumper.postdump();
     }
 
     PowerTrace PowerAnalyzer::getPowerTrace(PowerDumper &PwrDumper,
                                             TimingInfo &Timing,
                                             RegBankDumper &RbDumper,
+                                            MemoryAccessesDumper &MADumper,
                                             PowerAnalysisConfig &Config,
                                             const ArchInfo *CPU,
                                             const PAF::ExecutionRange &ER) {
@@ -561,7 +655,7 @@ namespace PAF {
             }
         };
 
-        PowerTrace PT(PwrDumper, Timing, RbDumper, Config, CPU);
+        PowerTrace PT(PwrDumper, Timing, RbDumper, MADumper, Config, CPU);
         PTCont PTC(*this, PT, Config);
         PAF::FromTraceBuilder<PAF::ReferenceInstruction,
                               PAF::ReferenceInstructionBuilder, PTCont>

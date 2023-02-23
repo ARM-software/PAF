@@ -326,6 +326,53 @@ class NPYRegBankDumper : public FileRegBankDumper {
     NPYAdapter<uint64_t> NpyA;
 };
 
+/// MemoryAccessesDumper is used to dump a trace of memory accesses.
+class MemoryAccessesDumper : public Dumper {
+  public:
+    /// Construct a MemoryAccessesDumper.
+    MemoryAccessesDumper(bool enable) : Dumper(enable) {}
+
+    /// Dump those memory accesses.
+    virtual void dump(uint64_t PC, const std::vector<MemoryAccess> &MA) = 0;
+
+    /// Destruct this MemoryAccessesDumper.
+    virtual ~MemoryAccessesDumper() {}
+};
+
+///
+class FileMemoryAccessesDumper : public MemoryAccessesDumper {
+  public:
+    /// Construct a FileRegBankDumper.
+    FileMemoryAccessesDumper(const std::string &filename);
+    FileMemoryAccessesDumper(const std::string &filename, std::ostream *os);
+
+    /// Destruct this FileRegBankDumper.
+    virtual ~FileMemoryAccessesDumper();
+
+    /// Forces writing to file.
+    void flush();
+
+  protected:
+    std::string filename;
+    std::ostream *os; ///< Our output stream.
+};
+
+class YAMLMemoryAccessesDumper : public FileMemoryAccessesDumper {
+  public:
+    YAMLMemoryAccessesDumper(const std::string &filename);
+    YAMLMemoryAccessesDumper(std::ostream *os);
+    virtual ~YAMLMemoryAccessesDumper() {}
+
+    /// Update state when switching to next trace.
+    void next_trace() override;
+
+    /// Dump memory accesses performed by instruction at pc.
+    void dump(uint64_t PC, const std::vector<MemoryAccess> &MA) override;
+
+  private:
+    const char *sep;
+};
+
 /// The PowerAnalysisConfig class is used to configure a power analysis run. It
 /// allows to select what has to be considered as a power source: the opcode,
 /// the program counter, ...
@@ -549,21 +596,22 @@ class PowerTrace {
 
     /// Construct a PowerTrace.
     PowerTrace(PowerDumper &PwrDumper, TimingInfo &Timing,
-               RegBankDumper &RbDumper, PowerAnalysisConfig &Config,
-               const PAF::ArchInfo *CPU)
-        : PwrDumper(PwrDumper), RbDumper(RbDumper), Timing(Timing),
-          Config(Config), Instructions(), CPU(CPU) {}
+               RegBankDumper &RbDumper, MemoryAccessesDumper &MADumper,
+               PowerAnalysisConfig &Config, const PAF::ArchInfo *CPU)
+        : PwrDumper(PwrDumper), RbDumper(RbDumper), MADumper(MADumper),
+          Timing(Timing), Config(Config), Instructions(), CPU(CPU) {}
 
     /// Move construct a PowerTrace.
     PowerTrace(PowerTrace &&PT)
-        : PwrDumper(PT.PwrDumper), RbDumper(PT.RbDumper), Timing(PT.Timing),
-          Config(PT.Config), Instructions(std::move(PT.Instructions)),
-          CPU(PT.CPU) {}
+        : PwrDumper(PT.PwrDumper), RbDumper(PT.RbDumper), MADumper(PT.MADumper),
+          Timing(PT.Timing), Config(PT.Config),
+          Instructions(std::move(PT.Instructions)), CPU(PT.CPU) {}
 
     /// Move assign a PowerTrace.
     PowerTrace &operator=(PowerTrace &&PT) {
         PwrDumper = PT.PwrDumper;
         RbDumper = PT.RbDumper;
+        MADumper = PT.MADumper;
         Timing = PT.Timing;
         Config = std::move(PT.Config);
         Instructions = std::move(PT.Instructions);
@@ -593,6 +641,7 @@ class PowerTrace {
   private:
     PowerDumper &PwrDumper;
     RegBankDumper &RbDumper;
+    MemoryAccessesDumper &MADumper;
     TimingInfo &Timing;
     PowerAnalysisConfig &Config;
     std::vector<PAF::ReferenceInstruction> Instructions;
@@ -611,6 +660,7 @@ class PowerAnalyzer : public PAF::MTAnalyzer {
     /// Get a PowerTrace from the analyzer.
     PowerTrace getPowerTrace(PowerDumper &PwrDumper, TimingInfo &Timing,
                              RegBankDumper &RbDumper,
+                             MemoryAccessesDumper &MADumper,
                              PowerAnalysisConfig &Config, const ArchInfo *CPU,
                              const PAF::ExecutionRange &ER);
 };
