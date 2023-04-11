@@ -17,14 +17,17 @@
 # This file is part of PAF, the Physical Attack Framework.
 
 set(LIBSCA_PUBLIC_HEADERS
+  ${CMAKE_SOURCE_DIR}/include/PAF/SCA/Dumper.h
   ${CMAKE_SOURCE_DIR}/include/PAF/SCA/Expr.h
   ${CMAKE_SOURCE_DIR}/include/PAF/SCA/Noise.h
+  ${CMAKE_SOURCE_DIR}/include/PAF/SCA/NPAdapter.h
   ${CMAKE_SOURCE_DIR}/include/PAF/SCA/NPArray.h
   ${CMAKE_SOURCE_DIR}/include/PAF/SCA/Power.h
   ${CMAKE_SOURCE_DIR}/include/PAF/SCA/SCA.h
   ${CMAKE_SOURCE_DIR}/include/PAF/SCA/utils.h)
 
 set(LIBSCA_SOURCES
+  Dumper.cpp
   Expr.cpp
   NPArray.cpp
   correl.cpp

@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: <text>Copyright 2021,2022 Arm Limited and/or its
+ * SPDX-FileCopyrightText: <text>Copyright 2021,2022,2023 Arm Limited and/or its
  * affiliates <open-source-office@arm.com></text>
  * SPDX-License-Identifier: Apache-2.0
  *
@@ -22,7 +22,8 @@
 
 #include "PAF/ArchInfo.h"
 #include "PAF/PAF.h"
-#include "PAF/SCA/NPArray.h"
+#include "PAF/SCA/Dumper.h"
+#include "PAF/SCA/NPAdapter.h"
 #include "PAF/SCA/Noise.h"
 
 #include "libtarmac/misc.hh"
@@ -92,96 +93,6 @@ class YAMLTimingInfo : public TimingInfo {
     virtual void save(std::ostream &os) const override;
 };
 
-/// NPYAdapter is a wrapper that allows to build a 2-dimension array, without
-/// knowing a priori the size, and to it in NPY format. It is made generic so it
-/// can be used for dumping power figures or register bank content.
-template <class DataTy> class NPYAdapter {
-  public:
-    /// Construct an NPYAdapter with num_rows rows.
-    NPYAdapter(size_t num_rows)
-        : current_row(0), max_row_length(0), w(num_rows) {}
-
-    /// Move to next row.
-    void next() {
-        max_row_length = std::max(max_row_length, w[current_row].size());
-        current_row += 1;
-        if (current_row == w.size())
-            w.emplace_back(std::vector<DataTy>());
-        w[current_row].reserve(max_row_length);
-    }
-
-    /// Append values to the current row.
-    void append(const std::vector<DataTy> &values) {
-        if (current_row >= w.size())
-            return;
-        w[current_row].insert(w[current_row].end(), values.begin(),
-                              values.end());
-    }
-
-    /// Append value to the current row.
-    void append(DataTy value) {
-        if (current_row >= w.size())
-            return;
-        w[current_row].push_back(value);
-    }
-
-    /// Save this into filename in the NPY format.
-    void save(const std::string &filename) const {
-        // Last trace may be empty and shall be skipped.
-        size_t num_traces = w.size();
-        if (num_traces == 0)
-            return; // Nothing to save !
-
-        if (w[num_traces - 1].empty())
-            num_traces -= 1;
-        std::unique_ptr<DataTy[]> matrix(
-            new DataTy[num_traces * max_row_length]);
-        PAF::SCA::NPArray<DataTy> npy(std::move(matrix), num_traces,
-                                      max_row_length);
-        for (size_t row = 0; row < num_traces; row++)
-            for (size_t col = 0; col < max_row_length; col++)
-                npy(row, col) = col < w[row].size() ? w[row][col] : 0.0;
-        npy.save(filename);
-    }
-
-  private:
-    size_t current_row;
-    size_t max_row_length;
-    std::vector<std::vector<DataTy>> w;
-};
-
-/// Dumper is an abstract base class for emitting some kind of trace.
-class Dumper {
-  public:
-    /// Construct a basic Dumper.
-    Dumper(bool enable) : enable(enable) {}
-
-    /// Copy constructor.
-    Dumper(const Dumper &) = default;
-
-    /// Assignment constructor.
-    Dumper &operator=(const Dumper &) = default;
-
-    /// Update state when switching to next trace.
-    virtual void next_trace() {}
-
-    /// Called at the beginning of a trace.
-    virtual void predump() {}
-
-    /// Called at the end of a trace.
-    virtual void postdump() {}
-
-    /// Destruct this Dumper.
-    virtual ~Dumper() {}
-
-    /// Is dumping enabled ?
-    bool enabled() const { return enable; }
-
-  protected:
-    /// Enable dumping or not.
-    bool enable;
-};
-
 /// PowerDumper is a base class for emitting a power trace.
 ///
 /// Subclasssing it enables to support various power trace outputs like CSV or
@@ -200,23 +111,9 @@ class PowerDumper : public Dumper {
     virtual ~PowerDumper() {}
 };
 
-/// FilePowerDumper is a base class for emitting a power trace to a file.
-class FilePowerDumper : public PowerDumper {
-  public:
-    /// Construct a basic Dumper.
-    FilePowerDumper(const std::string &filename)
-        : PowerDumper(), filename(filename) {}
-
-    /// Destruct this FilePowerDumper.
-    virtual ~FilePowerDumper() {}
-
-  protected:
-    std::string filename;
-};
-
 /// CSVPowerDumper is a PowerDumper specialization for writing the power trace
 /// in CSV format.
-class CSVPowerDumper : public FilePowerDumper {
+class CSVPowerDumper : public PowerDumper, public FileStreamDumper {
   public:
     /// Construct a power trace that will be dumped in CSV format to file
     /// filename.
@@ -236,23 +133,19 @@ class CSVPowerDumper : public FilePowerDumper {
               double addr, double data,
               const PAF::ReferenceInstruction *I) override;
 
-    /// Destruct this CSVPowerDumper.
-    virtual ~CSVPowerDumper() override;
-
   private:
-    std::ostream *os;           ///< Our output stream.
     const char *sep;            ///< CVS column separator.
     const bool detailed_output; ///< Use a detailed output format.
 };
 
 /// NPYPowerDumper is a PowerDumper specialization for writing the power trace
 /// in NPY format.
-class NPYPowerDumper : public FilePowerDumper {
+class NPYPowerDumper : public PowerDumper, public FilenameDumper {
   public:
     /// Construct a power trace that will be dumped in NPY format to file
     /// filename.
     NPYPowerDumper(const std::string &filename, size_t num_traces)
-        : FilePowerDumper(filename), NpyA(num_traces) {}
+        : FilenameDumper(filename), NpyA(num_traces) {}
 
     /// Construct a power trace that will be dumped in NPY format to stream
     /// os.
@@ -272,105 +165,7 @@ class NPYPowerDumper : public FilePowerDumper {
     virtual ~NPYPowerDumper() override { NpyA.save(filename); };
 
   private:
-    NPYAdapter<double> NpyA;
-};
-
-/// RegBankDumper is used to dump a trace of the register bank content.
-class RegBankDumper : public Dumper {
-  public:
-    /// Construct a RegBankDumper.
-    RegBankDumper(bool enable) : Dumper(enable) {}
-
-    /// Dump the register bank content.
-    virtual void dump(const std::vector<uint64_t> &regs) = 0;
-
-    /// Destruct this RegBankDumper.
-    virtual ~RegBankDumper() {}
-};
-
-///
-class FileRegBankDumper : public RegBankDumper {
-  public:
-    /// Construct a FileRegBankDumper.
-    FileRegBankDumper(const std::string &filename)
-        : RegBankDumper(!filename.empty()), filename(filename) {}
-
-    /// Destruct this FileRegBankDumper.
-    virtual ~FileRegBankDumper() {}
-
-  protected:
-    std::string filename;
-};
-
-class NPYRegBankDumper : public FileRegBankDumper {
-  public:
-    NPYRegBankDumper(const std::string &filename, size_t num_traces)
-        : FileRegBankDumper(filename), NpyA(num_traces) {}
-
-    /// Update state when switching to next trace.
-    void next_trace() override {
-        if (enabled())
-            NpyA.next();
-    }
-
-    /// Dump the register bank content.
-    void dump(const std::vector<uint64_t> &regs) override { NpyA.append(regs); }
-
-    /// Destruct this NPYRegBankDumper, saving the NPY file along the way.
-    virtual ~NPYRegBankDumper() {
-        if (enabled())
-            NpyA.save(filename);
-    }
-
-  private:
-    NPYAdapter<uint64_t> NpyA;
-};
-
-/// MemoryAccessesDumper is used to dump a trace of memory accesses.
-class MemoryAccessesDumper : public Dumper {
-  public:
-    /// Construct a MemoryAccessesDumper.
-    MemoryAccessesDumper(bool enable) : Dumper(enable) {}
-
-    /// Dump those memory accesses.
-    virtual void dump(uint64_t PC, const std::vector<MemoryAccess> &MA) = 0;
-
-    /// Destruct this MemoryAccessesDumper.
-    virtual ~MemoryAccessesDumper() {}
-};
-
-///
-class FileMemoryAccessesDumper : public MemoryAccessesDumper {
-  public:
-    /// Construct a FileRegBankDumper.
-    FileMemoryAccessesDumper(const std::string &filename);
-    FileMemoryAccessesDumper(const std::string &filename, std::ostream *os);
-
-    /// Destruct this FileRegBankDumper.
-    virtual ~FileMemoryAccessesDumper();
-
-    /// Forces writing to file.
-    void flush();
-
-  protected:
-    std::string filename;
-    std::ostream *os; ///< Our output stream.
-};
-
-class YAMLMemoryAccessesDumper : public FileMemoryAccessesDumper {
-  public:
-    YAMLMemoryAccessesDumper(const std::string &filename);
-    YAMLMemoryAccessesDumper(std::ostream *os);
-    virtual ~YAMLMemoryAccessesDumper() {}
-
-    /// Update state when switching to next trace.
-    void next_trace() override;
-
-    /// Dump memory accesses performed by instruction at pc.
-    void dump(uint64_t PC, const std::vector<MemoryAccess> &MA) override;
-
-  private:
-    const char *sep;
+    NPAdapter<double> NpyA;
 };
 
 /// The PowerAnalysisConfig class is used to configure a power analysis run. It

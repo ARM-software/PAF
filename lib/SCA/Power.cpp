@@ -21,6 +21,7 @@
 #include "PAF/SCA/Power.h"
 #include "PAF/ArchInfo.h"
 #include "PAF/PAF.h"
+#include "PAF/SCA/Dumper.h"
 #include "PAF/SCA/SCA.h"
 
 #include <cassert>
@@ -395,172 +396,75 @@ namespace PAF {
     }
 
     CSVPowerDumper::CSVPowerDumper(const string &filename, bool detailed_output)
-        : FilePowerDumper(filename), os(&std::cout), sep(","),
+        : PowerDumper(), FileStreamDumper(filename), sep(","),
           detailed_output(detailed_output) {
-        if (filename.size() != 0)
-            os = new std::ofstream(filename.c_str(), std::ofstream::out);
-
-        *os << std::fixed << std::setprecision(2);
+        *this << std::fixed << std::setprecision(2);
     }
 
     CSVPowerDumper::CSVPowerDumper(ostream &s, bool detailed_output)
-        : FilePowerDumper(""), os(&s), sep(","),
+        : PowerDumper(), FileStreamDumper(s), sep(","),
           detailed_output(detailed_output) {
-        *os << std::fixed << std::setprecision(2);
+        *this << std::fixed << std::setprecision(2);
     }
 
     // Insert an empty line when changing to a new trace.
-    void CSVPowerDumper::next_trace() { *os << '\n'; }
+    void CSVPowerDumper::next_trace() { *this << '\n'; }
 
     void CSVPowerDumper::predump() {
         const char *s = "";
         for (const auto &field :
              {"Total", "PC", "Instr", "ORegs", "IRegs", "Addr", "Data"}) {
-            *os << s << '"' << field << '"';
+            *this << s << '"' << field << '"';
             s = sep;
         }
 
         if (detailed_output)
             for (const auto &field : {"Time", "PC", "Instr", "Exe", "Asm",
                                       "Memory accesses", "Register accesses"})
-                *os << sep << '"' << field << '"';
+                *this << sep << '"' << field << '"';
 
-        *os << '\n';
+        *this << '\n';
     }
 
     void CSVPowerDumper::dump(double total, double pc, double instr,
                               double oreg, double ireg, double addr,
                               double data, const PAF::ReferenceInstruction *I) {
 
-        *os << total;
-        *os << sep << pc;
-        *os << sep << instr;
-        *os << sep << oreg;
-        *os << sep << ireg;
-        *os << sep << addr;
-        *os << sep << data;
+        *this << total;
+        *this << sep << pc;
+        *this << sep << instr;
+        *this << sep << oreg;
+        *this << sep << ireg;
+        *this << sep << addr;
+        *this << sep << data;
 
         if (I != nullptr && detailed_output) {
-            *os << sep << I->time;
-            *os << sep << "0x" << std::hex << I->pc << std::dec;
-            *os << sep << "0x" << std::hex << I->instruction << std::dec;
-            *os << sep << '"' << (I->executed ? 'X' : '-') << '"';
-            *os << sep << '"' << I->disassembly << '"';
+            *this << sep << I->time;
+            *this << sep << "0x" << std::hex << I->pc << std::dec;
+            *this << sep << "0x" << std::hex << I->instruction << std::dec;
+            *this << sep << '"' << (I->executed ? 'X' : '-') << '"';
+            *this << sep << '"' << I->disassembly << '"';
 
             const char *space = "";
-            *os << sep << '"';
+            *this << sep << '"';
             for (const PAF::MemoryAccess &M : I->memaccess) {
-                *os << space;
+                *this << space;
                 space = " ";
                 M.dump(*os);
             }
-            *os << '"';
+            *this << '"';
 
             space = "";
-            *os << sep << '"';
+            *this << sep << '"';
             for (const PAF::RegisterAccess &R : I->regaccess) {
-                *os << space;
+                *this << space;
                 space = " ";
                 R.dump(*os);
             }
-            *os << '"';
+            *this << '"';
         }
 
-        *os << '\n';
-    }
-
-    CSVPowerDumper::~CSVPowerDumper() {
-        if (filename.size() != 0 && os != nullptr) {
-            ((std::ofstream *)os)->close();
-            delete (std::ofstream *)os;
-        }
-    }
-
-    FileMemoryAccessesDumper::FileMemoryAccessesDumper(
-        const std::string &filename)
-        : MemoryAccessesDumper(!filename.empty()), filename(filename),
-          os(&std::cout) {
-        if (filename.size() != 0)
-            os = new std::ofstream(filename.c_str(), std::ofstream::out);
-    }
-
-    FileMemoryAccessesDumper::FileMemoryAccessesDumper(
-        const std::string &filename, std::ostream *os)
-        : MemoryAccessesDumper(!filename.empty()), filename(filename), os(os) {}
-
-    FileMemoryAccessesDumper::~FileMemoryAccessesDumper() {
-        if (filename.size() != 0)
-            delete os;
-    }
-
-    void FileMemoryAccessesDumper::flush() { os->flush(); }
-
-    YAMLMemoryAccessesDumper::YAMLMemoryAccessesDumper(
-        const std::string &filename)
-        : FileMemoryAccessesDumper(filename), sep("  - ") {
-        *os << "memaccess:\n";
-    }
-
-    YAMLMemoryAccessesDumper::YAMLMemoryAccessesDumper(std::ostream *os)
-        : FileMemoryAccessesDumper("", os), sep("  - ") {
-        *os << "memaccess:\n";
-    }
-
-    void YAMLMemoryAccessesDumper::next_trace() { sep = "  - "; }
-
-    void YAMLMemoryAccessesDumper::dump(uint64_t PC,
-                                        const std::vector<MemoryAccess> &MA) {
-        // Lazily emit the trace separator, so that the yaml file does not end
-        // with an empty array element.
-        if (sep) {
-            *os << sep << '\n';
-            sep = nullptr;
-        }
-
-        if (MA.empty())
-            return;
-
-        bool has_loads = false;
-        bool has_stores = false;
-        for (const auto &a : MA)
-            switch (a.access) {
-            case Access::Type::Read:
-                has_loads = true;
-                break;
-            case Access::Type::Write:
-                has_stores = true;
-                break;
-            }
-
-        if (!has_loads && !has_stores)
-            return;
-
-        *os << "    - { pc: 0x" << std::hex << PC;
-        if (has_loads) {
-            *os << ", loads: [";
-            const char *sep = "";
-            for (const auto &a : MA)
-                if (a.access == Access::Type::Read) {
-                    *os << sep << "[0x" << a.addr;
-                    *os << ", " << std::dec << a.size << std::hex;
-                    *os << ", 0x" << a.value << ']';
-                    sep = ", ";
-                }
-            *os << ']';
-        }
-        if (has_stores) {
-            *os << ", stores: [";
-            const char *sep = "";
-            for (const auto &a : MA)
-                if (a.access == Access::Type::Write) {
-                    *os << sep << "[0x" << a.addr;
-                    *os << ", " << std::dec << a.size << std::hex;
-                    *os << ", 0x" << a.value << ']';
-                    sep = ", ";
-                }
-            *os << ']';
-        }
-        *os << "}\n" << std::dec;
+        *this << '\n';
     }
 
     PowerAnalysisConfig::~PowerAnalysisConfig() {}

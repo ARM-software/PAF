@@ -143,7 +143,7 @@ TestWithTempFile(YAMLMemAccessesF, "test-YAMLMemAccesses.yml.XXXXXX");
 
 TEST_F(YAMLMemAccessesF, Base) {
     std::ostringstream s;
-    YAMLMemoryAccessesDumper MA1(&s);
+    YAMLMemoryAccessesDumper MA1(s);
 
     EXPECT_EQ(s.str(), "memaccess:\n");
 
