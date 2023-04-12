@@ -555,6 +555,29 @@ namespace PAF {
                     }
                 }
 
+                /* FastModel simulate some of the dual load or store accesses as
+                 * single 64-bit accesses: break those accesses in 2 x 32-bit
+                 * accesses. */
+                if (I.iset == ISet::THUMB && I.width == 32) {
+                    bool index = ((I.instruction >> 24) & 0x01) == 1;
+                    bool wback = ((I.instruction >> 21) & 0x01) == 1;
+                    if ((I.instruction >> 25) == 0x74 &&
+                        ((I.instruction >> 22) & 0x01) == 1 &&
+                        ((index && !wback) || wback)) {
+                        if (I.memaccess.size() == 1) {
+                            MemoryAccess MA = I.memaccess[0];
+                            assert(MA.size == 8 && "Expecting an 8-byte memory "
+                                                   "access for LDRD or STRD");
+                            I.memaccess.clear();
+                            I.memaccess.emplace_back(
+                                4, MA.addr, MA.value & 0x0FFFFFFFF, MA.access);
+                            I.memaccess.emplace_back(
+                                4, MA.addr + 4,
+                                MA.value >> (8 * 4) & 0x0FFFFFFFF, MA.access);
+                        }
+                    }
+                }
+
                 PT.add(I);
             }
         };
