@@ -392,14 +392,16 @@ class PowerTrace {
     /// Construct a PowerTrace.
     PowerTrace(PowerDumper &PwrDumper, TimingInfo &Timing,
                RegBankDumper &RbDumper, MemoryAccessesDumper &MADumper,
-               PowerAnalysisConfig &Config, const PAF::ArchInfo *CPU)
+               InstrDumper &IDumper, PowerAnalysisConfig &Config,
+               const PAF::ArchInfo *CPU)
         : PwrDumper(PwrDumper), RbDumper(RbDumper), MADumper(MADumper),
-          Timing(Timing), Config(Config), Instructions(), CPU(CPU) {}
+          IDumper(IDumper), Timing(Timing), Config(Config), Instructions(),
+          CPU(CPU) {}
 
     /// Move construct a PowerTrace.
     PowerTrace(PowerTrace &&PT)
         : PwrDumper(PT.PwrDumper), RbDumper(PT.RbDumper), MADumper(PT.MADumper),
-          Timing(PT.Timing), Config(PT.Config),
+          IDumper(PT.IDumper), Timing(PT.Timing), Config(PT.Config),
           Instructions(std::move(PT.Instructions)), CPU(PT.CPU) {}
 
     /// Move assign a PowerTrace.
@@ -407,6 +409,7 @@ class PowerTrace {
         PwrDumper = PT.PwrDumper;
         RbDumper = PT.RbDumper;
         MADumper = PT.MADumper;
+        IDumper = PT.IDumper;
         Timing = PT.Timing;
         Config = std::move(PT.Config);
         Instructions = std::move(PT.Instructions);
@@ -437,6 +440,7 @@ class PowerTrace {
     PowerDumper &PwrDumper;
     RegBankDumper &RbDumper;
     MemoryAccessesDumper &MADumper;
+    InstrDumper &IDumper;
     TimingInfo &Timing;
     PowerAnalysisConfig &Config;
     std::vector<PAF::ReferenceInstruction> Instructions;
@@ -456,6 +460,7 @@ class PowerAnalyzer : public PAF::MTAnalyzer {
     PowerTrace getPowerTrace(PowerDumper &PwrDumper, TimingInfo &Timing,
                              RegBankDumper &RbDumper,
                              MemoryAccessesDumper &MADumper,
+                             InstrDumper &IDumper,
                              PowerAnalysisConfig &Config, const ArchInfo *CPU,
                              const PAF::ExecutionRange &ER);
 };

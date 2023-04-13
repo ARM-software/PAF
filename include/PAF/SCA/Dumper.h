@@ -109,6 +109,40 @@ class FileStreamDumper : public FilenameDumper {
     std::ostream *os;
 };
 
+/// YAMLDumper is a base class for dumping in YAML format.
+class YAMLDumper : public FileStreamDumper {
+  public:
+    /// Construct a FileStreamDumper associated with file \a filename.
+    YAMLDumper(const std::string &filename, const char *header)
+        : FileStreamDumper(filename), header(header), sep("  - ") {}
+
+    /// Construct a FileStreamDumper associated with stream \a os.
+    YAMLDumper(std::ostream &os, const char *header) : FileStreamDumper(os), header(header), sep("  - ") {}
+
+  protected:
+    /// Reset the trace separator.
+    void next_trace() { sep = "  - "; }
+
+    /// Get the trace separator. This allows Lazily emitting the trace
+    /// separator, so that the yaml file does not end
+    // with an empty array element.
+    const char *get_trace_separator() {
+        const char *tmp = sep;
+        if (sep)
+            sep = nullptr;
+        return tmp;
+    }
+
+    /// Get the YAML header to emit.
+    const char *get_header() const { return header; }
+
+  private:
+    /// YAML header to use.
+    const char *header;
+    /// The separator between traces.
+    const char *sep;
+};
+
 /// RegBankDumper is used to dump a trace of the register bank content.
 class RegBankDumper : public Dumper {
   public:
@@ -184,7 +218,7 @@ class FileMemoryAccessesDumper : public MemoryAccessesDumper,
 /// The YAMLMemoryAccessesDumper class will dump a trace of memory accesses to a
 /// file in YAML format .
 class YAMLMemoryAccessesDumper : public MemoryAccessesDumper,
-                                 public FileStreamDumper {
+                                 public YAMLDumper {
   public:
     /// Construct a FileMemoryAccessesDumper that will dump its content to file
     /// \a filename in YAML format.
@@ -195,14 +229,43 @@ class YAMLMemoryAccessesDumper : public MemoryAccessesDumper,
     YAMLMemoryAccessesDumper(std::ostream &os, bool enable = true);
 
     /// Update state when switching to next trace.
-    void next_trace() override;
+    void next_trace() override { this->YAMLDumper::next_trace(); };
 
     /// Dump memory accesses performed by instruction at pc.
     void dump(uint64_t PC, const std::vector<MemoryAccess> &MA) override;
+};
 
-  private:
-    /// The separator between accesses.
-    const char *sep;
+/// InstrDumper is used to dump a trace of the instructions.
+class InstrDumper : public Dumper {
+  public:
+    /// Construct a MemoryAccessesDumper.
+    InstrDumper(bool enable) : Dumper(enable) {}
+
+    /// Dump this instruction.
+    virtual void dump(const ReferenceInstruction &I) = 0;
+
+    /// Destruct this InstrDumper.
+    virtual ~InstrDumper() {}
+};
+
+/// The YAMLInstrDumper class will dump a trace of instructions to a
+/// file in YAML format .
+class YAMLInstrDumper : public InstrDumper,
+                        public YAMLDumper {
+  public:
+    /// Construct a FileMemoryAccessesDumper that will dump its content to file
+    /// \a filename in YAML format.
+    YAMLInstrDumper(const std::string &filename);
+
+    /// Construct a FileMemoryAccessesDumper that will dump its content to stream
+    /// \a os in YAML format.
+    YAMLInstrDumper(std::ostream &os, bool enable = true);
+
+    /// Update state when switching to next trace.
+    void next_trace() override { this->YAMLDumper::next_trace(); };
+
+    /// Dump memory accesses performed by instruction at pc.
+    void dump(const ReferenceInstruction &I) override;
 };
 
 } // namespace SCA

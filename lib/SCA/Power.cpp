@@ -490,7 +490,9 @@ namespace PAF {
         if (RbDumper.enabled())
             RbDumper.predump();
         if (MADumper.enabled())
-            MADumper.postdump();
+            MADumper.predump();
+        if (IDumper.enabled())
+            IDumper.predump();
 
         for (unsigned i = 0; i < Instructions.size(); i++) {
             const PAF::ReferenceInstruction &I = Instructions[i];
@@ -502,6 +504,8 @@ namespace PAF {
                 RbDumper.dump(Oracle.getRegBankState(I.time));
             if (MADumper.enabled())
                 MADumper.dump(I.pc, I.memaccess);
+            if (IDumper.enabled())
+                IDumper.dump(I);
 
             // Insert dummy cycles when needed if we are not at the end of the
             // sequence.
@@ -522,12 +526,15 @@ namespace PAF {
             RbDumper.postdump();
         if (MADumper.enabled())
             MADumper.postdump();
+        if (IDumper.enabled())
+            IDumper.postdump();
     }
 
     PowerTrace PowerAnalyzer::getPowerTrace(PowerDumper &PwrDumper,
                                             TimingInfo &Timing,
                                             RegBankDumper &RbDumper,
                                             MemoryAccessesDumper &MADumper,
+                                            InstrDumper &IDumper,
                                             PowerAnalysisConfig &Config,
                                             const ArchInfo *CPU,
                                             const PAF::ExecutionRange &ER) {
@@ -582,7 +589,8 @@ namespace PAF {
             }
         };
 
-        PowerTrace PT(PwrDumper, Timing, RbDumper, MADumper, Config, CPU);
+        PowerTrace PT(PwrDumper, Timing, RbDumper, MADumper, IDumper, Config,
+                      CPU);
         PTCont PTC(*this, PT, Config);
         PAF::FromTraceBuilder<PAF::ReferenceInstruction,
                               PAF::ReferenceInstructionBuilder, PTCont>

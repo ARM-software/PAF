@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: <text>Copyright 2021,2022 Arm Limited and/or its
+ * SPDX-FileCopyrightText: <text>Copyright 2021,2022,2023 Arm Limited and/or its
  * affiliates <open-source-office@arm.com></text>
  * SPDX-License-Identifier: Apache-2.0
  *
@@ -22,6 +22,7 @@
 #include "PAF/SCA/Power.h"
 #include "PAF/ArchInfo.h"
 #include "PAF/PAF.h"
+#include "PAF/SCA/Dumper.h"
 #include "PAF/SCA/Noise.h"
 #include "PAF/SCA/SCA.h"
 #include "PAF/utils/Misc.h"
@@ -90,6 +91,7 @@ int main(int argc, char **argv) {
     string TimingFilename;
     string RegBankTraceFilename;
     string MemoryAccessesTraceFilename;
+    string InstructionTraceFilename;
     bool detailed_output = false;
     bool dontAddNoise = false;
     double NoiseLevel = 1.0;
@@ -187,11 +189,14 @@ int main(int argc, char **argv) {
                         PowerAnalysisConfig::WITH_MEMORY_UPDATE_TRANSITIONS);
                 });
     ap.optval({"--register-trace"}, "FILENAME",
-              "Dump a trace of the register bank content to FILENAME",
+              "Dump a trace of the register bank content in numpy format to FILENAME",
               [&](const string &s) { RegBankTraceFilename = s; });
     ap.optval({"--memory-accesses-trace"}, "FILENAME",
-              "Dump a trace of memory accesses to FILENAME",
+              "Dump a trace of memory accesses in yaml format to FILENAME",
               [&](const string &s) { MemoryAccessesTraceFilename = s; });
+    ap.optval({"--instruction-trace"}, "FILENAME",
+              "Dump an instruction trace in yaml format to FILENAME",
+              [&](const string &s) { InstructionTraceFilename = s; });
     ap.optval({"--function"}, "FUNCTION",
               "analyze code running within FUNCTION",
               [&](const string &s) { ARS.setFunction(s); });
@@ -275,6 +280,8 @@ int main(int argc, char **argv) {
             tu.traces.size())); // Our register bank dumper.
     unique_ptr<PAF::SCA::YAMLMemoryAccessesDumper> MADumper(
         new PAF::SCA::YAMLMemoryAccessesDumper(MemoryAccessesTraceFilename));
+    unique_ptr<PAF::SCA::YAMLInstrDumper> IDumper(
+        new PAF::SCA::YAMLInstrDumper(InstructionTraceFilename));
 
     for (const auto &trace : tu.traces) {
         if (tu.is_verbose())
@@ -320,11 +327,12 @@ int main(int argc, char **argv) {
             }
             PowerTrace PTrace =
                 PA.getPowerTrace(*PwrDumper, Timing, *RbDumper, *MADumper,
-                                 PAConfig, CPU.get(), er);
+                                 *IDumper, PAConfig, CPU.get(), er);
             PTrace.analyze(*Oracle.get());
             PwrDumper->next_trace();
             RbDumper->next_trace();
             MADumper->next_trace();
+            IDumper->next_trace();
             Timing.next_trace();
         }
     }

@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: <text>Copyright 2021,2022 Arm Limited and/or its
+ * SPDX-FileCopyrightText: <text>Copyright 2021,2022,2023 Arm Limited and/or its
  * affiliates <open-source-office@arm.com></text>
  * SPDX-License-Identifier: Apache-2.0
  *
@@ -21,6 +21,7 @@
 #include "PAF/SCA/Power.h"
 #include "PAF/ArchInfo.h"
 #include "PAF/PAF.h"
+#include "PAF/SCA/Dumper.h"
 #include "PAF/SCA/NPArray.h"
 #include "PAF/SCA/SCA.h"
 
@@ -51,6 +52,7 @@ using PAF::MemoryAccess;
 using PAF::ReferenceInstruction;
 using PAF::RegisterAccess;
 using PAF::SCA::CSVPowerDumper;
+using PAF::SCA::InstrDumper;
 using PAF::SCA::MemoryAccessesDumper;
 using PAF::SCA::NPArray;
 using PAF::SCA::NPYPowerDumper;
@@ -61,6 +63,7 @@ using PAF::SCA::PowerTrace;
 using PAF::SCA::RegBankDumper;
 using PAF::SCA::TimingInfo;
 using PAF::SCA::YAMLTimingInfo;
+using PAF::SCA::YAMLInstrDumper;
 using PAF::SCA::YAMLMemoryAccessesDumper;
 
 class TestTimingInfo : public TimingInfo {
@@ -138,7 +141,7 @@ TEST_F(YAMLTimingInfoF, Base) {
         }));
 }
 
-// Create the test fixture for YAMLTimingInfo.
+// Create the test fixture for YAMLMemAccessesDumper.
 TestWithTempFile(YAMLMemAccessesF, "test-YAMLMemAccesses.yml.XXXXXX");
 
 TEST_F(YAMLMemAccessesF, Base) {
@@ -187,6 +190,73 @@ TEST_F(YAMLMemAccessesF, Base) {
         "    - { pc: 0x1234, loads: [[0x21f5c, 4, 0x3]], stores: [[0xabcde, 2, 0x1234]]}",
         "  - ",
         "    - { pc: 0x2345, loads: [[0x21f60, 4, 0x21f64]], stores: [[0xabcdc, 2, 0x5678]]}"
+        // clang-format on
+    }));
+}
+
+// Create the test fixture for YAMLInstrDumper.
+TestWithTempFile(YAMLInstrDumperF, "test-YAMLInstrDumper.yml.XXXXXX");
+
+TEST_F(YAMLInstrDumperF, Base) {
+    const ReferenceInstruction I[2] = {
+        // clang-format off
+        {
+            28, true, 0x08326, ARM, 32, 0xf8db0800, "ldr.w      r0,[r11,#2048]",
+            {
+                MemoryAccess(4, 0xf939b40, 0xdeadbeef, MemoryAccess::Type::Read)
+            },
+            {
+                RegisterAccess("r0", 0xdeadbeef, RegisterAccess::Type::Write),
+                RegisterAccess("r11", 0xf939340, RegisterAccess::Type::Read)
+            }
+        },
+        {
+            29, true, 0x0832a, THUMB, 16, 0x4408, "add      r0,r1",
+            {},
+            {
+                RegisterAccess("r0", 0xdeadbef4, RegisterAccess::Type::Write),
+                RegisterAccess("r1", 0x05, RegisterAccess::Type::Read)
+            }
+        },
+        // clang-format on
+    };
+
+    std::ostringstream s;
+    YAMLInstrDumper ID1(s);
+
+    EXPECT_EQ(s.str(), "instr:\n");
+
+    // Check the trace separator is not emitted until something is dumped.
+    ID1.next_trace();
+    EXPECT_EQ(s.str(), "instr:\n");
+    ID1.dump(I[0]);
+    EXPECT_EQ(s.str(),
+              "instr:\n  - \n    - { pc: 0x8326, opcode: 0xf8db0800, size: 32, "
+              "executed: True, disassembly: \"ldr.w r0,[r11,#2048]\"}\n");
+    ID1.dump(I[1]);
+    EXPECT_EQ(s.str(),
+              "instr:\n  - \n    - { pc: 0x8326, opcode: 0xf8db0800, size: 32, "
+              "executed: True, disassembly: \"ldr.w r0,[r11,#2048]\"}\n    - { "
+              "pc: 0x832a, opcode: 0x4408, size: 16, executed: True, "
+              "disassembly: \"add r0,r1\"}\n");
+
+    YAMLInstrDumper ID2(getTemporaryFilename());
+
+    ID2.dump(I[0]);
+    ID2.dump(I[1]);
+    ID2.next_trace();
+    ID2.dump(I[0]);
+    ID2.dump(I[1]);
+    ID2.flush();
+    EXPECT_TRUE(checkFileContent({
+        // clang-format off
+        "instr:",
+        "  - ",
+        "    - { pc: 0x8326, opcode: 0xf8db0800, size: 32, executed: True, disassembly: \"ldr.w r0,[r11,#2048]\"}",
+        "    - { pc: 0x832a, opcode: 0x4408, size: 16, executed: True, disassembly: \"add r0,r1\"}",
+        "  - ",
+        "    - { pc: 0x8326, opcode: 0xf8db0800, size: 32, executed: True, disassembly: \"ldr.w r0,[r11,#2048]\"}",
+        "    - { pc: 0x832a, opcode: 0x4408, size: 16, executed: True, disassembly: \"add r0,r1\"}"
         // clang-format on
     }));
 }
@@ -365,6 +435,21 @@ struct TestMemAccessesDumper : public MemoryAccessesDumper {
     private:
     vector<MemoryAccess> last_accesses;
     size_t accesses_count;
+};
+
+// A mock for testing instruction dumps.
+struct TestInstrDumper : public InstrDumper {
+    TestInstrDumper(bool enabled = false)
+        : InstrDumper(enabled), instr_count(0) {}
+
+    void dump(const ReferenceInstruction &I) override { instr_count++; }
+
+    size_t num_instructions() const { return instr_count; }
+
+    void reset() { instr_count = 0; }
+
+  private:
+    size_t instr_count;
 };
 
 class TestOracle : public PowerTrace::OracleBase {
@@ -787,12 +872,13 @@ TEST(PowerTrace, base) {
     TestPowerDumper TPD;
     TestRegBankDumper TRBD(true);
     TestMemAccessesDumper TMAD(true);
+    TestInstrDumper TID(true);
     TestTimingInfo TTI;
     PowerAnalysisConfig PAC;
     unique_ptr<ArchInfo> CPU(new PAF::V7MInfo());
     TestOracle Oracle(Insts, sizeof(Insts)/sizeof(Insts[0]));
 
-    PowerTrace PT(TPD, TTI, TRBD, TMAD, PAC, CPU.get());
+    PowerTrace PT(TPD, TTI, TRBD, TMAD, TID, PAC, CPU.get());
     EXPECT_STREQ(PT.getArchInfo()->description(), "Arm V7M ISA");
     PT.add(Insts[0]);
     EXPECT_EQ(PT.size(), 1);
@@ -805,10 +891,12 @@ TEST(PowerTrace, base) {
     EXPECT_TRUE(TRBD.check(0, 0, {5, 0x21000000, 0, 0, 0}));
     EXPECT_EQ(TMAD.instr_with_accesses(), 0);
     EXPECT_EQ(TMAD.last_accesses_size(), 0);
+    EXPECT_EQ(TID.num_instructions(), 1);
 
     TPD.reset();
     TRBD.reset();
     TMAD.reset();
+    TID.reset();
     PT.add(Insts[1]);
     EXPECT_EQ(PT.size(), 2);
     EXPECT_EQ(PT[0], Insts[0]);
@@ -823,10 +911,12 @@ TEST(PowerTrace, base) {
     EXPECT_TRUE(TRBD.check(0, 1, {5, 0x21000000, 5, 0, 0}));
     EXPECT_EQ(TMAD.instr_with_accesses(), 0);
     EXPECT_EQ(TMAD.last_accesses_size(), 0);
+    EXPECT_EQ(TID.num_instructions(), 2);
 
     TPD.reset();
     TRBD.reset();
     TMAD.reset();
+    TID.reset();
     PT.add(Insts[2]);
     PT.add(Insts[3]);
     EXPECT_EQ(PT.size(), 4);
@@ -851,12 +941,14 @@ TEST(PowerTrace, base) {
     EXPECT_TRUE(TRBD.check(0, 3, {5, 0x21000000, 5, 3, 139108}));
     EXPECT_EQ(TMAD.instr_with_accesses(), 2);
     EXPECT_EQ(TMAD.last_accesses_size(), 2);
+    EXPECT_EQ(TID.num_instructions(), 4);
 
     // Move construct.
     PowerTrace PT2(std::move(PT));
     TPD.reset();
     TRBD.reset();
     TMAD.reset();
+    TID.reset();
     PT2.add(Insts[0]);
     PT2.analyze(Oracle);
     EXPECT_EQ(TPD.pwf.size(), 7);
@@ -871,11 +963,12 @@ TEST(PowerTrace, base) {
     // Move assign.
     TestPowerDumper TPD2;
     TestTimingInfo TTI2;
-    PowerTrace PT3(TPD, TTI, TRBD, TMAD, PAC, CPU.get());
+    PowerTrace PT3(TPD, TTI, TRBD, TMAD, TID, PAC, CPU.get());
     PT3 = std::move(PT2);
     TPD.reset();
     TRBD.reset();
     TMAD.reset();
+    TID.reset();
     PT3.add(Insts[0]);
     PT3.analyze(Oracle);
     EXPECT_EQ(TPD.pwf.size(), 8);
@@ -901,12 +994,13 @@ TEST(PowerTrace, withNoise) {
     TestPowerDumper TPD;
     TestRegBankDumper TRBD;
     TestMemAccessesDumper TMAD;
+    TestInstrDumper TID;
     TestTimingInfo TTI;
     PowerAnalysisConfigWithNoise PAC;
     unique_ptr<ArchInfo> CPU(new PAF::V7MInfo());
     TestOracle Oracle(Insts, sizeof(Insts)/sizeof(Insts[0]));
 
-    PowerTrace PT(TPD, TTI, TRBD, TMAD, PAC, CPU.get());
+    PowerTrace PT(TPD, TTI, TRBD, TMAD, TID, PAC, CPU.get());
     PT.add(Insts[0]);
     PT.analyze(Oracle);
     PAC.setWithoutNoise();
@@ -917,6 +1011,7 @@ TEST(PowerTrace, withNoise) {
     EXPECT_EQ(TRBD.num_snapshots(), 0);
     EXPECT_EQ(TMAD.instr_with_accesses(), 0);
     EXPECT_EQ(TMAD.last_accesses_size(), 0);
+    EXPECT_EQ(TID.num_instructions(), 0);
 }
 
 TEST(PowerTrace, HammingWeightWithConfig) {
@@ -924,13 +1019,14 @@ TEST(PowerTrace, HammingWeightWithConfig) {
     TestPowerDumper TPD;
     TestRegBankDumper TRBD(true);
     TestMemAccessesDumper TMAD(true);
+    TestInstrDumper TID(true);
     TestTimingInfo TTI;
     PowerAnalysisConfig PAC;
     unique_ptr<ArchInfo> CPU(new PAF::V7MInfo());
     TestOracle Oracle(Insts, sizeof(Insts)/sizeof(Insts[0]));
 
     PAC.clear().set(PowerAnalysisConfig::WITH_PC);
-    PowerTrace PT1(TPD, TTI, TRBD, TMAD, PAC, CPU.get());
+    PowerTrace PT1(TPD, TTI, TRBD, TMAD, TID, PAC, CPU.get());
     PT1.add(Insts[0]);
     PT1.add(Insts[1]);
     PT1.add(Insts[2]);
@@ -953,12 +1049,14 @@ TEST(PowerTrace, HammingWeightWithConfig) {
     EXPECT_EQ(TMAD.instr_with_accesses(), 2);
     EXPECT_EQ(TMAD.last_accesses_size(), 2);
     EXPECT_TRUE(TMAD.check(Insts[3].memaccess));
+    EXPECT_EQ(TID.num_instructions(), 4);
 
     TPD.reset();
     TRBD.reset();
     TMAD.reset();
+    TID.reset();
     PAC.clear().set(PowerAnalysisConfig::WITH_MEM_ADDRESS);
-    PowerTrace PT2(TPD, TTI, TRBD, TMAD, PAC, CPU.get());
+    PowerTrace PT2(TPD, TTI, TRBD, TMAD, TID, PAC, CPU.get());
     PT2.add(Insts[0]);
     PT2.add(Insts[1]);
     PT2.add(Insts[2]);
@@ -976,8 +1074,9 @@ TEST(PowerTrace, HammingWeightWithConfig) {
     TPD.reset();
     TRBD.reset();
     TMAD.reset();
+    TID.reset();
     PAC.clear().set(PowerAnalysisConfig::WITH_MEM_DATA);
-    PowerTrace PT3(TPD, TTI, TRBD, TMAD, PAC, CPU.get());
+    PowerTrace PT3(TPD, TTI, TRBD, TMAD, TID, PAC, CPU.get());
     PT3.add(Insts[0]);
     PT3.add(Insts[1]);
     PT3.add(Insts[2]);
@@ -995,8 +1094,9 @@ TEST(PowerTrace, HammingWeightWithConfig) {
     TPD.reset();
     TRBD.reset();
     TMAD.reset();
+    TID.reset();
     PAC.clear().set(PowerAnalysisConfig::WITH_OPCODE);
-    PowerTrace PT4(TPD, TTI, TRBD, TMAD, PAC, CPU.get());
+    PowerTrace PT4(TPD, TTI, TRBD, TMAD, TID, PAC, CPU.get());
     PT4.add(Insts[0]);
     PT4.add(Insts[1]);
     PT4.add(Insts[2]);
@@ -1014,8 +1114,9 @@ TEST(PowerTrace, HammingWeightWithConfig) {
     TPD.reset();
     TRBD.reset();
     TMAD.reset();
+    TID.reset();
     PAC.clear().set(PowerAnalysisConfig::WITH_INSTRUCTIONS_INPUTS);
-    PowerTrace PT5(TPD, TTI, TRBD, TMAD,PAC, CPU.get());
+    PowerTrace PT5(TPD, TTI, TRBD, TMAD, TID, PAC, CPU.get());
     PT5.add(Insts[0]);
     PT5.add(Insts[1]);
     PT5.add(Insts[2]);
@@ -1033,8 +1134,9 @@ TEST(PowerTrace, HammingWeightWithConfig) {
     TPD.reset();
     TRBD.reset();
     TMAD.reset();
+    TID.reset();
     PAC.clear().set(PowerAnalysisConfig::WITH_INSTRUCTIONS_OUTPUTS);
-    PowerTrace PT6(TPD, TTI, TRBD, TMAD, PAC, CPU.get());
+    PowerTrace PT6(TPD, TTI, TRBD, TMAD, TID, PAC, CPU.get());
     PT6.add(Insts[0]);
     PT6.add(Insts[1]);
     PT6.add(Insts[2]);
@@ -1167,13 +1269,14 @@ TEST(PowerTrace, HammingDistanceWithConfig) {
     TestPowerDumper TPD;
     TestRegBankDumper TRBD;
     TestMemAccessesDumper TMAD;
+    TestInstrDumper TID;
     TestTimingInfo TTI;
     unique_ptr<ArchInfo> CPU(new PAF::V7MInfo());
     PowerAnalysisConfig PAC(PowerAnalysisConfig::HAMMING_DISTANCE);
     EXPECT_TRUE(PAC.isHammingDistance());
 
     PAC.clear().set(PowerAnalysisConfig::WITH_PC);
-    PowerTrace PT1(TPD, TTI, TRBD, TMAD, PAC, CPU.get());
+    PowerTrace PT1(TPD, TTI, TRBD, TMAD, TID, PAC, CPU.get());
     PT1.add(Insts[0]);
     PT1.add(Insts[1]);
     PT1.add(Insts[2]);
@@ -1189,12 +1292,14 @@ TEST(PowerTrace, HammingDistanceWithConfig) {
     EXPECT_EQ(TPD.pwf[5], PowerFields(2, 2, 0, 0, 0, 0, 0, nullptr));
     EXPECT_EQ(TMAD.instr_with_accesses(), 0);
     EXPECT_EQ(TMAD.last_accesses_size(), 0);
+    EXPECT_EQ(TID.num_instructions(), 0);
 
     TPD.reset();
     TRBD.reset();
     TMAD.reset();
+    TID.reset();
     PAC.clear().set(PowerAnalysisConfig::WITH_OPCODE);
-    PowerTrace PT2(TPD, TTI, TRBD, TMAD, PAC, CPU.get());
+    PowerTrace PT2(TPD, TTI, TRBD, TMAD, TID, PAC, CPU.get());
     PT2.add(Insts[0]);
     PT2.add(Insts[1]);
     PT2.add(Insts[2]);
@@ -1213,8 +1318,9 @@ TEST(PowerTrace, HammingDistanceWithConfig) {
     TPD.reset();
     TRBD.reset();
     TMAD.reset();
+    TID.reset();
     PAC.clear().set(PowerAnalysisConfig::WITH_INSTRUCTIONS_INPUTS);
-    PowerTrace PT3(TPD, TTI, TRBD, TMAD, PAC, CPU.get());
+    PowerTrace PT3(TPD, TTI, TRBD, TMAD, TID, PAC, CPU.get());
     PT3.add(Insts[0]);
     PT3.add(Insts[1]);
     PT3.add(Insts[2]);
@@ -1232,8 +1338,9 @@ TEST(PowerTrace, HammingDistanceWithConfig) {
     TPD.reset();
     TRBD.reset();
     TMAD.reset();
+    TID.reset();
     PAC.clear().set(PowerAnalysisConfig::WITH_INSTRUCTIONS_OUTPUTS);
-    PowerTrace PT4(TPD, TTI, TRBD, TMAD, PAC, CPU.get());
+    PowerTrace PT4(TPD, TTI, TRBD, TMAD, TID, PAC, CPU.get());
     PT4.add(Insts[0]);
     PT4.add(Insts[1]);
     PT4.add(Insts[2]);
@@ -1268,9 +1375,10 @@ TEST(PowerTrace, HammingDistanceWithConfig) {
     TPD.reset();
     TRBD.reset();
     TMAD.reset();
+    TID.reset();
     PAC.clear().set(PowerAnalysisConfig::WITH_MEM_ADDRESS,
                     PowerAnalysisConfig::WITH_LAST_MEMORY_ACCESSES_TRANSITIONS);
-    PowerTrace PT5(TPD, TTI, TRBD, TMAD, PAC, CPU.get());
+    PowerTrace PT5(TPD, TTI, TRBD, TMAD, TID, PAC, CPU.get());
     PT5.add(Insts[0]);
     PT5.add(Insts[1]);
     PT5.add(Insts[2]);
@@ -1288,9 +1396,10 @@ TEST(PowerTrace, HammingDistanceWithConfig) {
     TPD.reset();
     TRBD.reset();
     TMAD.reset();
+    TID.reset();
     PAC.clear().set(PowerAnalysisConfig::WITH_MEM_DATA,
                     PowerAnalysisConfig::WITH_LAST_MEMORY_ACCESSES_TRANSITIONS);
-    PowerTrace PT6(TPD, TTI, TRBD, TMAD, PAC, CPU.get());
+    PowerTrace PT6(TPD, TTI, TRBD, TMAD, TID, PAC, CPU.get());
     PT6.add(Insts[0]);
     PT6.add(Insts[1]);
     PT6.add(Insts[2]);
@@ -1308,10 +1417,11 @@ TEST(PowerTrace, HammingDistanceWithConfig) {
     TPD.reset();
     TRBD.reset();
     TMAD.reset();
+    TID.reset();
     PAC.clear().set(PowerAnalysisConfig::WITH_MEM_ADDRESS,
                     PowerAnalysisConfig::WITH_LOAD_TO_LOAD_TRANSITIONS,
                     PowerAnalysisConfig::WITH_STORE_TO_STORE_TRANSITIONS);
-    PowerTrace PT7(TPD, TTI, TRBD, TMAD, PAC, CPU.get());
+    PowerTrace PT7(TPD, TTI, TRBD, TMAD, TID, PAC, CPU.get());
     PT7.add(Insts2[0]);
     PT7.add(Insts2[1]);
     PT7.add(Insts2[2]);
@@ -1331,14 +1441,16 @@ TEST(PowerTrace, HammingDistanceWithConfig) {
     EXPECT_EQ(TPD.pwf[6], PowerFields(6, 0, 0, 0, 0, 5, 0, &Insts2[6]));
     EXPECT_EQ(TMAD.instr_with_accesses(), 0);
     EXPECT_EQ(TMAD.last_accesses_size(), 0);
+    EXPECT_EQ(TID.num_instructions(), 0);
 
     TPD.reset();
     TRBD.reset();
     TMAD.reset();
+    TID.reset();
     PAC.clear().set(PowerAnalysisConfig::WITH_MEM_DATA,
                     PowerAnalysisConfig::WITH_LOAD_TO_LOAD_TRANSITIONS,
                     PowerAnalysisConfig::WITH_STORE_TO_STORE_TRANSITIONS);
-    PowerTrace PT8(TPD, TTI, TRBD, TMAD, PAC, CPU.get());
+    PowerTrace PT8(TPD, TTI, TRBD, TMAD, TID, PAC, CPU.get());
     PT8.add(Insts2[0]);
     PT8.add(Insts2[1]);
     PT8.add(Insts2[2]);
@@ -1360,9 +1472,10 @@ TEST(PowerTrace, HammingDistanceWithConfig) {
     TPD.reset();
     TRBD.reset();
     TMAD.reset();
+    TID.reset();
     PAC.clear().set(PowerAnalysisConfig::WITH_MEM_DATA,
                     PowerAnalysisConfig::WITH_MEMORY_UPDATE_TRANSITIONS);
-    PowerTrace PT9(TPD, TTI, TRBD, TMAD, PAC, CPU.get());
+    PowerTrace PT9(TPD, TTI, TRBD, TMAD, TID, PAC, CPU.get());
     PT9.add(Insts2[0]);
     PT9.add(Insts2[1]);
     PT9.add(Insts2[2]);
@@ -1388,12 +1501,13 @@ TEST(PowerTrace, withConfigAndNoise) {
     TestPowerDumper TPD;
     TestRegBankDumper TRBD;
     TestMemAccessesDumper TMAD;
+    TestInstrDumper TID;
     TestTimingInfo TTI;
     unique_ptr<ArchInfo> CPU(new PAF::V7MInfo());
     PowerAnalysisConfigWithNoise PAC(PowerAnalysisConfig::WITH_OPCODE);
     PowerTrace::OracleBase Oracle;
 
-    PowerTrace PT(TPD, TTI, TRBD, TMAD, PAC, CPU.get());
+    PowerTrace PT(TPD, TTI, TRBD, TMAD, TID, PAC, CPU.get());
     PT.add(Insts[0]);
     PT.analyze(Oracle);
     PAC.setWithoutNoise();
@@ -1407,13 +1521,15 @@ TEST(PowerTrace, withConfigAndNoise) {
     EXPECT_EQ(TPD.pwf[0].pc, 0.0);
     EXPECT_EQ(TMAD.instr_with_accesses(), 0);
     EXPECT_EQ(TMAD.last_accesses_size(), 0);
+    EXPECT_EQ(TID.num_instructions(), 0);
 
     PAC.clear().set(PowerAnalysisConfig::WITH_INSTRUCTIONS_OUTPUTS);
     PAC.setWithNoise();
     TPD.reset();
     TRBD.reset();
     TMAD.reset();
-    PowerTrace PT2(TPD, TTI, TRBD, TMAD, PAC, CPU.get());
+    TID.reset();
+    PowerTrace PT2(TPD, TTI, TRBD, TMAD, TID, PAC, CPU.get());
     PT2.add(Insts[0]);
     PT2.analyze(Oracle);
     PAC.setWithoutNoise();

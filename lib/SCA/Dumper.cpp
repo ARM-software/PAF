@@ -24,26 +24,20 @@ namespace PAF {
 namespace SCA {
 
 YAMLMemoryAccessesDumper::YAMLMemoryAccessesDumper(const std::string &filename)
-    : MemoryAccessesDumper(!filename.empty()), FileStreamDumper(filename),
-      sep("  - ") {
-    *this << "memaccess:\n";
+    : MemoryAccessesDumper(!filename.empty()),
+      YAMLDumper(filename, "memaccess") {
+    *this << get_header() << ":\n";
 }
 
 YAMLMemoryAccessesDumper::YAMLMemoryAccessesDumper(std::ostream &s, bool enable)
-    : MemoryAccessesDumper(enable), FileStreamDumper(s), sep("  - ") {
-    *this << "memaccess:\n";
+    : MemoryAccessesDumper(enable), YAMLDumper(s, "memaccess") {
+    *this << get_header() << ":\n";
 }
-
-void YAMLMemoryAccessesDumper::next_trace() { sep = "  - "; }
 
 void YAMLMemoryAccessesDumper::dump(uint64_t PC,
                                     const std::vector<MemoryAccess> &MA) {
-    // Lazily emit the trace separator, so that the yaml file does not end
-    // with an empty array element.
-    if (sep) {
-        *this << sep << '\n';
-        sep = nullptr;
-    }
+    if (const char *s = get_trace_separator())
+        *this << s << '\n';
 
     if (MA.empty())
         return;
@@ -89,6 +83,29 @@ void YAMLMemoryAccessesDumper::dump(uint64_t PC,
         *this << ']';
     }
     *this << "}\n" << std::dec;
+}
+
+YAMLInstrDumper::YAMLInstrDumper(const std::string &filename)
+    : InstrDumper(!filename.empty()), YAMLDumper(filename, "instr") {
+    *this << get_header() << ":\n";
+}
+
+YAMLInstrDumper::YAMLInstrDumper(std::ostream &s, bool enable)
+    : InstrDumper(enable), YAMLDumper(s, "instr") {
+    *this << get_header() << ":\n";
+}
+
+void YAMLInstrDumper::dump(const ReferenceInstruction &I) {
+    if (const char *s = get_trace_separator())
+        *this << s << '\n';
+
+    *this << "    - { " << std::hex;
+    *this << "pc: 0x" << I.pc;
+    *this << ", opcode: 0x" << I.instruction;
+    *this << ", size: " << std::dec << I.width;
+    *this << ", executed: " << (I.executed ? "True" : "False"); 
+    *this << ", disassembly: \"" << I.disassembly << '"';
+    *this << "}\n";
 }
 
 } // namespace SCA
