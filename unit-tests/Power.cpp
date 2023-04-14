@@ -221,6 +221,13 @@ TEST_F(YAMLInstrDumperF, Base) {
         // clang-format on
     };
 
+    const vector<uint64_t> regBankState[2] = {
+        // clang-format off
+        { 0, 1, 2, 3},
+        { 4, 5, 6, 7},
+        // clang-format on        
+    };
+
     std::ostringstream s;
     YAMLInstrDumper ID1(s);
 
@@ -259,6 +266,64 @@ TEST_F(YAMLInstrDumperF, Base) {
         "    - { pc: 0x832a, opcode: 0x4408, size: 16, executed: True, disassembly: \"add r0,r1\"}"
         // clang-format on
     }));
+
+    // Check Memory accesses can be dumped.
+    s.str("");
+    YAMLInstrDumper ID3(s, true, true, false);
+    ID3.dump(I[0]);
+    ID3.dump(I[1]);
+    ID3.flush();
+    EXPECT_EQ(s.str(),
+              "instr:\n  - \n    - { pc: 0x8326, opcode: 0xf8db0800, size: 32, "
+              "executed: True, disassembly: \"ldr.w r0,[r11,#2048]\", loads: "
+              "[[0x261331776, 4, 0xdeadbeef]], stores: []}\n    - { "
+              "pc: 0x832a, opcode: 0x4408, size: 16, executed: True, "
+              "disassembly: \"add r0,r1\", loads: [], stores: []}\n");
+
+    // Check reg bank state can be dumped.
+    s.str("");
+    YAMLInstrDumper ID4(s, true, false, true);
+    ID4.dump(I[0]);
+    ID4.dump(I[1]);
+    ID4.flush();
+    EXPECT_EQ(s.str(),
+              "instr:\n  - \n    - { pc: 0x8326, opcode: 0xf8db0800, size: 32, "
+              "executed: True, disassembly: \"ldr.w r0,[r11,#2048]\"}\n    - { "
+              "pc: 0x832a, opcode: 0x4408, size: 16, executed: True, "
+              "disassembly: \"add r0,r1\"}\n");
+    s.str("");
+    ID4.dump(I[0], regBankState[0]);
+    ID4.dump(I[1], regBankState[1]);
+    ID4.flush();
+    EXPECT_EQ(s.str(),
+              "    - { pc: 0x8326, opcode: 0xf8db0800, size: 32, "
+              "executed: True, disassembly: \"ldr.w r0,[r11,#2048]\", regbank: "
+              "[ 0x0, 0x1, 0x2, 0x3]}\n    - { "
+              "pc: 0x832a, opcode: 0x4408, size: 16, executed: True, "
+              "disassembly: \"add r0,r1\", regbank: [ 0x4, 0x5, 0x6, 0x7]}\n");
+    
+    // Check reg bank state is not dumped when not enabled.
+    s.str("");
+    YAMLInstrDumper ID5(s, true, false, false);
+    ID5.dump(I[0], regBankState[0]);
+    EXPECT_EQ(s.str(),
+              "instr:\n  - \n    - { pc: 0x8326, opcode: 0xf8db0800, size: 32, "
+              "executed: True, disassembly: \"ldr.w r0,[r11,#2048]\"}\n");
+    
+    // Check memory accesses and reg bank states can be dumped.
+    s.str("");
+    YAMLInstrDumper ID6(s, true, true, true);
+    ID6.dump(I[0], regBankState[0]);
+    ID6.dump(I[1], regBankState[1]);
+    ID6.flush();
+    EXPECT_EQ(s.str(),
+              "instr:\n  - \n    - { pc: 0x8326, opcode: 0xf8db0800, size: 32, "
+              "executed: True, disassembly: \"ldr.w r0,[r11,#2048]\", loads: "
+              "[[0x261331776, 4, 0xdeadbeef]], stores: [], regbank: [ 0x0, "
+              "0x1, 0x2, 0x3]}\n    - { "
+              "pc: 0x832a, opcode: 0x4408, size: 16, executed: True, "
+              "disassembly: \"add r0,r1\", loads: [], stores: [], regbank: [ "
+              "0x4, 0x5, 0x6, 0x7]}\n");
 }
 
 struct PowerFields {
@@ -439,10 +504,9 @@ struct TestMemAccessesDumper : public MemoryAccessesDumper {
 
 // A mock for testing instruction dumps.
 struct TestInstrDumper : public InstrDumper {
-    TestInstrDumper(bool enabled = false)
-        : InstrDumper(enabled), instr_count(0) {}
-
-    void dump(const ReferenceInstruction &I) override { instr_count++; }
+    TestInstrDumper(bool enabled = false, bool dumpMemAccess = false,
+                    bool dumpRegBank = false)
+        : InstrDumper(enabled, dumpMemAccess, dumpRegBank), instr_count(0) {}
 
     size_t num_instructions() const { return instr_count; }
 
@@ -450,6 +514,11 @@ struct TestInstrDumper : public InstrDumper {
 
   private:
     size_t instr_count;
+
+    void dumpImpl(const ReferenceInstruction &I,
+                  const vector<uint64_t> *regs) override {
+        instr_count++;
+    }
 };
 
 class TestOracle : public PowerTrace::OracleBase {

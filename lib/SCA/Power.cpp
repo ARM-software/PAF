@@ -500,12 +500,13 @@ namespace PAF {
             unsigned cycles = pwr->cycles();
             Timing.add(I.pc, cycles);
             pwr->dump(&I);
+            const auto regBank = Oracle.getRegBankState(I.time);
             if (RbDumper.enabled())
-                RbDumper.dump(Oracle.getRegBankState(I.time));
+                RbDumper.dump(regBank);
             if (MADumper.enabled())
                 MADumper.dump(I.pc, I.memaccess);
             if (IDumper.enabled())
-                IDumper.dump(I);
+                IDumper.dump(I, regBank);
 
             // Insert dummy cycles when needed if we are not at the end of the
             // sequence.

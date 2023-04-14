@@ -281,7 +281,7 @@ int main(int argc, char **argv) {
     unique_ptr<PAF::SCA::YAMLMemoryAccessesDumper> MADumper(
         new PAF::SCA::YAMLMemoryAccessesDumper(MemoryAccessesTraceFilename));
     unique_ptr<PAF::SCA::YAMLInstrDumper> IDumper(
-        new PAF::SCA::YAMLInstrDumper(InstructionTraceFilename));
+        new PAF::SCA::YAMLInstrDumper(InstructionTraceFilename, true, true));
 
     for (const auto &trace : tu.traces) {
         if (tu.is_verbose())

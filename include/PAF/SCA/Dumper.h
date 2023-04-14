@@ -239,33 +239,54 @@ class YAMLMemoryAccessesDumper : public MemoryAccessesDumper,
 class InstrDumper : public Dumper {
   public:
     /// Construct a MemoryAccessesDumper.
-    InstrDumper(bool enable) : Dumper(enable) {}
+    InstrDumper(bool enable, bool dumpMemAccess = false,
+                bool dumpRegBank = false)
+        : Dumper(enable), dumpMemAccess(dumpMemAccess),
+          dumpRegBank(dumpRegBank) {}
 
     /// Dump this instruction.
-    virtual void dump(const ReferenceInstruction &I) = 0;
+    void dump(const ReferenceInstruction &I) { dumpImpl(I, nullptr); }
+
+    /// Dump this instruction and the register bank state (if regbank dumping is
+    /// enabled).
+    void dump(const ReferenceInstruction &I,
+              const std::vector<uint64_t> &regs) {
+        dumpImpl(I, &regs);
+    }
 
     /// Destruct this InstrDumper.
     virtual ~InstrDumper() {}
+
+  protected:
+    bool dumpMemAccess;
+    bool dumpRegBank;
+
+    /// Dump this instruction.
+    virtual void dumpImpl(const ReferenceInstruction &I,
+                      const std::vector<uint64_t> *regs) = 0;
 };
 
 /// The YAMLInstrDumper class will dump a trace of instructions to a
 /// file in YAML format .
-class YAMLInstrDumper : public InstrDumper,
-                        public YAMLDumper {
+class YAMLInstrDumper : public InstrDumper, public YAMLDumper {
   public:
     /// Construct a FileMemoryAccessesDumper that will dump its content to file
     /// \a filename in YAML format.
-    YAMLInstrDumper(const std::string &filename);
+    YAMLInstrDumper(const std::string &filename, bool dumpMemAccess = false,
+                    bool dumpRegBank = false);
 
-    /// Construct a FileMemoryAccessesDumper that will dump its content to stream
-    /// \a os in YAML format.
-    YAMLInstrDumper(std::ostream &os, bool enable = true);
+    /// Construct a FileMemoryAccessesDumper that will dump its content to
+    /// stream \a os in YAML format.
+    YAMLInstrDumper(std::ostream &os, bool enable = true,
+                    bool dumpMemAccess = false, bool dumpRegBank = false);
 
     /// Update state when switching to next trace.
     void next_trace() override { this->YAMLDumper::next_trace(); };
 
+  private:
     /// Dump memory accesses performed by instruction at pc.
-    void dump(const ReferenceInstruction &I) override;
+    void dumpImpl(const ReferenceInstruction &I,
+                  const std::vector<uint64_t> *regs) override;
 };
 
 } // namespace SCA
