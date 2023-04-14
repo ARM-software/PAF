@@ -311,9 +311,9 @@ int main(int argc, char **argv) {
             reporter->errx(EXIT_FAILURE,
                            "Analysis range not found in the trace file");
 
-
         unique_ptr<PowerTrace::OracleBase> Oracle(
-            (PAConfig.isHammingDistance() || RbDumper->enabled())
+            (PAConfig.isHammingDistance() || RbDumper->enabled() ||
+             IDumper->enabled())
                 ? new PowerTrace::MTAOracle(PA, CPU.get())
                 : new PowerTrace::OracleBase());
 
