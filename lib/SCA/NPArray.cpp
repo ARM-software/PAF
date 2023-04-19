@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: <text>Copyright 2021,2022 Arm Limited and/or its
+ * SPDX-FileCopyrightText: <text>Copyright 2021,2022,2023 Arm Limited and/or its
  * affiliates <open-source-office@arm.com></text>
  * SPDX-License-Identifier: Apache-2.0
  *
@@ -31,131 +31,170 @@ using std::unique_ptr;
 using std::vector;
 
 namespace {
-bool expect(const string &buf, size_t &pos, char c) {
-    if (pos < buf.size() && buf[pos] == c) {
-        pos++;
-        return true;
+
+/// The LWParser class provides simple low-level parser routines that can be
+/// used to create a more complex recursive descent parser.
+class LWParser {
+  public:
+    /// Construct a parser instance for the string in \p buf, starting at
+    /// position \p pos.
+    LWParser(const std::string &buf, size_t pos = 0) : buf(buf), pos(pos) {}
+
+    /// Advance position while white spaces \p ws can be skipped.
+    void skip_ws(char ws = ' ') noexcept {
+        while (!end() && buf[pos] == ws)
+            pos++;
     }
 
-    return false;
-}
-
-void skip_ws(const string &buf, size_t &pos) {
-    while (pos < buf.size() && buf[pos] == ' ')
-        pos++;
-}
-
-bool parse_string(const string &buf, size_t &pos, string &value) {
-    size_t p = pos;
-    if (p >= buf.size())
-        return false;
-
-    if (!expect(buf, p, '\''))
-        return false;
-
-    if (p >= buf.size())
-        return false;
-
-    size_t e = buf.find('\'', p);
-    if (e == string::npos) {
-        return false;
-    }
-
-    value = string(buf, p, e - p);
-    pos = e + 1;
-
-    return true;
-}
-
-bool parse_uint(const string &buf, size_t &pos, size_t &value) {
-    size_t v = 0;
-    size_t p = pos;
-
-    if (p >= buf.size() || buf[p] < '0' || buf[p] > '9')
-        return false;
-
-    while (p < buf.size() && buf[p] >= '0' && buf[p] <= '9') {
-        v = v * 10 + (buf[p] - '0');
-        p++;
-    }
-
-    value = v;
-    pos = p;
-    return true;
-}
-
-bool parse_bool(const string &buf, size_t &pos, bool &value) {
-    size_t p = pos;
-    if (p >= buf.size())
-        return false;
-
-    const char False[] = "False";
-    if (buf[p] == False[0]) {
-        for (unsigned i = 1; i < sizeof(False) - 1; i++) {
-            if (p + i >= buf.size() || buf[p + i] != False[i])
-                return false;
+    /// Returns True (and advance position) iff the next character is \p c.
+    bool expect(char c) noexcept {
+        if (!end() && buf[pos] == c) {
+            pos++;
+            return true;
         }
-        pos = p + sizeof(False) - 1;
-        value = false;
+
+        return false;
+    }
+
+    /// Get the character at the current position.
+    char peek() const noexcept {
+        assert(!end() && "Can not peek out of bounds character");
+        return buf[pos];
+    }
+
+    /// Parse a string value. The string is assumed to be all characters between
+    /// \p marker.
+    bool parse(string &value, char marker = '\'') noexcept {
+        if (end())
+            return false;
+
+        size_t p = pos;
+        if (buf[p] != marker)
+            return false;
+
+        p += 1;
+
+        if (p >= buf.size())
+            return false;
+
+        size_t e = buf.find(marker, p);
+        if (e == string::npos)
+            return false;
+
+        value = string(buf, p, e - p);
+        pos = e + 1;
+
         return true;
     }
 
-    const char True[] = "True";
-    if (buf[p] == True[0]) {
-        for (unsigned i = 1; i < sizeof(True) - 1; i++)
-            if (p + i >= buf.size() || buf[p + i] != True[i])
-                return false;
-        pos = p + sizeof(True) - 1;
-        value = true;
+    /// Parse an unsigned integer value in decimal form.
+    bool parse(size_t &value) noexcept {
+        if (end())
+            return false;
+
+        size_t v = 0;
+        size_t p = pos;
+
+        if (buf[p] < '0' || buf[p] > '9')
+            return false;
+
+        while (p < buf.size() && buf[p] >= '0' && buf[p] <= '9') {
+            v = v * 10 + (buf[p] - '0');
+            p++;
+        }
+
+        value = v;
+        pos = p;
         return true;
     }
 
-    return false;
-}
+    /// Parse a boolean value (encoded as True or False).
+    bool parse(bool &value) noexcept {
+        if (end())
+            return false;
+
+        size_t p = pos;
+        const char False[] = "False";
+        if (buf[p] == False[0]) {
+            for (unsigned i = 1; i < sizeof(False) - 1; i++) {
+                if (p + i >= buf.size() || buf[p + i] != False[i])
+                    return false;
+            }
+            pos = p + sizeof(False) - 1;
+            value = false;
+            return true;
+        }
+
+        const char True[] = "True";
+        if (buf[p] == True[0]) {
+            for (unsigned i = 1; i < sizeof(True) - 1; i++)
+                if (p + i >= buf.size() || buf[p + i] != True[i])
+                    return false;
+            pos = p + sizeof(True) - 1;
+            value = true;
+            return true;
+        }
+
+        return false;
+    }
+
+    /// Get the cursor position in the buffer.
+    size_t position() const noexcept { return pos; }
+
+    /// Get the buffer content, from the current position.
+    std::string buffer() const noexcept { return buf.substr(pos); }
+
+    /// Have we reached the end of the buffer ?
+    bool end() const noexcept { return pos >= buf.size(); }
+
+  private:
+    const std::string &buf;
+    size_t pos;
+};
 
 bool parse_header(const string &header, string &descr, bool &fortran_order,
                   vector<size_t> &shape, const char **errstr) {
-    size_t pos = 0;
+    LWParser H(header);
 
-    if (expect(header, pos, '{')) {
+    if (H.expect('{')) {
         bool order_found = false;
         bool shape_found = false;
         bool descr_found = false;
 
         // 3 fields are expected (in random order).
         while (true) {
-            skip_ws(header, pos);
+            H.skip_ws();
 
             // We reach the end of the record.
-            if (expect(header, pos, '}'))
+            if (H.expect('}'))
                 break;
 
             string field;
-            if (!parse_string(header, pos, field)) {
+            if (!H.parse(field)) {
                 if (errstr)
                     *errstr = "error parsing field in header";
                 return false;
             }
 
-            skip_ws(header, pos);
+            H.skip_ws();
 
-            if (!expect(header, pos, ':')) {
+            if (!H.expect(':')) {
                 if (errstr)
-                    *errstr = "can not find the field / value separator";
+                    *errstr = "can not find the ':' field / value separator";
                 return false;
             }
 
-            skip_ws(header, pos);
+            H.skip_ws();
 
             if (field == "descr") {
-                if (!parse_string(header, pos, descr)) {
+                if (!H.parse(descr)) {
                     if (errstr)
                         *errstr = "parse error for the value of field 'descr'";
                     return false;
                 }
                 descr_found = true;
             } else if (field == "fortran_order") {
-                if (!parse_bool(header, pos, fortran_order)) {
+                if (!H.parse(fortran_order)) {
                     if (errstr)
                         *errstr = "parse error for the value of field "
                                   "'fortran_order'";
@@ -164,27 +203,27 @@ bool parse_header(const string &header, string &descr, bool &fortran_order,
                 order_found = true;
             } else if (field == "shape") {
                 // Parse a tuple of int.
-                if (!expect(header, pos, '(')) {
+                if (!H.expect('(')) {
                     if (errstr)
-                        *errstr = "can not find the opening ( for tuple";
+                        *errstr = "can not find the opening '(' for tuple";
                     return false;
                 }
                 while (true) {
-                    skip_ws(header, pos);
-                    if (expect(header, pos, ')'))
+                    H.skip_ws();
+                    if (H.expect(')'))
                         break;
                     size_t dim;
-                    if (!parse_uint(header, pos, dim)) {
+                    if (!H.parse(dim)) {
                         if (errstr)
                             *errstr = "failed to parse integer";
                         return false;
                     }
                     shape.push_back(dim);
-                    skip_ws(header, pos);
-                    if (header[pos] != ')' && !expect(header, pos, ',')) {
+                    H.skip_ws();
+                    if (H.peek() != ')' && !H.expect(',')) {
                         if (errstr)
                             *errstr =
-                                "can not find the , separting tuple members";
+                                "can not find the ',' separating tuple members";
                         return false;
                     }
                 }
@@ -195,10 +234,10 @@ bool parse_header(const string &header, string &descr, bool &fortran_order,
                 return false;
             }
 
-            skip_ws(header, pos);
+            H.skip_ws();
 
             // There might be yet another member.
-            if (header[pos] != '}' && !expect(header, pos, ',')) {
+            if (H.peek() != '}' && !H.expect(',')) {
                 if (errstr)
                     *errstr =
                         "can not find the ',' separating struct members'}')";
