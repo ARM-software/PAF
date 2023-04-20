@@ -25,6 +25,35 @@ using std::string;
 namespace PAF {
 namespace SCA {
 
+bool LWParser::parse(std::string &id) noexcept {
+    if (end())
+        return false;
+
+    bool first = true;
+    size_t p = pos;
+    while (p < buf.size()) {
+        char c = buf[p];
+        if (('a' <= c && c <= 'z') || ('A' <= c && c <= 'Z') || c == '_') {
+            p += 1;
+            first = false;
+            continue;
+        }
+        if (!first && '0' <= c && c <= '9') {
+            p += 1;
+            continue;
+        }
+        break;
+    }
+
+    if (p != pos) {
+        id = buf.substr(pos, p - pos);
+        pos = p;
+        return true;
+    }
+
+    return false;
+}
+
 bool LWParser::parse(std::string &value, char marker) noexcept {
     if (end())
         return false;
@@ -97,5 +126,31 @@ bool LWParser::parse(bool &value) noexcept {
     return false;
 }
 
+bool LWParser::get_parenthesized_subexpr(std::string &subexpr, char opening,
+                                         char closing) noexcept {
+    if (end() || buf[pos] != opening || pos + 1 == buf.size())
+        return false;
+
+    int nesting = 1;
+    for (size_t p = pos + 1; p < buf.size(); p++) {
+        if (buf[p] == opening) {
+            nesting++;
+            continue;
+        }
+        if (buf[p] == closing) {
+            nesting--;
+            if (nesting < 0)
+                return false;
+            if (nesting == 0) {
+                subexpr = buf.substr(pos + 1, p - pos - 1);
+                pos = p + 1;
+                return true;
+            }
+            continue;
+        }
+    }
+
+    return false;
+}
 } // namespace SCA
 } // namespace PAF

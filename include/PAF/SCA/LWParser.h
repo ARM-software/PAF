@@ -53,6 +53,14 @@ class LWParser {
         return false;
     }
 
+    /// Advance position iff the next character is \p c. The difference with
+    /// expect is that is does not return if the parser was able to actually
+    /// consume \p c.
+    void consume(char c) noexcept {
+        if (!end() && buf[pos] == c)
+            pos++;
+    }
+
     /// Get the character at the current position.
     char peek() const noexcept {
         assert(!end() && "Can not peek out of bounds character");
@@ -66,6 +74,12 @@ class LWParser {
     /// \invariant The internal buffer is not modified.
     bool parse(std::string &value, char marker) noexcept;
 
+    /// Parse an identifier string. An identified is a sequence of characters
+    /// (A..Za..z and _). It may contain digits (0..9), but not at the start.
+    ///
+    /// \invariant The internal buffer is not modified.
+    bool parse(std::string &id) noexcept;
+
     /// Parse an unsigned integer value in decimal form. The cursor position is
     /// modified iff parsing the integer value succeeds.
     ///
@@ -78,16 +92,46 @@ class LWParser {
     /// \invariant The internal buffer is not modified.
     bool parse(bool &value) noexcept;
 
+    /// Assuming the character at the current position is \p opening (typically
+    /// an opening parenthesis, square bracket, brace, ...), find the matching
+    /// \p closing parenthesis (with potential nesting). On success, it will
+    /// return true and the corresponding substring in \p subexpr, and update
+    /// the buffer position to after the matched parenthesized expression. On
+    /// failure, it will return false and not alter the buffer position or the
+    /// result string \p subexpr.
+    ///
+    /// \invariant The internal buffer is not modified.
+    bool get_parenthesized_subexpr(std::string &subexpr, char opening,
+                                   char closing) noexcept;
+
     /// Get the cursor position in the buffer.
     size_t position() const noexcept { return pos; }
 
-    /// Get the buffer content, from the current position.
-    std::string buffer() const noexcept { return buf.substr(pos); }
+    /// Get the buffer content, from the current position to the end of the
+    /// buffer.
+    std::string buffer() const noexcept {
+        assert(pos <= buf.size() && "Out of bounds position in the buffer");
+        return buf.substr(pos);
+    }
 
     /// Have we reached the end of the buffer ?
     bool end() const noexcept { return pos >= buf.size(); }
 
-  private:
+    /// Get the remaining count of characters left to parse in the internal buffer.
+    size_t count() const noexcept {
+        if (end())
+            return 0;
+        return buf.size() - pos;
+    }
+
+    /// Reset the buffer's position to \p p.
+    LWParser &reset(size_t p = 0) {
+        assert(p <= buf.size() && "Can not reset to an out-of-bound position.");
+        pos = p;
+        return *this;
+    }
+
+  protected:
     std::string buf;
     size_t pos;
 };
