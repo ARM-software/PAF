@@ -1,4 +1,4 @@
-# SPDX-FileCopyrightText: <text>Copyright 2021,2022 Arm Limited and/or its
+# SPDX-FileCopyrightText: <text>Copyright 2021,2022,2023 Arm Limited and/or its
 # affiliates <open-source-office@arm.com></text>
 # SPDX-License-Identifier: Apache-2.0
 #
@@ -63,6 +63,7 @@ add_paf_gtest(ArchInfo)
 add_paf_gtest(Expr)
 add_paf_gtest(Fault)
 add_paf_gtest(Intervals)
+add_paf_gtest(LWParser)
 add_paf_gtest(Misc)
 add_paf_gtest(Noise)
 add_paf_gtest(NPArray)

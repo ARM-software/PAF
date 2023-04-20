@@ -18,6 +18,7 @@
  * This file is part of PAF, the Physical Attack Framework.
  */
 
+#include "PAF/SCA/LWParser.h"
 #include "PAF/SCA/NPArray.h"
 
 #include <cstdint>
@@ -30,127 +31,9 @@ using std::string;
 using std::unique_ptr;
 using std::vector;
 
+using PAF::SCA::LWParser;
+
 namespace {
-
-/// The LWParser class provides simple low-level parser routines that can be
-/// used to create a more complex recursive descent parser.
-class LWParser {
-  public:
-    /// Construct a parser instance for the string in \p buf, starting at
-    /// position \p pos.
-    LWParser(const std::string &buf, size_t pos = 0) : buf(buf), pos(pos) {}
-
-    /// Advance position while white spaces \p ws can be skipped.
-    void skip_ws(char ws = ' ') noexcept {
-        while (!end() && buf[pos] == ws)
-            pos++;
-    }
-
-    /// Returns True (and advance position) iff the next character is \p c.
-    bool expect(char c) noexcept {
-        if (!end() && buf[pos] == c) {
-            pos++;
-            return true;
-        }
-
-        return false;
-    }
-
-    /// Get the character at the current position.
-    char peek() const noexcept {
-        assert(!end() && "Can not peek out of bounds character");
-        return buf[pos];
-    }
-
-    /// Parse a string value. The string is assumed to be all characters between
-    /// \p marker.
-    bool parse(string &value, char marker = '\'') noexcept {
-        if (end())
-            return false;
-
-        size_t p = pos;
-        if (buf[p] != marker)
-            return false;
-
-        p += 1;
-
-        if (p >= buf.size())
-            return false;
-
-        size_t e = buf.find(marker, p);
-        if (e == string::npos)
-            return false;
-
-        value = string(buf, p, e - p);
-        pos = e + 1;
-
-        return true;
-    }
-
-    /// Parse an unsigned integer value in decimal form.
-    bool parse(size_t &value) noexcept {
-        if (end())
-            return false;
-
-        size_t v = 0;
-        size_t p = pos;
-
-        if (buf[p] < '0' || buf[p] > '9')
-            return false;
-
-        while (p < buf.size() && buf[p] >= '0' && buf[p] <= '9') {
-            v = v * 10 + (buf[p] - '0');
-            p++;
-        }
-
-        value = v;
-        pos = p;
-        return true;
-    }
-
-    /// Parse a boolean value (encoded as True or False).
-    bool parse(bool &value) noexcept {
-        if (end())
-            return false;
-
-        size_t p = pos;
-        const char False[] = "False";
-        if (buf[p] == False[0]) {
-            for (unsigned i = 1; i < sizeof(False) - 1; i++) {
-                if (p + i >= buf.size() || buf[p + i] != False[i])
-                    return false;
-            }
-            pos = p + sizeof(False) - 1;
-            value = false;
-            return true;
-        }
-
-        const char True[] = "True";
-        if (buf[p] == True[0]) {
-            for (unsigned i = 1; i < sizeof(True) - 1; i++)
-                if (p + i >= buf.size() || buf[p + i] != True[i])
-                    return false;
-            pos = p + sizeof(True) - 1;
-            value = true;
-            return true;
-        }
-
-        return false;
-    }
-
-    /// Get the cursor position in the buffer.
-    size_t position() const noexcept { return pos; }
-
-    /// Get the buffer content, from the current position.
-    std::string buffer() const noexcept { return buf.substr(pos); }
-
-    /// Have we reached the end of the buffer ?
-    bool end() const noexcept { return pos >= buf.size(); }
-
-  private:
-    const std::string &buf;
-    size_t pos;
-};
 
 bool parse_header(const string &header, string &descr, bool &fortran_order,
                   vector<size_t> &shape, const char **errstr) {
@@ -170,7 +53,7 @@ bool parse_header(const string &header, string &descr, bool &fortran_order,
                 break;
 
             string field;
-            if (!H.parse(field)) {
+            if (!H.parse(field, '\'')) {
                 if (errstr)
                     *errstr = "error parsing field in header";
                 return false;
@@ -187,7 +70,7 @@ bool parse_header(const string &header, string &descr, bool &fortran_order,
             H.skip_ws();
 
             if (field == "descr") {
-                if (!H.parse(descr)) {
+                if (!H.parse(descr, '\'')) {
                     if (errstr)
                         *errstr = "parse error for the value of field 'descr'";
                     return false;

@@ -1,4 +1,4 @@
-# SPDX-FileCopyrightText: <text>Copyright 2021,2022 Arm Limited and/or its
+# SPDX-FileCopyrightText: <text>Copyright 2021,2022,2023 Arm Limited and/or its
 # affiliates <open-source-office@arm.com></text>
 # SPDX-License-Identifier: Apache-2.0
 #
@@ -29,6 +29,7 @@ set(LIBSCA_PUBLIC_HEADERS
 set(LIBSCA_SOURCES
   Dumper.cpp
   Expr.cpp
+  LWParser.cpp
   NPArray.cpp
   correl.cpp
   sca-apps.cpp
