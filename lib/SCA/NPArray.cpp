@@ -25,6 +25,7 @@
 
 using std::ifstream;
 using std::ofstream;
+using std::ostream;
 using std::string;
 using std::unique_ptr;
 using std::vector;
@@ -303,17 +304,16 @@ bool NPArrayBase::get_information(ifstream &ifs, unsigned &major,
     return true;
 }
 
-bool NPArrayBase::save(const char *filename, const std::string &descr,
-                       const std::string &shape) const {
-    ofstream ofs(filename, ofstream::binary);
-    if (!ofs)
+bool NPArrayBase::save(ostream &os, const string &descr,
+                       const string &shape) const {
+    if (!os)
         return false;
 
     // Write magic number.
-    ofs.write(NPY_MAGIC, sizeof(NPY_MAGIC));
+    os.write(NPY_MAGIC, sizeof(NPY_MAGIC));
 
     const char NPY_VERSION[] = {1, 0};
-    ofs.write(NPY_VERSION, sizeof(NPY_VERSION));
+    os.write(NPY_VERSION, sizeof(NPY_VERSION));
 
     // Prepare header.
     string header = "{'descr': '";
@@ -336,15 +336,25 @@ bool NPArrayBase::save(const char *filename, const std::string &descr,
         char(header.size() & 0x0FF),
         char((header.size() >> 8) & 0x0FF),
     };
-    ofs.write(hl, sizeof(hl));
+    os.write(hl, sizeof(hl));
 
     // Write header.
-    ofs.write(header.c_str(), header.size());
+    os.write(header.c_str(), header.size());
 
     // And now write our data blob;
-    ofs.write(data.get(), size() * element_size());
+    os.write(data.get(), size() * element_size());
 
     return true;
+}
+
+bool NPArrayBase::save(const char *filename, const string &descr,
+                       const string &shape) const {
+    ofstream ofs(filename, ofstream::binary);
+
+    if (!ofs)
+        return false;
+
+    return save(ofs, descr, shape);
 }
 
 NPArrayBase::NPArrayBase(const char *filename, bool floating,

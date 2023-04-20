@@ -20,6 +20,7 @@
 
 #include "PAF/SCA/sca-apps.h"
 #include "PAF/SCA/utils.h"
+#include "PAF/SCA/NPArray.h"
 
 #include "libtarmac/reporter.hh"
 
@@ -58,6 +59,8 @@ SCAApp::SCAApp(const char *appname, int argc, char *argv[])
              [this]() { output_format = OutputBase::OUTPUT_PYTHON; });
     optnoval({"-g", "--gnuplot"}, "emit results in gnuplot compatible format.",
              [this]() { output_format = OutputBase::OUTPUT_GNUPLOT; });
+    optnoval({"--numpy"}, "emit results in numpy format.",
+             [this]() { output_format = OutputBase::OUTPUT_NUMPY; });
     optnoval({"--perfect"}, "assume perfect inputs (i.e. no noise).",
              [this]() { perfect = true; });
 
@@ -75,11 +78,13 @@ void SCAApp::setup() {
     out.reset(OutputBase::create(output_type(), output_filename(), append()));
 }
 
-OutputBase::OutputBase(const std::string &filename, bool append)
+OutputBase::OutputBase(const std::string &filename, bool append, bool binary)
     : using_file(filename.size() != 0), out(nullptr) {
     if (using_file) {
-        out = new ofstream(filename.c_str(),
-                           append ? ofstream::app : ofstream::out);
+        auto openmode = append ? ofstream::app : ofstream::out;
+        if (binary)
+            openmode |= ofstream::binary;
+        out = new ofstream(filename.c_str(), openmode);
         if (!out)
             reporter->errx(EXIT_FAILURE, "can not open output file '%s'",
                            filename.c_str());
@@ -96,7 +101,7 @@ OutputBase::~OutputBase() {
 class TerseOutput : public OutputBase {
   public:
     TerseOutput(const std::string &filename, bool append = true)
-        : OutputBase(filename, append) {}
+        : OutputBase(filename, append, /* binary: */ false) {}
 
     virtual void emit(const std::vector<double> &values, unsigned decimate,
                       unsigned offset) override {
@@ -111,7 +116,8 @@ class TerseOutput : public OutputBase {
 class GnuplotOutput : public OutputBase {
   public:
     GnuplotOutput(const std::string &filename, bool append = true)
-        : OutputBase(filename, append) {}
+        : OutputBase(filename, append, /* binary: */ false) {}
+
     virtual void emit(const std::vector<double> &values, unsigned decimate,
                       unsigned offset) override {
         assert(decimate > 0 && "decimate can not be 0");
@@ -123,6 +129,26 @@ class GnuplotOutput : public OutputBase {
 
         *out << "# max = " << max_v << " at index " << (max_index / decimate)
              << '\n';
+    }
+};
+
+class NumpyOutput : public OutputBase {
+  public:
+    NumpyOutput(const std::string &filename)
+        : OutputBase(filename, false, /* binary: */ true) {}
+
+    virtual void emit(const std::vector<double> &values, unsigned decimate,
+                      unsigned offset) override {
+        assert(decimate > 0 && "decimate can not be 0");
+        if (decimate == 1) {
+            NPArray<double> NP(values.data(), 1, values.size());
+            NP.save(*out);
+        } else {
+            NPArray<double> NP(1, values.size() / decimate);
+            for (size_t i = 0; i < NP.cols(); i++)
+                NP(0, i) = values[i * decimate + offset];
+            NP.save(*out);
+        }
     }
 };
 
@@ -151,6 +177,8 @@ OutputBase *OutputBase::create(OutputType ty, const std::string &filename,
         return new GnuplotOutput(filename, append);
     case OUTPUT_PYTHON:
         return new PythonOutput(filename, append);
+    case OUTPUT_NUMPY:
+        return new NumpyOutput(filename);
     }
 }
 

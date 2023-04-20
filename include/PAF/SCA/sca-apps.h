@@ -41,7 +41,8 @@ class OutputBase {
     /// Construct an OutputBase object that will write to filename. Data will
     /// be appended if append to filename if it already exists if append is set
     /// to true, and filename will be overridden otherwise.
-    OutputBase(const std::string &filename, bool append = true);
+    OutputBase(const std::string &filename, bool append = true,
+               bool binary = false);
 
     /// Abstract method to write some values to this output.
     virtual void emit(const std::vector<double> &values, unsigned decimate,
@@ -49,7 +50,12 @@ class OutputBase {
     virtual ~OutputBase();
 
     /// The different output formats supported by SCA applications.
-    enum OutputType { OUTPUT_TERSE, OUTPUT_GNUPLOT, OUTPUT_PYTHON };
+    enum OutputType {
+        OUTPUT_TERSE,
+        OUTPUT_GNUPLOT, ///< Output in gnuplot format
+        OUTPUT_PYTHON,  ///< Output in python format
+        OUTPUT_NUMPY    ///< Output in numpy format
+    };
 
     /// Factory method to get an Output object that will write the data to file
     /// filename in the format selected by ty.

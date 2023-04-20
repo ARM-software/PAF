@@ -177,6 +177,10 @@ class NPArrayBase {
     bool save(const char *filename, const std::string &descr,
               const std::string &shape) const;
 
+    /// Save to an output stream.
+    bool save(std::ostream &os, const std::string &descr,
+              const std::string &shape) const;
+
   protected:
     /// Get a pointer to type Ty to the array (const version).
     template <class Ty> const Ty *getAs() const noexcept {
@@ -192,6 +196,16 @@ class NPArrayBase {
         assert(size <= num_rows * num_columns * elt_size &&
                "data buffer size mismatch");
         memcpy(data.get(), buf, size);
+    }
+
+    /// Get the shape description for saving into a numpy file.
+    std::string shape() const {
+        std::string s("(");
+        s += std::to_string(rows());
+        s += ",";
+        s += std::to_string(cols());
+        s += ")";
+        return s;
     }
 
   private:
@@ -327,28 +341,17 @@ template <class Ty> class NPArray : public NPArrayBase {
 
     /// Save to file \p filename, in NPY format.
     bool save(const char *filename) const {
-        std::string descr;
-        if (std::is_floating_point<DataTy>())
-            descr += 'f';
-        else if (std::is_signed<DataTy>())
-            descr += 'i';
-        else
-            descr += 'u';
-        size_t s = sizeof(DataTy);
-        assert(s > 0 && s <= 8 && "unexpected datasize");
-        descr += char('0' + s);
-
-        std::string shape("(");
-        shape += std::to_string(rows());
-        shape += ",";
-        shape += std::to_string(cols());
-        shape += ")";
-        return this->NPArrayBase::save(filename, descr, shape);
+        return this->NPArrayBase::save(filename, descr(), shape());
     }
 
     /// Save to file \p filename, in NPY format.
     bool save(const std::string &filename) const {
         return save(filename.c_str());
+    }
+
+    /// Save to output stream \p os in numpy format.
+    bool save(std::ostream &os) const {
+        return this->NPArrayBase::save(os, descr(), shape());
     }
 
     /// The Row class is an adapter around an NPArray to provide a view
@@ -646,6 +649,22 @@ template <class Ty> class NPArray : public NPArrayBase {
     /// Provide a convenience shorthand for in-class operations (const
     /// version).
     Ty at(size_t row, size_t col) const { return (*this)(row, col); }
+
+    /// Get the numpy descriptor string to use when saving in a numpy file.
+    std::string descr() const {
+        std::string d;
+        if (std::is_floating_point<DataTy>())
+            d += 'f';
+        else if (std::is_signed<DataTy>())
+            d += 'i';
+        else
+            d += 'u';
+        size_t s = sizeof(DataTy);
+        assert(s > 0 && s <= 8 && "unexpected datasize");
+        d += char('0' + s);
+
+        return d;
+    }
 };
 
 /// Functional version of 'all' predicate checker on an NPArray for row / column
