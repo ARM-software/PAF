@@ -181,8 +181,11 @@ int main(int argc, char *argv[]) {
         }
 
         // Compute the metric.
-        mvalues = t_test(app.sample_start(), sample_to_stop_at, traces,
-                         classifier.get());
+        mvalues = app.is_perfect()
+                      ? perfect_t_test(app.sample_start(), sample_to_stop_at,
+                                       traces, classifier.get(), app.verbose())
+                      : t_test(app.sample_start(), sample_to_stop_at, traces,
+                               classifier.get());
     } break;
     }
 

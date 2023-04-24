@@ -75,6 +75,37 @@ std::vector<double> t_test(size_t b, size_t e, const std::vector<double> &m0,
                            const NPArray<double> &traces,
                            std::function<bool(size_t)> select);
 
+/// Compute the so-called perfect t-test between \p group0 and \p group1, from
+/// sample \p b to \p e.
+///
+/// This t-test is to be used when group0 and group1 have no noise (i.e.
+/// synthetic traces). For each sample number t, the perfect t-test will:
+///  - if variance(group0(t)) == 0 and variance(group1(t)) == 0:
+///      * if mean(group0(t)) == mean(group1(t)): t-value <- 0.0
+///      * else t-value <- 0.0 (do something else ?)
+///  - if variance(group0(t)) == 0 or variance(group1(t)) == 0, run a Student
+///  t-test.
+///  - run a Welsh t-test otherwise
+std::vector<double> perfect_t_test(size_t b, size_t e,
+                                   const NPArray<double> &group0,
+                                   const NPArray<double> &group1, bool verbose);
+
+/// Compute the so-called perfect t-test between 2 groups of traces from \p
+/// traces, grouped according to \p classifier, from sample \p b to \p e.
+///
+/// This t-test is to be used when group0 and group1 have no noise (i.e.
+/// synthetic traces). For each sample number t, the perfect t-test will:
+///  - if variance(group0(t)) == 0 and variance(group1(t)) == 0:
+///      * if mean(group0(t)) == mean(group1(t)): t-value <- 0.0
+///      * else t-value <- 0.0 (do something else ?)
+///  - if variance(group0(t)) == 0 or variance(group1(t)) == 0, run a Student
+///  t-test.
+///  - run a Welsh t-test otherwise
+std::vector<double> perfect_t_test(size_t b, size_t e,
+                                   const NPArray<double> &traces,
+                                   const Classification classifier[],
+                                   bool verbose);
+
 /// Compute the Pearson correlation, from samples \p b to
 /// \p e, on \p traces using the \p intermediate values.
 std::vector<double> correl(size_t b, size_t e, const NPArray<double> &traces,

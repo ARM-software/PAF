@@ -20,11 +20,14 @@
 
 #include "PAF/SCA/SCA.h"
 
+#include <array>
 #include <cassert>
 #include <cmath>
 #include <iostream>
 #include <memory>
 
+using std::array;
+using std::cout;
 using std::function;
 using std::sqrt;
 using std::vector;
@@ -183,6 +186,182 @@ vector<double> t_test(size_t b, size_t e, const vector<double> &m0,
         tvalue[s - b] = t_test(s, m0[s - b], traces, select);
 
     return tvalue;
+}
+
+namespace {
+class PerfectStats {
+  public:
+    enum TT {
+        SAME_CONSTANT_VALUE,
+        DIFFERENT_CONSTANT_VALUES,
+        STUDENT_T_TEST,
+        WELSH_T_TEST,
+        _LAST_STAT
+    };
+
+    PerfectStats() : cnt({0}) {}
+
+    void incr(TT t) { cnt[t] += 1; }
+    size_t count(TT t) const { return cnt[t]; }
+
+    void dump(std::ostream &os, size_t ns, size_t ntg0, size_t ntg1) const {
+        double num_points = ns;
+        os << "Num samples:" << ns << "\tNum traces:" << ntg0 << '+' << ntg1
+           << '\n';
+        os << "Same constant value: " << count(SAME_CONSTANT_VALUE) << " ("
+           << (100.0 * double(count(SAME_CONSTANT_VALUE)) / num_points)
+           << "%)\n";
+        os << "Different constant values: " << count(DIFFERENT_CONSTANT_VALUES)
+           << " ("
+           << (100.0 * double(count(DIFFERENT_CONSTANT_VALUES)) / num_points)
+           << "%)\n";
+        os << "Student t-test: " << count(STUDENT_T_TEST) << " ("
+           << (100.0 * double(count(STUDENT_T_TEST)) / num_points) << "%)\n";
+        os << "Welsh t-test: " << count(WELSH_T_TEST) << " ("
+           << (100.0 * double(count(WELSH_T_TEST)) / num_points) << "%)\n";
+    }
+
+  private:
+    array<size_t, _LAST_STAT> cnt;
+};
+} // namespace
+
+vector<double> perfect_t_test(size_t b, size_t e, const NPArray<double> &group0,
+                              const NPArray<double> &group1, bool verbose) {
+    assert(b <= e && "Wrong begin / end samples");
+    assert(b < group0.cols() && "Not that many samples in traces");
+    assert(e <= group0.cols() && "Not that many samples in traces");
+    assert(group0.cols() == group1.cols() && "Mismatch in number of columns");
+
+    PerfectStats PS;
+    vector<double> tt(e - b);
+
+    for (size_t s = b; s < e; s++) {
+        double group0Value = group0(0, s);
+        const bool isGroup0Constant =
+            group0.all(NPArray<double>::COLUMN, s,
+                       [&](double v) { return v == group0Value; });
+        double group1Value = group1(0, s);
+        const bool isGroup1Constant =
+            group1.all(NPArray<double>::COLUMN, s,
+                       [&](double v) { return v == group1Value; });
+
+        if (isGroup0Constant && isGroup1Constant) {
+            if (group0Value == group1Value) {
+                PS.incr(PerfectStats::SAME_CONSTANT_VALUE);
+                tt[s - b] = 0.0;
+            } else {
+                PS.incr(PerfectStats::DIFFERENT_CONSTANT_VALUES);
+                // TODO: report ?
+                tt[s - b] = 0.0;
+            }
+        } else if (isGroup0Constant || isGroup1Constant) {
+            PS.incr(PerfectStats::STUDENT_T_TEST);
+            if (isGroup0Constant)
+                tt[s - b] = t_test(s, group0Value, group1);
+            else
+                tt[s - b] = t_test(s, group1Value, group0);
+        } else {
+            PS.incr(PerfectStats::WELSH_T_TEST);
+            tt[s - b] = t_test(s, s + 1, group0, group1)[0];
+        }
+    }
+
+    if (verbose)
+        PS.dump(cout, tt.size(), group0.rows(), group1.rows());
+
+    return tt;
+}
+
+vector<double> perfect_t_test(size_t b, size_t e, const NPArray<double> &traces,
+                              const Classification classifier[], bool verbose) {
+    assert(b <= e && "Wrong begin / end samples");
+    assert(b < traces.cols() && "Not that many samples in traces");
+    assert(e <= traces.cols() && "Not that many samples in traces");
+
+    size_t group0Cnt = 0;
+    size_t group1Cnt = 0;
+    for (size_t t = 0; t < traces.rows(); t++)
+        switch (classifier[t]) {
+        case Classification::GROUP_0:
+            group0Cnt += 1;
+            break;
+        case Classification::GROUP_1:
+            group1Cnt += 1;
+            break;
+        case Classification::IGNORE:
+            break;
+        }
+
+    assert(group0Cnt > 1 && "Not enough samples in group0");
+    assert(group1Cnt > 1 && "Not enough samples in group1");
+
+    // Return a somehow sensible result if we reach this case.
+    if (group0Cnt <= 1 || group1Cnt <= 1)
+        return vector<double>();
+
+    function<bool(size_t)> selectGroup0 = [&classifier](size_t s) {
+        return classifier[s] == Classification::GROUP_0;
+    };
+    function<bool(size_t)> selectGroup1 = [&classifier](size_t s) {
+        return classifier[s] == Classification::GROUP_1;
+    };
+
+    PerfectStats PS;
+    vector<double> tt(e - b);
+
+    for (size_t s = b; s < e; s++) {
+        double group0Value, group1Value;
+        bool isGroup0Constant = true;
+        bool isGroup1Constant = true;
+        bool group0Init = false;
+        bool group1Init = false;
+
+        for (size_t t = 0; t < traces.rows(); t++)
+            switch (classifier[t]) {
+            case Classification::GROUP_0:
+                if (!group0Init) {
+                    group0Init = true;
+                    group0Value = traces(t, s);
+                } else if (isGroup0Constant && group0Value != traces(t, s))
+                    isGroup0Constant = false;
+                break;
+            case Classification::GROUP_1:
+                if (!group1Init) {
+                    group1Init = true;
+                    group1Value = traces(t, s);
+                } else if (isGroup1Constant && group1Value != traces(t, s))
+                    isGroup1Constant = false;
+                break;
+            case Classification::IGNORE:
+                break;
+            }
+
+        if (isGroup0Constant && isGroup1Constant) {
+            if (group0Value == group1Value) {
+                PS.incr(PerfectStats::SAME_CONSTANT_VALUE);
+                tt[s - b] = 0.0;
+            } else {
+                PS.incr(PerfectStats::DIFFERENT_CONSTANT_VALUES);
+                // TODO: report ?
+                tt[s - b] = 0.0;
+            }
+        } else if (isGroup0Constant || isGroup1Constant) {
+            PS.incr(PerfectStats::STUDENT_T_TEST);
+            if (isGroup0Constant)
+                tt[s - b] = t_test(s, group0Value, traces, selectGroup1);
+            else
+                tt[s - b] = t_test(s, group1Value, traces, selectGroup0);
+        } else {
+            PS.incr(PerfectStats::WELSH_T_TEST);
+            tt[s - b] = t_test(s, s + 1, traces, classifier)[0];
+        }
+    }
+
+    if (verbose)
+        PS.dump(cout, tt.size(), group0Cnt, group1Cnt);
+
+    return tt;
 }
 
 } // namespace SCA
