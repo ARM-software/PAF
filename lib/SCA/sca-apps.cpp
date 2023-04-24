@@ -49,7 +49,8 @@ SCAApp::SCAApp(const char *appname, int argc, char *argv[])
 
     // Output related options.
     optnoval({"-a", "--append"},
-             "append to output_file (instead of overwriting).",
+             "append to FILE (instead of overwriting, only available for terse "
+             "and python output formats).",
              [this]() { append_to_output = true; });
     optval({"-o", "--output"}, "FILE",
            "write output to FILE (instead of stdout).",

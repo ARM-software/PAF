@@ -1035,7 +1035,10 @@ The following options are recognized:
   Emit results in a format suitable for importing in python
 
 ``-g`` or ``--gnuplot``
-  Emit results in gnuplot compatible format.
+  Emit results in gnuplot compatible format
+
+``--numpy``
+  Emit results in num^y format
 
 ``-f S`` or ``--from=S``
   Start computation at sample S (default: 0)
@@ -1103,7 +1106,10 @@ The following options are recognized:
   Emit results in a format suitable for importing in python
 
 ``-g`` or ``--gnuplot``
-  Emit results in gnuplot compatible format.
+  Emit results in gnuplot compatible format
+
+``--numpy``
+  Emit results in num^y format
 
 ``-f S`` or ``--from=S``
   Start computation at sample S (default: 0)
@@ -1171,7 +1177,10 @@ The following options are recognized:
   Emit results in a format suitable for importing in python
 
 ``-g`` or ``--gnuplot``
-  Emit results in gnuplot compatible format.
+  Emit results in gnuplot compatible format
+
+``--numpy``
+  Emit results in num^y format
 
 ``-f S`` or ``--from=S``
   Start computation at sample S (default: 0)
