@@ -76,13 +76,28 @@ SCAApp::SCAApp(const char *appname, int argc, char *argv[])
 
 void SCAApp::setup() {
     parse();
+    // Ensure append_to_output has the correct value regarding the ouput format.
+    switch (output_format) {
+    case OutputBase::OUTPUT_GNUPLOT: /* fall-thru */
+    case OutputBase::OUTPUT_NUMPY:
+        append_to_output = false;
+        break;
+    case OutputBase::OUTPUT_TERSE: /* fall-thru */
+    case OutputBase::OUTPUT_PYTHON:
+        /* Leave the user setting as is*/
+        break;
+    }
+    if (nb_samples == 0)
+        nb_samples = std::numeric_limits<size_t>::max() - start_sample;
     out.reset(OutputBase::create(output_type(), output_filename(), append()));
 }
 
 OutputBase::OutputBase(const std::string &filename, bool append, bool binary)
     : using_file(filename.size() != 0), out(nullptr) {
     if (using_file) {
-        auto openmode = append ? ofstream::app : ofstream::out;
+        auto openmode = ofstream::out;
+        if (append)
+            openmode |= ofstream::app;
         if (binary)
             openmode |= ofstream::binary;
         out = new ofstream(filename.c_str(), openmode);
@@ -93,10 +108,22 @@ OutputBase::OutputBase(const std::string &filename, bool append, bool binary)
         out = &cout;
 }
 
+void OutputBase::flush() {
+    if (out)
+        out->flush();
+}
+
+void OutputBase::close() {
+    flush();
+    if (using_file && out) {
+        delete out;
+        out = nullptr;
+    }
+}
+
 OutputBase::~OutputBase() {
     // properly close file if one was opened.
-    if (using_file && out)
-        delete out;
+    close();
 }
 
 class TerseOutput : public OutputBase {
@@ -116,8 +143,8 @@ class TerseOutput : public OutputBase {
 
 class GnuplotOutput : public OutputBase {
   public:
-    GnuplotOutput(const std::string &filename, bool append = true)
-        : OutputBase(filename, append, /* binary: */ false) {}
+    GnuplotOutput(const std::string &filename)
+        : OutputBase(filename, /* append: */ false, /* binary: */ false) {}
 
     virtual void emit(const std::vector<double> &values, unsigned decimate,
                       unsigned offset) override {
@@ -156,7 +183,7 @@ class NumpyOutput : public OutputBase {
 class PythonOutput : public OutputBase {
   public:
     PythonOutput(const std::string &filename, bool append = true)
-        : OutputBase(filename, append) {}
+        : OutputBase(filename, append, /* binary: */ false) {}
     virtual void emit(const std::vector<double> &values, unsigned decimate,
                       unsigned offset) override {
         *out << "waves.append(Waveform([";
@@ -175,7 +202,7 @@ OutputBase *OutputBase::create(OutputType ty, const std::string &filename,
     case OUTPUT_TERSE:
         return new TerseOutput(filename, append);
     case OUTPUT_GNUPLOT:
-        return new GnuplotOutput(filename, append);
+        return new GnuplotOutput(filename);
     case OUTPUT_PYTHON:
         return new PythonOutput(filename, append);
     case OUTPUT_NUMPY:

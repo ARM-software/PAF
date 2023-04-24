@@ -62,6 +62,12 @@ class OutputBase {
     static OutputBase *create(OutputType ty, const std::string &filename,
                               bool append = true);
 
+    /// Flush the output stream.
+    void flush();
+
+    /// Force closing of the file.
+    void close();
+
   private:
     const bool using_file = false;
 
@@ -110,6 +116,18 @@ class SCAApp : public Argparse {
         out->emit(values, decimate, offset);
     }
 
+    /// Flush output file.
+    void flush_output() {
+        if (out)
+            out->flush();
+    }
+
+    /// Close output file.
+    void close_output() {
+        if (out)
+            out->close();
+    }
+
     /// Do we assume perfect inputs ?
     bool is_perfect() const { return perfect; }
 
@@ -121,7 +139,7 @@ class SCAApp : public Argparse {
     OutputBase::OutputType output_format = OutputBase::OUTPUT_TERSE;
 
     size_t start_sample = 0;
-    size_t nb_samples = std::numeric_limits<size_t>::max();
+    size_t nb_samples = 0;
     std::unique_ptr<OutputBase> out;
     bool perfect = false;
 };

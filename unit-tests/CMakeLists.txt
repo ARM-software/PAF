@@ -72,6 +72,7 @@ add_paf_gtest(Power)
 add_paf_gtest(ProgressMonitor)
 add_paf_gtest(SCA)
 add_paf_gtest(StopWatch)
+add_paf_gtest(sca-apps)
 
 add_paf_np_python(np-utils)
 add_paf_np_python(np-create)

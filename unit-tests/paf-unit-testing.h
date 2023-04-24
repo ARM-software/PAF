@@ -39,14 +39,20 @@ class TestWithTemporaryFile : public ::testing::Test {
     /// Get the temporary file name.
     const std::string &getTemporaryFilename() const { return tmpFileName; };
 
-    /// check that each line of the temporary file match those in exp.
+    /// Check that each line of the temporary file match those in exp.
     bool checkFileContent(const std::vector<std::string> &exp) const;
+
+    /// Force removal of the temporary file.
+    void removeTemporaryFile() {
+        if (tmpFileName.size() != 0)
+            std::remove(tmpFileName.c_str());
+    }
 
   protected:
     /// Cleanup after ourselves.
     void TearDown() override {
-        if (remove && tmpFileName.size() != 0)
-            std::remove(tmpFileName.c_str());
+        if (remove)
+            removeTemporaryFile();
     }
 
   private:
