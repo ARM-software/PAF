@@ -64,7 +64,27 @@ SCAApp::SCAApp(const char *appname, int argc, char *argv[])
              [this]() { output_format = OutputBase::OUTPUT_NUMPY; });
     optnoval({"--perfect"}, "assume perfect inputs (i.e. no noise).",
              [this]() { perfect = true; });
+    optval({"--decimate"}, "PERIOD%OFFSET",
+               "decimate result (default: PERIOD=1, OFFSET=0)",
+               [&](const string &s) {
+                   size_t pos = s.find('%');
+                   if (pos == string::npos)
+                       reporter->errx(
+                           EXIT_FAILURE,
+                           "'%' separator not found in decimation specifier");
 
+                   period = stoul(s);
+                   offset = stoul(s.substr(pos + 1));
+
+                   if (period == 0)
+                       reporter->errx(EXIT_FAILURE,
+                                      "decimation specification error: PERIOD "
+                                      "can not be 0");
+                   if (offset >= period)
+                       reporter->errx(EXIT_FAILURE,
+                                      "decimation specification error: OFFSET "
+                                      "must be strictly lower than PERIOD");
+               });
     // Select samples to start / end with as well as the number of traces to
     // process.
     optval({"-f", "--from"}, "S", "start computation at sample S (default: 0).",
@@ -131,8 +151,8 @@ class TerseOutput : public OutputBase {
     TerseOutput(const std::string &filename, bool append = true)
         : OutputBase(filename, append, /* binary: */ false) {}
 
-    virtual void emit(const std::vector<double> &values, unsigned decimate,
-                      unsigned offset) override {
+    virtual void emit(const std::vector<double> &values, size_t decimate,
+                      size_t offset) override {
         assert(decimate > 0 && "decimate can not be 0");
         size_t max_index;
         double max_v = find_max(values, &max_index, decimate, offset);
@@ -146,8 +166,8 @@ class GnuplotOutput : public OutputBase {
     GnuplotOutput(const std::string &filename)
         : OutputBase(filename, /* append: */ false, /* binary: */ false) {}
 
-    virtual void emit(const std::vector<double> &values, unsigned decimate,
-                      unsigned offset) override {
+    virtual void emit(const std::vector<double> &values, size_t decimate,
+                      size_t offset) override {
         assert(decimate > 0 && "decimate can not be 0");
         size_t max_index;
         double max_v = find_max(values, &max_index, decimate, offset);
@@ -165,8 +185,8 @@ class NumpyOutput : public OutputBase {
     NumpyOutput(const std::string &filename)
         : OutputBase(filename, false, /* binary: */ true) {}
 
-    virtual void emit(const std::vector<double> &values, unsigned decimate,
-                      unsigned offset) override {
+    virtual void emit(const std::vector<double> &values, size_t decimate,
+                      size_t offset) override {
         assert(decimate > 0 && "decimate can not be 0");
         if (decimate == 1) {
             NPArray<double> NP(values.data(), 1, values.size());
@@ -184,8 +204,8 @@ class PythonOutput : public OutputBase {
   public:
     PythonOutput(const std::string &filename, bool append = true)
         : OutputBase(filename, append, /* binary: */ false) {}
-    virtual void emit(const std::vector<double> &values, unsigned decimate,
-                      unsigned offset) override {
+    virtual void emit(const std::vector<double> &values, size_t decimate,
+                      size_t offset) override {
         *out << "waves.append(Waveform([";
         const char *sep = "";
         for (size_t i = offset; i < values.size(); i += decimate) {

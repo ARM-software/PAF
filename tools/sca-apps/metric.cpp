@@ -47,8 +47,6 @@ int main(int argc, char *argv[]) {
     string traces_path;
     string inputs_path;
     vector<int> indexes;
-    unsigned decimate = 1;
-    unsigned offset = 0;
 
     SCAApp app(argv[0], argc, argv);
     app.optval({"-i", "--inputs"}, "INPUTSFILE",
@@ -57,18 +55,6 @@ int main(int argc, char *argv[]) {
     app.optval({"-t", "--traces"}, "TRACESFILE",
                "use TRACESFILE as traces, in npy format",
                [&](const string &s) { traces_path = s; });
-    app.optval({"--decimate"}, "PERIOD%OFFSET",
-               "decimate result (default: PERIOD=1, OFFSET=0)",
-               [&](const string &s) {
-                   size_t pos = s.find('%');
-                   if (pos == string::npos)
-                       reporter->errx(
-                           EXIT_FAILURE,
-                           "'%' separator not found in decimation specifier");
-
-                   decimate = stoul(s);
-                   offset = stoul(s.substr(pos + 1));
-               });
     app.positional_multiple(
         "INDEX", "compute correlation for INDEX(es)",
         [&](const string &s) { indexes.push_back(stoi(s, nullptr, 0)); });
@@ -97,6 +83,10 @@ int main(int argc, char *argv[]) {
         for (const auto &index : indexes)
             cout << ' ' << index;
         cout << '\n';
+
+        if (app.decimation_period() != 1 || app.decimation_offset() != 0)
+            cout << "Decimation: " << app.decimation_period() << '%'
+                 << app.decimation_offset() << '\n';
 
         if (app.output_filename().size() != 0) {
             if (app.append())
@@ -190,7 +180,7 @@ int main(int argc, char *argv[]) {
     }
 
     // Output results.
-    app.output(mvalues, decimate, offset);
+    app.output(mvalues);
 
     return EXIT_SUCCESS;
 }

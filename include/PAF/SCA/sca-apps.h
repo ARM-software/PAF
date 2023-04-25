@@ -45,8 +45,8 @@ class OutputBase {
                bool binary = false);
 
     /// Abstract method to write some values to this output.
-    virtual void emit(const std::vector<double> &values, unsigned decimate,
-                      unsigned offset) = 0;
+    virtual void emit(const std::vector<double> &values, size_t decimate,
+                      size_t offset) = 0;
     virtual ~OutputBase();
 
     /// The different output formats supported by SCA applications.
@@ -107,13 +107,14 @@ class SCAApp : public Argparse {
     /// Get the number of samples that have to be processed.
     size_t num_samples() const { return nb_samples; }
 
+    /// Get the decimation period.
+    size_t decimation_period() const { return period; }
+    /// Get the decimation offset.
+    size_t decimation_offset() const { return offset; }
+
     /// Write a sequence of values to this application's output file.
-    void output(const std::vector<double> &values, unsigned decimate = 1,
-                unsigned offset = 0) {
-        assert(decimate > 0 && "Decimate must not be 0");
-        assert(offset < decimate &&
-               "Offset must be strictly lower than decimate");
-        out->emit(values, decimate, offset);
+    void output(const std::vector<double> &values) {
+        out->emit(values, period, offset);
     }
 
     /// Flush output file.
@@ -140,6 +141,8 @@ class SCAApp : public Argparse {
 
     size_t start_sample = 0;
     size_t nb_samples = 0;
+    size_t period = 1;
+    size_t offset = 0;
     std::unique_ptr<OutputBase> out;
     bool perfect = false;
 };

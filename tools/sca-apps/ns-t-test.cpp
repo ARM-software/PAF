@@ -40,24 +40,10 @@ std::unique_ptr<Reporter> reporter = make_cli_reporter();
 int main(int argc, char *argv[]) {
     vector<string> traces_path;
     enum { GROUP_BY_NPY, GROUP_INTERLEAVED } grouping = GROUP_BY_NPY;
-    unsigned decimate = 1;
-    unsigned offset = 0;
     SCAApp app("paf-ns-t-test", argc, argv);
     app.optnoval({"--interleaved"},
                  "assume interleaved traces in a single NPY file",
                  [&]() { grouping = GROUP_INTERLEAVED; });
-    app.optval({"--decimate"}, "PERIOD%OFFSET",
-               "decimate result (default: PERIOD=1, OFFSET=0)",
-               [&](const string &s) {
-                   size_t pos = s.find('%');
-                   if (pos == string::npos)
-                       reporter->errx(
-                           EXIT_FAILURE,
-                           "'%' separator not found in decimation specifier");
-
-                   decimate = stoul(s);
-                   offset = stoul(s.substr(pos + 1));
-               });
     app.positional_multiple("TRACES", "group of traces",
                             [&](const string &s) { traces_path.push_back(s); });
     app.setup();
@@ -89,8 +75,9 @@ int main(int argc, char *argv[]) {
         for (const auto &t : traces_path)
             cout << " " << t;
         cout << '\n';
-        if (decimate != 1 || offset != 0)
-            cout << "Decimation: " << decimate << '%' << offset << '\n';
+        if (app.decimation_period() != 1 || app.decimation_offset() != 0)
+            cout << "Decimation: " << app.decimation_period() << '%'
+                 << app.decimation_offset() << '\n';
         if (app.output_filename().size() != 0) {
             if (app.append())
                 cout << "Appending output to '" << app.output_filename()
@@ -153,7 +140,7 @@ int main(int argc, char *argv[]) {
     } break;
     }
     // Output results.
-    app.output(tvalues, decimate, offset);
+    app.output(tvalues);
 
     return EXIT_SUCCESS;
 }

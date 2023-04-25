@@ -52,6 +52,8 @@ TEST(SCAApp, defaults) {
     EXPECT_FALSE(A.verbose());
     EXPECT_EQ(A.output_filename(), "");
     EXPECT_EQ(A.output_type(), OutputBase::OUTPUT_TERSE);
+    EXPECT_EQ(A.decimation_period(), 1);
+    EXPECT_EQ(A.decimation_offset(), 0);
 }
 
 TEST(SCAApp, verbosity) {
@@ -138,6 +140,26 @@ TEST(SCAApp, samples) {
     A7.setup();
     EXPECT_EQ(A7.num_samples(), 6);
     EXPECT_EQ(A7.sample_end(), 6);
+}
+
+TEST(SCAApp, decimation) {
+    array<const char *, 3> Args0 = {"appname", "--decimate", "1%0"};
+    SCAApp A0(Args0[0], Args0.size(), (char **)Args0.data());
+    A0.setup();
+    EXPECT_EQ(A0.decimation_period(), 1);
+    EXPECT_EQ(A0.decimation_offset(), 0);
+
+    array<const char *, 3> Args2_0 = {"appname", "--decimate", "2%0"};
+    SCAApp A2_0(Args2_0[0], Args2_0.size(), (char **)Args2_0.data());
+    A2_0.setup();
+    EXPECT_EQ(A2_0.decimation_period(), 2);
+    EXPECT_EQ(A2_0.decimation_offset(), 0);
+
+    array<const char *, 3> Args2_1 = {"appname", "--decimate", "2%1"};
+    SCAApp A2_1(Args2_1[0], Args2_1.size(), (char **)Args2_1.data());
+    A2_1.setup();
+    EXPECT_EQ(A2_1.decimation_period(), 2);
+    EXPECT_EQ(A2_1.decimation_offset(), 1);
 }
 
 TEST(SCAApp, terse_output) {
@@ -386,30 +408,39 @@ TestWithTempFile(SCAAppF, "test-scaapp-output.XXXXXX");
 
 TEST_F(SCAAppF, terse_output) {
     const vector<double> v10 = {0., 2., 4., 6., 8., 7., 5., 3., 1., -1.};
+
     array<const char *, 3> Args0 = {"appname", "--output",
                                     getTemporaryFilename().c_str()};
-
     SCAApp A0_0(Args0[0], Args0.size(), (char **)Args0.data());
     A0_0.setup();
     A0_0.output(v10);
     A0_0.close_output();
     EXPECT_TRUE(checkFileContent({"# max = 8 at index 4"}));
 
-    SCAApp A0_1(Args0[0], Args0.size(), (char **)Args0.data());
+    array<const char *, 5> Args0_1_0 = {"appname", "--decimate", "1%0",
+                                        "--output",
+                                        getTemporaryFilename().c_str()};
+    SCAApp A0_1(Args0_1_0[0], Args0_1_0.size(), (char **)Args0_1_0.data());
     A0_1.setup();
-    A0_1.output(v10, 1, 0);
+    A0_1.output(v10);
     A0_1.close_output();
     EXPECT_TRUE(checkFileContent({"# max = 8 at index 4"}));
 
-    SCAApp A0_2(Args0[0], Args0.size(), (char **)Args0.data());
+    array<const char *, 5> Args0_2_0 = {"appname", "--decimate", "2%0",
+                                        "--output",
+                                        getTemporaryFilename().c_str()};
+    SCAApp A0_2(Args0_2_0[0], Args0_2_0.size(), (char **)Args0_2_0.data());
     A0_2.setup();
-    A0_2.output(v10, 2, 0);
+    A0_2.output(v10);
     A0_2.close_output();
     EXPECT_TRUE(checkFileContent({"# max = 8 at index 2"}));
 
-    SCAApp A0_3(Args0[0], Args0.size(), (char **)Args0.data());
+    array<const char *, 5> Args0_2_1 = {"appname", "--decimate", "2%1",
+                                        "--output",
+                                        getTemporaryFilename().c_str()};
+    SCAApp A0_3(Args0_2_1[0], Args0_2_1.size(), (char **)Args0_2_1.data());
     A0_3.setup();
-    A0_3.output(v10, 2, 1);
+    A0_3.output(v10);
     A0_3.close_output();
     EXPECT_TRUE(checkFileContent({"# max = 7 at index 2"}));
 
@@ -417,31 +448,39 @@ TEST_F(SCAAppF, terse_output) {
 
     array<const char *, 4> Args1 = {"appname", "--append", "--output",
                                     getTemporaryFilename().c_str()};
-
     SCAApp A1_0(Args1[0], Args1.size(), (char **)Args1.data());
     A1_0.setup();
     A1_0.output(v10);
     A1_0.close_output();
     EXPECT_TRUE(checkFileContent({"# max = 8 at index 4"}));
 
-    SCAApp A1_1(Args1[0], Args1.size(), (char **)Args1.data());
+    array<const char *, 6> Args1_1_0 = {
+        "appname",  "--decimate", "1%0",
+        "--append", "--output",   getTemporaryFilename().c_str()};
+    SCAApp A1_1(Args1_1_0[0], Args1_1_0.size(), (char **)Args1_1_0.data());
     A1_1.setup();
-    A1_1.output(v10, 1, 0);
+    A1_1.output(v10);
     A1_1.close_output();
     EXPECT_TRUE(
         checkFileContent({"# max = 8 at index 4", "# max = 8 at index 4"}));
 
-    SCAApp A1_2(Args1[0], Args1.size(), (char **)Args1.data());
+    array<const char *, 6> Args1_2_0 = {
+        "appname",  "--decimate", "2%0",
+        "--append", "--output",   getTemporaryFilename().c_str()};
+    SCAApp A1_2(Args1_2_0[0], Args1_2_0.size(), (char **)Args1_2_0.data());
     A1_2.setup();
-    A1_2.output(v10, 2, 0);
+    A1_2.output(v10);
     A1_2.close_output();
     EXPECT_TRUE(
         checkFileContent({"# max = 8 at index 4", "# max = 8 at index 4",
                           "# max = 8 at index 2"}));
 
-    SCAApp A1_3(Args1[0], Args1.size(), (char **)Args1.data());
+    array<const char *, 6> Args1_2_1 = {
+        "appname",  "--decimate", "2%1",
+        "--append", "--output",   getTemporaryFilename().c_str()};
+    SCAApp A1_3(Args1_2_1[0], Args1_2_1.size(), (char **)Args1_2_1.data());
     A1_3.setup();
-    A1_3.output(v10, 2, 1);
+    A1_3.output(v10);
     A1_3.close_output();
     EXPECT_TRUE(
         checkFileContent({"# max = 8 at index 4", "# max = 8 at index 4",
@@ -450,9 +489,9 @@ TEST_F(SCAAppF, terse_output) {
 
 TEST_F(SCAAppF, python_output) {
     const vector<double> v10 = {0., 2., 4., 6., 8., 7., 5., 3., 1., -1.};
+
     array<const char *, 5> Args0 = {"appname", "--python", "--append",
                                     "--output", getTemporaryFilename().c_str()};
-
     SCAApp A0_0(Args0[0], Args0.size(), (char **)Args0.data());
     A0_0.setup();
     A0_0.output(v10);
@@ -460,26 +499,47 @@ TEST_F(SCAAppF, python_output) {
     EXPECT_TRUE(checkFileContent(
         {"waves.append(Waveform([0, 2, 4, 6, 8, 7, 5, 3, 1, -1]))"}));
 
-    SCAApp A0_1(Args0[0], Args0.size(), (char **)Args0.data());
+    array<const char *, 7> Args0_1_0 = {"appname",
+                                        "--python",
+                                        "--decimate",
+                                        "1%0",
+                                        "--append",
+                                        "--output",
+                                        getTemporaryFilename().c_str()};
+    SCAApp A0_1(Args0_1_0[0], Args0_1_0.size(), (char **)Args0_1_0.data());
     A0_1.setup();
-    A0_1.output(v10, 1, 0);
+    A0_1.output(v10);
     A0_1.flush_output();
     EXPECT_TRUE(checkFileContent(
         {"waves.append(Waveform([0, 2, 4, 6, 8, 7, 5, 3, 1, -1]))",
          "waves.append(Waveform([0, 2, 4, 6, 8, 7, 5, 3, 1, -1]))"}));
 
-    SCAApp A0_2(Args0[0], Args0.size(), (char **)Args0.data());
+    array<const char *, 7> Args0_2_0 = {"appname",
+                                        "--python",
+                                        "--decimate",
+                                        "2%0",
+                                        "--append",
+                                        "--output",
+                                        getTemporaryFilename().c_str()};
+    SCAApp A0_2(Args0_2_0[0], Args0_2_0.size(), (char **)Args0_2_0.data());
     A0_2.setup();
-    A0_2.output(v10, 2, 0);
+    A0_2.output(v10);
     A0_2.flush_output();
     EXPECT_TRUE(checkFileContent(
         {"waves.append(Waveform([0, 2, 4, 6, 8, 7, 5, 3, 1, -1]))",
          "waves.append(Waveform([0, 2, 4, 6, 8, 7, 5, 3, 1, -1]))",
          "waves.append(Waveform([0, 4, 8, 5, 1]))"}));
 
-    SCAApp A0_3(Args0[0], Args0.size(), (char **)Args0.data());
+    array<const char *, 7> Args0_2_1 = {"appname",
+                                        "--python",
+                                        "--decimate",
+                                        "2%1",
+                                        "--append",
+                                        "--output",
+                                        getTemporaryFilename().c_str()};
+    SCAApp A0_3(Args0_2_1[0], Args0_2_1.size(), (char **)Args0_2_1.data());
     A0_3.setup();
-    A0_3.output(v10, 2, 1);
+    A0_3.output(v10);
     A0_3.flush_output();
     EXPECT_TRUE(checkFileContent(
         {"waves.append(Waveform([0, 2, 4, 6, 8, 7, 5, 3, 1, -1]))",
@@ -489,7 +549,6 @@ TEST_F(SCAAppF, python_output) {
 
     array<const char *, 4> Args1 = {"appname", "--python", "--output",
                                     getTemporaryFilename().c_str()};
-
     SCAApp A1_0(Args1[0], Args1.size(), (char **)Args1.data());
     A1_0.setup();
     A1_0.output(v10);
@@ -497,22 +556,31 @@ TEST_F(SCAAppF, python_output) {
     EXPECT_TRUE(checkFileContent(
         {"waves.append(Waveform([0, 2, 4, 6, 8, 7, 5, 3, 1, -1]))"}));
 
-    SCAApp A1_1(Args1[0], Args1.size(), (char **)Args1.data());
+    array<const char *, 6> Args1_1_0 = {
+        "appname", "--python", "--decimate",
+        "1%0",     "--output", getTemporaryFilename().c_str()};
+    SCAApp A1_1(Args1_1_0[0], Args1_1_0.size(), (char **)Args1_1_0.data());
     A1_1.setup();
-    A1_1.output(v10, 1, 0);
+    A1_1.output(v10);
     A1_1.close_output();
     EXPECT_TRUE(checkFileContent(
         {"waves.append(Waveform([0, 2, 4, 6, 8, 7, 5, 3, 1, -1]))"}));
 
-    SCAApp A1_2(Args1[0], Args1.size(), (char **)Args1.data());
+    array<const char *, 6> Args1_2_0 = {
+        "appname", "--python", "--decimate",
+        "2%0",     "--output", getTemporaryFilename().c_str()};
+    SCAApp A1_2(Args1_2_0[0], Args1_2_0.size(), (char **)Args1_2_0.data());
     A1_2.setup();
-    A1_2.output(v10, 2, 0);
+    A1_2.output(v10);
     A1_2.close_output();
     EXPECT_TRUE(checkFileContent({"waves.append(Waveform([0, 4, 8, 5, 1]))"}));
 
-    SCAApp A1_3(Args1[0], Args1.size(), (char **)Args1.data());
+    array<const char *, 6> Args1_2_1 = {
+        "appname", "--python", "--decimate",
+        "2%1",     "--output", getTemporaryFilename().c_str()};
+    SCAApp A1_3(Args1_2_1[0], Args1_2_1.size(), (char **)Args1_2_1.data());
     A1_3.setup();
-    A1_3.output(v10, 2, 1);
+    A1_3.output(v10);
     A1_3.close_output();
     EXPECT_TRUE(checkFileContent({"waves.append(Waveform([2, 6, 7, 3, -1]))"}));
 }
@@ -522,7 +590,6 @@ TEST_F(SCAAppF, gnuplot_output) {
 
     array<const char *, 4> Args1 = {"appname", "--gnuplot", "--output",
                                     getTemporaryFilename().c_str()};
-
     SCAApp A1_0(Args1[0], Args1.size(), (char **)Args1.data());
     A1_0.setup();
     A1_0.output(v10);
@@ -531,24 +598,33 @@ TEST_F(SCAAppF, gnuplot_output) {
                                   "5  7", "6  5", "7  3", "8  1", "9  -1",
                                   "# max = 8 at index 4"}));
 
-    SCAApp A1_1(Args1[0], Args1.size(), (char **)Args1.data());
+    array<const char *, 6> Args1_1_0 = {
+        "appname", "--gnuplot", "--decimate",
+        "1%0",     "--output",  getTemporaryFilename().c_str()};
+    SCAApp A1_1(Args1_1_0[0], Args1_1_0.size(), (char **)Args1_1_0.data());
     A1_1.setup();
-    A1_1.output(v10, 1, 0);
+    A1_1.output(v10);
     A1_1.close_output();
     EXPECT_TRUE(checkFileContent({"0  0", "1  2", "2  4", "3  6", "4  8",
                                   "5  7", "6  5", "7  3", "8  1", "9  -1",
                                   "# max = 8 at index 4"}));
 
-    SCAApp A1_2(Args1[0], Args1.size(), (char **)Args1.data());
+    array<const char *, 6> Args1_2_0 = {
+        "appname", "--gnuplot", "--decimate",
+        "2%0",     "--output",  getTemporaryFilename().c_str()};
+    SCAApp A1_2(Args1_2_0[0], Args1_2_0.size(), (char **)Args1_2_0.data());
     A1_2.setup();
-    A1_2.output(v10, 2, 0);
+    A1_2.output(v10);
     A1_2.close_output();
     EXPECT_TRUE(checkFileContent(
         {"0  0", "1  4", "2  8", "3  5", "4  1", "# max = 8 at index 2"}));
 
-    SCAApp A1_3(Args1[0], Args1.size(), (char **)Args1.data());
+    array<const char *, 6> Args1_2_1 = {
+        "appname", "--gnuplot", "--decimate",
+        "2%1",     "--output",  getTemporaryFilename().c_str()};
+    SCAApp A1_3(Args1_2_1[0], Args1_2_1.size(), (char **)Args1_2_1.data());
     A1_3.setup();
-    A1_3.output(v10, 2, 1);
+    A1_3.output(v10);
     A1_3.close_output();
     EXPECT_TRUE(checkFileContent(
         {"0  2", "1  6", "2  7", "3  3", "4  -1", "# max = 7 at index 2"}));
@@ -559,7 +635,6 @@ TEST_F(SCAAppF, numpy_output) {
 
     array<const char *, 4> Args1 = {"appname", "--numpy", "--output",
                                     getTemporaryFilename().c_str()};
-
     SCAApp A1_0(Args1[0], Args1.size(), (char **)Args1.data());
     A1_0.setup();
     A1_0.output(v10);
@@ -571,9 +646,12 @@ TEST_F(SCAAppF, numpy_output) {
     EXPECT_EQ(R0, NPArray<double>({0., 2., 4., 6., 8., 7., 5., 3., 1., -1.}, 1,
                                   v10.size()));
 
-    SCAApp A1_1(Args1[0], Args1.size(), (char **)Args1.data());
+    array<const char *, 6> Args1_1_0 = {
+        "appname", "--numpy",  "--decimate",
+        "1%0",     "--output", getTemporaryFilename().c_str()};
+    SCAApp A1_1(Args1_1_0[0], Args1_1_0.size(), (char **)Args1_1_0.data());
     A1_1.setup();
-    A1_1.output(v10, 1, 0);
+    A1_1.output(v10);
     A1_1.close_output();
     NPArray<double> R1(getTemporaryFilename());
     EXPECT_TRUE(R1.good());
@@ -582,9 +660,12 @@ TEST_F(SCAAppF, numpy_output) {
     EXPECT_EQ(R1, NPArray<double>({0., 2., 4., 6., 8., 7., 5., 3., 1., -1.}, 1,
                                   v10.size()));
 
-    SCAApp A1_2(Args1[0], Args1.size(), (char **)Args1.data());
+    array<const char *, 6> Args1_2_0 = {
+        "appname", "--numpy",  "--decimate",
+        "2%0",     "--output", getTemporaryFilename().c_str()};
+    SCAApp A1_2(Args1_2_0[0], Args1_2_0.size(), (char **)Args1_2_0.data());
     A1_2.setup();
-    A1_2.output(v10, 2, 0);
+    A1_2.output(v10);
     A1_2.close_output();
     NPArray<double> R2(getTemporaryFilename());
     EXPECT_TRUE(R2.good());
@@ -592,9 +673,12 @@ TEST_F(SCAAppF, numpy_output) {
     EXPECT_EQ(R2.cols(), v10.size() / 2);
     EXPECT_EQ(R2, NPArray<double>({0., 4., 8., 5., 1.}, 1, v10.size() / 2));
 
-    SCAApp A1_3(Args1[0], Args1.size(), (char **)Args1.data());
+    array<const char *, 6> Args1_2_1 = {
+        "appname", "--numpy",  "--decimate",
+        "2%1",     "--output", getTemporaryFilename().c_str()};
+    SCAApp A1_3(Args1_2_1[0], Args1_2_1.size(), (char **)Args1_2_1.data());
     A1_3.setup();
-    A1_3.output(v10, 2, 1);
+    A1_3.output(v10);
     A1_3.close_output();
     NPArray<double> R3(getTemporaryFilename());
     EXPECT_TRUE(R3.good());
