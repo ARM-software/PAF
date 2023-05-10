@@ -283,7 +283,7 @@ template <typename Ty, size_t rows, size_t cols> class StudentChecker {
         EXPECT_TRUE(std::isnan(t_test(i, m0[i], a, none)));
 
         std::function<bool(size_t)> single = [](size_t i) { return i == 1; };
-        EXPECT_TRUE(std::isnan(t_test(i, m0[i], a, none)));
+        EXPECT_TRUE(std::isnan(t_test(i, m0[i], a, single)));
     }
 
     // Check check Student's t_test on a range of column in a.
@@ -361,7 +361,7 @@ TEST(TTest, student) {
     // === End of automatically generated portion
     // clang-format on
 
-    // Check student's t_test on each column.
+    // Check Student's t_test on each column.
     for (size_t i = 0; i < a.cols(); i++)
         C_a.check(i);
 
