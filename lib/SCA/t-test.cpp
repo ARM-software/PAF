@@ -34,12 +34,16 @@ using std::vector;
 
 namespace PAF {
 namespace SCA {
+
+/// Welsh t-test with one group of traces and a classification array.
 vector<double> t_test(size_t b, size_t e, const NPArray<double> &traces,
                       const Classification classifier[]) {
-
-    assert(b < e && "Wrong begin / end samples");
+    assert(b <= e && "Wrong begin / end samples");
     assert(b <= traces.cols() && "Not that many samples in the trace");
     assert(e <= traces.cols() && "Not that many samples in the trace");
+
+    if (b == e)
+        return vector<double>();
 
     const size_t nbtraces = traces.rows();
     const size_t nbsamples = e - b;
@@ -77,6 +81,8 @@ vector<double> t_test(size_t b, size_t e, const NPArray<double> &traces,
                 break;
             }
 
+        assert(n0 > 1 && "group0 must have more than one trace");
+        assert(n1 > 1 && "group1 must have more than one trace");
         variance0 /= double(n0 - 1);
         variance1 /= double(n1 - 1);
 
@@ -87,16 +93,28 @@ vector<double> t_test(size_t b, size_t e, const NPArray<double> &traces,
     return tvalue;
 }
 
+/// Welsh t-test with one group of traces and a classification array.
+double t_test(size_t s, const NPArray<double> &traces,
+              const Classification classifier[]) {
+    const auto tvalues = t_test(s, s + 1, traces, classifier);
+    return tvalues[0];
+}
+
+/// Welsh t-test with 2 groups of traces.
 vector<double> t_test(size_t b, size_t e, const NPArray<double> &group0,
                       const NPArray<double> &group1) {
-    assert(b < e && "Wrong begin / end samples");
+    assert(b <= e && "Wrong begin / end samples");
     assert(b <= group0.cols() && "Not that many samples in group0 traces");
     assert(e <= group0.cols() && "Not that many samples in group0 traces");
     assert(b <= group1.cols() && "Not that many samples in group1 traces");
     assert(e <= group1.cols() && "Not that many samples in group1 traces");
+    assert(group0.rows() > 1 && "group0 must have more than one trace");
+    assert(group1.rows() > 1 && "group1 must have more than one trace");
+
+    if (b == e)
+        return vector<double>();
 
     const size_t nbsamples = e - b;
-    assert(nbsamples >= 1 && "More than 1 sample per group is required");
 
     vector<double> variance0;
     vector<double> mean0 = group0.mean(NPArray<double>::COLUMN, b, e,
@@ -117,6 +135,14 @@ vector<double> t_test(size_t b, size_t e, const NPArray<double> &group0,
     return tvalue;
 }
 
+/// Compute Welsh's t-test for sample s.
+double t_test(size_t s, const NPArray<double> &group0,
+              const NPArray<double> &group1) {
+    const auto tvalues = t_test(s, s + 1, group0, group1);
+    return tvalues[0];
+}
+
+/// Compute Student's t-test for sample s.
 double t_test(size_t s, double m0, const NPArray<double> &traces) {
     assert(s <= traces.cols() && "Out of bound sample access in traces");
 
@@ -125,6 +151,8 @@ double t_test(size_t s, double m0, const NPArray<double> &traces) {
     return sqrt(traces.rows()) * (m - m0) / sqrt(var);
 }
 
+/// Compute Student's t-test for sample s for the traces where select returns
+/// true.
 double t_test(size_t s, double m0, const NPArray<double> &traces,
               function<bool(size_t)> select) {
     assert(s <= traces.cols() && "Not that many samples in the trace");
@@ -153,6 +181,7 @@ double t_test(size_t s, double m0, const NPArray<double> &traces,
     return sqrt(double(n)) * (mean - m0) / sqrt(variance);
 }
 
+/// Compute Student's t-test from samples b to e.
 vector<double> t_test(size_t b, size_t e, const vector<double> &m0,
                       const NPArray<double> &traces) {
     assert(b <= e && "Wrong begin / end samples");
@@ -170,6 +199,8 @@ vector<double> t_test(size_t b, size_t e, const vector<double> &m0,
     return tvalue;
 }
 
+/// Compute Student's t-test from sample b to e for the traces where select
+/// returns true.
 vector<double> t_test(size_t b, size_t e, const vector<double> &m0,
                       const NPArray<double> &traces,
                       function<bool(size_t)> select) {

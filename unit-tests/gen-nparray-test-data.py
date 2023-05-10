@@ -25,24 +25,31 @@ import sys
 
 class Matrix:
 
-    def __init__(self, name, ty, rows, cols, cmd_line):
-        self.M = np.random.rand(rows, cols)
+    def __init__(self, test, name, ty, rows, cols, cmd_line):
+        self.testname = test
+        self.M = dict()
         self.rows = rows
         self.cols = cols
-        self.name = name
         self.ty = ty
         self.checker = "C_{}".format(name)
         self.cmd_line = cmd_line
+        self.add_matrix('a')
+        if test == 'welsh':
+            self.add_matrix('b')
 
-    def matrix(self, indent):
+    def add_matrix(self, name):
+        self.M[name] = np.random.rand(self.rows, self.cols)
+
+    def emit_matrices(self, indent):
         t = indent * ' '
         lines = list()
-        lines.append(t + "const NPArray<{}> {}(".format(self.ty, self.name))
-        lines.append(t+t + "{")
-        for row in self.M:
-            lines.append(t+t+t + ", ".join("{:1.8f}".format(e) for e in row)+',')
-        lines.append(t+t + "},");
-        lines.append(t+t + "{}, {});".format(self.rows, self.cols))
+        for m in sorted(self.M.keys()):
+            lines.append(t + "const NPArray<{}> {}(".format(self.ty, m))
+            lines.append(t+t + "{")
+            for row in self.M[m]:
+                lines.append(t+t+t + ", ".join("{:1.8f}".format(e) for e in row)+',')
+            lines.append(t+t + "},");
+            lines.append(t+t + "{}, {});".format(self.rows, self.cols))
         return lines
 
     def expected(self, t, comment, s, last=False):
@@ -56,65 +63,90 @@ class Matrix:
         
     def sum(self, indent):
         t = indent * ' '
+        a = self.M['a']
         lines = list()
         lines.append(t + "const SumChecker<{}, {}, {}> {}(".format(self.ty,
                      self.rows, self.cols, self.checker))
-        lines.append(
-            t+t + "{},".format(self.name))
+        lines.append(t+t + ", ".join(sorted(self.M.keys())) + ",")
         lines.extend(self.expected(t+t, "sums, by row",
-                     np.sum(self.M, axis=1)))
+                     np.sum(a, axis=1)))
         lines.extend(self.expected(t+t, "sums, by col",
-                     np.sum(self.M, axis=0), True))
+                     np.sum(a, axis=0), True))
         lines.append(t + ");")
         return lines
 
     def mean(self, indent):
         t = indent * ' '
+        a = self.M['a']
         lines = list()
         lines.append(t + "const MeanChecker<{}, {}, {}> {}(".format(self.ty,
                      self.rows, self.cols, self.checker))
-        lines.append(
-            t+t + "{},".format(self.name))
+        lines.append(t+t + ", ".join(sorted(self.M.keys())) + ",")
         lines.extend(self.expected(t+t, "means, by row",
-                     np.mean(self.M, axis=1)))
+                     np.mean(a, axis=1)))
         lines.extend(self.expected(t+t, "means, by col",
-                     np.mean(self.M, axis=0)))
+                     np.mean(a, axis=0)))
         lines.extend(self.expected(t+t, "var0, by row",
-                     np.var(self.M, axis=1, ddof=0)))
+                     np.var(a, axis=1, ddof=0)))
         lines.extend(self.expected(t+t, "var1, by row",
-                     np.var(self.M, axis=1, ddof=1)))
+                     np.var(a, axis=1, ddof=1)))
         lines.extend(self.expected(t+t, "var0, by col",
-                     np.var(self.M, axis=0, ddof=0)))
+                     np.var(a, axis=0, ddof=0)))
         lines.extend(self.expected(t+t, "var1, by col",
-                     np.var(self.M, axis=0, ddof=1)))
+                     np.var(a, axis=0, ddof=1)))
         lines.extend(self.expected(t+t, "stddev, by row",
-                     np.std(self.M, axis=1)))
+                     np.std(a, axis=1)))
         lines.extend(self.expected(t+t, "stddev, by col",
-                     np.std(self.M, axis=0), True))
+                     np.std(a, axis=0), True))
         lines.append(t + ");")
         return lines
 
     def student(self, indent):
         t = indent * ' '
+        a = self.M['a']
         lines = list()
         lines.append(t + "const StudentChecker<{}, {}, {}> {}(".format(self.ty,
                      self.rows, self.cols, self.checker))
-        lines.append(
-            t+t + "{},".format(self.name))
+        lines.append(t+t + ", ".join(sorted(self.M.keys())) + ",")
         m0 = np.random.rand(1, self.cols)
         lines.extend(self.expected(t+t, "m0", m0[0]))
-        m = np.mean(self.M, axis=0)
-        v = np.var(self.M, axis=0, ddof=1)
+        m = np.mean(a, axis=0)
+        v = np.var(a, axis=0, ddof=1)
         tvalues = np.sqrt(self.rows) * (m - m0) / np.sqrt(v)
         lines.extend(self.expected(t+t, "tvalues (complete column)", tvalues[0]))
-        m = np.mean(self.M[0::2], axis=0)
-        v = np.var(self.M[0::2], axis=0, ddof=1)
+        m = np.mean(a[0::2], axis=0)
+        v = np.var(a[0::2], axis=0, ddof=1)
         tvalues = np.sqrt(self.rows / 2.0) * (m - m0) / np.sqrt(v)
         lines.extend(self.expected(t+t, "tvalues (even traces)", tvalues[0]))
-        m = np.mean(self.M[1::2], axis=0)
-        v = np.var(self.M[1::2], axis=0, ddof=1)
+        m = np.mean(a[1::2], axis=0)
+        v = np.var(a[1::2], axis=0, ddof=1)
         tvalues = np.sqrt(self.rows / 2.0) * (m - m0) / np.sqrt(v)
         lines.extend(self.expected(t+t, "tvalues (odd traces)", tvalues[0], True))
+        lines.append(t + ");")
+        return lines
+
+    def welsh(self, indent):
+        t = indent * ' '
+        a = self.M['a']
+        b = self.M['b']
+        lines = list()
+        lines.append(t + "const WelshChecker<{}, {}, {}> {}(".format(self.ty,
+                     self.rows, self.cols, self.checker))
+        lines.append(t+t + ", ".join(sorted(self.M.keys())) + ",")
+        even = a[0::2]
+        odd = a[1::2]
+        mEven = np.mean(even, axis=0)
+        vEven = np.var(even, axis=0, ddof=1)
+        mOdd = np.mean(odd, axis=0)
+        vOdd = np.var(odd, axis=0, ddof=1)
+        tvalues = (mEven - mOdd) / np.sqrt(vEven/even.shape[0] + vOdd/odd.shape[0])
+        lines.extend(self.expected(t+t, "tvalues odd / even traces", tvalues))
+        m0 = np.mean(a, axis=0)
+        v0 = np.var(a, axis=0, ddof=1)
+        m1 = np.mean(b, axis=0)
+        v1 = np.var(b, axis=0, ddof=1)
+        tvalues2 = (m0 - m1) / np.sqrt((v0 + v1)/self.rows)
+        lines.extend(self.expected(t+t, "tvalues group a / group b", tvalues2, True))
         lines.append(t + ");")
         return lines
 
@@ -132,13 +164,13 @@ class Matrix:
         lines.append(t + "// clang-format on")
         return lines
 
-    def emit(self, test):
+    def emit(self):
         indent = 4
         t = indent * ' '
         lines = list()
         lines.extend(self.test_header(t))
-        lines.extend(self.matrix(indent))
-        test = getattr(self, test)
+        lines.extend(self.emit_matrices(indent))
+        test = getattr(self, self.testname)
         lines.extend(test(indent))
         lines.extend(self.test_tail(t))
         return "\n".join(lines)
@@ -174,20 +206,20 @@ like mean, variance, standard deviation, ...
                         default=4)
     parser.add_argument("-n", "--name",
                         metavar='NAME',
-                        help="Set the matrix name to NAME (default: %(default)s)",
+                        help="Set the checker name to C_NAME (default: %(default)s)",
                         default="a")
     parser.add_argument("-t", "--type",
                         metavar='TYPE',
                         help="Set the matrix element type to TYPE (default: %(default)s)",
                         default="double")
     parser.add_argument("TEST",
-                        choices=['mean', 'sum', 'student'],
+                        choices=['mean', 'sum', 'student', 'welsh'],
                         help="Generate expected values for TEST")
     options = parser.parse_args()
 
-    M = Matrix(options.name, options.type, options.rows, options.columns,
+    M = Matrix(options.TEST, options.name, options.type, options.rows, options.columns,
                "{} --rows {} --columns {} {}".format(_prog, options.rows, options.columns, options.TEST))
-    print(M.emit(options.TEST))
+    print(M.emit())
 
     return 0
 

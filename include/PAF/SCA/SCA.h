@@ -54,12 +54,22 @@ enum class Classification : char {
 std::vector<double> t_test(size_t b, size_t e, const NPArray<double> &traces,
                            const Classification classifier[]);
 
-/// Compute Welsh's t-test from sample b to e on traces, assuming the traces
-/// have been split into \p group0 and \p group1.
+/// Compute Welsh t-test for sample \p s on \p traces, using the
+/// classification from \p classifier.
+double t_test(size_t s, const NPArray<double> &traces,
+              const Classification classifier[]);
+
+/// Compute Welsh's t-test from sample \p b to \p e on traces, assuming the
+/// traces have been split into \p group0 and \p group1.
 std::vector<double> t_test(size_t b, size_t e, const NPArray<double> &group0,
                            const NPArray<double> &group1);
 
-/// Compute Student's t-test for samples \p s all traces in \p traces.
+/// Compute Welsh's t-test for sample \p s on traces, assuming the traces
+/// have been split into \p group0 and \p group1.
+double t_test(size_t s, const NPArray<double> &group0,
+              const NPArray<double> &group1);
+
+/// Compute Student's t-test for samples \p s in all traces in \p traces.
 double t_test(size_t s, double m0, const NPArray<double> &traces);
 
 /// Compute Student's t-test for samples \p s in traces for which \p select
