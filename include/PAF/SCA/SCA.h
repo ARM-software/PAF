@@ -29,13 +29,15 @@ namespace PAF {
 namespace SCA {
 
 /// Compute the hamming weight of \p val, masked with \p mask.
-template <class Ty> unsigned hamming_weight(Ty val, Ty mask) {
+template <class Ty>
+unsigned constexpr hamming_weight(Ty val, Ty mask) noexcept {
     return __builtin_popcount(val & mask);
 }
 
 /// Compute the hamming distance from \p val1 to \p val2 with \p mask applied to
 /// each.
-template <class Ty> unsigned hamming_distance(Ty val1, Ty val2, Ty mask) {
+template <class Ty>
+unsigned constexpr hamming_distance(Ty val1, Ty val2, Ty mask) noexcept {
     return __builtin_popcount((val1 & mask) ^ (val2 & mask));
 }
 
