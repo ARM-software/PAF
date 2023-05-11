@@ -22,6 +22,17 @@ import numpy as np
 import os
 import sys
 
+def student_t_test(a, m0):
+    m = np.mean(a, axis=0)
+    v = np.var(a, axis=0, ddof=1)
+    return np.sqrt(a.shape[0]) * (m - m0) / np.sqrt(v)
+
+def welsh_t_test(a, b):
+    m0 = np.mean(a, axis=0)
+    v0 = np.var(a, axis=0, ddof=1)
+    m1 = np.mean(b, axis=0)
+    v1 = np.var(b, axis=0, ddof=1)
+    return (m0 - m1) / np.sqrt(v0/a.shape[0] + v1/b.shape[0])
 
 class Matrix:
 
@@ -110,17 +121,11 @@ class Matrix:
         lines.append(t+t + ", ".join(sorted(self.M.keys())) + ",")
         m0 = np.random.rand(1, self.cols)
         lines.extend(self.expected(t+t, "m0", m0[0]))
-        m = np.mean(a, axis=0)
-        v = np.var(a, axis=0, ddof=1)
-        tvalues = np.sqrt(self.rows) * (m - m0) / np.sqrt(v)
+        tvalues = student_t_test(a, m0)
         lines.extend(self.expected(t+t, "tvalues (complete column)", tvalues[0]))
-        m = np.mean(a[0::2], axis=0)
-        v = np.var(a[0::2], axis=0, ddof=1)
-        tvalues = np.sqrt(self.rows / 2.0) * (m - m0) / np.sqrt(v)
+        tvalues = student_t_test(a[0::2], m0)
         lines.extend(self.expected(t+t, "tvalues (even traces)", tvalues[0]))
-        m = np.mean(a[1::2], axis=0)
-        v = np.var(a[1::2], axis=0, ddof=1)
-        tvalues = np.sqrt(self.rows / 2.0) * (m - m0) / np.sqrt(v)
+        tvalues = student_t_test(a[1::2], m0)
         lines.extend(self.expected(t+t, "tvalues (odd traces)", tvalues[0], True))
         lines.append(t + ");")
         return lines
@@ -133,19 +138,9 @@ class Matrix:
         lines.append(t + "const WelshChecker<{}, {}, {}> {}(".format(self.ty,
                      self.rows, self.cols, self.checker))
         lines.append(t+t + ", ".join(sorted(self.M.keys())) + ",")
-        even = a[0::2]
-        odd = a[1::2]
-        mEven = np.mean(even, axis=0)
-        vEven = np.var(even, axis=0, ddof=1)
-        mOdd = np.mean(odd, axis=0)
-        vOdd = np.var(odd, axis=0, ddof=1)
-        tvalues = (mEven - mOdd) / np.sqrt(vEven/even.shape[0] + vOdd/odd.shape[0])
+        tvalues = welsh_t_test(a[0::2], a[1::2])
         lines.extend(self.expected(t+t, "tvalues odd / even traces", tvalues))
-        m0 = np.mean(a, axis=0)
-        v0 = np.var(a, axis=0, ddof=1)
-        m1 = np.mean(b, axis=0)
-        v1 = np.var(b, axis=0, ddof=1)
-        tvalues2 = (m0 - m1) / np.sqrt((v0 + v1)/self.rows)
+        tvalues2 = welsh_t_test(a, b)
         lines.extend(self.expected(t+t, "tvalues group a / group b", tvalues2, True))
         lines.append(t + ");")
         return lines
