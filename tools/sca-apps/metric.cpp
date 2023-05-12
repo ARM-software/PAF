@@ -143,7 +143,7 @@ int main(int argc, char *argv[]) {
     switch (METRIC) {
     case Metric::PEARSON_CORRELATION: {
         // Compute the intermediate values.
-        unique_ptr<unsigned[]> ivalues(new unsigned[nbtraces]);
+        vector<double> ivalues(nbtraces);
         for (size_t tnum = 0; tnum < nbtraces; tnum++) {
             uint32_t ival = expr->eval().getValue();
             r++;
@@ -152,7 +152,7 @@ int main(int argc, char *argv[]) {
 
         // Compute the metric.
         mvalues = correl(app.sample_start(), sample_to_stop_at, traces,
-                         ivalues.get());
+                         ivalues);
     } break;
     case Metric::T_TEST: {
         // Build the classifier.

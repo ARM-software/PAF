@@ -490,71 +490,84 @@ TEST(TTest, non_specific) {
 }
 
 namespace {
-// A wrapper for the boilerplate required for a Pearson correlation.
-double correl_wrapper(const NPArray<double> &traces,
-                      const NPArray<uint32_t> &inputs, size_t index,
-                      size_t begin, size_t end, size_t *max_c_index,
-                      bool verbose = false) {
-    size_t num_traces = traces.rows();
-    unique_ptr<unsigned[]> intermediate(new unsigned[num_traces]);
-    for (size_t tnum = 0; tnum < num_traces; tnum++) {
-        uint32_t value = inputs(tnum, index);
-        intermediate[tnum] = hamming_weight<uint32_t>(value, -1U);
+template <typename Ty, size_t rows, size_t cols> class PearsonChecker {
+  public:
+    PearsonChecker(const NPArray<Ty> &a, const NPArray<unsigned> &iv,
+                   std::initializer_list<Ty> coeffs)
+        : Ma(a), Miv(iv), coeffs(coeffs) {}
+
+    // Check Pearson correlation on a range of columns.
+    void check(size_t b, size_t e) const {
+        vector<double> iv(Ma.rows());
+        for (size_t tnum = 0; tnum < Ma.rows(); tnum++)
+            iv[tnum] = Miv(0, tnum);
+        const vector<double> p = correl(b, e, Ma, iv);
+        EXPECT_EQ(p.size(), e - b);
+        for (size_t i = b; i < e; i++)
+            EXPECT_NEAR(p[i - b], coeffs[i], EPSILON);
     }
 
-    vector<double> cvalues = correl(begin, end, traces, intermediate.get());
+  private:
+    const NPArray<Ty> &Ma;
+    const NPArray<unsigned> &Miv;
+    const std::vector<Ty> coeffs;
+};
+} // namespace
 
-    double max_c = find_max(cvalues, max_c_index);
+TEST(Correl, pearson) {
+    // clang-format off
+    // === Generated automatically with 'gen-nparray-test-data.py --rows 20 --columns 8 pearson'
+    const NPArray<double> a(
+        {
+            0.66508933, 0.46866201, 0.17850066, -0.03526020, 0.91684889, 0.02039789, 0.75061677, 0.30228966,
+            0.53300930, 0.35174647, 0.41314974, -0.30894613, 0.38695989, 0.17315641, 0.52840689, 0.21178201,
+            0.54713326, 0.23294069, 0.74782581, -0.57471407, 0.43171818, 0.51514368, 0.51857785, 0.35484439,
+            0.67870179, 0.67795452, 0.27538448, -0.15748022, 0.32956833, 0.58253529, 0.70888542, 0.45693195,
+            0.96128762, 0.05631704, 0.84887930, -0.77811192, 0.96527702, 0.67116534, 0.14428700, 0.65293223,
+            0.63062761, 0.78762117, 0.58428465, -0.46308947, 0.70694650, 0.58118099, 0.34909146, 0.51023910,
+            0.09236042, 0.91580893, 0.37518855, -0.35637199, 0.67706514, 0.33869802, 0.65639252, 0.69255500,
+            0.05762373, 0.67432100, 0.36403331, -0.24264686, 0.52162875, 0.43601734, 0.19883393, 0.84857738,
+            0.39600967, 0.99216621, 0.20393491, -0.04869354, 0.51500395, 0.80963882, 0.40297348, 0.56766319,
+            0.95396613, 0.25124877, 0.44038773, -0.40068247, 0.71611451, 0.96657647, 0.20063770, 0.95011133,
+            0.83038147, 0.20707127, 0.77568101, -0.68820062, 0.61443917, 0.71746641, 0.41676631, 0.77089223,
+            0.48197427, 0.68600931, 0.13908264, -0.02728431, 0.03059979, 0.83899307, 0.05670762, 0.56972866,
+            0.80778532, 0.69669387, 0.82418144, -0.73953784, 0.98201535, 0.40013726, 0.23750845, 0.32079502,
+            0.06164260, 0.85735186, 0.32417396, -0.22445083, 0.71456424, 0.39922794, 0.12014194, 0.01276938,
+            0.80876013, 0.61394136, 0.40650009, -0.28352976, 0.04639168, 0.13965647, 0.11911555, 0.13814158,
+            0.58582898, 0.42524621, 0.47128934, -0.34802924, 0.12402641, 0.34329212, 0.72614996, 0.91830871,
+            0.68240264, 0.55307712, 0.57303898, -0.50783070, 0.56309749, 0.20984828, 0.71177946, 0.08270716,
+            0.81345570, 0.13313925, 0.56530588, -0.44912142, 0.22719326, 0.68358791, 0.08157569, 0.06797015,
+            0.74413264, 0.20297869, 0.33748284, -0.18771837, 0.84550202, 0.92439251, 0.89655982, 0.43005601,
+            0.47725971, 0.58631907, 0.55759592, -0.44447061, 0.19325854, 0.25916275, 0.69275495, 0.02643624,
+        },
+        20, 8);
+    const NPArray<unsigned> iv(
+        {
+            1231, 3843, 6543, 2212, 8433, 5447, 3672, 3146, 1155, 4324, 7005, 1251, 7452, 2637, 3123, 4448, 5414, 5330, 2550, 5051,
+        },
+        1, 20);
+    const PearsonChecker<double, 20, 8> C_a(
+        a, iv,
+        /* pvalues: */
+        {0.44874128, -0.49549476, 0.99029853, -0.99239885, 0.27705502, 0.02249365, -0.15900137, 0.03592361}
+    );
+    // === End of automatically generated portion
+    // clang-format on
 
-    if (verbose) {
-        for (size_t sample = 0; sample < end - begin; sample++)
-            cout << sample << "\t" << cvalues[sample] << "\n";
-        cout << "Max " << max_c << " at sample " << *max_c_index << "\n";
-    }
+    // Check Pearson coefficient on each single column.
+    for (size_t i = 0; i < a.cols(); i++)
+        C_a.check(i, i + 1);
 
-    return max_c;
-}
-}
+    // Check empty range.
+    C_a.check(0, 0);
+    C_a.check(a.cols() - 1, a.cols() - 1);
 
-TEST(Correl, correl) {
-    NPArray<uint32_t> inputs(reinterpret_cast<const uint32_t *>(inputs_init),
-                             NUM_TRACES, NUM_INPUTS);
-    EXPECT_TRUE(inputs.good());
+    // Check full range.
+    C_a.check(0, a.cols());
 
-    NPArray<double> traces(reinterpret_cast<const double *>(traces_init),
-                           NUM_TRACES, NUM_SAMPLES);
-    EXPECT_TRUE(traces.good());
-
-    size_t max_c_index;
-    double max_c_value;
-
-    max_c_value =
-        correl_wrapper(traces, inputs, 0, 0, NUM_SAMPLES, &max_c_index);
-    EXPECT_NEAR(max_c_value, -0.646646, 0.0001);
-    EXPECT_EQ(max_c_index, 26);
-
-    max_c_value =
-        correl_wrapper(traces, inputs, 1, 0, NUM_SAMPLES, &max_c_index);
-    EXPECT_NEAR(max_c_value, -0.699327, 0.0001);
-    EXPECT_EQ(max_c_index, 26);
-
-    max_c_value =
-        correl_wrapper(traces, inputs, 2, 0, NUM_SAMPLES, &max_c_index);
-    EXPECT_NEAR(max_c_value, -0.589576, 0.0001);
-    EXPECT_EQ(max_c_index, 34);
-
-    max_c_value =
-        correl_wrapper(traces, inputs, 3, 0, NUM_SAMPLES, &max_c_index);
-    EXPECT_NEAR(max_c_value, -0.689161, 0.0001);
-    EXPECT_EQ(max_c_index, 34);
-
-    max_c_value = correl_wrapper(traces, inputs, 0, 20, 24, &max_c_index);
-    EXPECT_NEAR(max_c_value, -0.223799, 0.0001);
-    EXPECT_EQ(max_c_index, 1);
-
-    max_c_value = correl_wrapper(traces, inputs, 1, 20, 24, &max_c_index);
-    EXPECT_NEAR(max_c_value, -0.207255, 0.0001);
-    EXPECT_EQ(max_c_index, 1);
+    // Check partial ranges.
+    C_a.check(0, 3);
+    C_a.check(a.cols() - 4, a.cols() - 1);
 }
 
 int main(int argc, char **argv) {

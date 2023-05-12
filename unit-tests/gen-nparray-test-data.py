@@ -34,6 +34,12 @@ def welsh_t_test(a, b):
     v1 = np.var(b, axis=0, ddof=1)
     return (m0 - m1) / np.sqrt(v0/a.shape[0] + v1/b.shape[0])
 
+def pearson_correl(a, iv):
+    r = np.empty(a.shape[1])
+    for s in range(0,a.shape[1]):
+        r[s] = np.corrcoef(a[:, s], iv)[0, 1]
+    return r
+
 class Matrix:
 
     def __init__(self, test, name, ty, rows, cols, cmd_line):
@@ -47,20 +53,41 @@ class Matrix:
         self.add_matrix('a')
         if test == 'welsh':
             self.add_matrix('b')
+        elif test == 'pearson':
+            self.add_matrix('iv', np.random.randint(10000, size=[1,self.rows]))
+            if self.cols < 4:
+                sys.exit("Not enough columns")
+            # Tweak the random sample matrix so it has a positive and negative correlation.
+            for t in range(0, self.rows):
+                self.M['a'][t,2] = self.M['iv'][0,t] / 10000.0 + 0.1 * np.random.rand()
+                self.M['a'][t,3] = -1.0 * self.M['iv'][0,t] / 10000.0 + 0.1 * np.random.rand()
 
-    def add_matrix(self, name):
-        self.M[name] = np.random.rand(self.rows, self.cols)
+    def add_matrix(self, name, value = None):
+        if value is None:
+            self.M[name] = np.random.rand(self.rows, self.cols)
+        else:
+            self.M[name] = value
 
     def emit_matrices(self, indent):
         t = indent * ' '
         lines = list()
         for m in sorted(self.M.keys()):
-            lines.append(t + "const NPArray<{}> {}(".format(self.ty, m))
+            ty = None
+            if self.M[m].dtype == 'float64':
+                ty = 'double'
+            elif self.M[m].dtype == 'int64':
+                ty = 'unsigned'
+            else:
+                sys.exit("unknown type")
+            lines.append(t + "const NPArray<{}> {}(".format(ty, m))
             lines.append(t+t + "{")
             for row in self.M[m]:
-                lines.append(t+t+t + ", ".join("{:1.8f}".format(e) for e in row)+',')
+                if ty == 'double':
+                    lines.append(t+t+t + ", ".join("{:1.8f}".format(e) for e in row)+',')
+                else:
+                    lines.append(t+t+t + ", ".join("{}".format(e) for e in row)+',')
             lines.append(t+t + "},");
-            lines.append(t+t + "{}, {});".format(self.rows, self.cols))
+            lines.append(t+t + "{}, {});".format(self.M[m].shape[0], self.M[m].shape[1]))
         return lines
 
     def expected(self, t, comment, s, last=False):
@@ -145,6 +172,19 @@ class Matrix:
         lines.append(t + ");")
         return lines
 
+    def pearson(self, indent):
+        t = indent * ' '
+        a = self.M['a']
+        iv = self.M['iv']
+        lines = list()
+        lines.append(t + "const PearsonChecker<{}, {}, {}> {}(".format(self.ty,
+                     self.rows, self.cols, self.checker))
+        lines.append(t+t + ", ".join(sorted(self.M.keys())) + ",")
+        pvalues = pearson_correl(a, iv)
+        lines.extend(self.expected(t+t, "pvalues", pvalues, True))
+        lines.append(t + ");")
+        return lines
+
     def test_header(self, t):
         lines = list()
         lines.append(t + "// clang-format off")
@@ -208,7 +248,7 @@ like mean, variance, standard deviation, ...
                         help="Set the matrix element type to TYPE (default: %(default)s)",
                         default="double")
     parser.add_argument("TEST",
-                        choices=['mean', 'sum', 'student', 'welsh'],
+                        choices=['mean', 'sum', 'student', 'welsh', 'pearson'],
                         help="Generate expected values for TEST")
     options = parser.parse_args()
 

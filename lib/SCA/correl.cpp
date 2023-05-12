@@ -30,11 +30,16 @@ using std::vector;
 namespace PAF {
 namespace SCA {
 vector<double> correl(size_t b, size_t e, const NPArray<double> &traces,
-                      const unsigned intermediate[]) {
+                      const vector<double> &ival) {
 
-    assert(b < e && "Wrong begin / end samples");
+    assert(b <= e && "Wrong begin / end samples");
     assert(b <= traces.cols() && "Not that many samples in the trace");
     assert(e <= traces.cols() && "Not that many samples in the trace");
+    assert(ival.size() == traces.rows() &&
+           "Number of intermediate values does not match number of traces");
+
+    if (b == e)
+        return vector<double>();
 
     const size_t nbtraces = traces.rows();
     const size_t nbsamples = e - b;
@@ -46,15 +51,15 @@ vector<double> correl(size_t b, size_t e, const NPArray<double> &traces,
     double sum_h_sq = 0.0;
 
     for (size_t t = 0; t < nbtraces; t++) {
-        double ival = intermediate[t];
-        sum_h += ival;
-        sum_h_sq += ival * ival;
+        const double iv = ival[t];
+        sum_h += iv;
+        sum_h_sq += iv * iv;
 
         for (size_t s = 0; s < nbsamples; s++) {
-            double v = traces(t, b + s);
+            const double v = traces(t, b + s);
             sum_t[s] += v;
             sum_t_sq[s] += v * v;
-            sum_ht[s] += v * ival;
+            sum_ht[s] += v * iv;
         }
     }
 

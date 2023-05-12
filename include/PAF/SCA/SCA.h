@@ -119,8 +119,8 @@ std::vector<double> perfect_t_test(size_t b, size_t e,
                                    bool verbose);
 
 /// Compute the Pearson correlation, from samples \p b to
-/// \p e, on \p traces using the \p intermediate values.
+/// \p e, on \p traces using the \p ival intermediate values.
 std::vector<double> correl(size_t b, size_t e, const NPArray<double> &traces,
-                           const unsigned intermediate[]);
+                           const std::vector<double> &ival);
 } // namespace SCA
 } // namespace PAF
