@@ -122,21 +122,22 @@ int main(int argc, char *argv[]) {
     case GROUP_BY_NPY:
         tvalues = app.is_perfect()
                       ? perfect_t_test(app.sample_start(), sample_to_stop_at,
-                                       traces[0], traces[1], app.verbose())
+                                       traces[0], traces[1],
+                                       app.verbose() ? &cout : nullptr)
                       : t_test(app.sample_start(), sample_to_stop_at, traces[0],
                                traces[1]);
         break;
     case GROUP_INTERLEAVED: {
-        unique_ptr<Classification[]> classifier(new Classification[nbtraces]);
+        vector<Classification> classifier(nbtraces);
         for (size_t i = 0; i < nbtraces; i++)
             classifier[i] =
                 i % 2 == 0 ? Classification::GROUP_0 : Classification::GROUP_1;
-        tvalues =
-            app.is_perfect()
-                ? perfect_t_test(app.sample_start(), sample_to_stop_at,
-                                 traces[0], classifier.get(), app.verbose())
-                : t_test(app.sample_start(), sample_to_stop_at, traces[0],
-                         classifier.get());
+        tvalues = app.is_perfect()
+                      ? perfect_t_test(app.sample_start(), sample_to_stop_at,
+                                       traces[0], classifier,
+                                       app.verbose() ? &cout : nullptr)
+                      : t_test(app.sample_start(), sample_to_stop_at, traces[0],
+                               classifier);
     } break;
     }
     // Output results.

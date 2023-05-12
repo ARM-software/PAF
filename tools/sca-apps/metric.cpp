@@ -151,13 +151,13 @@ int main(int argc, char *argv[]) {
         }
 
         // Compute the metric.
-        mvalues = correl(app.sample_start(), sample_to_stop_at, traces,
-                         ivalues);
+        mvalues =
+            correl(app.sample_start(), sample_to_stop_at, traces, ivalues);
     } break;
     case Metric::T_TEST: {
         // Build the classifier.
         const unsigned hw_max = Expr::ValueType::getNumBits(expr->getType());
-        unique_ptr<Classification[]> classifier(new Classification[nbtraces]);
+        vector<Classification> classifier(nbtraces);
         for (size_t tnum = 0; tnum < nbtraces; tnum++) {
             uint32_t ival = expr->eval().getValue();
             unsigned hw = hamming_weight(ival, uint32_t(-1));
@@ -171,11 +171,12 @@ int main(int argc, char *argv[]) {
         }
 
         // Compute the metric.
-        mvalues = app.is_perfect()
-                      ? perfect_t_test(app.sample_start(), sample_to_stop_at,
-                                       traces, classifier.get(), app.verbose())
-                      : t_test(app.sample_start(), sample_to_stop_at, traces,
-                               classifier.get());
+        mvalues =
+            app.is_perfect()
+                ? perfect_t_test(app.sample_start(), sample_to_stop_at, traces,
+                                 classifier, app.verbose() ? &cout : nullptr)
+                : t_test(app.sample_start(), sample_to_stop_at, traces,
+                         classifier);
     } break;
     }
 

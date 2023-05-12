@@ -28,12 +28,14 @@
 #include <functional>
 #include <iostream>
 #include <memory>
+#include <sstream>
 #include <vector>
 
 using namespace PAF::SCA;
 using namespace testing;
 
 using std::cout;
+using std::ostringstream;
 using std::unique_ptr;
 using std::vector;
 
@@ -126,7 +128,7 @@ template <typename Ty, size_t rows, size_t cols> class WelshChecker {
         for (size_t i = 0; i < Ma.rows(); i++)
             c[i] =
                 i % 2 == 0 ? Classification::GROUP_0 : Classification::GROUP_1;
-        double t = t_test(i, Ma, c.data());
+        double t = t_test(i, Ma, c);
         EXPECT_NEAR(t, tvaluesOddEven[i], EPSILON);
     }
 
@@ -136,7 +138,7 @@ template <typename Ty, size_t rows, size_t cols> class WelshChecker {
         for (size_t tnum = 0; tnum < Ma.rows(); tnum++)
             c[tnum] = tnum % 2 == 0 ? Classification::GROUP_0
                                     : Classification::GROUP_1;
-        const vector<double> t = t_test(b, e, Ma, c.data());
+        const vector<double> t = t_test(b, e, Ma, c);
         EXPECT_EQ(t.size(), e - b);
         for (size_t i = b; i < e; i++)
             EXPECT_NEAR(t[i - b], tvaluesOddEven[i], EPSILON);
@@ -372,123 +374,193 @@ TEST(TTest, student) {
     C_a.check(2, 5);
 }
 
-#include "ttest-correl-data.inc.cpp"
-
 namespace {
-// A wrapper for the boilerplate required for a specific T-Test.
-double ttest_wrapper(const NPArray<double> &traces,
-                     const NPArray<uint32_t> &inputs, size_t index,
-                     size_t begin, size_t end, size_t *max_t_index,
-                     bool verbose = false) {
-    const size_t num_traces = traces.rows();
-    unique_ptr<Classification[]> classifier(new Classification[num_traces]);
-    for (size_t tnum = 0; tnum < num_traces; tnum++) {
-        uint32_t value = inputs(tnum, index);
-        unsigned hw = hamming_weight<uint32_t>(value, -1U);
-        const unsigned HW_MAX = 8 * sizeof(uint32_t);
-        if (hw < HW_MAX / 2)
-            classifier[tnum] = Classification::GROUP_0;
-        else if (hw > HW_MAX / 2)
-            classifier[tnum] = Classification::GROUP_1;
-        else
-            classifier[tnum] = Classification::IGNORE;
+template <typename Ty, size_t rows, size_t cols> class PerfectChecker {
+
+  public:
+    PerfectChecker(const NPArray<Ty> &a, const NPArray<Ty> &b,
+                   const NPArray<Ty> &c,
+                   std::initializer_list<Ty> tvaluesEvenOdd,
+                   std::initializer_list<Ty> tvalues)
+        : Ma(a), Mb(b), Mc(c), tvaluesEvenOdd(tvaluesEvenOdd),
+          tvalues(tvalues) {
+        // Some sanity checks.
+        assert(tvaluesEvenOdd.size() == cols &&
+               "expecting even tvalues size to match number of columns");
+        assert(tvalues.size() == cols &&
+               "expecting odd tvalues size to match number of columns");
     }
 
-    vector<double> tvalues = t_test(begin, end, traces, classifier.get());
+    // Check perfect t_test on a range of columns.
+    void check(size_t b, size_t e, const char *stats) const {
+        assert(b <= e && "Range improperly defined");
+        assert(b < cols && "Out of range begin");
+        assert(e <= cols && "Out of range end");
 
-    const double max_t = find_max(tvalues, max_t_index);
+        vector<Classification> classifier(rows);
+        for (size_t t = 0; t < rows; t++)
+            classifier[t] =
+                t % 2 == 0 ? Classification::GROUP_0 : Classification::GROUP_1;
+        vector<double> t = perfect_t_test(b, e, Ma, classifier);
+        EXPECT_EQ(t.size(), e - b);
+        for (size_t i = b; i < e; i++)
+            EXPECT_NEAR(t[i - b], tvaluesEvenOdd[i], EPSILON);
 
-    if (verbose) {
-        for (size_t sample = 0; sample < end - begin; sample++)
-            cout << sample << "\t" << tvalues[sample] << "\n";
-        cout << "Max " << max_t << " at sample " << *max_t_index << "\n";
+        ostringstream os;
+        perfect_t_test(b, e, Ma, classifier, &os);
+        EXPECT_EQ(os.str(), stats);
     }
 
-    return max_t;
-}
-}
+    // Check perfect t_test on a range of columns.
+    void check2(size_t b, size_t e, const char *stats) const {
+        assert(b <= e && "Range improperly defined");
+        assert(b < cols && "Out of range begin");
+        assert(e <= cols && "Out of range end");
 
-TEST(TTest, specific) {
-    NPArray<uint32_t> inputs(reinterpret_cast<const uint32_t *>(inputs_init),
-                             NUM_TRACES, NUM_INPUTS);
-    EXPECT_TRUE(inputs.good());
+        vector<double> t = perfect_t_test(b, e, Mb, Mc);
+        EXPECT_EQ(t.size(), e - b);
+        for (size_t i = b; i < e; i++)
+            EXPECT_NEAR(t[i - b], tvalues[i], EPSILON);
 
-    NPArray<double> traces(reinterpret_cast<const double *>(traces_init),
-                           NUM_TRACES, NUM_SAMPLES);
-    EXPECT_TRUE(traces.good());
-
-    size_t max_t_index;
-    double max_t_value;
-
-    max_t_value =
-        ttest_wrapper(traces, inputs, 0, 0, NUM_SAMPLES, &max_t_index);
-    EXPECT_NEAR(max_t_value, 65.2438, 0.0001);
-    EXPECT_EQ(max_t_index, 26);
-
-    max_t_value =
-        ttest_wrapper(traces, inputs, 1, 0, NUM_SAMPLES, &max_t_index);
-    EXPECT_NEAR(max_t_value, 72.7487, 0.0001);
-    EXPECT_EQ(max_t_index, 25);
-
-    max_t_value =
-        ttest_wrapper(traces, inputs, 2, 0, NUM_SAMPLES, &max_t_index);
-    EXPECT_NEAR(max_t_value, 57.2091, 0.0001);
-    EXPECT_EQ(max_t_index, 34);
-
-    max_t_value =
-        ttest_wrapper(traces, inputs, 3, 0, NUM_SAMPLES, &max_t_index);
-    EXPECT_NEAR(max_t_value, 71.2911, 0.0001);
-    EXPECT_EQ(max_t_index, 34);
-
-    max_t_value = ttest_wrapper(traces, inputs, 0, 21, 22, &max_t_index);
-    EXPECT_NEAR(max_t_value, 20.0409, 0.0001);
-    EXPECT_EQ(max_t_index, 0);
-
-    max_t_value = ttest_wrapper(traces, inputs, 1, 21, 22, &max_t_index);
-    EXPECT_NEAR(max_t_value, 17.9318, 0.0001);
-    EXPECT_EQ(max_t_index, 0);
-}
-
-namespace {
-// A wrapper for the boilerplate required for a non-specific T-Test.
-double nsttest_wrapper(const NPArray<double> &group0,
-                     const NPArray<double> &group1, size_t begin, size_t end,
-                     size_t *max_t_index, bool verbose = false) {
-    vector<double> tvalues = t_test(begin, end, group0, group1);
-
-    double max_t = find_max(tvalues, max_t_index);
-
-    if (verbose) {
-        for (size_t sample = 0; sample < end - begin; sample++)
-            cout << sample << "\t" << tvalues[sample] << "\n";
-        cout << "Max " << max_t << " at sample " << *max_t_index << "\n";
+        ostringstream os;
+        perfect_t_test(b, e, Mb, Mc, &os);
+        EXPECT_EQ(os.str(), stats);
     }
 
-    return max_t;
-}
-}
-
-TEST(TTest, non_specific) {
-    NPArray<double> group0(reinterpret_cast<const double *>(group0_init),
-                           NUM_TRACES, NUM_SAMPLES);
-    EXPECT_TRUE(group0.good());
-
-    NPArray<double> group1(reinterpret_cast<const double *>(group1_init),
-                           NUM_TRACES, NUM_SAMPLES);
-    EXPECT_TRUE(group1.good());
-
-    size_t max_t_index;
-    double max_t_value;
-
-    max_t_value = nsttest_wrapper(group0, group1, 0, NUM_SAMPLES, &max_t_index);
-    EXPECT_NEAR(max_t_value, -12.5702, 0.0001);
-    EXPECT_EQ(max_t_index, 6);
-
-    max_t_value = nsttest_wrapper(group0, group1, 7, 20, &max_t_index);
-    EXPECT_NEAR(max_t_value, -11.8445, 0.0001);
-    EXPECT_EQ(max_t_index, 8);
+  private:
+    const NPArray<Ty> &Ma;
+    const NPArray<Ty> &Mb;
+    const NPArray<Ty> &Mc;
+    const std::vector<Ty> tvaluesEvenOdd;
+    const std::vector<Ty> tvalues;
+};    
 }
 
+TEST(TTest, perfect) {
+    // clang-format off
+    // === Generated automatically with 'gen-nparray-test-data.py --rows 20 --columns 8 perfect'
+    const NPArray<double> a(
+        {
+            0.92586230, 0.54659869, 0.63515903, 0.54214928, 0.83720281, 0.79466868, 0.12150854, 0.06892477,
+            0.44561623, 0.54659869, 0.95899445, 0.10058747, 0.11102025, 0.87249957, 0.23158761, 0.20036694,
+            0.08112534, 0.54659869, 0.63515903, 0.54214928, 0.38931112, 0.23340966, 0.08059819, 0.82206581,
+            0.87964174, 0.54659869, 0.95899445, 0.85882345, 0.11102025, 0.26677049, 0.40900463, 0.76651162,
+            0.49321233, 0.54659869, 0.63515903, 0.54214928, 0.06825513, 0.30422733, 0.06891280, 0.44501763,
+            0.86499211, 0.54659869, 0.95899445, 0.88263012, 0.11102025, 0.95885288, 0.37949811, 0.15513699,
+            0.18921328, 0.54659869, 0.63515903, 0.54214928, 0.17419423, 0.99276421, 0.26566107, 0.58427582,
+            0.16715464, 0.54659869, 0.95899445, 0.12097216, 0.11102025, 0.24229320, 0.35754480, 0.82311602,
+            0.45787737, 0.54659869, 0.63515903, 0.54214928, 0.05712542, 0.25882073, 0.26946724, 0.64266651,
+            0.60070820, 0.54659869, 0.95899445, 0.82532237, 0.11102025, 0.61287260, 0.48648625, 0.84631691,
+            0.45419850, 0.54659869, 0.63515903, 0.54214928, 0.12881279, 0.91679549, 0.09914726, 0.75934549,
+            0.64734252, 0.54659869, 0.95899445, 0.24545804, 0.11102025, 0.72054088, 0.32298245, 0.79589100,
+            0.96171010, 0.54659869, 0.63515903, 0.54214928, 0.75757474, 0.37632565, 0.34608001, 0.58756794,
+            0.53938554, 0.54659869, 0.95899445, 0.57288094, 0.11102025, 0.30853015, 0.89958217, 0.03350067,
+            0.20622102, 0.54659869, 0.63515903, 0.54214928, 0.40350824, 0.71559512, 0.00149145, 0.31288936,
+            0.94462251, 0.54659869, 0.95899445, 0.27634542, 0.11102025, 0.03007230, 0.52673522, 0.22177733,
+            0.81250274, 0.54659869, 0.63515903, 0.54214928, 0.38125862, 0.00097666, 0.02909826, 0.23277972,
+            0.46278942, 0.54659869, 0.95899445, 0.12755284, 0.11102025, 0.29992625, 0.52832699, 0.22281012,
+            0.30470765, 0.54659869, 0.63515903, 0.54214928, 0.32724404, 0.30558283, 0.87214130, 0.72162232,
+            0.55376803, 0.54659869, 0.95899445, 0.31768859, 0.11102025, 0.65460952, 0.71995621, 0.57747681,
+        },
+        20, 8);
+    const NPArray<double> b(
+        {
+            0.69295706, 0.00265657, 0.77095734, 0.95369872, 0.18741533, 0.14555999, 0.89064181, 0.87574086,
+            0.02472422, 0.00265657, 0.77095734, 0.95369872, 0.20824344, 0.17925683, 0.96956040, 0.07129914,
+            0.15689182, 0.00265657, 0.77095734, 0.95369872, 0.04988810, 0.29920602, 0.82198223, 0.67871737,
+            0.06631499, 0.00265657, 0.77095734, 0.95369872, 0.53678916, 0.87620748, 0.79471887, 0.20252838,
+            0.77231263, 0.00265657, 0.77095734, 0.95369872, 0.84336697, 0.49957678, 0.70457260, 0.28557258,
+            0.46949196, 0.00265657, 0.77095734, 0.95369872, 0.05823744, 0.90388204, 0.96192117, 0.50623015,
+            0.70783829, 0.00265657, 0.77095734, 0.95369872, 0.82050578, 0.20988696, 0.60909387, 0.29305193,
+            0.78110519, 0.00265657, 0.77095734, 0.95369872, 0.23856956, 0.20751126, 0.85308183, 0.34438093,
+            0.97367608, 0.00265657, 0.77095734, 0.95369872, 0.68363260, 0.11439201, 0.28640495, 0.45608105,
+            0.25726276, 0.00265657, 0.77095734, 0.95369872, 0.43248697, 0.54266676, 0.21328941, 0.80315428,
+            0.16886887, 0.00265657, 0.77095734, 0.95369872, 0.12633678, 0.21605402, 0.36264986, 0.68304042,
+            0.62618871, 0.00265657, 0.77095734, 0.95369872, 0.74968324, 0.72416357, 0.88456455, 0.86337115,
+            0.60958610, 0.00265657, 0.77095734, 0.95369872, 0.00107489, 0.94577365, 0.42530240, 0.15241487,
+            0.80458677, 0.00265657, 0.77095734, 0.95369872, 0.48757265, 0.69836576, 0.20977333, 0.62354887,
+            0.26526547, 0.00265657, 0.77095734, 0.95369872, 0.96768521, 0.39207173, 0.36998379, 0.30004009,
+            0.88439167, 0.00265657, 0.77095734, 0.95369872, 0.91673186, 0.02620704, 0.35508014, 0.85978316,
+            0.57489238, 0.00265657, 0.77095734, 0.95369872, 0.83952554, 0.00025905, 0.76079852, 0.30515026,
+            0.32785533, 0.00265657, 0.77095734, 0.95369872, 0.71609787, 0.40898542, 0.14700180, 0.12651844,
+            0.44987184, 0.00265657, 0.77095734, 0.95369872, 0.35429163, 0.36032525, 0.06965063, 0.94760438,
+            0.45722930, 0.00265657, 0.77095734, 0.95369872, 0.04569244, 0.41856965, 0.82462331, 0.38617660,
+        },
+        20, 8);
+    const NPArray<double> c(
+        {
+            0.30483550, 0.00265657, 0.70351428, 0.01295820, 0.37065464, 0.71217601, 0.13568417, 0.98227853,
+            0.17345918, 0.00265657, 0.70351428, 0.02407060, 0.37065464, 0.86847548, 0.00826541, 0.75342193,
+            0.13239187, 0.00265657, 0.70351428, 0.74352795, 0.37065464, 0.63833308, 0.74933901, 0.67169645,
+            0.36788625, 0.00265657, 0.70351428, 0.83466816, 0.37065464, 0.49985421, 0.06267845, 0.05223200,
+            0.46072966, 0.00265657, 0.70351428, 0.70361789, 0.37065464, 0.00926128, 0.64188020, 0.30030767,
+            0.18162675, 0.00265657, 0.70351428, 0.10321178, 0.37065464, 0.36903504, 0.01729320, 0.97889003,
+            0.98695592, 0.00265657, 0.70351428, 0.90363790, 0.37065464, 0.54331296, 0.37910606, 0.17023733,
+            0.50410687, 0.00265657, 0.70351428, 0.14102933, 0.37065464, 0.97390486, 0.98140680, 0.38547024,
+            0.37780726, 0.00265657, 0.70351428, 0.64650473, 0.37065464, 0.27886869, 0.81209939, 0.58501091,
+            0.25880300, 0.00265657, 0.70351428, 0.12361846, 0.37065464, 0.94577986, 0.79789369, 0.15534621,
+            0.57577825, 0.00265657, 0.70351428, 0.92114885, 0.37065464, 0.44456901, 0.33556792, 0.77473807,
+            0.70298358, 0.00265657, 0.70351428, 0.51098876, 0.37065464, 0.38330481, 0.40378208, 0.39437190,
+            0.03348130, 0.00265657, 0.70351428, 0.11625075, 0.37065464, 0.25881605, 0.31980811, 0.33544043,
+            0.85984206, 0.00265657, 0.70351428, 0.31320831, 0.37065464, 0.56696018, 0.95955701, 0.26870855,
+            0.60946029, 0.00265657, 0.70351428, 0.53065668, 0.37065464, 0.52782134, 0.41567230, 0.93466173,
+            0.43858026, 0.00265657, 0.70351428, 0.01808997, 0.37065464, 0.21700566, 0.17041454, 0.81866116,
+            0.76830965, 0.00265657, 0.70351428, 0.51097970, 0.37065464, 0.24399114, 0.27612174, 0.48161483,
+            0.18041267, 0.00265657, 0.70351428, 0.53637625, 0.37065464, 0.22056751, 0.46432138, 0.38410849,
+            0.39358402, 0.00265657, 0.70351428, 0.18532575, 0.37065464, 0.56581660, 0.86941506, 0.34539684,
+            0.86522075, 0.00265657, 0.70351428, 0.36936075, 0.37065464, 0.81677576, 0.47570648, 0.30287816,
+        },
+        20, 8);
+    const PerfectChecker<double, 20, 8> C_a(
+        a, b, c,
+        /* tvalues odd / even traces: */
+        {-0.97928140, 0.00000000, 0.00000000, -1.07479395, 2.83149963, -0.04702043, -2.63459236, 0.41326471},
+        /* tvalues group a / group b: */
+        {0.50989641, 0.00000000, 0.00000000, -7.76554691, 1.24032898, -1.08612840, 1.14719145, -0.17250304}
+    );
+    // === End of automatically generated portion
+    // clang-format on
+
+    // Empty range (even / odd traces)
+    C_a.check(0, 0,
+              "Num samples:0\tNum traces:10+10\nSame constant value: 0 "
+              "(-%)\nDifferent constant values: 0 (-%)\nStudent t-test: 0 "
+              "(-%)\nWelsh t-test: 0 (-%)\n");
+    C_a.check(2, 2,
+              "Num samples:0\tNum traces:10+10\nSame constant value: 0 "
+              "(-%)\nDifferent constant values: 0 (-%)\nStudent t-test: 0 "
+              "(-%)\nWelsh t-test: 0 (-%)\n");
+
+    // Range (even / odd traces)
+    C_a.check(0, a.cols(),
+              "Num samples:8\tNum traces:10+10\nSame constant value: 1 "
+              "(12.5%)\nDifferent constant values: 1 (12.5%)\nStudent t-test: "
+              "2 (25%)\nWelsh t-test: 4 (50%)\n");
+    C_a.check(2, 5,
+              "Num samples:3\tNum traces:10+10\nSame constant value: 0 "
+              "(0%)\nDifferent constant values: 1 (33.3333%)\nStudent t-test: "
+              "2 (66.6667%)\nWelsh t-test: 0 (0%)\n");
+
+    // Empty range (2 groups)
+    C_a.check2(0, 0,
+               "Num samples:0\tNum traces:20+20\nSame constant value: 0 "
+               "(-%)\nDifferent constant values: 0 (-%)\nStudent t-test: 0 "
+               "(-%)\nWelsh t-test: 0 (-%)\n");
+    C_a.check2(2, 2,
+               "Num samples:0\tNum traces:20+20\nSame constant value: 0 "
+               "(-%)\nDifferent constant values: 0 (-%)\nStudent t-test: 0 "
+               "(-%)\nWelsh t-test: 0 (-%)\n");
+
+    // Range (2 groups)
+    C_a.check2(0, a.cols(),
+               "Num samples:8\tNum traces:20+20\nSame constant value: 1 "
+               "(12.5%)\nDifferent constant values: 1 (12.5%)\nStudent t-test: "
+               "2 (25%)\nWelsh t-test: 4 (50%)\n");
+    C_a.check2(1, 5,
+               "Num samples:4\tNum traces:20+20\nSame constant value: 1 "
+               "(25%)\nDifferent constant values: 1 (25%)\nStudent t-test: 2 "
+               "(50%)\nWelsh t-test: 0 (0%)\n");
+}
 namespace {
 template <typename Ty, size_t rows, size_t cols> class PearsonChecker {
   public:

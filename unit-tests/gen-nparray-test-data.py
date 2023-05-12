@@ -34,6 +34,36 @@ def welsh_t_test(a, b):
     v1 = np.var(b, axis=0, ddof=1)
     return (m0 - m1) / np.sqrt(v0/a.shape[0] + v1/b.shape[0])
 
+def perfect_t_test(a, b):
+    if a.shape != b.shape:
+        sys.exit("Shapes don't match")
+    r = np.empty(a.shape[1])
+    for s in range(0, a.shape[1]):
+        aConstant = np.all(a[:, s] == a[0, s], axis=0)
+        bConstant = np.all(b[:, s] == b[0, s], axis=0)
+        if aConstant and bConstant:
+            r[s] = 0.0
+        elif aConstant:
+            # Student's t-test
+            m0 = a[0, s]
+            m = np.mean(b[:, s], axis=0)
+            v = np.var(b[:, s], axis=0, ddof=1)
+            r[s] = np.sqrt(b.shape[0]) * (m - m0) / np.sqrt(v)
+        elif bConstant:
+            # Student's t-test
+            m0 = b[0, s]
+            m = np.mean(a[:, s], axis=0)
+            v = np.var(a[:, s], axis=0, ddof=1)
+            r[s] = np.sqrt(a.shape[0]) * (m - m0) / np.sqrt(v)
+        else:
+            # Welsh t-test
+            m0 = np.mean(a[:, s], axis=0)
+            v0 = np.var(a[:, s], axis=0, ddof=1)
+            m1 = np.mean(b[:, s], axis=0)
+            v1 = np.var(b[:, s], axis=0, ddof=1)
+            r[s] = (m0 - m1) / np.sqrt(v0/a.shape[0] + v1/b.shape[0])
+    return r
+
 def pearson_correl(a, iv):
     r = np.empty(a.shape[1])
     for s in range(0,a.shape[1]):
@@ -61,6 +91,26 @@ class Matrix:
             for t in range(0, self.rows):
                 self.M['a'][t,2] = self.M['iv'][0,t] / 10000.0 + 0.1 * np.random.rand()
                 self.M['a'][t,3] = -1.0 * self.M['iv'][0,t] / 10000.0 + 0.1 * np.random.rand()
+        elif test == 'perfect':
+            self.add_matrix('b')
+            self.add_matrix('c')
+            if self.cols < 5:
+                sys.exit("Not enough columns")
+            # Column 1: group0 and group1 are constant and equal
+            self.M['a'][:,1] = self.M['a'][0,1]
+            self.M['b'][:,1] = self.M['b'][0,1]
+            self.M['c'][:,1] = self.M['b'][0,1]
+            # Column 2: group0 and group1 are constant, but different
+            self.M['a'][0::2,2] = self.M['a'][0,2]
+            self.M['a'][1::2,2] = self.M['a'][1,2]
+            self.M['b'][:,2] = self.M['b'][0,2]
+            self.M['c'][:,2] = self.M['c'][0,2]
+            # Column 3: group0 is constant
+            self.M['a'][0::2,3] = self.M['a'][0,3]
+            self.M['b'][:,3] = self.M['b'][0,3]
+            # column 4: group1 is constant
+            self.M['a'][1::2,4] = self.M['a'][1,4]
+            self.M['c'][:,4] = self.M['c'][0,4]
 
     def add_matrix(self, name, value = None):
         if value is None:
@@ -172,6 +222,22 @@ class Matrix:
         lines.append(t + ");")
         return lines
 
+    def perfect(self, indent):
+        t = indent * ' '
+        a = self.M['a']
+        b = self.M['b']
+        c = self.M['c']
+        lines = list()
+        lines.append(t + "const PerfectChecker<{}, {}, {}> {}(".format(self.ty,
+                     self.rows, self.cols, self.checker))
+        lines.append(t+t + ", ".join(sorted(self.M.keys())) + ",")
+        tvalues = perfect_t_test(a[0::2], a[1::2])
+        lines.extend(self.expected(t+t, "tvalues odd / even traces", tvalues))
+        tvalues2 = perfect_t_test(b, c)
+        lines.extend(self.expected(t+t, "tvalues group a / group b", tvalues2, True))
+        lines.append(t + ");")
+        return lines
+
     def pearson(self, indent):
         t = indent * ' '
         a = self.M['a']
@@ -248,7 +314,7 @@ like mean, variance, standard deviation, ...
                         help="Set the matrix element type to TYPE (default: %(default)s)",
                         default="double")
     parser.add_argument("TEST",
-                        choices=['mean', 'sum', 'student', 'welsh', 'pearson'],
+                        choices=['mean', 'sum', 'student', 'welsh', 'perfect', 'pearson'],
                         help="Generate expected values for TEST")
     options = parser.parse_args()
 

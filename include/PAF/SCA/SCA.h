@@ -23,6 +23,7 @@
 #include "PAF/SCA/NPArray.h"
 
 #include <functional>
+#include <ostream>
 #include <vector>
 
 namespace PAF {
@@ -52,12 +53,12 @@ enum class Classification : char {
 /// Compute Welsh t-test from sample \p b to \p e on \p traces, using the
 /// classification from \p classifier.
 std::vector<double> t_test(size_t b, size_t e, const NPArray<double> &traces,
-                           const Classification classifier[]);
+                           const std::vector<Classification> &classifier);
 
 /// Compute Welsh t-test for sample \p s on \p traces, using the
 /// classification from \p classifier.
 double t_test(size_t s, const NPArray<double> &traces,
-              const Classification classifier[]);
+              const std::vector<Classification> &classifier);
 
 /// Compute Welsh's t-test from sample \p b to \p e on traces, assuming the
 /// traces have been split into \p group0 and \p group1.
@@ -100,7 +101,8 @@ std::vector<double> t_test(size_t b, size_t e, const std::vector<double> &m0,
 ///  - run a Welsh t-test otherwise
 std::vector<double> perfect_t_test(size_t b, size_t e,
                                    const NPArray<double> &group0,
-                                   const NPArray<double> &group1, bool verbose);
+                                   const NPArray<double> &group1,
+                                   std::ostream *os = nullptr);
 
 /// Compute the so-called perfect t-test between 2 groups of traces from \p
 /// traces, grouped according to \p classifier, from sample \p b to \p e.
@@ -113,10 +115,10 @@ std::vector<double> perfect_t_test(size_t b, size_t e,
 ///  - if variance(group0(t)) == 0 or variance(group1(t)) == 0, run a Student
 ///  t-test.
 ///  - run a Welsh t-test otherwise
-std::vector<double> perfect_t_test(size_t b, size_t e,
-                                   const NPArray<double> &traces,
-                                   const Classification classifier[],
-                                   bool verbose);
+std::vector<double>
+perfect_t_test(size_t b, size_t e, const NPArray<double> &traces,
+               const std::vector<Classification> &classifier,
+               std::ostream *os = nullptr);
 
 /// Compute the Pearson correlation, from samples \p b to
 /// \p e, on \p traces using the \p ival intermediate values.

@@ -29,6 +29,7 @@
 using std::array;
 using std::cout;
 using std::function;
+using std::ostream;
 using std::sqrt;
 using std::vector;
 
@@ -37,7 +38,7 @@ namespace SCA {
 
 /// Welsh t-test with one group of traces and a classification array.
 vector<double> t_test(size_t b, size_t e, const NPArray<double> &traces,
-                      const Classification classifier[]) {
+                      const vector<Classification> &classifier) {
     assert(b <= e && "Wrong begin / end samples");
     assert(b <= traces.cols() && "Not that many samples in the trace");
     assert(e <= traces.cols() && "Not that many samples in the trace");
@@ -95,7 +96,7 @@ vector<double> t_test(size_t b, size_t e, const NPArray<double> &traces,
 
 /// Welsh t-test with one group of traces and a classification array.
 double t_test(size_t s, const NPArray<double> &traces,
-              const Classification classifier[]) {
+              const vector<Classification> &classifier) {
     const auto tvalues = t_test(s, s + 1, traces, classifier);
     return tvalues[0];
 }
@@ -232,33 +233,38 @@ class PerfectStats {
 
     PerfectStats() : cnt({0}) {}
 
-    void incr(TT t) { cnt[t] += 1; }
+    void incr(TT t) { cnt[t] += 1;}
     size_t count(TT t) const { return cnt[t]; }
 
-    void dump(std::ostream &os, size_t ns, size_t ntg0, size_t ntg1) const {
-        double num_points = ns;
+    void dump(ostream &os, size_t ntg0, size_t ntg1) const {
+        size_t ns = 0;
+        for (const auto &c : cnt)
+            ns += c;
         os << "Num samples:" << ns << "\tNum traces:" << ntg0 << '+' << ntg1
            << '\n';
-        os << "Same constant value: " << count(SAME_CONSTANT_VALUE) << " ("
-           << (100.0 * double(count(SAME_CONSTANT_VALUE)) / num_points)
-           << "%)\n";
-        os << "Different constant values: " << count(DIFFERENT_CONSTANT_VALUES)
-           << " ("
-           << (100.0 * double(count(DIFFERENT_CONSTANT_VALUES)) / num_points)
-           << "%)\n";
-        os << "Student t-test: " << count(STUDENT_T_TEST) << " ("
-           << (100.0 * double(count(STUDENT_T_TEST)) / num_points) << "%)\n";
-        os << "Welsh t-test: " << count(WELSH_T_TEST) << " ("
-           << (100.0 * double(count(WELSH_T_TEST)) / num_points) << "%)\n";
+
+        emit(os, "Same constant value", SAME_CONSTANT_VALUE, ns);
+        emit(os, "Different constant values", DIFFERENT_CONSTANT_VALUES, ns);
+        emit(os, "Student t-test", STUDENT_T_TEST, ns);
+        emit(os, "Welsh t-test", WELSH_T_TEST, ns);
     }
 
   private:
     array<size_t, _LAST_STAT> cnt;
+
+    void emit(ostream &os, const char *str, TT t, size_t ns) const {
+        os << str << ": " << count(t) << " (";
+        if (ns == 0)
+            os << '-';
+        else
+            os << 100.0 * double(count(t)) / double(ns);
+        os << "%)\n";
+    }
 };
 } // namespace
 
 vector<double> perfect_t_test(size_t b, size_t e, const NPArray<double> &group0,
-                              const NPArray<double> &group1, bool verbose) {
+                              const NPArray<double> &group1, ostream *os) {
     assert(b <= e && "Wrong begin / end samples");
     assert(b < group0.cols() && "Not that many samples in traces");
     assert(e <= group0.cols() && "Not that many samples in traces");
@@ -298,14 +304,15 @@ vector<double> perfect_t_test(size_t b, size_t e, const NPArray<double> &group0,
         }
     }
 
-    if (verbose)
-        PS.dump(cout, tt.size(), group0.rows(), group1.rows());
+    if (os)
+        PS.dump(*os, group0.rows(), group1.rows());
 
     return tt;
 }
 
 vector<double> perfect_t_test(size_t b, size_t e, const NPArray<double> &traces,
-                              const Classification classifier[], bool verbose) {
+                              const vector<Classification> &classifier,
+                              ostream *os) {
     assert(b <= e && "Wrong begin / end samples");
     assert(b < traces.cols() && "Not that many samples in traces");
     assert(e <= traces.cols() && "Not that many samples in traces");
@@ -389,8 +396,8 @@ vector<double> perfect_t_test(size_t b, size_t e, const NPArray<double> &traces,
         }
     }
 
-    if (verbose)
-        PS.dump(cout, tt.size(), group0Cnt, group1Cnt);
+    if (os)
+        PS.dump(*os, group0Cnt, group1Cnt);
 
     return tt;
 }
