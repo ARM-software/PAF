@@ -65,29 +65,29 @@ TEST(Expr, Constants) {
     Constant CU8(ValueType::UINT8, 0);
     EXPECT_EQ(CU8.getType(), ValueType::UINT8);
     EXPECT_EQ(CU8.eval().getValue(), 0);
-    EXPECT_EQ(CU8.repr(), std::to_string(0));
+    EXPECT_EQ(CU8.repr(), "0_u8");
 
     Constant CU16(ValueType::UINT16, 1);
     EXPECT_EQ(CU16.getType(), ValueType::UINT16);
     EXPECT_EQ(CU16.eval().getValue(), 1);
-    EXPECT_EQ(CU16.repr(), std::to_string(1));
+    EXPECT_EQ(CU16.repr(), "1_u16");
 
     Constant CU32(ValueType::UINT32, 2);
     EXPECT_EQ(CU32.getType(), ValueType::UINT32);
     EXPECT_EQ(CU32.eval().getValue(), 2);
-    EXPECT_EQ(CU32.repr(), std::to_string(2));
+    EXPECT_EQ(CU32.repr(), "2_u32");
 
     Constant CU64(ValueType::UINT64, 1234);
     EXPECT_EQ(CU64.getType(), ValueType::UINT64);
     EXPECT_EQ(CU64.eval().getValue(), 1234);
-    EXPECT_EQ(CU64.repr(), std::to_string(1234));
+    EXPECT_EQ(CU64.repr(), "1234_u64");
 }
 
 TEST(Expr, UnaryOps) {
     unique_ptr<Expr> uop(new Not(new Constant(ValueType::UINT16, 0xAA55)));
     EXPECT_EQ(uop->getType(), ValueType::UINT16);
     EXPECT_EQ(uop->eval().getValue(), 0x55AA);
-    EXPECT_EQ(uop->repr(), "~43605");
+    EXPECT_EQ(uop->repr(), "~43605_u16");
 }
 
 TEST(Expr, BinaryOps) {
@@ -95,19 +95,19 @@ TEST(Expr, BinaryOps) {
                                  new Constant(ValueType::UINT16, 0x5132)));
     EXPECT_EQ(bop->getType(), ValueType::UINT16);
     EXPECT_EQ(bop->eval().getValue(), 0xF420);
-    EXPECT_EQ(bop->repr(), "XOR(42258,20786)");
+    EXPECT_EQ(bop->repr(), "XOR(42258_u16,20786_u16)");
 
     bop.reset(new Or(new Constant(ValueType::UINT16, 0xA512),
                      new Constant(ValueType::UINT16, 0x5132)));
     EXPECT_EQ(bop->getType(), ValueType::UINT16);
     EXPECT_EQ(bop->eval().getValue(), 0xF532);
-    EXPECT_EQ(bop->repr(), "OR(42258,20786)");
+    EXPECT_EQ(bop->repr(), "OR(42258_u16,20786_u16)");
 
     bop.reset(new And(new Constant(ValueType::UINT16, 0xA512),
                       new Constant(ValueType::UINT16, 0x5132)));
     EXPECT_EQ(bop->getType(), ValueType::UINT16);
     EXPECT_EQ(bop->eval().getValue(), 0x0112);
-    EXPECT_EQ(bop->repr(), "AND(42258,20786)");
+    EXPECT_EQ(bop->repr(), "AND(42258_u16,20786_u16)");
 }
 
 TEST(Expr, Inputs) {

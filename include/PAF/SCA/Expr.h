@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: <text>Copyright 2021,2022 Arm Limited and/or its
+ * SPDX-FileCopyrightText: <text>Copyright 2021,2022,2023 Arm Limited and/or its
  * affiliates <open-source-office@arm.com></text>
  * SPDX-License-Identifier: Apache-2.0
  *
@@ -171,9 +171,7 @@ class Constant : public InputBase {
     virtual Value eval() const override { return Value(Val); }
 
     /// Get a string representation of this Constant.
-    virtual std::string repr() const override {
-        return Val.repr();
-    }
+    virtual std::string repr() const override;
 
   private:
     const Value Val;

@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: <text>Copyright 2021,2022 Arm Limited and/or its
+ * SPDX-FileCopyrightText: <text>Copyright 2021,2022,2023 Arm Limited and/or its
  * affiliates <open-source-office@arm.com></text>
  * SPDX-License-Identifier: Apache-2.0
  *
@@ -34,14 +34,37 @@ Input::~Input() {}
 UnaryOp::~UnaryOp() {}
 Not::~Not() {}
 BinaryOp::~BinaryOp() {}
+Xor::~Xor() {}
+Or::~Or() {}
+And::~And() {}
 
 string BinaryOp::lrepr(const char *op) const {
     return string(op) + "(" + LHS->repr() + "," + RHS->repr() + ")";
 }
 
-Xor::~Xor() {}
-Or::~Or() {}
-And::~And() {}
+string Constant::repr() const {
+    string s(Val.repr());
+    s += "_u";
+    switch (getType()) {
+    case ValueType::UINT8:
+        s += '8';
+        break;
+    case ValueType::UINT16:
+        s += "16";
+        break;
+    case ValueType::UINT32:
+        s += "32";
+        break;
+    case ValueType::UINT64:
+        s += "64";
+        break;
+    case ValueType::UNDEF:
+        s += "undef";
+        break;
+    }
+    return s;
+}
+
 } // namespace Expr
 } // namespace SCA
 } // namespace PAF
