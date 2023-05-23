@@ -1,5 +1,5 @@
 ..
-  SPDX-FileCopyrightText: <text>Copyright 2021,2022 Arm Limited and/or its
+  SPDX-FileCopyrightText: <text>Copyright 2021,2022,2023 Arm Limited and/or its
   affiliates <open-source-office@arm.com></text>
   SPDX-License-Identifier: Apache-2.0
 
@@ -1111,14 +1111,17 @@ The following options are recognized:
 ``--numpy``
   Emit results in num^y format
 
+``--perfect``
+  assume perfect inputs (i.e. no noise).
+
+``--decimate=PERIOD%OFFSET``
+  decimate result (default: PERIOD=1, OFFSET=0)
+
 ``-f S`` or ``--from=S``
   Start computation at sample S (default: 0)
 
 ``-n N`` or ``--numsamples=N``
   Restrict computation to N samples
-
-``-d T`` or ``--numtraces=T``
-  Only process the first T traces
 
 ``--interleaved``
   Assume interleaved traces in a single NPY file
@@ -1157,10 +1160,11 @@ computed with:
 ~~~~~~~~~~~~~~
 
 ``paf-t-test`` is a utility to compute the specific t-test, that is a t-test
-with an hypothesis on an intermediate value.
+with an hypothesis on an intermediate value. The intermediate value is computed
+from one (or more) expressions that is (are) provided on the command line.
 
 The command line syntax looks like:
-   ``paf-t-test`` [ *options* ] *INDEX*\ ...
+   ``paf-t-test`` [ *options* ] *EXPRESSION*\ ...
 
 The following options are recognized:
 
@@ -1182,28 +1186,37 @@ The following options are recognized:
 ``--numpy``
   Emit results in num^y format
 
+``--perfect``
+  assume perfect inputs (i.e. no noise).
+
+``--decimate=PERIOD%OFFSET``
+  decimate result (default: PERIOD=1, OFFSET=0)
+
 ``-f S`` or ``--from=S``
   Start computation at sample S (default: 0)
 
 ``-n N`` or ``--numsamples=N``
   Restrict computation to N samples
 
-``-d T`` or ``--numtraces=T``
-  Only process the first T traces
+``-t TRACESFILE`` or ``--traces=TRACESFILE``
+  Use TRACESFILE as traces, in npy format
 
 ``-i INPUTSFILE`` or ``--inputs=INPUTSFILE``
   Use INPUTSFILE as input data, in npy format
 
-``-t TRACESFILE`` or ``--traces=TRACESFILE``
-  Use TRACESFILE as traces, in npy format
+``-m MASKSFILE`` or ``--masks=MASKSFILE``
+  Use MASKSFILE as mask data, in npy format
 
-For example, to get the specific t-test for the intermediate value ``inputs[0]
-^ inputs[1]`` for traces in ``traces.npy`` generated with data in
-``inputs.npy``, for the 70 samples starting from sample 80:
+``-k KEYSFILE`` or ``--keys=KEYSFILE``
+  Use KEYSFILE as key data, in npy format
+
+For example, to get the specific t-test for the intermediate 8-bit value ``inputs[0]
+^ keys[0]`` for traces in ``traces.npy`` generated with data in
+``inputs.npy`` and ``keys.npy``, for the 70 samples starting from sample 80:
 
 .. code-block:: bash
 
-   $ paf-t-test -g -o data.gp -v -f 80 -n 70 -i inputs.npy -t traces.npy 0 1
+   $ paf-t-test -g -o data.gp -v -f 80 -n 70 -i inputs.npy -k keys.npy -t traces.npy 'trunc8(xor($in[0],$key[0])'
    Reading traces from: 'traces.npy'
    Reading inputs from: 'inputs.npy'
    hw_max=32
@@ -1234,6 +1247,29 @@ For example, to get the specific t-test for the intermediate value ``inputs[0]
    68  -13.4678
    69  -11.1817
    # max = 63.1241 at index 33
+
+*EXPRESSION*\ s are a strongly- and explicitely-typed mini-language supporting:
+
+* Literals, that are expressed in decimal form and postfixed with ``_u8``, ``_u16``,
+  ``_u32`` or ``_u64`` to express a literal value with respectively 8-, 16-,
+  32- or 64-bit.
+
+* Inputs, ``$in[idx]``, ``$key[idx]`` and ``$masks[idx]`` wich correspond to the ``idx``
+  element of a row read respectively from ``INPUTSFILE``, ``KEYSFILE`` and ``MASKSFILE``.
+
+* Unary operators: ``NOT(...)`` (bitwise not), ``TRUNC8(...)`` (truncation to 8-bit),
+  ``TRUNC16(...)`` (truncation to 16-bit), ``TRUNC32(...)`` (truncation to 32-bit),
+  ``AES_SBOX(...)`` (look-up value from the AES SBOX) and
+  ``AES_ISBOX(...)`` (reverse look-up from the AES SBOX). The ``TRUNC*`` operators
+  effectively convert the type of their inputs to 8-, 16-, 32-bit values. The ``AES_*``
+  operators expect and return 8-bit values. ``NOT`` will return a value of the same
+  type as its input.
+
+* Binary operators: ``AND(..., ...)`` (bitwise and), ``OR(..., ...)`` (bitwise or),
+  ``XOR(..., ...)`` (bitwise xor), ``LSL(..., ...)`` (logical shift left),
+  ``LSR(..., ...)`` (logical shift right) and ``ASR(..., ...)`` (arithmetic shift right).
+  Both operands of a binary operator must have the same type, and the operator result
+  will have the same type as its inputs.
 
 ``paf-np-create``
 ~~~~~~~~~~~~~~~~~
