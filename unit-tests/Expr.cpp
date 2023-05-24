@@ -112,16 +112,20 @@ TEST(Expr, BinaryOps) {
 
 TEST(Expr, Inputs) {
     unique_ptr<Input> In(new Input(ValueType::UINT32, 0));
+    EXPECT_EQ(In->getType(), ValueType::UINT32);
     EXPECT_EQ(In->eval().getValue(), 0);
     EXPECT_EQ(In->repr(), "0");
     *In = 156;
+    EXPECT_EQ(In->getType(), ValueType::UINT32);
     EXPECT_EQ(In->eval().getValue(), 156);
     EXPECT_EQ(In->repr(), "156");
 
     In.reset(new Input("In", ValueType::UINT32, 1234));
+    EXPECT_EQ(In->getType(), ValueType::UINT32);
     EXPECT_EQ(In->eval().getValue(), 1234);
     EXPECT_EQ(In->repr(), "In(1234)");
     *In = 4321;
+    EXPECT_EQ(In->getType(), ValueType::UINT32);
     EXPECT_EQ(In->eval().getValue(), 4321);
     EXPECT_EQ(In->repr(), "In(4321)");
 
