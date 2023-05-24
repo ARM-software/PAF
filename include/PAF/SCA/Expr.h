@@ -236,11 +236,17 @@ template <class DataTy> class NPInput : public InputBase {
 
   public:
     NPInput() = delete;
-    /// Construct an NPInput referring to nprow[index], with optional name.
+    /// Construct an NPInput referring to named nprow[index].
     NPInput(typename NPArray<DataTy>::Row &nprow, size_t index,
-            const char *name = "")
+            const std::string name)
         : InputBase(NPInputTraits<NPArray<DataTy>>::getType()), Row(nprow),
           Name(name), Index(index) {}
+    /// Construct an NPInput referring to nprow[index], with optional name, C
+    /// string version.
+    NPInput(typename NPArray<DataTy>::Row &nprow, size_t index,
+            const char *name = "")
+        : NPInput(nprow, index, std::string(name)) {}
+
     /// Destruct this NPInput.
     virtual ~NPInput() {}
 

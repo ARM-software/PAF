@@ -172,6 +172,10 @@ TEST(Expr, NPInputs) {
 
     EXPECT_EQ(NPInput<uint16_t>(r, 0).getType(), ValueType::UINT16);
 
+    EXPECT_EQ(NPInput<uint16_t>(r, 0).repr(), "0");
+    EXPECT_EQ(NPInput<uint16_t>(r, 0, "foo").repr(), "foo[0](0)");
+    EXPECT_EQ(NPInput<uint16_t>(r, 0, std::string("bar")).repr(), "bar[0](0)");
+
     unique_ptr<Or> e(
         new Or(new NPInput<uint16_t>(r, 0, "a"), new NPInput<uint16_t>(r, 2)));
 
