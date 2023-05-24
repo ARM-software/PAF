@@ -148,6 +148,20 @@ TEST(Expr, Truncate) {
     EXPECT_EQ(op->repr(), "TRUNC8(4660_u16)");
 }
 
+TEST(AES, SBox) {
+    unique_ptr<Expr> op(new AES_SBox(new Constant(ValueType::UINT8, 16)));
+    EXPECT_EQ(op->getType(), ValueType::UINT8);
+    EXPECT_EQ(op->eval().getValue(), 0xca);
+    EXPECT_EQ(op->repr(), "AES_SBOX(16_u8)");
+}
+
+TEST(AES, ISBox) {
+    unique_ptr<Expr> op(new AES_ISBox(new Constant(ValueType::UINT8, 253)));
+    EXPECT_EQ(op->getType(), ValueType::UINT8);
+    EXPECT_EQ(op->eval().getValue(), 0x21);
+    EXPECT_EQ(op->repr(), "AES_ISBOX(253_u8)");
+}
+
 TEST(Expr, BinaryOps) {
     unique_ptr<Expr> bop(new Xor(new Constant(ValueType::UINT16, 0xA512),
                                  new Constant(ValueType::UINT16, 0x5132)));

@@ -344,6 +344,41 @@ class Truncate : public UnaryOp {
     ValueType VT;
 };
 
+/// Base class for AES specific operations.
+class AESOp : public UnaryOp {
+  public:
+    AESOp(Expr *Op, const std::string &str) : UnaryOp(Op, str) {
+        assert(Op->getType() == ValueType::UINT8 &&
+               "AES operation input must be of type UINT8");
+    }
+    virtual ~AESOp();
+
+    /// Get the type of this expression.
+    virtual ValueType::Type getType() const override {
+        return ValueType::UINT8;
+    }
+};
+
+/// The AES SBox operator.
+class AES_SBox : public AESOp {
+  public:
+    AES_SBox(Expr *Op) : AESOp(Op, "AES_SBOX") {}
+    virtual ~AES_SBox();
+
+    /// Evaluate this expression's value.
+    virtual Value eval() const override;
+};
+
+/// The AES Inverted SBox operator.
+class AES_ISBox : public AESOp {
+  public:
+    AES_ISBox(Expr *Op) : AESOp(Op, "AES_ISBOX") {}
+    virtual ~AES_ISBox();
+
+    /// Evaluate this expression's value.
+    virtual Value eval() const override;
+};
+
 /// Common base class for Binary operators.
 class BinaryOp : public Expr {
   public:
