@@ -30,6 +30,7 @@ add_custom_target(numpy ALL
 set(PAF_TEST_SOURCES
   ArchInfo.cpp
   Expr.cpp
+  ExprParser.cpp
   Fault.cpp
   Intervals.cpp
   LWParser.cpp

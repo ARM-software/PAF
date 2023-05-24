@@ -27,16 +27,18 @@ set(LIBSCA_PUBLIC_HEADERS
   ${CMAKE_SOURCE_DIR}/include/PAF/SCA/utils.h)
 
 set(LIBSCA_SOURCES
-  Dumper.cpp
-  Expr.cpp
-  LWParser.cpp
-  NPArray.cpp
   correl.cpp
   sca-apps.cpp
   t-test.cpp
   utils.cpp
+  Dumper.cpp
+  Expr.cpp
+  ExprParser.cpp
+  LWParser.cpp
   Noise.cpp
-  Power.cpp)
+  NPArray.cpp
+  Power.cpp
+  )
 
 add_paf_library(sca
   OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/lib"

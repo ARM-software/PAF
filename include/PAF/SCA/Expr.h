@@ -46,6 +46,12 @@ class ValueType {
     /// Construct a ValueType of type Ty.
     explicit ValueType(Type Ty) : Ty(Ty) {}
 
+    /// Assigns a Type to this ValueType.
+    ValueType &operator=(Type T) {
+        Ty = T;
+        return *this;
+    }
+
     /// Get the type represented by this ValueType.
     Type getType() const { return Ty; }
 
@@ -274,7 +280,7 @@ template <class DataTy> class NPInput : public InputBase {
   private:
     typename NPArray<DataTy>::Row &Row; ///< Our NPArray row.
     const std::string Name;             ///< Our name.
-    const size_t Index;                 ///< Our index in the NOPArray row.
+    const size_t Index;                 ///< Our index in the NPPArray row.
 };
 
 /// Common base class for Unary operators.
@@ -488,6 +494,7 @@ class And : public BinaryOp {
                      LHS->getType());
     }
 };
+
 } // namespace Expr
 } // namespace SCA
 } // namespace PAF
