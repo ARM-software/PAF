@@ -173,8 +173,8 @@ TEST(Expr, NPInputs) {
     EXPECT_EQ(NPInput<uint16_t>(r, 0).getType(), ValueType::UINT16);
 
     EXPECT_EQ(NPInput<uint16_t>(r, 0).repr(), "0");
-    EXPECT_EQ(NPInput<uint16_t>(r, 0, "foo").repr(), "foo[0](0)");
-    EXPECT_EQ(NPInput<uint16_t>(r, 0, std::string("bar")).repr(), "bar[0](0)");
+    EXPECT_EQ(NPInput<uint16_t>(r, 0, "foo").repr(), "$foo[0](0)");
+    EXPECT_EQ(NPInput<uint16_t>(r, 0, std::string("bar")).repr(), "$bar[0](0)");
 
     unique_ptr<Or> e(
         new Or(new NPInput<uint16_t>(r, 0, "a"), new NPInput<uint16_t>(r, 2)));
@@ -183,7 +183,7 @@ TEST(Expr, NPInputs) {
     r++;
     EXPECT_EQ(e->eval().getValue(), 0xABCD);
     r++;
-    EXPECT_EQ(e->repr(), "OR(a[0](4660),17185)");
+    EXPECT_EQ(e->repr(), "OR($a[0](4660),17185)");
 }
 
 std::unique_ptr<Reporter> reporter = make_cli_reporter();

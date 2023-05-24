@@ -266,7 +266,8 @@ template <class DataTy> class NPInput : public InputBase {
         std::string s = std::to_string(Row[Index]);
         if (Name.empty())
             return s;
-        return Name + '[' + std::to_string(Index) + ']' + '(' + s + ')';
+        return std::string("$") + Name + '[' + std::to_string(Index) + ']' +
+               '(' + s + ')';
     }
 
   private:
