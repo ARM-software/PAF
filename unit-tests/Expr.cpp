@@ -55,10 +55,23 @@ TEST(ValueType, Base) {
 
 TEST(Value, Base) {
     EXPECT_EQ(Value().getValue(), 0);
+
+    // Construct with a ValueType::Type
     EXPECT_EQ(Value(0xABCD12345678, ValueType::UINT8).getValue(), 0x78);
     EXPECT_EQ(Value(0xABCD12345678, ValueType::UINT16).getValue(), 0x5678);
     EXPECT_EQ(Value(0xABCD12345678, ValueType::UINT32).getValue(), 0x12345678);
-    EXPECT_EQ(Value(0xABCD12345678, ValueType::UINT64).getValue(), 0xABCD12345678);
+    EXPECT_EQ(Value(0xABCD12345678, ValueType::UINT64).getValue(),
+              0xABCD12345678);
+
+    // Construct with a ValueType.
+    EXPECT_EQ(Value(0xABCD12345678, ValueType(ValueType::UINT8)).getValue(),
+              0x78);
+    EXPECT_EQ(Value(0xABCD12345678, ValueType(ValueType::UINT16)).getValue(),
+              0x5678);
+    EXPECT_EQ(Value(0xABCD12345678, ValueType(ValueType::UINT32)).getValue(),
+              0x12345678);
+    EXPECT_EQ(Value(0xABCD12345678, ValueType(ValueType::UINT64)).getValue(),
+              0xABCD12345678);
 }
 
 TEST(Expr, Constants) {

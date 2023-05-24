@@ -114,6 +114,9 @@ class Value {
             break;
         }
     }
+    /// Construct a Value of ValueTypeVT from value v.
+    Value(ConcreteType v, const ValueType &VT) : Value(v, VT.getType()) {}
+
     virtual ~Value();
 
     /// Get the actual value.
