@@ -317,6 +317,33 @@ class Not : public UnaryOp {
     }
 };
 
+/// Truncation operations base class.
+class Truncate : public UnaryOp {
+  public:
+    Truncate(ValueType::Type Ty, Expr *Op)
+        : UnaryOp(Op, std::string("TRUNC") +
+                          std::to_string(ValueType::getNumBits(Ty))),
+          VT(Ty) {
+        assert(VT.getType() != ValueType::UNDEF &&
+               "UNDEF is an invalid ValueType");
+        assert(VT.getNumBits() < ValueType::getNumBits(Op->getType()) &&
+               "Truncation must be to a smaller type");
+    }
+    virtual ~Truncate();
+
+    /// Evaluate this expression's value.
+    virtual Value eval() const override {
+        return Value(Op->eval().getValue(), VT);
+    }
+
+    /// Get the type of this expression.
+    virtual ValueType::Type getType() const override { return VT.getType(); }
+
+  private:
+    /// The ValueType to truncate to.
+    ValueType VT;
+};
+
 /// Common base class for Binary operators.
 class BinaryOp : public Expr {
   public:

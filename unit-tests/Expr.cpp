@@ -103,6 +103,51 @@ TEST(Expr, UnaryOps) {
     EXPECT_EQ(uop->repr(), "NOT(43605_u16)");
 }
 
+TEST(Expr, Truncate) {
+    // UINT64 -> UINT32
+    unique_ptr<Expr> op(
+        new Truncate(ValueType::UINT32,
+                     new Constant(ValueType::UINT64, 0x123456789ABCDEF0)));
+    EXPECT_EQ(op->getType(), ValueType::UINT32);
+    EXPECT_EQ(op->eval().getValue(), 0x9ABCDEF0);
+    EXPECT_EQ(op->repr(), "TRUNC32(1311768467463790320_u64)");
+
+    // UINT64 -> UINT16
+    op.reset(new Truncate(ValueType::UINT16,
+                          new Constant(ValueType::UINT64, 0x123456789ABCDEF0)));
+    EXPECT_EQ(op->getType(), ValueType::UINT16);
+    EXPECT_EQ(op->eval().getValue(), 0xDEF0);
+    EXPECT_EQ(op->repr(), "TRUNC16(1311768467463790320_u64)");
+
+    // UIN64 -> UINT8
+    op.reset(new Truncate(ValueType::UINT8,
+                          new Constant(ValueType::UINT64, 0x123456789ABCDEF0)));
+    EXPECT_EQ(op->getType(), ValueType::UINT8);
+    EXPECT_EQ(op->eval().getValue(), 0xF0);
+    EXPECT_EQ(op->repr(), "TRUNC8(1311768467463790320_u64)");
+
+    // UINT32 -> UINT16
+    op.reset(new Truncate(ValueType::UINT16,
+                          new Constant(ValueType::UINT32, 0x12345678)));
+    EXPECT_EQ(op->getType(), ValueType::UINT16);
+    EXPECT_EQ(op->eval().getValue(), 0x5678);
+    EXPECT_EQ(op->repr(), "TRUNC16(305419896_u32)");
+
+    // UINT32 -> UINT8
+    op.reset(new Truncate(ValueType::UINT8,
+                          new Constant(ValueType::UINT32, 0x12345678)));
+    EXPECT_EQ(op->getType(), ValueType::UINT8);
+    EXPECT_EQ(op->eval().getValue(), 0x78);
+    EXPECT_EQ(op->repr(), "TRUNC8(305419896_u32)");
+
+    // UIN16 -> UINT8
+    op.reset(new Truncate(ValueType::UINT8,
+                          new Constant(ValueType::UINT16, 0x1234)));
+    EXPECT_EQ(op->getType(), ValueType::UINT8);
+    EXPECT_EQ(op->eval().getValue(), 0x34);
+    EXPECT_EQ(op->repr(), "TRUNC8(4660_u16)");
+}
+
 TEST(Expr, BinaryOps) {
     unique_ptr<Expr> bop(new Xor(new Constant(ValueType::UINT16, 0xA512),
                                  new Constant(ValueType::UINT16, 0x5132)));

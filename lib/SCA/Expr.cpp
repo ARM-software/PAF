@@ -33,6 +33,7 @@ Constant::~Constant() {}
 Input::~Input() {}
 UnaryOp::~UnaryOp() {}
 Not::~Not() {}
+Truncate::~Truncate() {}
 BinaryOp::~BinaryOp() {}
 Xor::~Xor() {}
 Or::~Or() {}
