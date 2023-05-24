@@ -38,10 +38,6 @@ Xor::~Xor() {}
 Or::~Or() {}
 And::~And() {}
 
-string BinaryOp::lrepr(const char *op) const {
-    return string(op) + "(" + LHS->repr() + "," + RHS->repr() + ")";
-}
-
 string Constant::repr() const {
     string s(Val.repr());
     s += "_u";

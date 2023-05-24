@@ -282,7 +282,10 @@ class UnaryOp : public Expr {
   public:
     UnaryOp() = delete;
     /// Construct a UnaryOp from the Op expression.
-    UnaryOp(Expr *Op) : Op(Op) { assert(Op && "Invalid operand to UnaryOp"); }
+    UnaryOp(Expr *Op, const std::string &str) : Op(Op), OpStr(str) {
+        assert(Op && "Invalid operand to UnaryOp");
+        assert(OpStr.size() >= 1 && "Invalid operator representation");
+    }
     virtual ~UnaryOp();
 
     /// Get the type of this expression.
@@ -291,25 +294,26 @@ class UnaryOp : public Expr {
         return Op->getType();
     }
 
+    /// Get a string representation of the Unary operator.
+    virtual std::string repr() const override {
+        return OpStr + '(' + Op->repr() + ')';
+    }
+
   protected:
     std::unique_ptr<Expr> Op; ///< The UnaryOp operand.
+    std::string OpStr;        ///< The UnaryOp representation.
 };
 
 /// Bitwise NOT operator implementation.
 class Not : public UnaryOp {
   public:
     /// Construct a NOT from the Op expression.
-    Not(Expr *Op) : UnaryOp(Op) {}
+    Not(Expr *Op) : UnaryOp(Op, "NOT") {}
     virtual ~Not();
 
     /// Evaluate this expression's value.
     virtual Value eval() const override {
         return Value(~Op->eval().getValue(), Op->getType());
-    }
-
-    /// Get a string representation of this expression.
-    virtual std::string repr() const override {
-        return std::string("NOT(") + Op->repr() + ")";
     }
 };
 
@@ -321,7 +325,8 @@ class BinaryOp : public Expr {
     ///
     /// The RHS and LHS expressions must be of the same type; which will be the
     /// type of the constructed expression.
-    BinaryOp(Expr *LHS, Expr *RHS) : LHS(LHS), RHS(RHS) {
+    BinaryOp(Expr *LHS, Expr *RHS, const std::string &str)
+        : LHS(LHS), RHS(RHS), OpStr(str) {
         assert(LHS && "Invalid LHS operand to BinaryOp");
         assert(RHS && "Invalid RHS operand to BinaryOp");
         if (LHS->getType() != RHS->getType())
@@ -336,19 +341,22 @@ class BinaryOp : public Expr {
         return LHS->getType();
     }
 
+    /// Get a string representation of this expression.
+    virtual std::string repr() const override {
+        return OpStr + "(" + LHS->repr() + "," + RHS->repr() + ")";
+    }
+
   protected:
     std::unique_ptr<Expr> LHS; ///< Left hand side sub-expression.
     std::unique_ptr<Expr> RHS; ///< Right hand side sub-expression.
-
-    /// Helper method to represent all binary operations.
-    std::string lrepr(const char *op) const;
+    std::string OpStr;         ///< The operator representation.
 };
 
 /// Bitwise XOR operator implementation.
 class Xor : public BinaryOp {
   public:
     /// Construct a XOR expression from 2 expressions.
-    Xor(Expr *LHS, Expr *RHS) : BinaryOp(LHS, RHS) {}
+    Xor(Expr *LHS, Expr *RHS) : BinaryOp(LHS, RHS, "XOR") {}
     virtual ~Xor();
 
     /// Evaluate this expression's value.
@@ -356,18 +364,13 @@ class Xor : public BinaryOp {
         return Value(LHS->eval().getValue() ^ RHS->eval().getValue(),
                      LHS->getType());
     }
-
-    /// Get a string representation of this expression.
-    virtual std::string repr() const override {
-        return BinaryOp::lrepr("XOR");
-    }
 };
 
 /// Bitwise OR operator implementation.
 class Or : public BinaryOp {
   public:
     /// Construct an OR expression from 2 expressions.
-    Or(Expr *LHS, Expr *RHS) : BinaryOp(LHS, RHS) {}
+    Or(Expr *LHS, Expr *RHS) : BinaryOp(LHS, RHS, "OR") {}
     virtual ~Or();
 
     /// Evaluate this expression's value.
@@ -375,29 +378,19 @@ class Or : public BinaryOp {
         return Value(LHS->eval().getValue() | RHS->eval().getValue(),
                      LHS->getType());
     }
-
-    /// Get a string representation of this expression.
-    virtual std::string repr() const override {
-        return BinaryOp::lrepr("OR");
-    }
 };
 
 /// Bitwise AND operator implementation.
 class And : public BinaryOp {
   public:
     /// Construct an AND expression from 2 expressions.
-    And(Expr *LHS, Expr *RHS) : BinaryOp(LHS, RHS) {}
+    And(Expr *LHS, Expr *RHS) : BinaryOp(LHS, RHS, "AND") {}
     virtual ~And();
 
     /// Evaluate this expression's value.
     virtual Value eval() const override {
         return Value(LHS->eval().getValue() & RHS->eval().getValue(),
                      LHS->getType());
-    }
-
-    /// Get a string representation of this expression.
-    virtual std::string repr() const override {
-        return BinaryOp::lrepr("AND");
     }
 };
 } // namespace Expr
