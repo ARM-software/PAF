@@ -87,7 +87,7 @@ TEST(Expr, UnaryOps) {
     unique_ptr<Expr> uop(new Not(new Constant(ValueType::UINT16, 0xAA55)));
     EXPECT_EQ(uop->getType(), ValueType::UINT16);
     EXPECT_EQ(uop->eval().getValue(), 0x55AA);
-    EXPECT_EQ(uop->repr(), "~43605_u16");
+    EXPECT_EQ(uop->repr(), "NOT(43605_u16)");
 }
 
 TEST(Expr, BinaryOps) {

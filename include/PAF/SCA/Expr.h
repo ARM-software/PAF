@@ -306,7 +306,7 @@ class Not : public UnaryOp {
 
     /// Get a string representation of this expression.
     virtual std::string repr() const override {
-        return std::string("~") + Op->repr();
+        return std::string("NOT(") + Op->repr() + ")";
     }
 };
 
