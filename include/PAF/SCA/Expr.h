@@ -442,6 +442,39 @@ class Or : public BinaryOp {
     }
 };
 
+/// Logical shift left
+class Lsl : public BinaryOp {
+  public:
+    /// Construct a Logical Shift Left expression from 2 expressions.
+    Lsl(Expr *LHS, Expr *RHS) : BinaryOp(LHS, RHS, "LSL") {}
+    virtual ~Lsl();
+
+    /// Evaluate this expression's value.
+    virtual Value eval() const override;
+};
+
+/// Arithmetic shift right
+class Asr : public BinaryOp {
+  public:
+    /// Construct an Arithmetic Shift Right expression from 2 expressions.
+    Asr(Expr *LHS, Expr *RHS) : BinaryOp(LHS, RHS, "ASR") {}
+    virtual ~Asr();
+
+    /// Evaluate this expression's value.
+    virtual Value eval() const override;
+};
+
+/// Logical shift right
+class Lsr : public BinaryOp {
+  public:
+    /// Construct a Logical Shift Right expression from 2 expressions.
+    Lsr(Expr *LHS, Expr *RHS) : BinaryOp(LHS, RHS, "LSR") {}
+    virtual ~Lsr();
+
+    /// Evaluate this expression's value.
+    virtual Value eval() const override;
+};
+
 /// Bitwise AND operator implementation.
 class And : public BinaryOp {
   public:

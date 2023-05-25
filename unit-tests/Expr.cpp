@@ -180,6 +180,24 @@ TEST(Expr, BinaryOps) {
     EXPECT_EQ(bop->getType(), ValueType::UINT16);
     EXPECT_EQ(bop->eval().getValue(), 0x0112);
     EXPECT_EQ(bop->repr(), "AND(42258_u16,20786_u16)");
+
+    bop.reset(new Lsl(new Constant(ValueType::UINT16, 0xA512),
+                      new Constant(ValueType::UINT16, 0x04)));
+    EXPECT_EQ(bop->getType(), ValueType::UINT16);
+    EXPECT_EQ(bop->eval().getValue(), 0x5120);
+    EXPECT_EQ(bop->repr(), "LSL(42258_u16,4_u16)");
+
+    bop.reset(new Lsr(new Constant(ValueType::UINT16, 0xA512),
+                      new Constant(ValueType::UINT16, 0x02)));
+    EXPECT_EQ(bop->getType(), ValueType::UINT16);
+    EXPECT_EQ(bop->eval().getValue(), 0x2944);
+    EXPECT_EQ(bop->repr(), "LSR(42258_u16,2_u16)");
+
+    bop.reset(new Asr(new Constant(ValueType::UINT16, 0xA512),
+                      new Constant(ValueType::UINT16, 0x02)));
+    EXPECT_EQ(bop->getType(), ValueType::UINT16);
+    EXPECT_EQ(bop->eval().getValue(), 0xE944);
+    EXPECT_EQ(bop->repr(), "ASR(42258_u16,2_u16)");
 }
 
 TEST(Expr, Inputs) {

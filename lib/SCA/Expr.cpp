@@ -21,6 +21,7 @@
 #include "PAF/SCA/Expr.h"
 
 #include <array>
+#include <cassert>
 #include <string>
 
 using std::string;
@@ -45,6 +46,9 @@ BinaryOp::~BinaryOp() {}
 Xor::~Xor() {}
 Or::~Or() {}
 And::~And() {}
+Lsl::~Lsl() {}
+Asr::~Asr() {}
+Lsr::~Lsr() {}
 
 string Constant::repr() const {
     string s(Val.repr());
@@ -131,6 +135,52 @@ Value AES_ISBox::eval() const {
     assert(idx >= 0 && idx < AES_isbox.size() &&
            "unexpected AES ISBox index value");
     return Value(AES_isbox[idx], getType());
+}
+
+Value Lsl::eval() const {
+    assert(getType() != ValueType::UNDEF &&
+           "UNDEF is not support in shift operation");
+    Value::ConcreteType shAmount = RHS->eval().getValue();
+    assert(shAmount <= ValueType::getNumBits(getType()) &&
+           "Can not shift by more than bits in the data type");
+    assert(shAmount >= 0 && "Shift amount must be positive");
+    return Value(LHS->eval().getValue() << shAmount, LHS->getType());
+}
+
+Value Lsr::eval() const {
+    assert(getType() != ValueType::UNDEF &&
+           "UNDEF is not support in shift operation");
+    Value::ConcreteType val = LHS->eval().getValue();
+    Value::ConcreteType shAmount = RHS->eval().getValue();
+    assert(shAmount <= ValueType::getNumBits(getType()) &&
+           "Can not shift by more than bits in the data type");
+    assert(shAmount >= 0 && "Shift amount must be positive");
+    if (getType() == ValueType::UINT8)
+        return Value(uint8_t(val) >> shAmount, getType());
+    if (getType() == ValueType::UINT16)
+        return Value(uint16_t(val) >> shAmount, getType());
+    if (getType() == ValueType::UINT32)
+        return Value(uint32_t(val) >> shAmount, getType());
+    assert(getType() == ValueType::UINT64 && "Expecting an UINT64 type here");
+    return Value(uint64_t(val) >> shAmount, getType());
+}
+
+Value Asr::eval() const {
+    assert(getType() != ValueType::UNDEF &&
+           "UNDEF is not support in shift operation");
+    Value::ConcreteType val = LHS->eval().getValue();
+    Value::ConcreteType shAmount = RHS->eval().getValue();
+    assert(shAmount <= ValueType::getNumBits(getType()) &&
+           "Can not shift by more than bits in the data type");
+    assert(shAmount >= 0 && "Shift amount must be positive");
+    if (getType() == ValueType::UINT8)
+        return Value(int8_t(val) >> shAmount, getType());
+    if (getType() == ValueType::UINT16)
+        return Value(int16_t(val) >> shAmount, getType());
+    if (getType() == ValueType::UINT32)
+        return Value(int32_t(val) >> shAmount, getType());
+    assert(getType() == ValueType::UINT64 && "Expecting an UINT64 type here");
+    return Value(int64_t(val) >> shAmount, getType());
 }
 
 } // namespace Expr
