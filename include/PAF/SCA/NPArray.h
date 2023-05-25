@@ -72,6 +72,19 @@ class NPArrayBase {
             memcpy(data.get(), buf, num_rows * num_columns * elt_size);
     }
 
+    /// Construct an NPArray base from a vector<vector<Ty>>.
+    template <typename Ty>
+    NPArrayBase(const std::vector<std::vector<Ty>> &matrix)
+        : data(nullptr), num_rows(matrix.size()), num_columns(0),
+          elt_size(sizeof(Ty)), errstr(nullptr) {
+        for (const auto &row : matrix)
+            num_columns = std::max(num_columns, row.size());
+        data.reset(new char[num_rows * num_columns * elt_size]);
+        for (size_t row = 0; row < num_rows; row++)
+            memcpy(data.get() + row * num_columns * elt_size,
+                   matrix[row].data(), matrix[row].size() * elt_size);
+    }
+
     /// Copy construct an NPArrayBase.
     NPArrayBase(const NPArrayBase &Other)
         : data(new char[Other.size() * Other.element_size()]),
@@ -264,6 +277,10 @@ template <class Ty> class NPArray : public NPArrayBase {
         fill<Ty>(reinterpret_cast<const char *>(tmp.data()),
                  tmp.size() * sizeof(Ty));
     }
+
+    /// Construct an NPArray from a vector<vector<Ty>>.
+    NPArray(const std::vector<std::vector<Ty>> &matrix)
+        : NPArrayBase(matrix) {}
 
     /// Copy construct an NParray.
     NPArray(const NPArray &Other) : NPArrayBase(Other) {}

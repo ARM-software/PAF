@@ -36,6 +36,7 @@ using namespace testing;
 
 using std::string;
 using std::unique_ptr;
+using std::vector;
 
 TEST(NPArrayBase, base) {
     // Default construct.
@@ -178,6 +179,41 @@ TEST(NPArray, base) {
     UI(0, 0) = 0;
     EXPECT_EQ(UI(1, 1), 1);
     EXPECT_EQ(UI(0, 0), 0);
+}
+
+TEST(NPArray, from_vector_vector) {
+    vector<vector<double>> VD{{0., 1., 2., 3.}, {10., 11., 12., 13.}};
+    NPArray<double> NPD(VD);
+    EXPECT_EQ(NPD.rows(), 2);
+    EXPECT_EQ(NPD.cols(), 4);
+    for (size_t row = 0; row < NPD.rows(); row++)
+        for (size_t col = 0; col < NPD.cols(); col++)
+            EXPECT_EQ(NPD(row, col), VD[row][col]);
+
+    vector<vector<uint16_t>> VI{{0, 1, 2, 3}, {10, 11, 12, 13}};
+    NPArray<uint16_t> NPI(VI);
+    EXPECT_EQ(NPI.rows(), 2);
+    EXPECT_EQ(NPI.cols(), 4);
+    for (size_t row = 0; row < NPI.rows(); row++)
+        for (size_t col = 0; col < NPI.cols(); col++)
+            EXPECT_EQ(NPI(row, col), VI[row][col]);
+
+    // Mismatch in column size.
+    vector<vector<uint16_t>> VM1{{0, 1}, {10, 11, 12, 13}};
+    NPArray<uint16_t> NPM1(VM1);
+    EXPECT_EQ(NPM1.rows(), 2);
+    EXPECT_EQ(NPM1.cols(), 4);
+    for (size_t row = 0; row < VM1.size(); row++)
+        for (size_t col = 0; col < VM1[row].size(); col++)
+            EXPECT_EQ(NPM1(row, col), VM1[row][col]);
+
+    vector<vector<uint16_t>> VM2{{0, 1, 2, 3}, {10, 11}};
+    NPArray<uint16_t> NPM2(VM2);
+    EXPECT_EQ(NPM2.rows(), 2);
+    EXPECT_EQ(NPM2.cols(), 4);
+    for (size_t row = 0; row < VM2.size(); row++)
+        for (size_t col = 0; col < VM2[row].size(); col++)
+            EXPECT_EQ(NPM2(row, col), VM2[row][col]);
 }
 
 TEST(NPArray, index_setter) {
