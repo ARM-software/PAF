@@ -379,16 +379,17 @@ template <class Ty> class NPArray : public NPArrayBase {
 
         /// Construct a Row view of nparray.
         Row(const NPArray<DataTy> &nparray, size_t row) noexcept
-            : nparray(&nparray), row(row) {}
+            : nparray(&nparray), row(row), init_row(row) {}
 
         /// Copy constructor.
         Row(const Row &Other) noexcept
-            : nparray(Other.nparray), row(Other.row) {}
+            : nparray(Other.nparray), row(Other.row), init_row(Other.row) {}
 
         /// Copy assignment.
         Row &operator=(const Row &Other) noexcept {
             nparray = Other.nparray;
             row = Other.row;
+            init_row = Other.row;
             return *this;
         }
 
@@ -414,6 +415,12 @@ template <class Ty> class NPArray : public NPArrayBase {
             return (*nparray)(row, ith);
         }
 
+        /// Reset the row index to the one used at construction.
+        Row &reset() {
+            row = init_row;
+            return *this;
+        }
+
         /// Compare 2 rows for equality (as iterators).
         ///
         /// This compares the rows as iterators, but not the rows' content.
@@ -431,6 +438,7 @@ template <class Ty> class NPArray : public NPArrayBase {
       private:
         const NPArray *nparray; ///< The NPArray this row refers to.
         size_t row;             ///< row index in the NPArray.
+        size_t init_row;        ///< The row index used at construction.
     };
 
     /// Get the first row from this NPArray.

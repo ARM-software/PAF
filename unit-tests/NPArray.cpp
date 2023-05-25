@@ -652,10 +652,16 @@ TEST(NPArray, Row) {
     }
 
     EXPECT_EQ(r, end);
+
+    r.reset();
+    EXPECT_EQ(r, a.row_begin());
     
     r = a.row_begin();
     r++;
     EXPECT_EQ(r[0], 3);
+
+    r.reset();
+    EXPECT_EQ(r, a.row_begin());
 }
 
 TEST(NPArray, all) {
