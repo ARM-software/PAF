@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: <text>Copyright 2021,2022 Arm Limited and/or its
+ * SPDX-FileCopyrightText: <text>Copyright 2021,2022,2023 Arm Limited and/or its
  * affiliates <open-source-office@arm.com></text>
  * SPDX-License-Identifier: Apache-2.0
  *
@@ -407,7 +407,7 @@ TEST(SCAApp, numpy_output) {
 TestWithTempFile(SCAAppF, "test-scaapp-output.XXXXXX");
 
 TEST_F(SCAAppF, terse_output) {
-    const vector<double> v10 = {0., 2., 4., 6., 8., 7., 5., 3., 1., -1.};
+    const vector<vector<double>> v10{{0., 2., 4., 6., 8., 7., 5., 3., 1., -1.}};
 
     array<const char *, 3> Args0 = {"appname", "--output",
                                     getTemporaryFilename().c_str()};
@@ -488,7 +488,7 @@ TEST_F(SCAAppF, terse_output) {
 }
 
 TEST_F(SCAAppF, python_output) {
-    const vector<double> v10 = {0., 2., 4., 6., 8., 7., 5., 3., 1., -1.};
+    const vector<vector<double>> v10{{0., 2., 4., 6., 8., 7., 5., 3., 1., -1.}};
 
     array<const char *, 5> Args0 = {"appname", "--python", "--append",
                                     "--output", getTemporaryFilename().c_str()};
@@ -586,7 +586,7 @@ TEST_F(SCAAppF, python_output) {
 }
 
 TEST_F(SCAAppF, gnuplot_output) {
-    const vector<double> v10 = {0., 2., 4., 6., 8., 7., 5., 3., 1., -1.};
+    const vector<vector<double>> v10{{0., 2., 4., 6., 8., 7., 5., 3., 1., -1.}};
 
     array<const char *, 4> Args1 = {"appname", "--gnuplot", "--output",
                                     getTemporaryFilename().c_str()};
@@ -631,7 +631,7 @@ TEST_F(SCAAppF, gnuplot_output) {
 }
 
 TEST_F(SCAAppF, numpy_output) {
-    const vector<double> v10 = {0., 2., 4., 6., 8., 7., 5., 3., 1., -1.};
+    const vector<vector<double>> v10{{0., 2., 4., 6., 8., 7., 5., 3., 1., -1.}};
 
     array<const char *, 4> Args1 = {"appname", "--numpy", "--output",
                                     getTemporaryFilename().c_str()};
@@ -641,10 +641,10 @@ TEST_F(SCAAppF, numpy_output) {
     A1_0.close_output();
     NPArray<double> R0(getTemporaryFilename());
     EXPECT_TRUE(R0.good());
-    EXPECT_EQ(R0.rows(), 1);
-    EXPECT_EQ(R0.cols(), v10.size());
+    EXPECT_EQ(R0.rows(), v10.size());
+    EXPECT_EQ(R0.cols(), v10[0].size());
     EXPECT_EQ(R0, NPArray<double>({0., 2., 4., 6., 8., 7., 5., 3., 1., -1.}, 1,
-                                  v10.size()));
+                                  v10[0].size()));
 
     array<const char *, 6> Args1_1_0 = {
         "appname", "--numpy",  "--decimate",
@@ -655,10 +655,10 @@ TEST_F(SCAAppF, numpy_output) {
     A1_1.close_output();
     NPArray<double> R1(getTemporaryFilename());
     EXPECT_TRUE(R1.good());
-    EXPECT_EQ(R1.rows(), 1);
-    EXPECT_EQ(R1.cols(), v10.size());
+    EXPECT_EQ(R1.rows(), v10.size());
+    EXPECT_EQ(R1.cols(), v10[0].size());
     EXPECT_EQ(R1, NPArray<double>({0., 2., 4., 6., 8., 7., 5., 3., 1., -1.}, 1,
-                                  v10.size()));
+                                  v10[0].size()));
 
     array<const char *, 6> Args1_2_0 = {
         "appname", "--numpy",  "--decimate",
@@ -669,9 +669,9 @@ TEST_F(SCAAppF, numpy_output) {
     A1_2.close_output();
     NPArray<double> R2(getTemporaryFilename());
     EXPECT_TRUE(R2.good());
-    EXPECT_EQ(R2.rows(), 1);
-    EXPECT_EQ(R2.cols(), v10.size() / 2);
-    EXPECT_EQ(R2, NPArray<double>({0., 4., 8., 5., 1.}, 1, v10.size() / 2));
+    EXPECT_EQ(R2.rows(), v10.size());
+    EXPECT_EQ(R2.cols(), v10[0].size() / 2);
+    EXPECT_EQ(R2, NPArray<double>({0., 4., 8., 5., 1.}, 1, v10[0].size() / 2));
 
     array<const char *, 6> Args1_2_1 = {
         "appname", "--numpy",  "--decimate",
@@ -682,9 +682,9 @@ TEST_F(SCAAppF, numpy_output) {
     A1_3.close_output();
     NPArray<double> R3(getTemporaryFilename());
     EXPECT_TRUE(R3.good());
-    EXPECT_EQ(R3.rows(), 1);
-    EXPECT_EQ(R3.cols(), v10.size() / 2);
-    EXPECT_EQ(R3, NPArray<double>({2., 6., 7., 3., -1.}, 1, v10.size() / 2));
+    EXPECT_EQ(R3.rows(), v10.size());
+    EXPECT_EQ(R3.cols(), v10[0].size() / 2);
+    EXPECT_EQ(R3, NPArray<double>({2., 6., 7., 3., -1.}, 1, v10[0].size() / 2));
 }
 
 int main(int argc, char **argv) {

@@ -136,7 +136,7 @@ int main(int argc, char *argv[]) {
             expr.release(), new Expr::NPInput<uint32_t>(r, indexes[i], "in")));
     }
 
-    vector<double> mvalues; // Metric results.
+    vector<vector<double>> mvalues; // Metric results.
     const size_t sample_to_stop_at = min(app.sample_end(), traces.cols());
 
     // Compute the metrics.
@@ -151,8 +151,8 @@ int main(int argc, char *argv[]) {
         }
 
         // Compute the metric.
-        mvalues =
-            correl(app.sample_start(), sample_to_stop_at, traces, ivalues);
+        mvalues.emplace_back(
+            correl(app.sample_start(), sample_to_stop_at, traces, ivalues));
     } break;
     case Metric::T_TEST: {
         // Build the classifier.
@@ -171,12 +171,12 @@ int main(int argc, char *argv[]) {
         }
 
         // Compute the metric.
-        mvalues =
+        mvalues.emplace_back(
             app.is_perfect()
                 ? perfect_t_test(app.sample_start(), sample_to_stop_at, traces,
                                  classifier, app.verbose() ? &cout : nullptr)
                 : t_test(app.sample_start(), sample_to_stop_at, traces,
-                         classifier);
+                         classifier));
     } break;
     }
 

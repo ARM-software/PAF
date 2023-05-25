@@ -117,31 +117,34 @@ int main(int argc, char *argv[]) {
     }
 
     // Compute the non-specific T-Test.
-    vector<double> tvalues;
+    vector<vector<double>> results;
     switch (grouping) {
     case GROUP_BY_NPY:
-        tvalues = app.is_perfect()
-                      ? perfect_t_test(app.sample_start(), sample_to_stop_at,
-                                       traces[0], traces[1],
-                                       app.verbose() ? &cout : nullptr)
-                      : t_test(app.sample_start(), sample_to_stop_at, traces[0],
-                               traces[1]);
+        results.emplace_back(
+            app.is_perfect()
+                ? perfect_t_test(app.sample_start(), sample_to_stop_at,
+                                 traces[0], traces[1],
+                                 app.verbose() ? &cout : nullptr)
+                : t_test(app.sample_start(), sample_to_stop_at, traces[0],
+                         traces[1]));
         break;
     case GROUP_INTERLEAVED: {
         vector<Classification> classifier(nbtraces);
         for (size_t i = 0; i < nbtraces; i++)
             classifier[i] =
                 i % 2 == 0 ? Classification::GROUP_0 : Classification::GROUP_1;
-        tvalues = app.is_perfect()
-                      ? perfect_t_test(app.sample_start(), sample_to_stop_at,
-                                       traces[0], classifier,
-                                       app.verbose() ? &cout : nullptr)
-                      : t_test(app.sample_start(), sample_to_stop_at, traces[0],
-                               classifier);
+        results.emplace_back(
+            app.is_perfect()
+                ? perfect_t_test(app.sample_start(), sample_to_stop_at,
+                                 traces[0], classifier,
+                                 app.verbose() ? &cout : nullptr)
+                : t_test(app.sample_start(), sample_to_stop_at, traces[0],
+                         classifier));
     } break;
     }
+
     // Output results.
-    app.output(tvalues);
+    app.output(results);
 
     return EXIT_SUCCESS;
 }

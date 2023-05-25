@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: <text>Copyright 2021,2022 Arm Limited and/or its
+ * SPDX-FileCopyrightText: <text>Copyright 2021,2022,2023 Arm Limited and/or its
  * affiliates <open-source-office@arm.com></text>
  * SPDX-License-Identifier: Apache-2.0
  *
@@ -151,13 +151,21 @@ class TerseOutput : public OutputBase {
     TerseOutput(const std::string &filename, bool append = true)
         : OutputBase(filename, append, /* binary: */ false) {}
 
-    virtual void emit(const std::vector<double> &values, size_t decimate,
-                      size_t offset) override {
+    virtual void emit(const std::vector<std::vector<double>> &values,
+                      size_t decimate, size_t offset) override {
+        if (values.empty())
+            return;
+
         assert(decimate > 0 && "decimate can not be 0");
-        size_t max_index;
-        double max_v = find_max(values, &max_index, decimate, offset);
-        *out << "# max = " << max_v << " at index " << (max_index / decimate)
-             << '\n';
+        size_t rowNum = 0;
+        for (const auto &row : values) {
+            size_t max_index;
+            double max_v = find_max(row, &max_index, decimate, offset);
+            *out << "# max = " << max_v << " at index ";
+            if (values.size() > 1)
+                *out << rowNum++ << ',';
+            *out << (max_index / decimate) << '\n';
+        }
     }
 };
 
@@ -166,17 +174,33 @@ class GnuplotOutput : public OutputBase {
     GnuplotOutput(const std::string &filename)
         : OutputBase(filename, /* append: */ false, /* binary: */ false) {}
 
-    virtual void emit(const std::vector<double> &values, size_t decimate,
-                      size_t offset) override {
+    virtual void emit(const std::vector<std::vector<double>> &values,
+                      size_t decimate, size_t offset) override {
+        if (values.empty())
+            return;
+
         assert(decimate > 0 && "decimate can not be 0");
-        size_t max_index;
-        double max_v = find_max(values, &max_index, decimate, offset);
 
-        for (size_t i = offset; i < values.size(); i += decimate)
-            *out << (i / decimate) << "  " << values[i] << '\n';
+        size_t maxColumns = 0;
+        for (const auto &row : values)
+            maxColumns = std::max(maxColumns, row.size());
 
-        *out << "# max = " << max_v << " at index " << (max_index / decimate)
-             << '\n';
+        for (size_t col = offset; col < maxColumns; col += decimate) {
+            *out << (col / decimate);
+            for (size_t row = 0; row < values.size(); row++)
+                *out << "  " << values[row][col];
+            *out << '\n';
+        }
+
+        size_t rowNum = 0;
+        for (const auto &row : values) {
+            size_t max_index;
+            double max_v = find_max(row, &max_index, decimate, offset);
+            *out << "# max = " << max_v << " at index ";
+            if (values.size() > 1)
+                *out << rowNum++ << ',';
+            *out << (max_index / decimate) << '\n';
+        }
     }
 };
 
@@ -185,16 +209,19 @@ class NumpyOutput : public OutputBase {
     NumpyOutput(const std::string &filename)
         : OutputBase(filename, false, /* binary: */ true) {}
 
-    virtual void emit(const std::vector<double> &values, size_t decimate,
-                      size_t offset) override {
+    virtual void emit(const std::vector<std::vector<double>> &values,
+                      size_t decimate, size_t offset) override {
+        if (values.empty())
+            return;
+
         assert(decimate > 0 && "decimate can not be 0");
         if (decimate == 1) {
-            NPArray<double> NP(values.data(), 1, values.size());
-            NP.save(*out);
+                NPArray<double>(values).save(*out);
         } else {
-            NPArray<double> NP(1, values.size() / decimate);
-            for (size_t i = 0; i < NP.cols(); i++)
-                NP(0, i) = values[i * decimate + offset];
+            NPArray<double> NP(values.size(), values[0].size() / decimate);
+            for (size_t i = 0; i < NP.rows(); i++)
+                for (size_t j = 0; j < NP.cols(); j++)
+                    NP(i, j) = values[i][j * decimate + offset];
             NP.save(*out);
         }
     }
@@ -204,15 +231,23 @@ class PythonOutput : public OutputBase {
   public:
     PythonOutput(const std::string &filename, bool append = true)
         : OutputBase(filename, append, /* binary: */ false) {}
-    virtual void emit(const std::vector<double> &values, size_t decimate,
-                      size_t offset) override {
-        *out << "waves.append(Waveform([";
-        const char *sep = "";
-        for (size_t i = offset; i < values.size(); i += decimate) {
-            *out << sep << values[i];
-            sep = ", ";
+
+    virtual void emit(const std::vector<std::vector<double>> &values,
+                      size_t decimate, size_t offset) override {
+        if (values.empty())
+            return;
+
+        assert(decimate > 0 && "decimate can not be 0");
+
+        for (const auto &row : values) {
+            *out << "waves.append(Waveform([";
+            const char *sep = "";
+            for (size_t i = offset; i < row.size(); i += decimate) {
+                *out << sep << row[i];
+                sep = ", ";
+            }
+            *out << "]))\n";
         }
-        *out << "]))\n";
     }
 };
 

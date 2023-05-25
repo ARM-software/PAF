@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: <text>Copyright 2021,2022 Arm Limited and/or its
+ * SPDX-FileCopyrightText: <text>Copyright 2021,2022,2023 Arm Limited and/or its
  * affiliates <open-source-office@arm.com></text>
  * SPDX-License-Identifier: Apache-2.0
  *
@@ -45,8 +45,8 @@ class OutputBase {
                bool binary = false);
 
     /// Abstract method to write some values to this output.
-    virtual void emit(const std::vector<double> &values, size_t decimate,
-                      size_t offset) = 0;
+    virtual void emit(const std::vector<std::vector<double>> &values,
+                      size_t decimate, size_t offset) = 0;
     virtual ~OutputBase();
 
     /// The different output formats supported by SCA applications.
@@ -113,7 +113,7 @@ class SCAApp : public Argparse {
     size_t decimation_offset() const { return offset; }
 
     /// Write a sequence of values to this application's output file.
-    void output(const std::vector<double> &values) {
+    void output(const std::vector<std::vector<double>> &values) {
         out->emit(values, period, offset);
     }
 
