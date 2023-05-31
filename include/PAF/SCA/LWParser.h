@@ -88,7 +88,7 @@ class LWParser {
     bool end() const noexcept { return pos >= buf.size(); }
 
   private:
-    const std::string &buf;
+    std::string buf;
     size_t pos;
 };
 
