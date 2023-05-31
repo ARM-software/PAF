@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: <text>Copyright 2021,2022 Arm Limited and/or its
+ * SPDX-FileCopyrightText: <text>Copyright 2021,2022,2023 Arm Limited and/or its
  * affiliates <open-source-office@arm.com></text>
  * SPDX-License-Identifier: Apache-2.0
  *
@@ -50,9 +50,4 @@ TEST(Noise, OtherNoiseSource) {
     unique_ptr<NoiseSource> NS(
         NoiseSource::getSource(NoiseSource::UNIFORM, 5.));
     NS = NoiseSource::getSource(NoiseSource::NORMAL, 5.);
-}
-
-int main(int argc, char **argv) {
-    InitGoogleTest(&argc, argv);
-    return RUN_ALL_TESTS();
 }

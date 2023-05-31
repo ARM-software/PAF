@@ -44,7 +44,7 @@ jobs:
       run: ninja
     - name: Test with clang
       working-directory: ${{github.workspace}}/build-clang
-      run: ninja test
+      run: ninja check
     - name: Configure with gcc
       run: CC=gcc CXX=g++ cmake -B ${{github.workspace}}/build-gcc -DCMAKE_BUILD_TYPE:STRING=${{env.CMAKE_BUILD_TYPE}} -DPAF_BUILD_DOCUMENTAION:BOOL=ON -G Ninja
     - name: Build with gcc
@@ -52,7 +52,7 @@ jobs:
       run: ninja
     - name: Test with gcc
       working-directory: ${{github.workspace}}/build-gcc
-      run: ninja test
+      run: ninja check
     - name: Build documentation
       working-directory: ${{github.workspace}}/build-gcc
       run: ninja doc

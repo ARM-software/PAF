@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: <text>Copyright 2021,2022 Arm Limited and/or its
+ * SPDX-FileCopyrightText: <text>Copyright 2021,2022,2023 Arm Limited and/or its
  * affiliates <open-source-office@arm.com></text>
  * SPDX-License-Identifier: Apache-2.0
  *
@@ -646,11 +646,4 @@ TEST(MTAnalyzer, markers) {
         EXPECT_TRUE(T.getInstructionAtTime(EndInstr, m.End.time));
         EXPECT_EQ(EndInstr.disassembly.substr(0, 3), "BL ");
     }
-}
-
-std::unique_ptr<Reporter> reporter = make_cli_reporter();
-
-int main(int argc, char **argv) {
-    InitGoogleTest(&argc, argv);
-    return RUN_ALL_TESTS();
 }

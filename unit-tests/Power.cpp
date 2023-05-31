@@ -1611,10 +1611,3 @@ TEST(PowerTrace, withConfigAndNoise) {
     EXPECT_EQ(TPD.pwf[0].instr, 0.0);
     EXPECT_EQ(TPD.pwf[0].pc, 0.0);
 }
-
-unique_ptr<Reporter> reporter = make_cli_reporter();
-
-int main(int argc, char **argv) {
-    InitGoogleTest(&argc, argv);
-    return RUN_ALL_TESTS();
-}

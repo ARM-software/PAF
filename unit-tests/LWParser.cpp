@@ -283,8 +283,3 @@ TEST(LWParser, parse_string) {
     EXPECT_EQ(str, "str2");
     EXPECT_EQ(P2.buffer(), "test");
 }
-
-int main(int argc, char **argv) {
-    InitGoogleTest(&argc, argv);
-    return RUN_ALL_TESTS();
-}

@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: <text>Copyright 2021,2022 Arm Limited and/or its
+ * SPDX-FileCopyrightText: <text>Copyright 2021,2022,2023 Arm Limited and/or its
  * affiliates <open-source-office@arm.com></text>
  * SPDX-License-Identifier: Apache-2.0
  *
@@ -1301,9 +1301,4 @@ TEST(NPArray, mean) {
     // Check all rows / columns.
     C_a.check(decltype(a)::ROW);
     C_a.check(decltype(a)::COLUMN);
-}
-
-int main(int argc, char **argv) {
-    InitGoogleTest(&argc, argv);
-    return RUN_ALL_TESTS();
 }

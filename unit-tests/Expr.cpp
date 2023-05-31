@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: <text>Copyright 2021,2022 Arm Limited and/or its
+ * SPDX-FileCopyrightText: <text>Copyright 2021,2022,2023 Arm Limited and/or its
  * affiliates <open-source-office@arm.com></text>
  * SPDX-License-Identifier: Apache-2.0
  *
@@ -278,11 +278,4 @@ TEST(Expr, NPInputs) {
     EXPECT_EQ(e->eval().getValue(), 0xABCD);
     r++;
     EXPECT_EQ(e->repr(), "OR($a[0](4660),17185)");
-}
-
-std::unique_ptr<Reporter> reporter = make_cli_reporter();
-
-int main(int argc, char **argv) {
-    InitGoogleTest(&argc, argv);
-    return RUN_ALL_TESTS();
 }

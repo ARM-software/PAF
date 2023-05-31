@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: <text>Copyright 2021,2022 Arm Limited and/or its
+ * SPDX-FileCopyrightText: <text>Copyright 2021,2022,2023 Arm Limited and/or its
  * affiliates <open-source-office@arm.com></text>
  * SPDX-License-Identifier: Apache-2.0
  *
@@ -191,11 +191,4 @@ TEST(Fault, Campaign) {
         "EndAddress: 0x8340}\nCampaign:\n  - { Id: 0, Time: 1000, Address: "
         "0x832a, Instruction: 0xe9d63401, Width: 32, Disassembly: \"LDRD "
         "r3,r4,[r6,#4]\", FaultedReg: \"R3\"}\n");
-}
-
-std::unique_ptr<Reporter> reporter = make_cli_reporter();
-
-int main(int argc, char **argv) {
-    InitGoogleTest(&argc, argv);
-    return RUN_ALL_TESTS();
 }

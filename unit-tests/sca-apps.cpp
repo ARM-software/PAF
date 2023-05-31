@@ -21,8 +21,6 @@
 #include "PAF/SCA/sca-apps.h"
 #include "PAF/SCA/NPArray.h"
 
-#include "libtarmac/reporter.hh"
-
 #include "paf-unit-testing.h"
 
 #include <array>
@@ -36,8 +34,6 @@ using namespace testing;
 
 using std::array;
 using std::vector;
-
-std::unique_ptr<Reporter> reporter = make_cli_reporter();
 
 TEST(SCAApp, defaults) {
     array<const char *, 1> Args0 = {"appname"};
@@ -685,9 +681,4 @@ TEST_F(SCAAppF, numpy_output) {
     EXPECT_EQ(R3.rows(), v10.size());
     EXPECT_EQ(R3.cols(), v10[0].size() / 2);
     EXPECT_EQ(R3, NPArray<double>({2., 6., 7., 3., -1.}, 1, v10[0].size() / 2));
-}
-
-int main(int argc, char **argv) {
-    InitGoogleTest(&argc, argv);
-    return RUN_ALL_TESTS();
 }

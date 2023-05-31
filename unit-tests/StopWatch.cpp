@@ -1,6 +1,6 @@
 /*
  * SPDX-FileCopyrightText: <text>
- * Copyright 2022 Arm Limited and/or its affiliates <open-source-office@arm.com>
+ * Copyright 2022,2023 Arm Limited and/or its affiliates <open-source-office@arm.com>
  * </text>
  * SPDX-License-Identifier: Apache-2.0
  *
@@ -70,9 +70,4 @@ TEST(StopWatch, AutoStopWatch) {
     const string s = os.str();
     EXPECT_EQ(s.substr(0, 24), "AutoStopWatch(MyName) : ");
     EXPECT_EQ(s.substr(s.size() - 9, 8), " seconds");
-}
-
-int main(int argc, char **argv) {
-    InitGoogleTest(&argc, argv);
-    return RUN_ALL_TESTS();
 }

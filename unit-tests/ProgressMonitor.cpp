@@ -1,6 +1,6 @@
 /*
  * SPDX-FileCopyrightText: <text>
- * Copyright 2022 Arm Limited and/or its affiliates <open-source-office@arm.com>
+ * Copyright 2022,2023 Arm Limited and/or its affiliates <open-source-office@arm.com>
  * </text>
  * SPDX-License-Identifier: Apache-2.0
  *
@@ -62,9 +62,4 @@ TEST(ProgressMonitor, Basic) {
     EXPECT_EQ(PM.total(), 200);
     EXPECT_EQ(PM.count(), 4);
     EXPECT_EQ(PM.remaining(), 196);
-}
-
-int main(int argc, char **argv) {
-    InitGoogleTest(&argc, argv);
-    return RUN_ALL_TESTS();
 }

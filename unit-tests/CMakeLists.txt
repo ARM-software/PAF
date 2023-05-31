@@ -27,53 +27,49 @@ add_custom_target(numpy ALL
   DEPENDS python-venv
 )
 
-add_library(paf-unit-testing STATIC paf-unit-testing.cpp)
-add_dependencies(paf-unit-testing googletest)
+set(PAF_TEST_SOURCES
+  ArchInfo.cpp
+  Expr.cpp
+  Fault.cpp
+  Intervals.cpp
+  LWParser.cpp
+  Misc.cpp
+  Noise.cpp
+  NPArray.cpp
+  Oracle.cpp
+  PAF.cpp
+  Power.cpp
+  ProgressMonitor.cpp
+  SCA.cpp
+  StopWatch.cpp
+  paf-unit-testing.cpp
+  sca-apps.cpp
+)
+add_executable(test-paf main.cpp ${PAF_TEST_SOURCES})
+set_target_properties(test-paf PROPERTIES COMPILE_DEFINITIONS "SAMPLES_SRC_DIR=\"${CMAKE_CURRENT_SOURCE_DIR}/samples/\"")
+target_link_libraries(test-paf gtest fi sca paf tarmac)
 
-macro(add_paf_gtest name)
-  # Compile the specific test:
-  add_executable(test-${name}
-                 ${CMAKE_CURRENT_SOURCE_DIR}/${name}.cpp)
-  set_target_properties(test-${name} PROPERTIES COMPILE_DEFINITIONS "SAMPLES_SRC_DIR=\"${CMAKE_CURRENT_SOURCE_DIR}/samples/\"")
-  target_link_libraries(test-${name} gtest fi sca paf tarmac paf-unit-testing)
-  add_test(NAME unit-${name}
-    COMMAND test-${name} --gtest_color=yes --gtest_output=xml:test-${name}.xml
-  )
-  if (PAF_BUILD_WITH_INSTRUMENTED_COVERAGE)
-    set_tests_properties(unit-${name} PROPERTIES
-      ENVIRONMENT LLVM_PROFILE_FILE=test-${name}.profraw)
-    list(APPEND PAF_GTESTS_PROFRAW test-${name}.profraw)
-    list(APPEND PAF_GTESTS_PROGRAMS test-${name} "--object")
-  endif()
-endmacro()
+add_custom_target(check COMMENT "Run PAF unit tests")
+
+add_custom_target(check-paf 
+   COMMAND ${CMAKE_COMMAND} -E env LLVM_PROFILE_FILE=test-paf.profraw ${CMAKE_CURRENT_BINARY_DIR}/test-paf --gtest_color=yes --gtest_output=xml:test-paf.xml
+)
+if (PAF_BUILD_WITH_INSTRUMENTED_COVERAGE)
+   list(APPEND PAF_GTESTS_PROFRAW test-paf.profraw)
+   list(APPEND PAF_GTESTS_PROGRAMS test-paf "--object")
+endif()
+add_dependencies(check check-paf)
 
 macro(add_paf_np_python name)
-  add_test(NAME test-${name}
-    COMMAND ${CMAKE_BINARY_DIR}/venv/bin/python3 ${CMAKE_CURRENT_SOURCE_DIR}/test-${name}.py ${CMAKE_BINARY_DIR}/bin/paf-${name}
+  add_custom_target(check-${name}
+    COMMAND ${CMAKE_COMMAND} -E env LLVM_PROFILE_FILE=paf-${name}.profraw ${CMAKE_BINARY_DIR}/venv/bin/python3 ${CMAKE_CURRENT_SOURCE_DIR}/test-${name}.py ${CMAKE_BINARY_DIR}/bin/paf-${name}
   )
+  add_dependencies(check check-${name})
   if (PAF_BUILD_WITH_INSTRUMENTED_COVERAGE)
-    set_tests_properties(test-${name} PROPERTIES
-      ENVIRONMENT LLVM_PROFILE_FILE=paf-${name}.profraw)
     list(APPEND PAF_GTESTS_PROFRAW paf-${name}.profraw)
     list(APPEND PAF_GTESTS_PROGRAMS ${CMAKE_BINARY_DIR}/bin/paf-${name} "--object")
   endif()
 endmacro()
-
-add_paf_gtest(ArchInfo)
-add_paf_gtest(Expr)
-add_paf_gtest(Fault)
-add_paf_gtest(Intervals)
-add_paf_gtest(LWParser)
-add_paf_gtest(Misc)
-add_paf_gtest(Noise)
-add_paf_gtest(NPArray)
-add_paf_gtest(Oracle)
-add_paf_gtest(PAF)
-add_paf_gtest(Power)
-add_paf_gtest(ProgressMonitor)
-add_paf_gtest(SCA)
-add_paf_gtest(StopWatch)
-add_paf_gtest(sca-apps)
 
 add_paf_np_python(np-utils)
 add_paf_np_python(np-create)

@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: <text>Copyright 2021,2022 Arm Limited and/or its
+ * SPDX-FileCopyrightText: <text>Copyright 2021,2022,2023 Arm Limited and/or its
  * affiliates <open-source-office@arm.com></text>
  * SPDX-License-Identifier: Apache-2.0
  *
@@ -169,11 +169,4 @@ TEST(Oracle, const) {
     O.parse("@(foo){success}");
     EXPECT_NE(O2.begin(), O2.end());
     EXPECT_EQ(O2[0].getKind(), Classifier::Kind::Entry);
-}
-
-std::unique_ptr<Reporter> reporter = make_cli_reporter();
-
-int main(int argc, char **argv) {
-    InitGoogleTest(&argc, argv);
-    return RUN_ALL_TESTS();
 }

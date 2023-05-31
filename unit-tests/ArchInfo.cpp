@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: <text>Copyright 2021,2022 Arm Limited and/or its
+ * SPDX-FileCopyrightText: <text>Copyright 2021,2022,2023 Arm Limited and/or its
  * affiliates <open-source-office@arm.com></text>
  * SPDX-License-Identifier: Apache-2.0
  *
@@ -1491,11 +1491,4 @@ TEST(V8ACPUInfo, registers) {
     unique_ptr<V8AInfo> CPU(new V8AInfo);
     EXPECT_EQ(CPU->numRegisters(),
               unsigned(V8AInfo::Register::NUM_REGISTERS));
-}
-
-unique_ptr<Reporter> reporter = make_cli_reporter();
-
-int main(int argc, char **argv) {
-    InitGoogleTest(&argc, argv);
-    return RUN_ALL_TESTS();
 }
