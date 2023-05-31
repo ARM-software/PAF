@@ -225,7 +225,7 @@ class TestMatrixUINT8(unittest.TestCase, NPUtils):
         npy = np.zeros(shape=(3,2), dtype='uint8')
         for i in range(npy.shape[0]):
             for j in range(npy.shape[1]):
-                npy[i][j] = np.random.randint(-128, 128)
+                npy[i][j] = np.random.randint(0, 256)
         self.setup(npy, "MatrixU8.npy")
 
     def tearDown(self):
@@ -242,7 +242,7 @@ class TestMatrixUINT16(unittest.TestCase, NPUtils):
         npy = np.zeros(shape=(3,2), dtype='uint16')
         for i in range(npy.shape[0]):
             for j in range(npy.shape[1]):
-                npy[i][j] = np.random.randint(-1024, 1024)
+                npy[i][j] = np.random.randint(0, 2048)
         self.setup(npy, "MatrixU16.npy")
 
     def tearDown(self):
@@ -259,7 +259,7 @@ class TestMatrixUINT32(unittest.TestCase, NPUtils):
         npy = np.zeros(shape=(3,2), dtype='uint32')
         for i in range(npy.shape[0]):
             for j in range(npy.shape[1]):
-                npy[i][j] = np.random.randint(-1024, 1024)
+                npy[i][j] = np.random.randint(0, 4096)
         self.setup(npy, "MatrixU32.npy")
 
     def tearDown(self):
@@ -276,7 +276,7 @@ class TestMatrixUINT64(unittest.TestCase, NPUtils):
         npy = np.zeros(shape=(3,2), dtype='uint64')
         for i in range(npy.shape[0]):
             for j in range(npy.shape[1]):
-                npy[i][j] = np.random.randint(-1024, 1024)
+                npy[i][j] = np.random.randint(0, 8192)
         self.setup(npy, "MatrixU64.npy")
 
     def tearDown(self):
