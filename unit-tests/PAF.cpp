@@ -546,11 +546,22 @@ struct TestMTAnalyzer : public PAF::MTAnalyzer {
     vector<ReferenceInstruction> Instructions;
 };
 
+namespace {
+TracePair makeTracePair(const std::string &tarmac, const std::string &index) {
+    TracePair TP;
+    TP.tarmac_filename = tarmac;
+    TP.index_on_disk = true;
+    TP.index_filename = index;
+    TP.memory_index = nullptr;
+    return TP;
+}
+}; // namespace
+
 TEST(MTAnalyzer, base) {
-    TracePair Inputs(SAMPLES_SRC_DIR "instances-v7m.trace",
-                     "instances-v7m.trace.index");
+    TracePair Inputs = makeTracePair(SAMPLES_SRC_DIR "instances-v7m.trace",
+                                     "instances-v7m.trace.index");
     // TODO: do not always rebuild it ?
-    run_indexer(Inputs, /* big_endian */ false, /*show_progress_meter*/ false);
+    run_indexer(Inputs, TraceParams(), /* big_endian */ false);
     TestMTAnalyzer T(Inputs, SAMPLES_SRC_DIR "instances-v7m.elf");
 
     // getInstances test.
@@ -601,10 +612,10 @@ TEST(MTAnalyzer, base) {
 }
 
 TEST(MTAnalyzer, labels) {
-    TracePair Inputs(SAMPLES_SRC_DIR "labels-v7m.trace",
-                     "labels-v7m.trace.index");
+    TracePair Inputs = makeTracePair(SAMPLES_SRC_DIR "labels-v7m.trace",
+                                     "labels-v7m.trace.index");
     // TODO: do not always rebuild it ?
-    run_indexer(Inputs, /* big_endian */ false, /*show_progress_meter*/ false);
+    run_indexer(Inputs, TraceParams(), /* big_endian */ false);
     TestMTAnalyzer T(Inputs, SAMPLES_SRC_DIR "labels-v7m.elf");
 
     // getLabelPairs test.
@@ -627,10 +638,10 @@ TEST(MTAnalyzer, labels) {
 }
 
 TEST(MTAnalyzer, markers) {
-    TracePair Inputs(SAMPLES_SRC_DIR "markers-v7m.trace",
-                     "markers-v7m.trace.index");
+    TracePair Inputs = makeTracePair(SAMPLES_SRC_DIR "markers-v7m.trace",
+                                     "markers-v7m.trace.index");
     // TODO: do not always rebuild it ?
-    run_indexer(Inputs, /* big_endian */ false, /*show_progress_meter*/ false);
+    run_indexer(Inputs, TraceParams(), /* big_endian */ false);
     TestMTAnalyzer T(Inputs, SAMPLES_SRC_DIR "markers-v7m.elf");
 
     // getBetweenFunctionMarkers test.

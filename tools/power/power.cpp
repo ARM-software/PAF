@@ -241,7 +241,8 @@ int main(int argc, char **argv) {
             }
         });
 
-    TarmacUtilityMT tu(ap);
+    TarmacUtilityMT tu;
+    tu.add_options(ap);
 
     ap.parse();
     tu.setup();

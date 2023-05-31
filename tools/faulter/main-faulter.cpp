@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: <text>Copyright 2021,2022 Arm Limited and/or its
+ * SPDX-FileCopyrightText: <text>Copyright 2021,2022,2023 Arm Limited and/or its
  * affiliates <open-source-office@arm.com></text>
  * SPDX-License-Identifier: Apache-2.0
  *
@@ -153,7 +153,8 @@ int main(int argc, char **argv) {
     string oracle_spec; // The oracle to use for classifying faults.
 
     Argparse ap("paf-faulter", argc, argv);
-    TarmacUtility tu(ap);
+    TarmacUtility tu;
+    tu.add_options(ap);
 
     ap.optnoval({"--instructionskip"}, "select InstructionSkip faultModel",
                 [&]() { fault_model = Faulter::FaultModel::InstructionSkip; });

@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: <text>Copyright 2021,2022 Arm Limited and/or its
+ * SPDX-FileCopyrightText: <text>Copyright 2021,2022,2023 Arm Limited and/or its
  * affiliates <open-source-office@arm.com></text>
  * SPDX-License-Identifier: Apache-2.0
  *
@@ -125,7 +125,8 @@ int main(int argc, char **argv) {
     ap.optval({"--function"}, "FUNCTION",
               "Only analyze the portion of the trace in FUNCTION",
               [&](const string &s) { FunctionName = s; });
-    TarmacUtility tu(ap);
+    TarmacUtility tu;
+    tu.add_options(ap);
 
     ap.parse();
     tu.setup();
