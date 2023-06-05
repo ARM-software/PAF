@@ -17,7 +17,7 @@
 
   This file is part of PAF, the Physical Attack Framework.
 
-|BadgeLicence| |CIUbuntu2004gcc| |CIUbuntu2004clang|
+|BadgeLicence| |CIUbuntu2004gcc| |CIUbuntu2004clang| |CImacOS13|
 
 .. |BadgeLicence| image:: https://img.shields.io/github/license/ARM-software/PAF
    :alt: PAF licence
@@ -30,6 +30,10 @@
 .. |CIUbuntu2004clang| image:: https://github.com/ARM-software/PAF/actions/workflows/ubuntu-2204.yml/badge.svg
    :alt: Last build status on Ubuntu 22.04
    :target: https://github.com/ARM-software/PAF/actions/workflows/ubuntu-2204.yml
+
+.. |CImacOS13| image:: https://github.com/ARM-software/PAF/actions/workflows/macos-13.yml/badge.svg
+   :alt: Last build status on macOS Ventura
+   :target: https://github.com/ARM-software/PAF/actions/workflows/macos-13.yml
 
 ===============================================================================
 PAF, the Physical Attack Framework
