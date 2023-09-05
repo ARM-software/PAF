@@ -38,7 +38,7 @@ jobs:
     - name: Install dependencies for apps with a GUI, doxygen and Ninja
       run: sudo apt-get install pkg-config libwxgtk3.0-gtk3-dev doxygen graphviz ninja-build
     - name: Configure
-      run: CC=clang CXX=clang++ cmake -B ${{github.workspace}}/build-clang -DCMAKE_BUILD_TYPE:STRING=${{env.CMAKE_BUILD_TYPE}} -DPAF_BUILD_DOCUMENTAION:BOOL=ON -G Ninja
+      run: CC=clang CXX=clang++ cmake -B ${{github.workspace}}/build-clang -DCMAKE_BUILD_TYPE:STRING=${{env.CMAKE_BUILD_TYPE}} -DPAF_BUILD_DOCUMENTATION:BOOL=ON -G Ninja
     - name: Build
       working-directory: ${{github.workspace}}/build-clang
       run: ninja
@@ -59,7 +59,7 @@ jobs:
     - name: Install dependencies for apps with a GUI, doxygen and Ninja
       run: sudo apt-get install pkg-config libwxgtk3.0-gtk3-dev doxygen graphviz ninja-build
     - name: Configure
-      run: CC=gcc CXX=g++ cmake -B ${{github.workspace}}/build-gcc -DCMAKE_BUILD_TYPE:STRING=${{env.CMAKE_BUILD_TYPE}} -DPAF_BUILD_DOCUMENTAION:BOOL=ON -G Ninja
+      run: CC=gcc CXX=g++ cmake -B ${{github.workspace}}/build-gcc -DCMAKE_BUILD_TYPE:STRING=${{env.CMAKE_BUILD_TYPE}} -DPAF_BUILD_DOCUMENTATION:BOOL=ON -G Ninja
     - name: Build with gcc
       working-directory: ${{github.workspace}}/build-gcc
       run: ninja

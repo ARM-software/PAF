@@ -112,7 +112,7 @@ add_custom_target(python-venv ALL
   COMMAND ${PIP3} install wheel
 )
 
-option(PAF_BUILD_DOCUMENTAION "Build PAF documentation" OFF)
+option(PAF_BUILD_DOCUMENTATION "Build PAF documentation" OFF)
 option(PAF_BUILD_WITH_INSTRUMENTED_COVERAGE "Build PAF with instrumented coverage" OFF)
 set(PAF_LLVM_PROFDATA_EXE "llvm-profdata" CACHE FILEPATH "The llvm-profdata executable to use")
 set(PAF_LLVM_COV_EXE "llvm-cov" CACHE FILEPATH "The llvm-cov executable to use")
@@ -152,7 +152,7 @@ add_subdirectory(lib)
 add_subdirectory(tools)
 
 # Build PAF's documentation if we have been told so.
-if (PAF_BUILD_DOCUMENTAION)
+if (PAF_BUILD_DOCUMENTATION)
   add_subdirectory(doc)
 endif()
 
