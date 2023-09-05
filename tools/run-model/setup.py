@@ -23,9 +23,9 @@ setup(
         version="0.1",
         packages=['FI', 'PAF'],
         install_requires=[
-          'pyyaml==5.4.1',
-          'pyelftools==0.26',
-          'tqdm==4.50.0'
+          'pyyaml==6.0.1',
+          'pyelftools==0.29',
+          'tqdm==4.65.2'
         ],
         scripts=['run-model.py', 'campaign.py', 'generate-xref.py'],
 )
