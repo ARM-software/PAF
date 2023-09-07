@@ -181,6 +181,21 @@ TEST(NPArray, base) {
     EXPECT_EQ(UI(0, 0), 0);
 }
 
+TEST(NParray, descr) {
+    EXPECT_EQ(NPArray<int8_t>::descr(), "i1");
+    EXPECT_EQ(NPArray<int16_t>::descr(), "i2");
+    EXPECT_EQ(NPArray<int32_t>::descr(), "i4");
+    EXPECT_EQ(NPArray<int64_t>::descr(), "i8");
+
+    EXPECT_EQ(NPArray<uint8_t>::descr(), "u1");
+    EXPECT_EQ(NPArray<uint16_t>::descr(), "u2");
+    EXPECT_EQ(NPArray<uint32_t>::descr(), "u4");
+    EXPECT_EQ(NPArray<uint64_t>::descr(), "u8");
+
+    EXPECT_EQ(NPArray<float>::descr(), "f4");
+    EXPECT_EQ(NPArray<double>::descr(), "f8");
+}
+
 TEST(NPArray, from_vector_vector) {
     vector<vector<double>> VD{{0., 1., 2., 3.}, {10., 11., 12., 13.}};
     NPArray<double> NPD(VD);
@@ -762,7 +777,89 @@ TEST(NPArray, concatenate) {
 }
 
 // Create the test fixture for NPArray.
-TestWithTempFile(NPArrayF, "test-NPArray.npy.XXXXXX");
+TestWithTempFiles(NPArrayF, "test-NPArray.npy.XXXXXX", 2);
+
+template <typename Ty>
+void testConcatenateFromFiles(const string &filename0,
+                              const string &filename1) {
+    const vector<string> files = {filename0, filename1};
+    const Ty init1[] = {0, 1, 2, 3, 4, 5, 6, 7};
+    const Ty init2[] = {10, 11, 12, 13, 14, 15, 16, 17};
+    const Ty init3[] = {0, 1, 2, 3, 4, 5, 6, 7, 10, 11, 12, 13, 14, 15, 16, 17};
+
+    // Single row extensions.
+    NPArray<Ty>(init1, 1, 8).save(files[0]);
+    NPArray<Ty>(init2, 1, 8).save(files[1]);
+    NPArray<Ty> M(files, NPArrayBase::ROW);
+    EXPECT_TRUE(M.good());
+    EXPECT_EQ(M.rows(), 1);
+    EXPECT_EQ(M.cols(), 16);
+    EXPECT_EQ(M, NPArray<Ty>(init3, 1, 16));
+
+    NPArray<Ty>(init1, 1, 8).save(files[0]);
+    NPArray<Ty>(init2, 1, 8).save(files[1]);
+    M = NPArray<Ty>(files, NPArrayBase::COLUMN);
+    EXPECT_TRUE(M.good());
+    EXPECT_EQ(M.rows(), 2);
+    EXPECT_EQ(M.cols(), 8);
+    EXPECT_EQ(M, NPArray<Ty>(init3, 2, 8));
+
+    // Single column extensions.
+    NPArray<Ty>(init1, 8, 1).save(files[0]);
+    NPArray<Ty>(init2, 8, 1).save(files[1]);
+    M = NPArray<Ty>(files, NPArrayBase::COLUMN);
+    EXPECT_TRUE(M.good());
+    EXPECT_EQ(M.rows(), 16);
+    EXPECT_EQ(M.cols(), 1);
+    EXPECT_EQ(M, NPArray<Ty>(init3, 16, 1));
+
+    const Ty init3r[] = {0, 10, 1, 11, 2, 12, 3, 13,
+                         4, 14, 5, 15, 6, 16, 7, 17};
+    NPArray<Ty>(init1, 8, 1).save(files[0]);
+    NPArray<Ty>(init2, 8, 1).save(files[1]);
+    M = NPArray<Ty>(files, NPArrayBase::ROW);
+    EXPECT_TRUE(M.good());
+    EXPECT_EQ(M.rows(), 8);
+    EXPECT_EQ(M.cols(), 2);
+    EXPECT_EQ(M, NPArray<Ty>(init3r, 8, 2));
+
+    // Matrix extensions on the row axis
+    const Ty init3m[] = {0, 1, 2, 3, 10, 11, 12, 13,
+                         4, 5, 6, 7, 14, 15, 16, 17};
+    NPArray<Ty>(init1, 2, 4).save(files[0]);
+    NPArray<Ty>(init2, 2, 4).save(files[1]);
+    M = NPArray<Ty>(files, NPArrayBase::ROW);
+    EXPECT_TRUE(M.good());
+    EXPECT_EQ(M.rows(), 2);
+    EXPECT_EQ(M.cols(), 8);
+    EXPECT_EQ(M, NPArray<Ty>(init3m, 2, 8));
+
+    // Matrix extension on the column axis
+    NPArray<Ty>(init1, 2, 4).save(files[0]);
+    NPArray<Ty>(init2, 2, 4).save(files[1]);
+    M = NPArray<Ty>(files, NPArrayBase::COLUMN);
+    EXPECT_TRUE(M.good());
+    EXPECT_EQ(M.rows(), 4);
+    EXPECT_EQ(M.cols(), 4);
+    EXPECT_EQ(M, NPArray<Ty>(init3, 4, 4));
+}
+
+TEST_F(NPArrayF, concatenateFromFiles) {
+    const string tmpFile0 = getTemporaryFilename(0);
+    const string tmpFile1 = getTemporaryFilename(1);
+
+    testConcatenateFromFiles<uint16_t>(tmpFile0, tmpFile1);
+    testConcatenateFromFiles<uint32_t>(tmpFile0, tmpFile1);
+    testConcatenateFromFiles<uint64_t>(tmpFile0, tmpFile1);
+
+    testConcatenateFromFiles<int8_t>(tmpFile0, tmpFile1);
+    testConcatenateFromFiles<int16_t>(tmpFile0, tmpFile1);
+    testConcatenateFromFiles<int32_t>(tmpFile0, tmpFile1);
+    testConcatenateFromFiles<int64_t>(tmpFile0, tmpFile1);
+
+    testConcatenateFromFiles<float>(tmpFile0, tmpFile1);
+    testConcatenateFromFiles<double>(tmpFile0, tmpFile1);
+}
 
 TEST_F(NPArrayF, saveAndRestore) {
     // Save NPArray.

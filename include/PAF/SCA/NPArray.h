@@ -23,6 +23,7 @@
 #include <algorithm>
 #include <cassert>
 #include <cmath>
+#include <cstdint>
 #include <cstring>
 #include <fstream>
 #include <functional>
@@ -48,6 +49,9 @@ class NPArrayBase {
         COLUMN ///< Process data along the Column axis.
     };
 
+    /// Get the numpy element type descriptor
+    template <typename Ty> static const char *getEltTyDescr();
+
     /// Default constructor.
     NPArrayBase()
         : data(nullptr), num_rows(0), num_columns(0), elt_size(0),
@@ -55,10 +59,17 @@ class NPArrayBase {
 
     /// Construct an NPArrayBase from file filename.
     ///
-    /// This function will assess if the on-disk storage matches the the
-    /// floating point expectation as well as the element size.
-    NPArrayBase(const char *filename, bool expected_floating,
-                unsigned expected_elt_size);
+    /// This method will assess if the on-disk storage matches the
+    /// element type.
+    NPArrayBase(const std::string &filename, const char *expectedEltTy);
+
+    /// Construct an NPArrayBase from several filenames.
+    ///
+    /// This method is only useful for low level operations (e.g. concatenate,
+    /// ...) where the actual element type is not relevant.
+    NPArrayBase(const std::vector<std::string> &filenames, Axis axis,
+                const char *expectedEltTy, size_t num_rows, size_t num_columns,
+                unsigned elt_size);
 
     /// Construct an NPArray base from raw memory (std::unique_ptr version) and
     /// misc other information.
@@ -199,17 +210,15 @@ class NPArrayBase {
 
     /// Get high level information from the file header.
     static bool get_information(std::ifstream &ifs, size_t &num_rows,
-                                size_t &num_columns, bool &floating,
-                                std::string &elt_ty, unsigned &elt_size,
+                                size_t &num_columns, std::string &elt_ty,
+                                size_t &elt_size,
                                 const char **errstr = nullptr);
 
     /// Save to file \p filename.
-    bool save(const char *filename, const std::string &descr,
-              const std::string &shape) const;
+    bool save(const char *filename, const std::string &descr) const;
 
     /// Save to output file stream \p os.
-    bool save(std::ofstream &os, const std::string &descr,
-              const std::string &shape) const;
+    bool save(std::ofstream &os, const std::string &descr) const;
 
   protected:
     /// Get a pointer to type Ty to the array (const version).
@@ -221,21 +230,17 @@ class NPArrayBase {
         return reinterpret_cast<Ty *>(data.get());
     }
 
+    /// Set the error string and state.
+    NPArrayBase &setError(const char *s) {
+        errstr = s;
+        return *this;
+    }
+
     /// Fill our internal buffer with externally provided data.
-    template <class Ty> void fill(const char *buf, size_t size) noexcept {
+    void fill(const char *buf, size_t size) noexcept {
         assert(size <= num_rows * num_columns * elt_size &&
                "data buffer size mismatch");
         memcpy(data.get(), buf, size);
-    }
-
-    /// Get the shape description for saving into a numpy file.
-    std::string shape() const {
-        std::string s("(");
-        s += std::to_string(rows());
-        s += ",";
-        s += std::to_string(cols());
-        s += ")";
-        return s;
     }
 
   private:
@@ -243,6 +248,13 @@ class NPArrayBase {
     size_t num_rows, num_columns; //< Number of rows and columns.
     unsigned elt_size;            //< Number of elements.
     const char *errstr;
+
+    /// Construct an NPArrayBase from file filename.
+    ///
+    /// This method will assess if the on-disk storage matches the
+    /// floating point expectation as well as the element size.
+    NPArrayBase(NPArrayBase &dest, size_t &index, const std::string &filename,
+                Axis axis, const char *expectedEltTy, size_t expectedDimension);
 };
 
 /// NPArray is the user facing class to work with 1D or 2D numpy arrays.
@@ -255,14 +267,79 @@ template <class Ty> class NPArray : public NPArrayBase {
                   "expecting an integral or floating point type");
 
     /// Construct an NPArray from data stored in file \p filename.
-    NPArray(const char *filename)
-        : NPArrayBase(filename, std::is_floating_point<Ty>(), sizeof(Ty)) {}
-
-    /// Construct an NPArray from data stored in file \p filename (std::string
-    /// version).
     NPArray(const std::string &filename)
-        : NPArrayBase(filename.c_str(), std::is_floating_point<Ty>(),
-                      sizeof(Ty)) {}
+        : NPArrayBase(filename, getEltTyDescr<Ty>()) {}
+
+    /// Construct an NPArray from multiple files, concatenating the Matrices
+    /// along \p axis.
+    NPArray(const std::vector<std::string> &filenames, Axis axis)
+        : NPArrayBase() {
+        if (filenames.empty())
+            return;
+
+        // Get the NPArray attributes that we should expect.
+        size_t output_num_rows;
+        size_t output_num_cols;
+        bool first = true;
+        for (const auto &filename : filenames) {
+            std::ifstream ifs(filename, std::ifstream::binary);
+            if (!ifs) {
+                setError("Could not open file to get target matrix attributes");
+                return;
+            }
+
+            size_t l_num_rows;
+            size_t l_num_cols;
+            std::string l_elt_ty;
+            size_t l_elt_size;
+            const char *l_errstr;
+            if (!get_information(ifs, l_num_rows, l_num_cols, l_elt_ty,
+                                 l_elt_size, &l_errstr)) {
+                setError(l_errstr);
+                return;
+            }
+
+            if (l_elt_ty != getEltTyDescr<Ty>() || l_elt_size != sizeof(Ty)) {
+                setError("Error element type mismatch in the matrix to "
+                         "concatenate");
+                return;
+            }
+
+            if (first) {
+                output_num_rows = l_num_rows;
+                output_num_cols = l_num_cols;
+                first = false;
+            } else {
+                switch (axis) {
+                case NPArrayBase::COLUMN:
+                    output_num_rows += l_num_rows;
+                    if (output_num_cols != l_num_cols) {
+                        setError("Can not concatenate along the Column axis "
+                                 "matrices with different column numbers");
+                        return;
+                    }
+                    break;
+                case NPArrayBase::ROW:
+                    output_num_cols += l_num_cols;
+                    if (output_num_rows != l_num_rows) {
+                        setError(
+                            "Can not concatenate along the Row axis matrices "
+                            "with different row numbers");
+                        return;
+                    }
+                    break;
+                }
+            }
+        }
+
+        NPArrayBase tmp(filenames, axis, getEltTyDescr<Ty>(), output_num_rows,
+                        output_num_cols, sizeof(Ty));
+
+        if (tmp.good())
+            *static_cast<NPArrayBase*>(this) = std::move(tmp);
+        else
+            setError(tmp.error());
+    }
 
     /// Construct an uninitialized NPArray with \p num_rows rows and \p
     /// num_columns columns.
@@ -291,8 +368,8 @@ template <class Ty> class NPArray : public NPArrayBase {
     NPArray(std::initializer_list<Ty> init, size_t num_rows, size_t num_columns)
         : NPArrayBase(nullptr, num_rows, num_columns, sizeof(Ty)) {
         std::vector<Ty> tmp(init);
-        fill<Ty>(reinterpret_cast<const char *>(tmp.data()),
-                 tmp.size() * sizeof(Ty));
+        fill(reinterpret_cast<const char *>(tmp.data()),
+             tmp.size() * sizeof(Ty));
     }
 
     /// Construct an NPArray from a vector<vector<Ty>>.
@@ -302,7 +379,7 @@ template <class Ty> class NPArray : public NPArrayBase {
     NPArray(const NPArray &Other) : NPArrayBase(Other) {}
 
     /// Move construct an NParray.
-    NPArray(NPArray &&Other) : NPArrayBase(Other) {}
+    NPArray(NPArray &&Other) : NPArrayBase(std::move(Other)) {}
 
     /// Copy assign an NParray.
     NPArray &operator=(const NPArray &Other) {
@@ -312,7 +389,7 @@ template <class Ty> class NPArray : public NPArrayBase {
 
     /// Move assign an NParray.
     NPArray &operator=(NPArray &&Other) {
-        this->NPArrayBase::operator=(Other);
+        this->NPArrayBase::operator=(std::move(Other));
         return *this;
     }
 
@@ -394,7 +471,7 @@ template <class Ty> class NPArray : public NPArrayBase {
 
     /// Save to file \p filename in NPY format.
     bool save(const char *filename) const {
-        return this->NPArrayBase::save(filename, descr(), shape());
+        return this->NPArrayBase::save(filename, descr());
     }
 
     /// Save to file \p filename in NPY format.
@@ -404,7 +481,7 @@ template <class Ty> class NPArray : public NPArrayBase {
 
     /// Save to output file stream \p os in NPY format.
     bool save(std::ofstream &os) const {
-        return this->NPArrayBase::save(os, descr(), shape());
+        return this->NPArrayBase::save(os, descr());
     }
 
     /// The Row class is an adapter around an NPArray to provide a view
@@ -696,6 +773,9 @@ template <class Ty> class NPArray : public NPArrayBase {
         }
     }
 
+    /// Get the numpy descriptor string to use when saving in a numpy file.
+    static std::string descr() { return getEltTyDescr<DataTy>(); }
+
   private:
     /// Provide a convenience shorthand for in-class operations.
     Ty &at(size_t row, size_t col) { return (*this)(row, col); }
@@ -703,22 +783,6 @@ template <class Ty> class NPArray : public NPArrayBase {
     /// Provide a convenience shorthand for in-class operations (const
     /// version).
     Ty at(size_t row, size_t col) const { return (*this)(row, col); }
-
-    /// Get the numpy descriptor string to use when saving in a numpy file.
-    std::string descr() const {
-        std::string d;
-        if (std::is_floating_point<DataTy>())
-            d += 'f';
-        else if (std::is_signed<DataTy>())
-            d += 'i';
-        else
-            d += 'u';
-        size_t s = sizeof(DataTy);
-        assert(s > 0 && s <= 8 && "unexpected datasize");
-        d += char('0' + s);
-
-        return d;
-    }
 };
 
 /// Functional version of 'all' predicate checker on an NPArray for row / column

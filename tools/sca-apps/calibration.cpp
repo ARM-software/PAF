@@ -135,31 +135,26 @@ int main(int argc, char *argv[]) {
     // Check that if we were given several input files they are all with the
     // same element types.
     bool first = true;
-    bool floating;
     std::string elt_ty;
     unsigned elt_size;
     for (const auto &filename : filenames) {
         size_t num_rows;
         size_t num_columns;
-        bool l_floating;
         std::string l_elt_ty;
-        unsigned l_elt_size;
+        size_t l_elt_size;
         const char *errstr;
         ifstream ifs(filename, ifstream::binary);
-        if (!NPArrayBase::get_information(ifs, num_rows, num_columns,
-                                          l_floating, l_elt_ty, l_elt_size,
-                                          &errstr)) {
+        if (!NPArrayBase::get_information(ifs, num_rows, num_columns, l_elt_ty,
+                                          l_elt_size, &errstr)) {
             cerr << "Failed to open file '" << filename << "'\n";
             return EXIT_FAILURE;
         }
         if (first) {
-            floating = l_floating;
             elt_ty = l_elt_ty;
             elt_size = l_elt_size;
             first = false;
         } else {
-            if (floating != l_floating || elt_ty != l_elt_ty ||
-                elt_size != l_elt_size) {
+            if (elt_ty != l_elt_ty || elt_size != l_elt_size) {
                 cerr << filename << " differs in its data types from "
                      << filenames[0] << '\n';
                 return EXIT_FAILURE;
@@ -169,12 +164,12 @@ int main(int argc, char *argv[]) {
 
     // And now visit all our input files.
     bool err;
-    if (floating) {
-        switch (elt_size) {
-        case 4:
+    if (elt_ty[0] == 'f') {
+        switch (elt_ty[1]) {
+        case '4':
             err = visit<float>(filenames);
             break;
-        case 8:
+        case '8':
             err = visit<double>(filenames);
             break;
         default:
@@ -182,18 +177,18 @@ int main(int argc, char *argv[]) {
             err = true;
             break;
         }
-    } else {
+    } else if (elt_ty[0] == 'i') {
         switch (elt_size) {
-        case 1:
+        case '1':
             err = visit<int8_t>(filenames);
             break;
-        case 2:
+        case '2':
             err = visit<int16_t>(filenames);
             break;
-        case 4:
+        case '4':
             err = visit<int32_t>(filenames);
             break;
-        case 8:
+        case '8':
             err = visit<int64_t>(filenames);
             break;
         default:
@@ -201,6 +196,28 @@ int main(int argc, char *argv[]) {
             err = true;
             break;
         }
+    } else if (elt_ty[0] == 'u') {
+        switch (elt_size) {
+        case '1':
+            err = visit<uint8_t>(filenames);
+            break;
+        case '2':
+            err = visit<uint16_t>(filenames);
+            break;
+        case '4':
+            err = visit<uint32_t>(filenames);
+            break;
+        case '8':
+            err = visit<uint64_t>(filenames);
+            break;
+        default:
+            cerr << "Unsupported unsigned integer type '" << elt_ty << "'\n";
+            err = true;
+            break;
+        }
+    } else {
+        err = true;
+        cerr << "Unsupported element type '" << elt_ty << "'\n";
     }
 
     return err ? EXIT_FAILURE : EXIT_SUCCESS;

@@ -18,8 +18,8 @@
  * This file is part of PAF, the Physical Attack Framework.
  */
 
-#include "PAF/SCA/LWParser.h"
 #include "PAF/SCA/NPArray.h"
+#include "PAF/SCA/LWParser.h"
 
 #include <cstdint>
 #include <memory>
@@ -27,6 +27,7 @@
 using std::ifstream;
 using std::ofstream;
 using std::string;
+using std::to_string;
 using std::unique_ptr;
 using std::vector;
 
@@ -151,10 +152,31 @@ char native_endianness() {
 }
 
 const char NPY_MAGIC[] = {'\x93', 'N', 'U', 'M', 'P', 'Y'};
+
+/// Get the shape description for saving into a numpy file.
+string shape(size_t rows, size_t cols) {
+    string s("(");
+    s += to_string(rows);
+    s += ",";
+    s += to_string(cols);
+    s += ")";
+    return s;
+}
 } // namespace
 
 namespace PAF {
 namespace SCA {
+
+template <> const char *NPArrayBase::getEltTyDescr<uint8_t>() { return "u1"; }
+template <> const char *NPArrayBase::getEltTyDescr<uint16_t>() { return "u2"; }
+template <> const char *NPArrayBase::getEltTyDescr<uint32_t>() { return "u4"; }
+template <> const char *NPArrayBase::getEltTyDescr<uint64_t>() { return "u8"; }
+template <> const char *NPArrayBase::getEltTyDescr<int8_t>() { return "i1"; }
+template <> const char *NPArrayBase::getEltTyDescr<int16_t>() { return "i2"; }
+template <> const char *NPArrayBase::getEltTyDescr<int32_t>() { return "i4"; }
+template <> const char *NPArrayBase::getEltTyDescr<int64_t>() { return "i8"; }
+template <> const char *NPArrayBase::getEltTyDescr<float>() { return "f4"; }
+template <> const char *NPArrayBase::getEltTyDescr<double>() { return "f8"; }
 
 bool NPArrayBase::get_information(ifstream &ifs, unsigned &major,
                                   unsigned &minor, string &descr,
@@ -228,9 +250,8 @@ bool NPArrayBase::get_information(ifstream &ifs, unsigned &major,
 }
 
 bool NPArrayBase::get_information(ifstream &ifs, size_t &num_rows,
-                                  size_t &num_columns, bool &floating,
-                                  string &elt_ty, unsigned &elt_size,
-                                  const char **errstr) {
+                                  size_t &num_columns, string &elt_ty,
+                                  size_t &elt_size, const char **errstr) {
     unsigned major, minor;
     bool fortran_order;
     vector<size_t> shape;
@@ -290,20 +311,6 @@ bool NPArrayBase::get_information(ifstream &ifs, size_t &num_rows,
         return false;
     }
 
-    switch (descr[1]) {
-    case 'f':
-        floating = true;
-        break;
-    case 'u': // Fall-thru intended.
-    case 'i':
-        floating = false;
-        break;
-    default:
-        if (errstr)
-            *errstr = "unsupported element type";
-        return false;
-    }
-
     if (descr[2] < '0' || descr[2] > '9') {
         if (errstr)
             *errstr = "unexpected data size found in descr";
@@ -321,8 +328,7 @@ bool NPArrayBase::get_information(ifstream &ifs, size_t &num_rows,
     return true;
 }
 
-bool NPArrayBase::save(ofstream &os, const string &descr,
-                       const string &shape) const {
+bool NPArrayBase::save(ofstream &os, const string &descr) const {
     if (!os)
         return false;
 
@@ -341,7 +347,7 @@ bool NPArrayBase::save(ofstream &os, const string &descr,
     header += descr + "\',";
     header += " 'fortran_order': False,";
     header += " 'shape': ";
-    header += shape;
+    header += shape(rows(), cols());
     header += '}';
     header += string(63 - (header.size() + 10) % 64, ' ');
     header += '\n';
@@ -364,58 +370,141 @@ bool NPArrayBase::save(ofstream &os, const string &descr,
     return true;
 }
 
-bool NPArrayBase::save(const char *filename, const string &descr,
-                       const string &shape) const {
+bool NPArrayBase::save(const char *filename, const string &descr) const {
     ofstream ofs(filename, ofstream::binary);
 
     if (!ofs)
         return false;
 
-    return save(ofs, descr, shape);
+    return save(ofs, descr);
 }
 
-NPArrayBase::NPArrayBase(const char *filename, bool expected_floating,
-                         unsigned expected_elt_size)
-    : data(nullptr), num_rows(0), num_columns(0), elt_size(0), errstr(nullptr) {
+NPArrayBase::NPArrayBase(const std::vector<std::string> &filenames, Axis axis,
+                         const char *expectedEltTy, size_t num_rows,
+                         size_t num_columns, unsigned elt_size)
+    : data(new char[num_rows * num_columns * elt_size]), num_rows(num_rows),
+      num_columns(num_columns), elt_size(elt_size), errstr(nullptr) {
+    if (filenames.empty())
+        return;
+
+    size_t index = 0;
+    for (const auto &filename : filenames) {
+        switch (axis) {
+        case COLUMN: {
+            NPArrayBase in(*this, index, filename, axis, expectedEltTy, cols());
+            if (!in.good()) {
+                errstr =
+                    "Error loading numpy array during column concatenation";
+                return;
+            }
+        } break;
+        case ROW: {
+            NPArrayBase in(*this, index, filename, axis, expectedEltTy, rows());
+            if (!in.good()) {
+                errstr = "Error loading numpy array during row concatenation";
+                return;
+            }
+        } break;
+        }
+    }
+}
+
+NPArrayBase::NPArrayBase(const string &filename, const char *expectedEltTy)
+    : NPArrayBase() {
     ifstream ifs(filename, ifstream::binary);
     if (!ifs) {
         errstr = "error opening file";
         return;
     }
 
-    size_t num_rows_tmp;
-    size_t num_columns_tmp;
-    bool floating;
-    string elt_ty;
-    unsigned elt_size_tmp;
+    size_t l_num_rows;
+    size_t l_num_columns;
+    string l_elt_ty;
+    size_t l_elt_size;
 
-    if (!get_information(ifs, num_rows_tmp, num_columns_tmp, floating, elt_ty,
-                         elt_size_tmp, &errstr))
+    if (!get_information(ifs, l_num_rows, l_num_columns, l_elt_ty, l_elt_size,
+                         &errstr))
         return;
 
-    if (expected_floating) {
-        if (!floating) {
-            errstr =
-                "floating point data expected, but got something else instead";
-            return;
-        }
-    } else {
-        if (floating) {
-            errstr = "integer data expected, but got something else instead";
-            return;
-        }
+    // Some sanity checks.
+    if (l_elt_ty != expectedEltTy) {
+        errstr = "Unexpected element type";
+        return;
     }
 
-    if (elt_size_tmp != expected_elt_size) {
-        errstr = "element size does not match the expected one";
+    size_t num_bytes = l_num_rows * l_num_columns * l_elt_size;
+    data.reset(new char[num_bytes]);
+    ifs.read(data.get(), num_bytes);
+    num_rows = l_num_rows;
+    num_columns = l_num_columns;
+    elt_size = l_elt_size;
+}
+
+NPArrayBase::NPArrayBase(NPArrayBase &dest, size_t &index,
+                         const string &filename, Axis axis,
+                         const char *expectedEltTy, size_t expectedDimension)
+    : NPArrayBase() {
+    ifstream ifs(filename, ifstream::binary);
+    if (!ifs) {
+        errstr = "error opening file";
+        return;
+    }
+
+    size_t l_num_rows;
+    size_t l_num_columns;
+    string l_elt_ty;
+    size_t l_elt_size;
+
+    if (!get_information(ifs, l_num_rows, l_num_columns, l_elt_ty, l_elt_size,
+                         &errstr))
+        return;
+
+    // Some sanity checks.
+    if (l_elt_ty != expectedEltTy || l_elt_size != dest.element_size()) {
+        errstr = "Unexpected element type";
+        return;
+    }
+
+    char *matrix = dest.data.get();
+    size_t offset;
+    switch (axis) {
+    case COLUMN:
+        if (l_num_columns != expectedDimension) {
+            errstr = "Mismatch in column number";
+            return;
+        }
+        if (index + l_num_rows > dest.rows()) {
+            errstr = "Row overflow";
+            return;
+        }
+        offset = index * dest.cols() * dest.element_size();
+        ifs.read(&matrix[offset],
+                 l_num_rows * l_num_columns * dest.element_size());
+        index += l_num_rows;
+        break;
+    case ROW:
+        if (l_num_rows != expectedDimension) {
+            errstr = "Mismatch in row number";
+            return;
+        }
+        if (index + l_num_columns > dest.cols()) {
+            errstr = "Column overflow";
+            return;
+        }
+        for (size_t r = 0; r < l_num_rows; r++) {
+            offset = r * dest.cols() * dest.element_size() +
+                     index * dest.element_size();
+            ifs.read(&matrix[offset], l_num_columns * dest.element_size());
+        }
+        index += l_num_columns;
         return;
     }
 
     // At this point, we have validated all we could, so finish the NPArray
     // creation.
-    num_rows = num_rows_tmp;
-    num_columns = num_columns_tmp;
-    elt_size = expected_elt_size;
+    num_rows = l_num_rows;
+    num_columns = l_num_columns;
+    elt_size = l_elt_size;
     data = unique_ptr<char[]>(new char[num_rows * num_columns * elt_size]);
     ifs.read(data.get(), num_rows * num_columns * elt_size);
 }

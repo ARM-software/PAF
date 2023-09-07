@@ -137,7 +137,7 @@ Fault injection is performed in three steps:
 3. Execute again ``program.elf`` with run-model.py_, but this time in fault
    injection mode. This will run the program as many times as there are faults
    in the campaign, and will classify the fault effects according to `Fault
-   classification`_. 
+   classification`_.
 
    .. code-block:: bash
 
@@ -237,7 +237,7 @@ A simplified pseudo-grammar for the Oracle-DSL looks like:
 
   *event* ::= *@* (``function``) | *return* (``function``)
 
-  *classification* ::= ``success`` | ``noeffect`` | ``crash`` | ``caught`` | ``notrun`` | ``undecided`` 
+  *classification* ::= ``success`` | ``noeffect`` | ``crash`` | ``caught`` | ``notrun`` | ``undecided``
 
 The triggering *event* is either a call to or a return from ``function``. In
 the full Oracle-DSL, *classification* is a first order formula, which is
@@ -270,11 +270,11 @@ pin comparison exit early as soon as a difference is found:
 
   $ cat check.c
   #include <stdio.h>
-  
+
   #define DIGITS 4
-  
+
   char pin[DIGITS] = "1234";
-  
+
   int main(int argc, char \*argv[]) {
       if (argc > 1) {
           for (unsigned i = 0; i < DIGITS; i++)
@@ -282,7 +282,7 @@ pin comparison exit early as soon as a difference is found:
                   return 0;
           return 1;
       }
-  
+
       return 0;
   }
 
@@ -333,7 +333,7 @@ divergences in Tarmac traces:
      o Time:714 Executed:1 PC:0x804c ISet:1 Width:16 Instruction:0x2000 MOVS r0,#0 (reference)
        Time:714 Executed:1 PC:0x8044 ISet:1 Width:16 Instruction:0x428b CMP r3,r1
 
-In this case, ``paf-constanttime`` has found 2 divergences: 
+In this case, ``paf-constanttime`` has found 2 divergences:
 
 * at time 713, depending on the input value, the instruction at PC: 0x8042 was
   executed (or not).
@@ -576,14 +576,14 @@ semi-hosting:
 
    $ cat Hello.c
    #include <stdio.h>
-   
+
    int main(int argc, char *argv[]) {
      const char *someone = "World";
      if (argc>1)
        someone = argv[1];
-   
+
      printf("Hello, %s !", someone);
-   
+
      return 0;
    }
 
@@ -1271,6 +1271,34 @@ For example, to get the specific t-test for the intermediate 8-bit value ``input
   Both operands of a binary operator must have the same type, and the operator result
   will have the same type as its inputs.
 
+``paf-np-cat``
+~~~~~~~~~~~~~~~~~
+
+``paf-np-cat`` is a utility to concatenate simple 1D or 2D numpy arrays.
+
+The command line syntax looks like:
+  ``paf-np-cat`` [ *options* ] *INPUT_NPY_FILES*\ ...
+
+where ``INPUT_NPY_FILES`` are all the numpy files to concatenate in the specified order.
+
+The following options are recognized:
+
+``-v`` or ``--verbose``
+  Increase verbosity level (can be specified multiple times)
+
+``-r`` or ``--rows``
+  concatenate INPUT_NPY_FILES along the rows axis
+
+``-o FILENAME`` or ``--output=FILENAME``
+  concatenate ``INPUT_NPY_FILES`` into ``FILENAME``
+
+Example usage, to concatenate ``job0.npy`` and ``job1.npy`` into
+of ``result.npy`` :
+
+.. code-block:: bash
+
+  $ paf-np-cat -o result.npy job0.npy job1.npy
+
 ``paf-np-create``
 ~~~~~~~~~~~~~~~~~
 
@@ -1493,9 +1521,9 @@ has been configured by ``cmake`` to use the ``ninja`` tool :
    10/11 Test #10: unit-NPArray .....................   Passed    0.02 sec
          Start 11: unit-Expr
    11/11 Test #11: unit-Expr ........................   Passed    0.02 sec
-   
+
    100% tests passed, 0 tests failed out of 11
-   
+
    Total Test time (real) =   1.83 sec
 
 End to end tests
