@@ -158,11 +158,9 @@ namespace PAF {
 namespace SCA {
 
 bool NPArrayBase::get_information(ifstream &ifs, unsigned &major,
-                                  unsigned &minor, size_t &header_length,
-                                  size_t &file_size, string &descr,
+                                  unsigned &minor, string &descr,
                                   bool &fortran_order, vector<size_t> &shape,
-                                  const char **errstr) {
-
+                                  size_t &data_size, const char **errstr) {
     if (!ifs.good()) {
         if (errstr)
             *errstr = "bad stream";
@@ -170,15 +168,15 @@ bool NPArrayBase::get_information(ifstream &ifs, unsigned &major,
     }
 
     ifs.seekg(0, ifs.end);
-    file_size = ifs.tellg();
+    size_t actual_file_size = ifs.tellg();
 
-    ifs.seekg(0, ifs.beg);
-
-    if (file_size < 10) {
+    if (actual_file_size < 10) {
         if (errstr)
-            *errstr = "file too short to be in npy format.";
+            *errstr = "file too short to possibly be in npy format.";
         return false;
     }
+
+    ifs.seekg(0, ifs.beg);
 
     char mbuf[sizeof(NPY_MAGIC)];
     ifs.read(mbuf, sizeof(NPY_MAGIC));
@@ -204,15 +202,17 @@ bool NPArrayBase::get_information(ifstream &ifs, unsigned &major,
 
     char hl[2];
     ifs.read(hl, 2);
-    header_length = ((unsigned char *)hl)[1];
+    size_t header_length = ((unsigned char *)hl)[1];
     header_length <<= 8;
     header_length |= ((unsigned char *)hl)[0];
 
-    if (header_length + 10 > file_size) {
+    if (header_length + 10 > actual_file_size) {
         if (errstr)
             *errstr = "file too short to contain the array description.";
         return false;
     }
+
+    data_size = actual_file_size - header_length - 10;
 
     unique_ptr<char> hbuf(new char[header_length]);
     ifs.read(hbuf.get(), header_length);
@@ -220,6 +220,102 @@ bool NPArrayBase::get_information(ifstream &ifs, unsigned &major,
     hbuf.reset();
 
     if (!parse_header(header, descr, fortran_order, shape, errstr)) {
+        if (errstr)
+            *errstr = "error parsing file header";
+        return false;
+    }
+
+    return true;
+}
+
+bool NPArrayBase::get_information(ifstream &ifs, size_t &num_rows,
+                                  size_t &num_columns, bool &floating,
+                                  string &elt_ty, unsigned &elt_size,
+                                  const char **errstr) {
+    unsigned major, minor;
+    bool fortran_order;
+    vector<size_t> shape;
+    size_t data_size;
+    string descr;
+
+    if (!NPArrayBase::get_information(ifs, major, minor, descr, fortran_order,
+                                      shape, data_size, errstr))
+        return false;
+
+    // Perform some validation that we can actually manage this specific npy
+    // file.
+
+    if (major != 1 || minor != 0) {
+        if (errstr)
+            *errstr = "unsupported npy format version";
+        return false;
+    }
+
+    if (fortran_order) {
+        if (errstr)
+            *errstr = "fortran order not supported";
+        return false;
+    }
+
+    switch (shape.size()) {
+    case 1:
+        num_rows = 1;
+        num_columns = shape[0];
+        break;
+    case 2:
+        num_rows = shape[0];
+        num_columns = shape[1];
+        break;
+    case 3:
+        if (shape[2] == 1) {
+            num_rows = shape[0];
+            num_columns = shape[1];
+            break;
+        }
+        // Fall-thru intended.
+    default:
+        if (errstr)
+            *errstr = "only 2D arrays are supported";
+        return false;
+    }
+
+    if (descr.size() != 3) {
+        if (errstr)
+            *errstr = "descriptor is longer than expected";
+        return false;
+    }
+
+    if (descr[0] != '|' && descr[0] != native_endianness()) {
+        if (errstr)
+            *errstr = "only native endianness is supported at the moment";
+        return false;
+    }
+
+    switch (descr[1]) {
+    case 'f':
+        floating = true;
+        break;
+    case 'u': // Fall-thru intended.
+    case 'i':
+        floating = false;
+        break;
+    default:
+        if (errstr)
+            *errstr = "unsupported element type";
+        return false;
+    }
+
+    if (descr[2] < '0' || descr[2] > '9') {
+        if (errstr)
+            *errstr = "unexpected data size found in descr";
+        return false;
+    }
+    elt_size = descr[2] - '0';
+    elt_ty = descr.substr(1);
+
+    if (num_rows * num_columns * elt_size != data_size) {
+        if (errstr)
+            *errstr = "unexpected data size in numpy file";
         return false;
     }
 
@@ -279,7 +375,7 @@ bool NPArrayBase::save(const char *filename, const string &descr,
     return save(ofs, descr, shape);
 }
 
-NPArrayBase::NPArrayBase(const char *filename, bool floating,
+NPArrayBase::NPArrayBase(const char *filename, bool expected_floating,
                          unsigned expected_elt_size)
     : data(nullptr), num_rows(0), num_columns(0), elt_size(0), errstr(nullptr) {
     ifstream ifs(filename, ifstream::binary);
@@ -288,82 +384,31 @@ NPArrayBase::NPArrayBase(const char *filename, bool floating,
         return;
     }
 
-    unsigned major, minor;
-    size_t header_length;
-    size_t file_size;
-    string descr;
-    bool fortran_order;
-    vector<size_t> shape;
-
-    if (!get_information(ifs, major, minor, header_length, file_size, descr,
-                         fortran_order, shape, &errstr)) {
-        return;
-    }
-
-    if (major != 1 || minor != 0) {
-        errstr = "unsupported npy format version";
-        return;
-    }
-
-    // Validate before finalizing the creation of the NPArray
-    if (fortran_order) {
-        errstr = "fortran order not supported";
-        return;
-    }
     size_t num_rows_tmp;
     size_t num_columns_tmp;
-    switch (shape.size()) {
-    case 1:
-        num_rows_tmp = 1;
-        num_columns_tmp = shape[0];
-        break;
-    case 2:
-        num_rows_tmp = shape[0];
-        num_columns_tmp = shape[1];
-        break;
-    case 3:
-        if (shape[2] == 1) {
-            num_rows_tmp = shape[0];
-            num_columns_tmp = shape[1];
-            break;
-        }
-        // Fall-thru intended.
-    default:
-        errstr = "only 2D arrays are supported";
+    bool floating;
+    string elt_ty;
+    unsigned elt_size_tmp;
+
+    if (!get_information(ifs, num_rows_tmp, num_columns_tmp, floating, elt_ty,
+                         elt_size_tmp, &errstr))
         return;
-    }
-    if (descr.size() != 3) {
-        errstr = "descriptor is longer than expected";
-        return;
-    }
-    if (descr[0] != '|' && descr[0] != native_endianness()) {
-        errstr = "only native endianness is supported at the moment";
-        return;
-    }
-    if (floating) {
-        if (descr[1] != 'f') {
+
+    if (expected_floating) {
+        if (!floating) {
             errstr =
                 "floating point data expected, but got something else instead";
             return;
         }
     } else {
-        if (descr[1] != 'u' && descr[1] != 'i') {
+        if (floating) {
             errstr = "integer data expected, but got something else instead";
             return;
         }
     }
-    if (descr[2] < '0' || descr[2] > '9') {
-        errstr = "unexpected data size found in descr";
-        return;
-    }
-    unsigned size = descr[2] - '0';
-    if (size != expected_elt_size) {
+
+    if (elt_size_tmp != expected_elt_size) {
         errstr = "element size does not match the expected one";
-        return;
-    }
-    if (num_rows_tmp * num_columns_tmp * expected_elt_size !=
-        file_size - header_length - 10) {
-        errstr = "unexpected size for data";
         return;
     }
 

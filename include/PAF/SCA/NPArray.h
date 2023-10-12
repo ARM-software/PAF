@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: <text>Copyright 2021,2022 Arm Limited and/or its
+ * SPDX-FileCopyrightText: <text>Copyright 2021,2022,2023 Arm Limited and/or its
  * affiliates <open-source-office@arm.com></text>
  * SPDX-License-Identifier: Apache-2.0
  *
@@ -50,7 +50,7 @@ class NPArrayBase {
     ///
     /// This function will assess if the on-disk storage matches the the
     /// floating point expectation as well as the element size.
-    NPArrayBase(const char *filename, bool floating,
+    NPArrayBase(const char *filename, bool expected_floating,
                 unsigned expected_elt_size);
 
     /// Construct an NPArray base from raw memory (std::unique_ptr version) and
@@ -181,9 +181,15 @@ class NPArrayBase {
 
     /// Get information from the file header.
     static bool get_information(std::ifstream &ifs, unsigned &major,
-                                unsigned &minor, size_t &header_length,
-                                size_t &file_size, std::string &descr,
+                                unsigned &minor, std::string &descr,
                                 bool &fortran_order, std::vector<size_t> &shape,
+                                size_t &data_size,
+                                const char **errstr = nullptr);
+
+    /// Get high level information from the file header.
+    static bool get_information(std::ifstream &ifs, size_t &num_rows,
+                                size_t &num_columns, bool &floating,
+                                std::string &elt_ty, unsigned &elt_size,
                                 const char **errstr = nullptr);
 
     /// Save to file filename.

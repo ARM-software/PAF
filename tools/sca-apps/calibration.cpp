@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: <text>Copyright 2021,2022 Arm Limited and/or its
+ * SPDX-FileCopyrightText: <text>Copyright 2021,2022,2023 Arm Limited and/or its
  * affiliates <open-source-office@arm.com></text>
  * SPDX-License-Identifier: Apache-2.0
  *
@@ -25,19 +25,20 @@
 #include <cstdlib>
 #include <iostream>
 #include <limits>
+#include <vector>
 
 using namespace std;
 using namespace PAF::SCA;
 
-struct MinMax {
-    double min_value;
-    double max_value;
+template <typename Ty> struct MinMax {
+    Ty min_value;
+    Ty max_value;
     size_t min_cnt;
     size_t max_cnt;
 
     MinMax()
-        : min_value(numeric_limits<double>::max()),
-          max_value(numeric_limits<double>::min()), min_cnt(0), max_cnt(0) {}
+        : min_value(numeric_limits<Ty>::max()),
+          max_value(numeric_limits<Ty>::min()), min_cnt(0), max_cnt(0) {}
 
     void operator()(double v) {
         if (v > max_value) {
@@ -52,7 +53,73 @@ struct MinMax {
             min_cnt = 1;
         }
     }
+
+    void operator+=(const MinMax &o) {
+        if (o.max_value > max_value) {
+            max_value = o.max_value;
+            max_cnt = o.max_cnt;
+        } else if (o.max_value == max_value)
+            max_cnt += o.max_cnt;
+
+        if (o.min_value < min_value) {
+            min_value = o.min_value;
+            min_cnt = o.min_cnt;
+        } else if (o.min_value == min_value)
+            min_cnt += o.min_cnt;
+    }
+
+    void dump(ostream &os, const char *filename) const {
+        os << filename << ": \t" << min_value << " (" << min_cnt << ')';
+        os << "\t" << max_value << " (" << max_cnt << ")\n";
+    }
 };
+
+template <typename Ty> bool visit(const vector<const char *> &filenames) {
+    MinMax<Ty> g_minmax;
+
+    for (const auto &filename : filenames) {
+        NPArray<Ty> t(filename);
+
+        if (!t.good()) {
+            cerr << "Error reading '" << filename << "' (" << t.error()
+                 << ")\n";
+            return false;
+        }
+
+        MinMax<Ty> minmax;
+
+        for (size_t r = 0; r < t.rows(); r++)
+            for (size_t c = 0; c < t.cols(); c++)
+                minmax(t(r, c));
+
+        if (filenames.size() > 1)
+            minmax.dump(cout, filename);
+
+        g_minmax += minmax;
+    }
+
+    g_minmax.dump(cout, "Overall");
+
+#if 0
+    const double ADC_MIN = -0.5;
+    const double ADC_MAX =
+        0.5 - 1.0 / 1024.0; // The ADC has a 10bits resolution.
+
+            if (g_minmax.min_value <= ADC_MIN)
+        cout << " <--- ADC min value (" << ADC_MIN << ") reached !";
+
+    if (g_minmax.max_value >= ADC_MAX)
+        cout << " <--- ADC max value (" << ADC_MAX << ") reached !";
+
+    if (g_minmax.min_value <= ADC_MIN || g_minmax.max_value >= ADC_MAX) {
+        cout << "************* Input gain calibration required ! "
+                "*************\n";
+        return EXIT_FAILURE;
+    }
+#endif
+
+    return true;
+}
 
 std::unique_ptr<Reporter> reporter = make_cli_reporter();
 
@@ -63,56 +130,78 @@ int main(int argc, char *argv[]) {
         return EXIT_FAILURE;
     }
 
-    MinMax g_minmax;
+    const vector<const char *> filenames(&argv[1], &argv[argc]);
 
-    for (unsigned i = 1; i < argc; i++) {
-        const char *filename = argv[i];
-
-        NPArray<double> t(filename);
-
-        if (!t.good()) {
-            cerr << "Error reading input file " << filename << " (" << t.error()
-                 << ")\n";
+    // Check that if we were given several input files they are all with the
+    // same element types.
+    bool first = true;
+    bool floating;
+    std::string elt_ty;
+    unsigned elt_size;
+    for (const auto &filename : filenames) {
+        size_t num_rows;
+        size_t num_columns;
+        bool l_floating;
+        std::string l_elt_ty;
+        unsigned l_elt_size;
+        const char *errstr;
+        ifstream ifs(filename, ifstream::binary);
+        if (!NPArrayBase::get_information(ifs, num_rows, num_columns,
+                                          l_floating, l_elt_ty, l_elt_size,
+                                          &errstr)) {
+            cerr << "Failed to open file '" << filename << "'\n";
             return EXIT_FAILURE;
         }
-
-        MinMax minmax;
-
-        for (size_t r = 0; r < t.rows(); r++)
-            for (size_t c = 0; c < t.cols(); c++) {
-                double v = t(r, c);
-                g_minmax(v);
-                minmax(v);
+        if (first) {
+            floating = l_floating;
+            elt_ty = l_elt_ty;
+            elt_size = l_elt_size;
+            first = false;
+        } else {
+            if (floating != l_floating || elt_ty != l_elt_ty ||
+                elt_size != l_elt_size) {
+                cerr << filename << " differs in its data types from "
+                     << filenames[0] << '\n';
+                return EXIT_FAILURE;
             }
-
-        if (argc > 2) {
-            cout << filename << ": \t" << minmax.min_value << " ("
-                 << minmax.min_cnt << ')';
-            cout << "\t" << minmax.max_value << " (" << minmax.max_cnt << ")\n";
         }
     }
 
-    const double ADC_MIN = -0.5;
-    const double ADC_MAX =
-        0.5 - 1.0 / 1024.0; // The ADC has a 10bits resolution.
-
-    cout << "Overall min sample value: " << g_minmax.min_value << " ("
-         << g_minmax.min_cnt << ")";
-    if (g_minmax.min_value <= ADC_MIN)
-        cout << " <--- ADC min value (" << ADC_MIN << ") reached !";
-    cout << "\n";
-
-    cout << "Overall max sample value: " << g_minmax.max_value << " ("
-         << g_minmax.max_cnt << ")";
-    if (g_minmax.max_value >= ADC_MAX)
-        cout << " <--- ADC max value (" << ADC_MAX << ") reached !";
-    cout << "\n";
-
-    if (g_minmax.min_value <= ADC_MIN || g_minmax.max_value >= ADC_MAX) {
-        cout << "************* Input gain calibration required ! "
-                "*************\n";
-        return EXIT_FAILURE;
+    // And now visit all our input files.
+    bool err;
+    if (floating) {
+        switch (elt_size) {
+        case 4:
+            err = visit<float>(filenames);
+            break;
+        case 8:
+            err = visit<double>(filenames);
+            break;
+        default:
+            cerr << "Unsupported floating point type '" << elt_ty << "'\n";
+            err = true;
+            break;
+        }
+    } else {
+        switch (elt_size) {
+        case 1:
+            err = visit<int8_t>(filenames);
+            break;
+        case 2:
+            err = visit<int16_t>(filenames);
+            break;
+        case 4:
+            err = visit<int32_t>(filenames);
+            break;
+        case 8:
+            err = visit<int64_t>(filenames);
+            break;
+        default:
+            cerr << "Unsupported integer type '" << elt_ty << "'\n";
+            err = true;
+            break;
+        }
     }
 
-    return EXIT_SUCCESS;
+    return err ? EXIT_FAILURE : EXIT_SUCCESS;
 }

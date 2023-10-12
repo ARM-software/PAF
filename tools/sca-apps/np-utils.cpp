@@ -219,8 +219,7 @@ int main(int argc, char *argv[]) {
   argparser.parse();
 
   unsigned major, minor;
-  size_t header_length;
-  size_t file_size;
+  size_t data_size;
   string descr;
   bool fortran_order;
   vector<size_t> shape;
@@ -230,9 +229,10 @@ int main(int argc, char *argv[]) {
   if (!ifs)
     reporter->errx(EXIT_FAILURE, "Error opening '%s'", filename.c_str());
 
-  if (!NPArrayBase::get_information(ifs, major, minor, header_length, file_size,
-                                    descr, fortran_order, shape, &errstr))
-    reporter->errx(EXIT_FAILURE, "Error while retrieving file information (%s)", errstr);
+  if (!NPArrayBase::get_information(ifs, major, minor, descr, fortran_order,
+                                    shape, data_size, &errstr))
+      reporter->errx(EXIT_FAILURE,
+                     "Error while retrieving file information (%s)", errstr);
 
   ifs.close();
 
