@@ -26,7 +26,6 @@
 
 using std::ifstream;
 using std::ofstream;
-using std::ostream;
 using std::string;
 using std::unique_ptr;
 using std::vector;
@@ -322,7 +321,7 @@ bool NPArrayBase::get_information(ifstream &ifs, size_t &num_rows,
     return true;
 }
 
-bool NPArrayBase::save(ostream &os, const string &descr,
+bool NPArrayBase::save(ofstream &os, const string &descr,
                        const string &shape) const {
     if (!os)
         return false;

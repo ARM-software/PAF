@@ -27,6 +27,7 @@
 #include <cassert>
 #include <cmath>
 #include <cstdlib>
+#include <fstream>
 #include <iostream>
 
 using PAF::SCA::find_max;
@@ -207,7 +208,9 @@ class GnuplotOutput : public OutputBase {
 class NumpyOutput : public OutputBase {
   public:
     NumpyOutput(const std::string &filename)
-        : OutputBase(filename, false, /* binary: */ true) {}
+        : OutputBase(filename, false, /* binary: */ true) {
+            assert(isFile() && "Numpy output must be to a file");
+        }
 
     virtual void emit(const std::vector<std::vector<double>> &values,
                       size_t decimate, size_t offset) override {
@@ -215,14 +218,17 @@ class NumpyOutput : public OutputBase {
             return;
 
         assert(decimate > 0 && "decimate can not be 0");
+        ofstream *ofs = dynamic_cast<ofstream *>(out);
+        if (!ofs)
+            reporter->errx(EXIT_FAILURE, "Numpy output must be a file");
         if (decimate == 1) {
-                NPArray<double>(values).save(*out);
+            NPArray<double>(values).save(*ofs);
         } else {
             NPArray<double> NP(values.size(), values[0].size() / decimate);
             for (size_t i = 0; i < NP.rows(); i++)
                 for (size_t j = 0; j < NP.cols(); j++)
                     NP(i, j) = values[i][j * decimate + offset];
-            NP.save(*out);
+            NP.save(*ofs);
         }
     }
 };

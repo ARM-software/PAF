@@ -62,6 +62,9 @@ class OutputBase {
     static OutputBase *create(OutputType ty, const std::string &filename,
                               bool append = true);
 
+    /// Are we emitting to a file ?
+    bool isFile() const { return using_file; }
+
     /// Flush the output stream.
     void flush();
 

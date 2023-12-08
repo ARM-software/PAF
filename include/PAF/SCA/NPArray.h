@@ -192,12 +192,12 @@ class NPArrayBase {
                                 std::string &elt_ty, unsigned &elt_size,
                                 const char **errstr = nullptr);
 
-    /// Save to file filename.
+    /// Save to file \p filename.
     bool save(const char *filename, const std::string &descr,
               const std::string &shape) const;
 
-    /// Save to an output stream.
-    bool save(std::ostream &os, const std::string &descr,
+    /// Save to output file stream \p os.
+    bool save(std::ofstream &os, const std::string &descr,
               const std::string &shape) const;
 
   protected:
@@ -362,18 +362,18 @@ template <class Ty> class NPArray : public NPArrayBase {
         os.flags(saved_flags);
     }
 
-    /// Save to file \p filename, in NPY format.
+    /// Save to file \p filename in NPY format.
     bool save(const char *filename) const {
         return this->NPArrayBase::save(filename, descr(), shape());
     }
 
-    /// Save to file \p filename, in NPY format.
+    /// Save to file \p filename in NPY format.
     bool save(const std::string &filename) const {
         return save(filename.c_str());
     }
 
-    /// Save to output stream \p os in numpy format.
-    bool save(std::ostream &os) const {
+    /// Save to output file stream \p os in NPY format.
+    bool save(std::ofstream &os) const {
         return this->NPArrayBase::save(os, descr(), shape());
     }
 
