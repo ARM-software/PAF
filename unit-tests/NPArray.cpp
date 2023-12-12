@@ -48,7 +48,7 @@ TEST(NPArrayBase, base) {
     EXPECT_EQ(a.element_size(), 0);
 
     // Construct.
-    unique_ptr<char> data((char *)new uint32_t[4]);
+    unique_ptr<char[]> data((char *)new uint32_t[4]);
     NPArrayBase b(std::move(data), 1, 4, sizeof(uint32_t));
     EXPECT_EQ(b.error(), nullptr);
     EXPECT_EQ(b.rows(), 1);
@@ -619,11 +619,152 @@ TEST(NPArray, columns_insertion) {
             EXPECT_EQ(MI64(row, col), MI64_init[row * (MI64.cols() - 2) + col]);
 }
 
+template <typename Ty> void testExtend() {
+    const Ty init1[] = {0, 1, 2, 3, 4, 5, 6, 7};
+    const Ty init2[] = {10, 11, 12, 13, 14, 15, 16, 17};
+    const Ty init3[] = {0, 1, 2, 3, 4, 5, 6, 7, 10, 11, 12, 13, 14, 15, 16, 17};
+
+    // Single row extensions.
+    NPArray<Ty> M(init1, 1, 8);
+    M.extend(NPArray<Ty>(init2, 1, 8), NPArrayBase::ROW);
+    EXPECT_TRUE(M.good());
+    EXPECT_EQ(M.rows(), 1);
+    EXPECT_EQ(M.cols(), 16);
+    EXPECT_EQ(M, NPArray<Ty>(init3, 1, 16));
+
+    M = NPArray<Ty>(init1, 1, 8);
+    M.extend(NPArray<Ty>(init2, 1, 8), NPArrayBase::COLUMN);
+    EXPECT_TRUE(M.good());
+    EXPECT_EQ(M.rows(), 2);
+    EXPECT_EQ(M.cols(), 8);
+    EXPECT_EQ(M, NPArray<Ty>(init3, 2, 8));
+
+    // Single column extensions.
+    M = NPArray<Ty>(init1, 8, 1);
+    M.extend(NPArray<Ty>(init2, 8, 1), NPArrayBase::COLUMN);
+    EXPECT_TRUE(M.good());
+    EXPECT_EQ(M.rows(), 16);
+    EXPECT_EQ(M.cols(), 1);
+    EXPECT_EQ(M, NPArray<Ty>(init3, 16, 1));
+
+    const Ty init3r[] = {0, 10, 1, 11, 2, 12, 3, 13,
+                         4, 14, 5, 15, 6, 16, 7, 17};
+    M = NPArray<Ty>(init1, 8, 1);
+    M.extend(NPArray<Ty>(init2, 8, 1), NPArrayBase::ROW);
+    EXPECT_TRUE(M.good());
+    EXPECT_EQ(M.rows(), 8);
+    EXPECT_EQ(M.cols(), 2);
+    EXPECT_EQ(M, NPArray<Ty>(init3r, 8, 2));
+
+    // Matrix extensions on the row axis
+    const Ty init3m[] = {0, 1, 2, 3, 10, 11, 12, 13,
+                         4, 5, 6, 7, 14, 15, 16, 17};
+    M = NPArray<Ty>(init1, 2, 4);
+    M.extend(NPArray<Ty>(init2, 2, 4), NPArrayBase::ROW);
+    EXPECT_TRUE(M.good());
+    EXPECT_EQ(M.rows(), 2);
+    EXPECT_EQ(M.cols(), 8);
+    EXPECT_EQ(M, NPArray<Ty>(init3m, 2, 8));
+
+    // Matrix extension on the column axis
+    M = NPArray<Ty>(init1, 2, 4);
+    M.extend(NPArray<Ty>(init2, 2, 4), NPArrayBase::COLUMN);
+    EXPECT_TRUE(M.good());
+    EXPECT_EQ(M.rows(), 4);
+    EXPECT_EQ(M.cols(), 4);
+    EXPECT_EQ(M, NPArray<Ty>(init3, 4, 4));
+}
+
+TEST(NPArray, extend) {
+    testExtend<uint8_t>();
+    testExtend<uint16_t>();
+    testExtend<uint32_t>();
+    testExtend<uint64_t>();
+
+    testExtend<int8_t>();
+    testExtend<int16_t>();
+    testExtend<int32_t>();
+    testExtend<int64_t>();
+
+    testExtend<float>();
+    testExtend<double>();
+}
+
+template <typename Ty> void testConcatenate() {
+    const Ty init1[] = {0, 1, 2, 3, 4, 5, 6, 7};
+    const Ty init2[] = {10, 11, 12, 13, 14, 15, 16, 17};
+    const Ty init3[] = {0, 1, 2, 3, 4, 5, 6, 7, 10, 11, 12, 13, 14, 15, 16, 17};
+
+    // Single row extensions.
+    NPArray<Ty> M = concatenate(NPArray<Ty>(init1, 1, 8),
+                                NPArray<Ty>(init2, 1, 8), NPArrayBase::ROW);
+    EXPECT_TRUE(M.good());
+    EXPECT_EQ(M.rows(), 1);
+    EXPECT_EQ(M.cols(), 16);
+    EXPECT_EQ(M, NPArray<Ty>(init3, 1, 16));
+
+    M = concatenate(NPArray<Ty>(init1, 1, 8), NPArray<Ty>(init2, 1, 8),
+                    NPArrayBase::COLUMN);
+    EXPECT_TRUE(M.good());
+    EXPECT_EQ(M.rows(), 2);
+    EXPECT_EQ(M.cols(), 8);
+    EXPECT_EQ(M, NPArray<Ty>(init3, 2, 8));
+
+    // Single column extensions.
+    M = concatenate(NPArray<Ty>(init1, 8, 1), NPArray<Ty>(init2, 8, 1),
+                    NPArrayBase::COLUMN);
+    EXPECT_TRUE(M.good());
+    EXPECT_EQ(M.rows(), 16);
+    EXPECT_EQ(M.cols(), 1);
+    EXPECT_EQ(M, NPArray<Ty>(init3, 16, 1));
+
+    const Ty init3r[] = {0, 10, 1, 11, 2, 12, 3, 13,
+                         4, 14, 5, 15, 6, 16, 7, 17};
+    M = concatenate(NPArray<Ty>(init1, 8, 1), NPArray<Ty>(init2, 8, 1),
+                    NPArrayBase::ROW);
+    EXPECT_TRUE(M.good());
+    EXPECT_EQ(M.rows(), 8);
+    EXPECT_EQ(M.cols(), 2);
+    EXPECT_EQ(M, NPArray<Ty>(init3r, 8, 2));
+
+    // Matrix extensions on the row axis
+    const Ty init3m[] = {0, 1, 2, 3, 10, 11, 12, 13,
+                         4, 5, 6, 7, 14, 15, 16, 17};
+    M = concatenate(NPArray<Ty>(init1, 2, 4), NPArray<Ty>(init2, 2, 4),
+                    NPArrayBase::ROW);
+    EXPECT_TRUE(M.good());
+    EXPECT_EQ(M.rows(), 2);
+    EXPECT_EQ(M.cols(), 8);
+    EXPECT_EQ(M, NPArray<Ty>(init3m, 2, 8));
+
+    // Matrix extension on the column axis
+    M = concatenate(NPArray<Ty>(init1, 2, 4), NPArray<Ty>(init2, 2, 4),
+                    NPArrayBase::COLUMN);
+    EXPECT_TRUE(M.good());
+    EXPECT_EQ(M.rows(), 4);
+    EXPECT_EQ(M.cols(), 4);
+    EXPECT_EQ(M, NPArray<Ty>(init3, 4, 4));
+}
+
+TEST(NPArray, concatenate) {
+    testConcatenate<uint8_t>();
+    testConcatenate<uint16_t>();
+    testConcatenate<uint32_t>();
+    testConcatenate<uint64_t>();
+
+    testConcatenate<int8_t>();
+    testConcatenate<int16_t>();
+    testConcatenate<int32_t>();
+    testConcatenate<int64_t>();
+
+    testConcatenate<float>();
+    testConcatenate<double>();
+}
+
 // Create the test fixture for NPArray.
 TestWithTempFile(NPArrayF, "test-NPArray.npy.XXXXXX");
 
 TEST_F(NPArrayF, saveAndRestore) {
-
     // Save NPArray.
     const int64_t MI64_init[] = {0, 1, 2, 3, 4, 5, 6, 7, 8};
     NPArray<int64_t> a(MI64_init, 3, 3);
@@ -655,7 +796,7 @@ TEST(NPArray, Row) {
 
     r.reset();
     EXPECT_EQ(r, a.row_begin());
-    
+
     r = a.row_begin();
     r++;
     EXPECT_EQ(r[0], 3);
@@ -834,13 +975,13 @@ TEST(NPArray, sum) {
         C_a.check(decltype(a)::ROW, i);
     for (size_t i = 0; i < a.cols(); i++)
         C_a.check(decltype(a)::COLUMN, i);
-    
+
     // Check sum on ranges of rows / cols
     C_a.check(decltype(a)::ROW, 0, 0); // Empty range
     C_a.check(decltype(a)::ROW, 0, 1);
     C_a.check(decltype(a)::ROW, 0, 2);
     C_a.check(decltype(a)::ROW, a.rows()-2, a.rows());
-    C_a.check(decltype(a)::ROW, a.rows()-1, a.rows());  
+    C_a.check(decltype(a)::ROW, a.rows()-1, a.rows());
     C_a.check(decltype(a)::ROW, 2, 3);
     C_a.check(decltype(a)::ROW, 2, 5);
 
@@ -1284,7 +1425,7 @@ TEST(NPArray, mean) {
 
     for (size_t i = 0; i < a.cols(); i++)
         C_a.check(decltype(a)::COLUMN, i);
-    
+
     // Check row / column ranges.
     C_a.check(decltype(a)::ROW, 0, 0); // Empty range
     C_a.check(decltype(a)::ROW, 0, 1);

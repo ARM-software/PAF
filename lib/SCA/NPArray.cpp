@@ -416,56 +416,78 @@ NPArrayBase::NPArrayBase(const char *filename, bool expected_floating,
     num_rows = num_rows_tmp;
     num_columns = num_columns_tmp;
     elt_size = expected_elt_size;
-    data = unique_ptr<char>(new char[num_rows * num_columns * elt_size]);
+    data = unique_ptr<char[]>(new char[num_rows * num_columns * elt_size]);
     ifs.read(data.get(), num_rows * num_columns * elt_size);
 }
 
 NPArrayBase &NPArrayBase::insert_rows(size_t row, size_t rows) {
     assert(row <= num_rows && "Out of range row insertion");
-    char *new_data = new char[(num_rows + rows) * num_columns * elt_size];
-    char *old_data = data.get();
+    unique_ptr<char[]> new_data(
+        new char[(num_rows + rows) * num_columns * elt_size]);
     if (row == 0) {
-        memcpy(&new_data[rows * num_columns * elt_size], old_data,
+        memcpy(&new_data[rows * num_columns * elt_size], data.get(),
                num_rows * num_columns * elt_size);
     } else if (row == num_rows) {
-        memcpy(new_data, old_data, num_rows * num_columns * elt_size);
+        memcpy(new_data.get(), data.get(), num_rows * num_columns * elt_size);
     } else {
-        memcpy(new_data, old_data, row * num_columns * elt_size);
+        memcpy(new_data.get(), data.get(), row * num_columns * elt_size);
         memcpy(&new_data[(row + rows) * num_columns * elt_size],
-               &old_data[row * num_columns * elt_size],
+               &data[row * num_columns * elt_size],
                (num_rows - row) * num_columns * elt_size);
     }
-    data.reset(new_data);
+    data = std::move(new_data);
     num_rows += rows;
     return *this;
 }
 
 NPArrayBase &NPArrayBase::insert_columns(size_t col, size_t cols) {
     assert(col <= num_columns && "Out of range column insertion");
-    char *new_data = new char[num_rows * (num_columns + cols) * elt_size];
-    char *old_data = data.get();
+    unique_ptr<char[]> new_data(
+        new char[num_rows * (num_columns + cols) * elt_size]);
     if (col == 0) {
         for (size_t row = 0; row < num_rows; row++)
             memcpy(&new_data[(row * (num_columns + cols) + cols) * elt_size],
-                   &old_data[row * num_columns * elt_size],
-                   num_columns * elt_size);
+                   &data[row * num_columns * elt_size], num_columns * elt_size);
     } else if (col == num_columns) {
         for (size_t row = 0; row < num_rows; row++)
             memcpy(&new_data[row * (num_columns + cols) * elt_size],
-                   &old_data[row * num_columns * elt_size],
-                   num_columns * elt_size);
+                   &data[row * num_columns * elt_size], num_columns * elt_size);
     } else {
         for (size_t row = 0; row < num_rows; row++) {
             memcpy(&new_data[row * (num_columns + cols) * elt_size],
-                   &old_data[row * num_columns * elt_size], col * elt_size);
+                   &data[row * num_columns * elt_size], col * elt_size);
             memcpy(
                 &new_data[(row * (num_columns + cols) + col + cols) * elt_size],
-                &old_data[(row * num_columns + col) * elt_size],
+                &data[(row * num_columns + col) * elt_size],
                 (num_columns - col) * elt_size);
         }
     }
-    data.reset(new_data);
+    data = std::move(new_data);
     num_columns += cols;
+    return *this;
+}
+
+NPArrayBase &NPArrayBase::extend(const NPArrayBase &other, Axis axis) {
+    assert(element_size() == other.element_size() &&
+           "element size difference in extend");
+    if (axis == COLUMN) {
+        assert(cols() == other.cols() &&
+               "Column dimensions must match for extend");
+        size_t num_rows_prev = rows();
+        insert_rows(rows(), other.rows());
+        memcpy(&data[num_rows_prev * num_columns * elt_size], other.data.get(),
+               other.size() * elt_size);
+        return *this;
+    }
+
+    // Extend along the Row axis.
+    assert(rows() == other.rows() && "Row dimensions must match for extend");
+    size_t num_columns_prev = cols();
+    insert_columns(cols(), other.cols());
+    for (size_t i = 0; i < other.rows(); i++)
+        memcpy(&data[(i * cols() + num_columns_prev) * elt_size],
+               &other.data[i * other.cols() * elt_size],
+               other.cols() * elt_size);
     return *this;
 }
 

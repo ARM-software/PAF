@@ -41,6 +41,13 @@ namespace SCA {
 /// type.
 class NPArrayBase {
   public:
+    /// The Axis enumeration is used to describe along which axis an operation
+    /// has to be performed.
+    enum Axis {
+        ROW,   ///< Process data along the Row axis.
+        COLUMN ///< Process data along the Column axis.
+    };
+
     /// Default constructor.
     NPArrayBase()
         : data(nullptr), num_rows(0), num_columns(0), elt_size(0),
@@ -57,7 +64,7 @@ class NPArrayBase {
     /// misc other information.
     ///
     /// Takes ownership of data buffer.
-    NPArrayBase(std::unique_ptr<char> &&data, size_t num_rows,
+    NPArrayBase(std::unique_ptr<char[]> &&data, size_t num_rows,
                 size_t num_columns, unsigned elt_size)
         : data(std::move(data)), num_rows(num_rows), num_columns(num_columns),
           elt_size(elt_size), errstr(nullptr) {}
@@ -175,6 +182,10 @@ class NPArrayBase {
     /// Insert an (uninitialized) column at position col.
     NPArrayBase &insert_column(size_t col) { return insert_columns(col, 1); }
 
+    /// Extends this NPArray with the content os \p other, in the \p axis
+    /// direction.
+    NPArrayBase &extend(const NPArrayBase &other, Axis axis);
+
     /// Get a string describing the last error (if any).
     /// Especially useful when initializing from a file.
     const char *error() const noexcept { return errstr; }
@@ -228,7 +239,7 @@ class NPArrayBase {
     }
 
   private:
-    std::unique_ptr<char> data;
+    std::unique_ptr<char[]> data;
     size_t num_rows, num_columns; //< Number of rows and columns.
     unsigned elt_size;            //< Number of elements.
     const char *errstr;
@@ -256,7 +267,7 @@ template <class Ty> class NPArray : public NPArrayBase {
     /// Construct an uninitialized NPArray with \p num_rows rows and \p
     /// num_columns columns.
     NPArray(size_t num_rows, size_t num_columns)
-        : NPArrayBase(std::unique_ptr<char>(
+        : NPArrayBase(std::unique_ptr<char[]>(
                           new char[num_rows * num_columns * sizeof(Ty)]),
                       num_rows, num_columns, sizeof(Ty)) {}
 
@@ -266,7 +277,7 @@ template <class Ty> class NPArray : public NPArrayBase {
     /// This object takes ownership of the memory.
     NPArray(std::unique_ptr<Ty[]> &&data, size_t num_rows, size_t num_columns)
         : NPArrayBase(
-              std::unique_ptr<char>(reinterpret_cast<char *>(data.release())),
+              std::unique_ptr<char[]>(reinterpret_cast<char *>(data.release())),
               num_rows, num_columns, sizeof(Ty)) {}
 
     /// Construct an NPArray from memory (raw pointer version) and \p num_rows
@@ -285,8 +296,7 @@ template <class Ty> class NPArray : public NPArrayBase {
     }
 
     /// Construct an NPArray from a vector<vector<Ty>>.
-    NPArray(const std::vector<std::vector<Ty>> &matrix)
-        : NPArrayBase(matrix) {}
+    NPArray(const std::vector<std::vector<Ty>> &matrix) : NPArrayBase(matrix) {}
 
     /// Copy construct an NParray.
     NPArray(const NPArray &Other) : NPArrayBase(Other) {}
@@ -303,6 +313,26 @@ template <class Ty> class NPArray : public NPArrayBase {
     /// Move assign an NParray.
     NPArray &operator=(NPArray &&Other) {
         this->NPArrayBase::operator=(Other);
+        return *this;
+    }
+
+    /// Extend this Matrix by the content of the \p other matrix.
+    NPArray &extend(const NPArray &other, Axis axis) {
+        assert(good() && "Can not extend this NPArray (bad state)");
+        assert(
+            other.good() &&
+            "Can not extend this NPArray from this other NPArray (bad state)");
+        switch (axis) {
+        case ROW:
+            assert(rows() == other.rows() &&
+                   "Row dimensions do not match for extend");
+            break;
+        case COLUMN:
+            assert(cols() == other.cols() &&
+                   "Columns dimensions do not match for extend");
+            break;
+        }
+        this->NPArrayBase::extend(other, axis);
         return *this;
     }
 
@@ -452,13 +482,6 @@ template <class Ty> class NPArray : public NPArrayBase {
 
     /// Get a past-the-end row for this NPArray.
     Row row_end() const noexcept { return Row(*this, rows()); }
-
-    /// The Axis enumeration is used to describe along which axis an operation
-    /// has to be performed.
-    enum Axis {
-        ROW,   ///< Process data along the Row axis.
-        COLUMN ///< Process data along the Column axis.
-    };
 
     /// Test if all elements in row \p i or column \p i satisfy predicate \p
     /// pred.
@@ -701,34 +724,34 @@ template <class Ty> class NPArray : public NPArrayBase {
 /// Functional version of 'all' predicate checker on an NPArray for row / column
 /// i.
 template <class Ty>
-bool all(const NPArray<Ty> &npy, typename NPArray<Ty>::Axis axis, size_t i,
+bool all(const NPArray<Ty> &npy, NPArrayBase::Axis axis, size_t i,
          std::function<bool(Ty)> pred) {
     return npy.all(axis, i, pred);
 }
 
 /// Functional version of 'all' predicate checker for a range of rows / columns.
 template <class Ty>
-bool all(const NPArray<Ty> &npy, typename NPArray<Ty>::Axis axis, size_t begin,
+bool all(const NPArray<Ty> &npy, NPArrayBase::Axis axis, size_t begin,
          size_t end, std::function<bool(Ty)> pred) {
     return npy.all(axis, begin, end, pred);
 }
 
 /// Functional version of 'sum' operation on NPArray on specific row/col.
 template <class Ty>
-Ty sum(const NPArray<Ty> &npy, typename NPArray<Ty>::Axis axis, size_t i) {
+Ty sum(const NPArray<Ty> &npy, NPArrayBase::Axis axis, size_t i) {
     return npy.sum(axis, i);
 }
 
 /// Functional version of the range 'sum' operation on NPArray.
 template <class Ty>
-std::vector<Ty> sum(const NPArray<Ty> &npy, typename NPArray<Ty>::Axis axis,
+std::vector<Ty> sum(const NPArray<Ty> &npy, NPArrayBase::Axis axis,
                     size_t begin, size_t end) {
     return npy.sum(axis, begin, end);
 }
 
 /// Functional version of 'sum' operation on NPArray.
 template <class Ty>
-std::vector<Ty> sum(const NPArray<Ty> &npy, typename NPArray<Ty>::Axis axis) {
+std::vector<Ty> sum(const NPArray<Ty> &npy, NPArrayBase::Axis axis) {
     return npy.sum(axis);
 }
 
@@ -736,7 +759,7 @@ std::vector<Ty> sum(const NPArray<Ty> &npy, typename NPArray<Ty>::Axis axis) {
 /// It optionally computes the
 /// variance (taking ddof into account) and the standard deviation.
 template <class Ty>
-double mean(const NPArray<Ty> &npy, typename NPArray<Ty>::Axis axis, size_t i,
+double mean(const NPArray<Ty> &npy, NPArrayBase::Axis axis, size_t i,
             double *var = nullptr, double *stddev = nullptr,
             unsigned ddof = 0) {
     return npy.mean(axis, i, var, stddev, ddof);
@@ -745,19 +768,26 @@ double mean(const NPArray<Ty> &npy, typename NPArray<Ty>::Axis axis, size_t i,
 /// Functional version of the range 'mean' operation on NPArray.
 template <class Ty>
 std::vector<double>
-mean(const NPArray<Ty> &npy, typename NPArray<Ty>::Axis axis, size_t begin,
-     size_t end, std::vector<double> *var = nullptr,
-     std::vector<double> *stddev = nullptr, unsigned ddof = 0) {
+mean(const NPArray<Ty> &npy, NPArrayBase::Axis axis, size_t begin, size_t end,
+     std::vector<double> *var = nullptr, std::vector<double> *stddev = nullptr,
+     unsigned ddof = 0) {
     return npy.mean(axis, begin, end, var, stddev, ddof);
 }
 
 /// Functional version of 'mean' operation on NPArray.
 template <class Ty>
 std::vector<double>
-mean(const NPArray<Ty> &npy, typename NPArray<Ty>::Axis axis,
+mean(const NPArray<Ty> &npy, typename NPArrayBase::Axis axis,
      std::vector<double> *var = nullptr, std::vector<double> *stddev = nullptr,
      unsigned ddof = 0) {
     return npy.mean(axis);
+}
+
+template <class Ty>
+NPArray<Ty> concatenate(const NPArray<Ty> &npy1, const NPArray<Ty> &npy2,
+                        NPArrayBase::Axis axis) {
+    NPArray<Ty> tmp(npy1);
+    return tmp.extend(npy2, axis);
 }
 
 } // namespace SCA
