@@ -225,7 +225,7 @@ TEST_F(YAMLInstrDumperF, Base) {
         // clang-format off
         { 0, 1, 2, 3},
         { 4, 5, 6, 7},
-        // clang-format on        
+        // clang-format on
     };
 
     std::ostringstream s;
@@ -301,7 +301,7 @@ TEST_F(YAMLInstrDumperF, Base) {
               "[ 0x0, 0x1, 0x2, 0x3]}\n    - { "
               "pc: 0x832a, opcode: 0x4408, size: 16, executed: True, "
               "disassembly: \"add r0,r1\", regbank: [ 0x4, 0x5, 0x6, 0x7]}\n");
-    
+
     // Check reg bank state is not dumped when not enabled.
     s.str("");
     YAMLInstrDumper ID5(s, true, false, false);
@@ -309,7 +309,7 @@ TEST_F(YAMLInstrDumperF, Base) {
     EXPECT_EQ(s.str(),
               "instr:\n  - \n    - { pc: 0x8326, opcode: 0xf8db0800, size: 32, "
               "executed: True, disassembly: \"ldr.w r0,[r11,#2048]\"}\n");
-    
+
     // Check memory accesses and reg bank states can be dumped.
     s.str("");
     YAMLInstrDumper ID6(s, true, true, true);
@@ -1222,7 +1222,7 @@ TEST(PowerTrace, HammingWeightWithConfig) {
 }
 
 // clang-format off
-// Test sequence for checking load-to-load / store-to-store hamming distance computation. 
+// Test sequence for checking load-to-load / store-to-store hamming distance computation.
 static const ReferenceInstruction Insts2[] = {
     {
         27, true, 0x08324, THUMB, 16, 0x02105, "movs r1,#5",

@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: <text>Copyright 2021,2022 Arm Limited and/or its
+ * SPDX-FileCopyrightText: <text>Copyright 2021,2022,2023 Arm Limited and/or its
  * affiliates <open-source-office@arm.com></text>
  * SPDX-License-Identifier: Apache-2.0
  *
@@ -23,12 +23,14 @@
 #include "gtest/gtest.h"
 
 #include <string>
+#include <vector>
 
-class TestWithTemporaryFile : public ::testing::Test {
+class TestWithTemporaryFiles : public ::testing::Test {
 
   public:
-    /// Construct an instance with a temporary filename matching template tpl.
-    TestWithTemporaryFile(const char *tpl);
+    /// Construct an instance with \p num temporary filenames matching template
+    /// tpl.
+    TestWithTemporaryFiles(const char *tpl, unsigned num);
 
     /// Turn verbosity on / off.
     void verbosity(bool v) { verbose = v; }
@@ -36,33 +38,47 @@ class TestWithTemporaryFile : public ::testing::Test {
     /// Remove temporary file.
     void cleanup(bool c) { remove = c; }
 
-    /// Get the temporary file name.
-    const std::string &getTemporaryFilename() const { return tmpFileName; };
+    /// Get the number of available files.
+    unsigned getNumFiles() const { return tmpFileNames.size()-1; }
+
+    /// Get temporary file \p i name.
+    const std::string &getTemporaryFilename(unsigned i = 0) const {
+        return i < tmpFileNames.size() - 1 ? tmpFileNames[i]
+                                           : tmpFileNames.back();
+    };
 
     /// Check that each line of the temporary file match those in exp.
-    bool checkFileContent(const std::vector<std::string> &exp) const;
+    bool checkFileContent(const std::vector<std::string> &exp,
+                          unsigned i = 0) const;
 
-    /// Force removal of the temporary file.
-    void removeTemporaryFile() {
-        if (tmpFileName.size() != 0)
-            std::remove(tmpFileName.c_str());
+    /// Force removal of the temporary files.
+    void removeTemporaryFiles() {
+        for (const auto &f : tmpFileNames)
+            if (!f.empty())
+                std::remove(f.c_str());
     }
 
   protected:
     /// Cleanup after ourselves.
     void TearDown() override {
         if (remove)
-            removeTemporaryFile();
+            removeTemporaryFiles();
     }
 
   private:
-    std::string tmpFileName;
+    std::vector<std::string> tmpFileNames;
     bool verbose;
     bool remove;
 };
 
-#define TestWithTempFile(FIXTURENAME, FILENAME)                                \
-    class FIXTURENAME : public TestWithTemporaryFile {                         \
+#define TestWithTempFile(FIXTURENAME, TEMPLATE)                                \
+    class FIXTURENAME : public TestWithTemporaryFiles {                        \
       public:                                                                  \
-        FIXTURENAME() : TestWithTemporaryFile(FILENAME) {}                     \
+        FIXTURENAME() : TestWithTemporaryFiles(TEMPLATE, 1) {}                 \
+    }
+
+#define TestWithTempFiles(FIXTURENAME, TEMPLATE, NUM)                          \
+    class FIXTURENAME : public TestWithTemporaryFiles {                        \
+      public:                                                                  \
+        FIXTURENAME() : TestWithTemporaryFiles(TEMPLATE, NUM) {}               \
     }

@@ -440,7 +440,7 @@ TEST_F(SCAAppF, terse_output) {
     A0_3.close_output();
     EXPECT_TRUE(checkFileContent({"# max = 7 at index 2"}));
 
-    removeTemporaryFile();
+    removeTemporaryFiles();
 
     array<const char *, 4> Args1 = {"appname", "--append", "--output",
                                     getTemporaryFilename().c_str()};

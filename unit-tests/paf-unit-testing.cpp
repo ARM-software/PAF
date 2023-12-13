@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: <text>Copyright 2021,2022 Arm Limited and/or its
+ * SPDX-FileCopyrightText: <text>Copyright 2021,2022,2023 Arm Limited and/or its
  * affiliates <open-source-office@arm.com></text>
  * SPDX-License-Identifier: Apache-2.0
  *
@@ -28,54 +28,67 @@
 #include <string>
 #include <vector>
 
-using std::string;
-using std::vector;
-using std::unique_ptr;
 using std::cerr;
+using std::getline;
+using std::ifstream;
+using std::string;
+using std::unique_ptr;
+using std::vector;
 
-TestWithTemporaryFile::TestWithTemporaryFile(const char *tpl)
-    : tmpFileName(), verbose(false), remove(true) {
-    string tmpTplStr = std::string(testing::TempDir()) + tpl;
+TestWithTemporaryFiles::TestWithTemporaryFiles(const char *tpl, unsigned num)
+    : tmpFileNames(), verbose(false), remove(true) {
+    tmpFileNames.reserve(num + 1);
+    string tmpTplStr = testing::TempDir() + tpl;
     unique_ptr<char[]> tmpTpl(new char[tmpTplStr.size() + 1]);
-    std::memcpy(tmpTpl.get(), tmpTplStr.c_str(), tmpTplStr.size());
-    tmpTpl[tmpTplStr.size()] = 0;
-    // mkstemp will create a file for us, and open it --- if it succeeded. Close
-    // it right away, without removing it, keeping its name so that we can
-    // reopen it ourselves at a later time.
-    int fd = mkstemp(tmpTpl.get());
-    if (fd != -1) {
-        close(fd);
-        tmpFileName = tmpTpl.get();
+    for (unsigned i = 0; i < num; i++) {
+        std::memcpy(tmpTpl.get(), tmpTplStr.c_str(), tmpTplStr.size());
+        tmpTpl[tmpTplStr.size()] = 0;
+        // mkstemp will create a file for us, and open it --- if it succeeded.
+        // Close it right away, without removing it, keeping its name so that we
+        // can reopen it ourselves at a later time.
+        int fd = mkstemp(tmpTpl.get());
+        if (fd != -1) {
+            close(fd);
+            tmpFileNames.push_back(tmpTpl.get());
+        } else {
+            tmpFileNames.push_back("");
+        }
     }
+    tmpFileNames.push_back("");
 }
 
-bool TestWithTemporaryFile::checkFileContent(const vector<string> &exp) const {
-    std::ifstream f(tmpFileName.c_str());
+bool TestWithTemporaryFiles::checkFileContent(const vector<string> &exp,
+                                              unsigned n) const {
+    if (n >= tmpFileNames.size() - 1)
+        return false;
+    ifstream f(tmpFileNames[n]);
 
     // Ensure the file is in a good state (it exists, ...).
     if (!f.good()) {
         if (verbose)
-            cerr << tmpFileName << " is not in a good state.\n";
+            cerr << tmpFileNames[n] << " is not in a good state.\n";
         return false;
     }
 
     // Read the file line by line.
     vector<string> lines;
     string line;
-    while (std::getline(f, line))
+    while (getline(f, line))
         lines.emplace_back(line);
 
     // Ensure we have the same number of lines.
     if (lines.size() != exp.size()) {
         if (verbose)
-            cerr << tmpFileName << " does not have the expected number of lines.\n";
+            cerr << tmpFileNames[n]
+                 << " does not have the expected number of lines.\n";
         return false;
     }
 
     // Compare each line with the expected one.
     for (size_t i = 0; i < exp.size(); i++)
         if (lines[i] != exp[i]) {
-            cerr << "Mismatch at line " << i << " :\n";
+            cerr << "Mismatch at line " << i << " in " << tmpFileNames[n]
+                 << " :\n";
             cerr << "+ " << lines[i] << '\n';
             cerr << "- " << exp[i] << '\n';
             return false;
