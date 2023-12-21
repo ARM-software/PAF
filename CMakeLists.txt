@@ -160,6 +160,12 @@ endif()
 add_subdirectory(unit-tests)
 add_subdirectory(tests)
 
+# Export information useful for using the PAF development tree in an out-of-tree project.
+configure_file(${CMAKE_SOURCE_DIR}/cmake/PAFConfig.cmake.in
+  "${CMAKE_BINARY_DIR}/PAFConfig.cmake"
+  @ONLY
+)
+
 # Add our readme and license files when installing.
 install(FILES README.rst LICENSE.txt
         DESTINATION ${CMAKE_INSTALL_PREFIX})
