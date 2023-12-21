@@ -344,6 +344,105 @@ template <class Ty> class NPArray : public NPArrayBase {
             setError(tmp.error());
     }
 
+    /// Read an NPArray from file \p filename and convert each of its elements
+    /// to \p Ty if need be. This does not affect the Matrix shape or number of
+    /// elements, only their type. The type conversion to smaller types may
+    /// truncate some information.
+    static NPArray readAs(const std::string &filename) {
+        if (filename.empty())
+            return NPArray(0, 0);
+
+        std::ifstream ifs(filename, std::ifstream::binary);
+        if (!ifs) {
+            NPArray res(0, 0);
+            res.setError("Could not open file to get target matrix attributes");
+            return res;
+        }
+
+        size_t num_rows;
+        size_t num_cols;
+        std::string elt_ty;
+        size_t elt_size;
+        const char *l_errstr;
+        if (!get_information(ifs, num_rows, num_cols, elt_ty, elt_size,
+                             &l_errstr)) {
+            NPArray res(0, 0);
+            res.setError(l_errstr);
+            return res;
+        }
+
+        size_t num_elt = num_rows * num_cols;
+        std::unique_ptr<Ty[]> data(new Ty[num_elt]);
+
+        if (elt_ty == "i1")
+            for (size_t i = 0; i < num_elt; i++) {
+                int8_t tmp;
+                ifs.read(reinterpret_cast<char *>(&tmp), elt_size);
+                data[i] = static_cast<Ty>(tmp);
+            }
+        else if (elt_ty == "i2")
+            for (size_t i = 0; i < num_elt; i++) {
+                int16_t tmp;
+                ifs.read(reinterpret_cast<char *>(&tmp), elt_size);
+                data[i] = static_cast<Ty>(tmp);
+            }
+        else if (elt_ty == "i4")
+            for (size_t i = 0; i < num_elt; i++) {
+                int32_t tmp;
+                ifs.read(reinterpret_cast<char *>(&tmp), elt_size);
+                data[i] = static_cast<Ty>(tmp);
+            }
+        else if (elt_ty == "i8")
+            for (size_t i = 0; i < num_elt; i++) {
+                int64_t tmp;
+                ifs.read(reinterpret_cast<char *>(&tmp), elt_size);
+                data[i] = static_cast<Ty>(tmp);
+            }
+        else if (elt_ty == "u1")
+            for (size_t i = 0; i < num_elt; i++) {
+                uint8_t tmp;
+                ifs.read(reinterpret_cast<char *>(&tmp), elt_size);
+                data[i] = static_cast<Ty>(tmp);
+            }
+        else if (elt_ty == "u2")
+            for (size_t i = 0; i < num_elt; i++) {
+                uint16_t tmp;
+                ifs.read(reinterpret_cast<char *>(&tmp), elt_size);
+                data[i] = static_cast<Ty>(tmp);
+            }
+        else if (elt_ty == "u4")
+            for (size_t i = 0; i < num_elt; i++) {
+                uint32_t tmp;
+                ifs.read(reinterpret_cast<char *>(&tmp), elt_size);
+                data[i] = static_cast<Ty>(tmp);
+            }
+        else if (elt_ty == "u8")
+            for (size_t i = 0; i < num_elt; i++) {
+                uint64_t tmp;
+                ifs.read(reinterpret_cast<char *>(&tmp), elt_size);
+                data[i] = static_cast<Ty>(tmp);
+            }
+        else if (elt_ty == "f4")
+            for (size_t i = 0; i < num_elt; i++) {
+                float tmp;
+                ifs.read(reinterpret_cast<char *>(&tmp), elt_size);
+                data[i] = static_cast<Ty>(tmp);
+            }
+        else if (elt_ty == "f8")
+            for (size_t i = 0; i < num_elt; i++) {
+                double tmp;
+                ifs.read(reinterpret_cast<char *>(&tmp), elt_size);
+                data[i] = static_cast<Ty>(tmp);
+            }
+        else {
+            NPArray res(0, 0);
+            res.setError("Unhandled content in numpy file");
+            return res;
+        }
+
+        return NPArray(std::move(data), num_rows, num_cols);
+    }
+
     /// Construct an uninitialized NPArray with \p num_rows rows and \p
     /// num_columns columns.
     NPArray(size_t num_rows, size_t num_columns)
@@ -791,6 +890,22 @@ template <class Ty> class NPArray : public NPArrayBase {
     /// version).
     Ty at(size_t row, size_t col) const { return (*this)(row, col); }
 };
+
+/// Convert the type of the \p src NPArray elements from \p fromTy to \p newTy.
+/// This does not affect the Matrix shape or number of elements, only their
+/// type. The type conversion to smaller types may truncate some information.
+template <typename newTy, typename fromTy>
+NPArray<newTy> convert(const NPArray<fromTy> &src) {
+    static_assert(std::is_arithmetic<newTy>(),
+                  "expecting an integral or floating point type");
+    static_assert(std::is_arithmetic<fromTy>(),
+                  "expecting an integral or floating point type");
+    NPArray<newTy> res(src.rows(), src.cols());
+    for (size_t i = 0; i < src.rows(); i++)
+        for (size_t j = 0; j < src.cols(); j++)
+            res(i, j) = static_cast<newTy>(src(i, j));
+    return res;
+}
 
 /// Functional version of 'all' predicate checker on an NPArray for row / column
 /// i.

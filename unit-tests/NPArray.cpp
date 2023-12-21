@@ -869,6 +869,150 @@ TEST_F(NPArrayF, concatenateFromFiles) {
     testConcatenateFromFiles<double>(tmpFile0, tmpFile1);
 }
 
+template <typename toTy, typename fromTy> void testConvert() {
+    const fromTy init1[] = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11};
+    const toTy init2[] = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11};
+
+    const NPArray<toTy> Exp(init2, 4, 3);
+
+    NPArray<fromTy> M(init1, 4, 3);
+    NPArray<toTy> T = convert<toTy>(M);
+    EXPECT_TRUE(T.good());
+    EXPECT_EQ(T.rows(), 4);
+    EXPECT_EQ(T.cols(), 3);
+    EXPECT_EQ(T.element_size(), sizeof(toTy));
+    EXPECT_EQ(T, Exp);
+}
+
+TEST_F(NPArrayF, convert) {
+    // Signed integers
+    testConvert<int8_t, int8_t>();
+    testConvert<int16_t, int8_t>();
+    testConvert<int32_t, int8_t>();
+    testConvert<int64_t, int8_t>();
+
+    testConvert<int16_t, int16_t>();
+    testConvert<int32_t, int16_t>();
+    testConvert<int64_t, int16_t>();
+
+    testConvert<int32_t, int32_t>();
+    testConvert<int64_t, int32_t>();
+
+    testConvert<int64_t, int64_t>();
+
+    // Unsigned integers
+    testConvert<uint8_t, uint8_t>();
+    testConvert<uint16_t, uint8_t>();
+    testConvert<uint32_t, uint8_t>();
+    testConvert<uint64_t, uint8_t>();
+
+    testConvert<uint16_t, uint16_t>();
+    testConvert<uint32_t, uint16_t>();
+    testConvert<uint64_t, uint16_t>();
+
+    testConvert<uint32_t, uint32_t>();
+    testConvert<uint64_t, uint32_t>();
+
+    testConvert<uint64_t, uint64_t>();
+
+    // Signed -> float
+    testConvert<float, int8_t>();
+    testConvert<float, int16_t>();
+    testConvert<float, int32_t>();
+    testConvert<float, int64_t>();
+
+    // Unsigned -> float
+    testConvert<float, uint8_t>();
+    testConvert<float, uint16_t>();
+    testConvert<float, uint32_t>();
+    testConvert<float, uint64_t>();
+
+    // Signed -> double
+    testConvert<double, int8_t>();
+    testConvert<double, int16_t>();
+    testConvert<double, int32_t>();
+    testConvert<double, int64_t>();
+
+    // Unsigned -> double
+    testConvert<double, uint8_t>();
+    testConvert<double, uint16_t>();
+    testConvert<double, uint32_t>();
+    testConvert<double, uint64_t>();
+}
+
+template <typename toTy, typename fromTy> void testReadAs(const string &filename) {
+    const fromTy init1[] = {0, 1, 2, 3, 4, 5, 6, 7};
+    const toTy init2[] = {0, 1, 2, 3, 4, 5, 6, 7};
+
+    NPArray<fromTy>(init1, 2, 4).save(filename);
+    const NPArray<toTy> Exp(init2, 2, 4);
+
+    NPArray<toTy> T = NPArray<toTy>::readAs(filename);
+    EXPECT_TRUE(T.good());
+    EXPECT_EQ(T.rows(), 2);
+    EXPECT_EQ(T.cols(), 4);
+    EXPECT_EQ(T.element_size(), sizeof(toTy));
+    EXPECT_EQ(T, Exp);
+}
+
+TEST_F(NPArrayF, readAs) {
+    const string tmpFile = getTemporaryFilename(0);
+
+    // Signed integers
+    testReadAs<int8_t, int8_t>(tmpFile);
+    testReadAs<int16_t, int8_t>(tmpFile);
+    testReadAs<int32_t, int8_t>(tmpFile);
+    testReadAs<int64_t, int8_t>(tmpFile);
+
+    testReadAs<int16_t, int16_t>(tmpFile);
+    testReadAs<int32_t, int16_t>(tmpFile);
+    testReadAs<int64_t, int16_t>(tmpFile);
+
+    testReadAs<int32_t, int32_t>(tmpFile);
+    testReadAs<int64_t, int32_t>(tmpFile);
+
+    testReadAs<int64_t, int64_t>(tmpFile);
+
+    // Unsigned integers
+    testReadAs<uint8_t, uint8_t>(tmpFile);
+    testReadAs<uint16_t, uint8_t>(tmpFile);
+    testReadAs<uint32_t, uint8_t>(tmpFile);
+    testReadAs<uint64_t, uint8_t>(tmpFile);
+
+    testReadAs<uint16_t, uint16_t>(tmpFile);
+    testReadAs<uint32_t, uint16_t>(tmpFile);
+    testReadAs<uint64_t, uint16_t>(tmpFile);
+
+    testReadAs<uint32_t, uint32_t>(tmpFile);
+    testReadAs<uint64_t, uint32_t>(tmpFile);
+
+    testReadAs<uint64_t, uint64_t>(tmpFile);
+
+    // Signed -> float
+    testReadAs<float, int8_t>(tmpFile);
+    testReadAs<float, int16_t>(tmpFile);
+    testReadAs<float, int32_t>(tmpFile);
+    testReadAs<float, int64_t>(tmpFile);
+
+    // Unsigned -> float
+    testReadAs<float, uint8_t>(tmpFile);
+    testReadAs<float, uint16_t>(tmpFile);
+    testReadAs<float, uint32_t>(tmpFile);
+    testReadAs<float, uint64_t>(tmpFile);
+
+    // Signed -> double
+    testReadAs<double, int8_t>(tmpFile);
+    testReadAs<double, int16_t>(tmpFile);
+    testReadAs<double, int32_t>(tmpFile);
+    testReadAs<double, int64_t>(tmpFile);
+
+    // Unsigned -> double
+    testReadAs<double, uint8_t>(tmpFile);
+    testReadAs<double, uint16_t>(tmpFile);
+    testReadAs<double, uint32_t>(tmpFile);
+    testReadAs<double, uint64_t>(tmpFile);
+}
+
 TEST_F(NPArrayF, saveAndRestore) {
     // Save NPArray.
     const int64_t MI64_init[] = {0, 1, 2, 3, 4, 5, 6, 7, 8};
