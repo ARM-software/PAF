@@ -197,6 +197,16 @@ class NPArrayBase {
     /// direction.
     NPArrayBase &extend(const NPArrayBase &other, Axis axis);
 
+    /// Change the matrix underlying element size.
+    void viewAs(size_t newEltSize) {
+        assert(elt_size > newEltSize &&
+               "New element view must not be larger than the original one");
+        assert(elt_size % newEltSize == 0 &&
+               "Original element size is not a multiple of new element size");
+        num_columns *=  elt_size / newEltSize;
+        elt_size = newEltSize;
+    }
+
     /// Get a string describing the last error (if any).
     /// Especially useful when initializing from a file.
     const char *error() const noexcept { return errstr; }
@@ -907,8 +917,40 @@ NPArray<newTy> convert(const NPArray<fromTy> &src) {
     return res;
 }
 
+/// View the content of \p src as a different integral element type, allowing
+/// for example to access it as 4 uint8_t per original uint32_t. This does not
+/// change the shape or the content of the matrix, it only affects how addresses
+/// are computed and the size of the data accessed.
+template <typename newTy, typename fromTy>
+NPArray<newTy> &viewAs(NPArray<fromTy> &src) {
+    static_assert(std::is_integral<newTy>(),
+                  "expecting a matrix destination integral type");
+    static_assert(std::is_integral<fromTy>(),
+                  "expecting a matrix source integral type");
+    static_assert(sizeof(newTy) < sizeof(fromTy),
+                  "destination type must be smaller than the source one");
+    src.viewAs(sizeof(newTy));
+    return *reinterpret_cast<NPArray<newTy>*>(&src);
+}
+
+/// View the content of \p src as a different integral element type, allowing
+/// for example to access it as 4 uint8_t per original uint32_t. This does not
+/// change the shape or the content of the matrix, it only affects how addresses
+/// are computed and the size of the data accessed (move edition).
+template <typename newTy, typename fromTy>
+NPArray<newTy> viewAs(NPArray<fromTy> &&src) {
+    static_assert(std::is_integral<newTy>(),
+                  "expecting a matrix destination integral type");
+    static_assert(std::is_integral<fromTy>(),
+                  "expecting a matrix source integral type");
+    static_assert(sizeof(newTy) < sizeof(fromTy),
+                  "destination type must be smaller than the source one");
+    src.viewAs(sizeof(newTy));
+    return *reinterpret_cast<NPArray<newTy>*>(&src);
+}
+
 /// Functional version of 'all' predicate checker on an NPArray for row / column
-/// i.
+/// \p i.
 template <class Ty>
 bool all(const NPArray<Ty> &npy, NPArrayBase::Axis axis, size_t i,
          std::function<bool(Ty)> pred) {

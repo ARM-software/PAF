@@ -91,6 +91,16 @@ TEST(NPArrayBase, base) {
     EXPECT_EQ(f.element_size(), 4);
 }
 
+TEST(NPArrayBase, viewAs) {
+    const uint32_t init[] = {0, 1, 2, 3, 4, 5, 6, 7};
+    NPArrayBase a(reinterpret_cast<const char *>(init), 2, 4, sizeof(init[0]));
+    a.viewAs(sizeof(uint8_t));
+    EXPECT_EQ(a.rows(), 2);
+    EXPECT_EQ(a.cols(), 16);
+    EXPECT_EQ(a.size(), 32);
+    EXPECT_EQ(a.element_size(), 1);
+}
+
 TEST(NPArray, defaultConstruct) {
     NPArray<uint16_t> def;
     EXPECT_TRUE(def.good());
@@ -1011,6 +1021,66 @@ TEST_F(NPArrayF, readAs) {
     testReadAs<double, uint16_t>(tmpFile);
     testReadAs<double, uint32_t>(tmpFile);
     testReadAs<double, uint64_t>(tmpFile);
+}
+
+template <typename newTy, typename fromTy>
+void testViewAs(size_t rows, size_t cols, const vector<fromTy> &init) {
+    ASSERT_EQ(init.size(), rows * cols);
+
+    NPArray<fromTy> M(init.data(), rows, cols);
+    NPArray<newTy> T = viewAs<newTy>(M);
+
+    EXPECT_EQ(T.rows(), rows);
+    EXPECT_EQ(T.cols(), cols * sizeof(fromTy) / sizeof(newTy));
+    EXPECT_EQ(T.element_size(), sizeof(newTy));
+
+    const newTy *init2 = reinterpret_cast<const newTy *>(init.data());
+
+    for (size_t r = 0; r < T.rows(); r++)
+        for (size_t c = 0; c < T.cols(); c++)
+            EXPECT_EQ(T(r, c), init2[r * T.cols() + c]);
+
+    // Test the move version.
+    NPArray<newTy> T2 = viewAs<newTy>(NPArray<fromTy>(init.data(), rows, cols));
+
+    EXPECT_EQ(T2.rows(), rows);
+    EXPECT_EQ(T2.cols(), cols * sizeof(fromTy) / sizeof(newTy));
+    EXPECT_EQ(T2.element_size(), sizeof(newTy));
+
+    for (size_t r = 0; r < T2.rows(); r++)
+        for (size_t c = 0; c < T2.cols(); c++)
+            EXPECT_EQ(T2(r, c), init2[r * T2.cols() + c]);
+}
+
+TEST(NPArray, viewAs) {
+    const vector<uint64_t> init64 = {
+        0x6458ef521072b30c, 0xbc57639359179014, 0x4cca5238ecceb050,
+        0x3045d058f08bed79, 0x130cc1ac4e09624a, 0x4768c8a3ee4dd1a4,
+        0x13784bdbf7983cff, 0xf80d740123bdc572, 0x7dfd1f8c8793ca5f,
+        0x8772ded1b8992522, 0x49c92fa1de388467, 0xe115d498c69512d9};
+
+    testViewAs<uint8_t>(4, 3, init64);
+    testViewAs<uint16_t>(4, 3, init64);
+    testViewAs<uint32_t>(4, 3, init64);
+
+    const vector<uint32_t> init32 = {
+        0x6458ef52, 0x1072b30c, 0xbc576393, 0x59179014, 0x4cca5238, 0xecceb050,
+        0x3045d058, 0xf08bed79, 0x130cc1ac, 0x4e09624a, 0x4768c8a3, 0xee4dd1a4,
+        0x13784bdb, 0xf7983cff, 0xf80d7401, 0x23bdc572, 0x7dfd1f8c, 0x8793ca5f,
+        0x8772ded1, 0xb8992522, 0x49c92fa1, 0xde388467, 0xe115d498, 0xc69512d9};
+
+    testViewAs<uint8_t>(4, 6, init32);
+    testViewAs<uint16_t>(4, 6, init32);
+
+    const vector<uint16_t> init16 = {
+        0x6458, 0xef52, 0x1072, 0xb30c, 0xbc57, 0x6393, 0x5917, 0x9014,
+        0x4cca, 0x5238, 0xecce, 0xb050, 0x3045, 0xd058, 0xf08b, 0xed79,
+        0x130c, 0xc1ac, 0x4e09, 0x624a, 0x4768, 0xc8a3, 0xee4d, 0xd1a4,
+        0x1378, 0x4bdb, 0xf798, 0x3cff, 0xf80d, 0x7401, 0x23bd, 0xc572,
+        0x7dfd, 0x1f8c, 0x8793, 0xca5f, 0x8772, 0xded1, 0xb899, 0x2522,
+        0x49c9, 0x2fa1, 0xde38, 0x8467, 0xe115, 0xd498, 0xc695, 0x12d9};
+
+    testViewAs<uint8_t>(6, 8, init16);
 }
 
 TEST_F(NPArrayF, saveAndRestore) {
