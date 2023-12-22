@@ -91,6 +91,14 @@ TEST(NPArrayBase, base) {
     EXPECT_EQ(f.element_size(), 4);
 }
 
+TEST(NPArray, defaultConstruct) {
+    NPArray<uint16_t> def;
+    EXPECT_TRUE(def.good());
+    EXPECT_EQ(def.rows(), 0);
+    EXPECT_EQ(def.cols(), 0);
+    EXPECT_EQ(def.element_size(), sizeof(uint16_t));
+}
+
 TEST(NPArray, base) {
     const uint32_t v_init[] = {0, 1, 2, 3};
     const uint32_t v2_init[] = {0, 1, 2, 4};

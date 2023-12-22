@@ -53,8 +53,8 @@ class NPArrayBase {
     template <typename Ty> static const char *getEltTyDescr();
 
     /// Default constructor.
-    NPArrayBase()
-        : data(nullptr), num_rows(0), num_columns(0), elt_size(0),
+    NPArrayBase(size_t elt_size = 0)
+        : data(nullptr), num_rows(0), num_columns(0), elt_size(elt_size),
           errstr(nullptr) {}
 
     /// Construct an NPArrayBase from file filename.
@@ -265,6 +265,9 @@ template <class Ty> class NPArray : public NPArrayBase {
 
     static_assert(std::is_arithmetic<DataTy>(),
                   "expecting an integral or floating point type");
+
+    /// Construct an empty NPArray.
+    NPArray(): NPArrayBase(sizeof(Ty)) {}
 
     /// Construct an NPArray from data stored in file \p filename.
     NPArray(const std::string &filename)
