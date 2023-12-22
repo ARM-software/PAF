@@ -455,8 +455,12 @@ template <class Ty> class NPArray : public NPArrayBase {
             os << std::hex;
 
         for (size_t j = 0; j < J; j++) {
-            for (size_t i = 0; i < I; i++)
-                os << sep << this->operator()(j, i);
+            for (size_t i = 0; i < I; i++) {
+                if (sizeof(Ty) == 1)
+                    os << sep << unsigned(at(j, i));
+                else
+                    os << sep << at(j, i);
+            }
             if (I < cols())
                 os << "\t...";
             os << '\n';
