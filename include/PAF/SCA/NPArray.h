@@ -413,7 +413,7 @@ template <class Ty> class NPArray : public NPArrayBase {
         return *this;
     }
 
-    /// Get element located at [ \p row, \p col].
+    /// Get element located at [ \p row, \p col ].
     Ty &operator()(size_t row, size_t col) noexcept {
         assert(row < rows() && "Row is out-of-range");
         assert(col < cols() && "Col is out-of-range");
@@ -421,7 +421,7 @@ template <class Ty> class NPArray : public NPArrayBase {
         return p[row * cols() + col];
     }
 
-    /// Get element located at [ \p row, \p col] (const version).
+    /// Get element located at [ \p row, \p col ] (const version).
     Ty operator()(size_t row, size_t col) const noexcept {
         assert(row < rows() && "Row is out-of-range");
         assert(col < cols() && "Col is out-of-range");
