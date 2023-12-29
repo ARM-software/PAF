@@ -21,6 +21,7 @@
 #include "PAF/SCA/NPArray.h"
 #include "PAF/SCA/LWParser.h"
 
+#include <algorithm>
 #include <cstdint>
 #include <memory>
 
@@ -379,6 +380,15 @@ bool NPArrayBase::save(const char *filename, const string &descr) const {
     return save(ofs, descr);
 }
 
+bool NPArrayBase::save(const string &filename, const string &descr) const {
+    ofstream ofs(filename, ofstream::binary);
+
+    if (!ofs)
+        return false;
+
+    return save(ofs, descr);
+}
+
 NPArrayBase::NPArrayBase(const std::vector<std::string> &filenames, Axis axis,
                          const char *expectedEltTy, size_t num_rows,
                          size_t num_columns, unsigned elt_size)
@@ -409,7 +419,7 @@ NPArrayBase::NPArrayBase(const std::vector<std::string> &filenames, Axis axis,
     }
 }
 
-NPArrayBase::NPArrayBase(const string &filename, const char *expectedEltTy)
+NPArrayBase::NPArrayBase(const string &filename, const char *expectedEltTy, size_t maxNumRows)
     : NPArrayBase() {
     ifstream ifs(filename, ifstream::binary);
     if (!ifs) {
@@ -432,6 +442,7 @@ NPArrayBase::NPArrayBase(const string &filename, const char *expectedEltTy)
         return;
     }
 
+    l_num_rows = std::min(maxNumRows, l_num_rows);
     size_t num_bytes = l_num_rows * l_num_columns * l_elt_size;
     data.reset(new char[num_bytes]);
     ifs.read(data.get(), num_bytes);

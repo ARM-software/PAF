@@ -91,6 +91,30 @@ TEST(NPArrayBase, base) {
     EXPECT_EQ(f.element_size(), 4);
 }
 
+TestWithTempFiles(NPArrayBaseF, "test-NPArrayBase.npy.XXXXXX", 2);
+
+TEST_F(NPArrayBaseF, readFromFile) {
+    const uint32_t init[] = {0, 1, 2, 3, 4, 5, 6, 7};
+    NPArrayBase a(reinterpret_cast<const char *>(init), 2, 4, sizeof(init[0]));
+    a.save(getTemporaryFilename(), NPArrayBase::getEltTyDescr<uint32_t>());
+
+    NPArrayBase b(getTemporaryFilename(),
+                  NPArrayBase::getEltTyDescr<uint32_t>());
+    EXPECT_TRUE(a.good());
+    EXPECT_EQ(a.rows(), 2);
+    EXPECT_EQ(a.cols(), 4);
+    EXPECT_EQ(a.size(), 8);
+    EXPECT_EQ(a.element_size(), sizeof(init[0]));
+
+    NPArrayBase c(getTemporaryFilename(),
+                  NPArrayBase::getEltTyDescr<uint32_t>(), 1);
+    EXPECT_TRUE(c.good());
+    EXPECT_EQ(c.rows(), 1);
+    EXPECT_EQ(c.cols(), 4);
+    EXPECT_EQ(c.size(), 4);
+    EXPECT_EQ(c.element_size(), sizeof(init[0]));
+}
+
 TEST(NPArrayBase, viewAs) {
     const uint32_t init[] = {0, 1, 2, 3, 4, 5, 6, 7};
     NPArrayBase a(reinterpret_cast<const char *>(init), 2, 4, sizeof(init[0]));
@@ -1094,6 +1118,32 @@ TEST_F(NPArrayF, saveAndRestore) {
     EXPECT_EQ(b.error(), nullptr);
 
     EXPECT_EQ(a, b);
+}
+
+TEST_F(NPArrayF, readFromFile) {
+    const uint32_t init[] = {0, 1, 2, 3, 4, 5, 6, 7};
+    NPArray<uint32_t> a(init, 2, 4);
+    a.save(getTemporaryFilename());
+
+    NPArray<uint32_t> b(getTemporaryFilename());
+    EXPECT_TRUE(a.good());
+    EXPECT_EQ(a.rows(), 2);
+    EXPECT_EQ(a.cols(), 4);
+    EXPECT_EQ(a.size(), 8);
+    EXPECT_EQ(a.element_size(), sizeof(init[0]));
+    for (size_t r = 0; r < a.rows(); r++)
+        for (size_t c = 0; c < a.cols(); c++)
+            EXPECT_EQ(a(r, c), init[r * a.cols() + c]);
+
+    NPArray<uint32_t> c(getTemporaryFilename(), 1);
+    EXPECT_TRUE(c.good());
+    EXPECT_EQ(c.rows(), 1);
+    EXPECT_EQ(c.cols(), 4);
+    EXPECT_EQ(c.size(), 4);
+    EXPECT_EQ(c.element_size(), sizeof(init[0]));
+    for (size_t r = 0; r < a.rows(); r++)
+        for (size_t c = 0; c < a.cols(); c++)
+            EXPECT_EQ(a(r, c), init[r * a.cols() + c]);
 }
 
 TEST(NPArray, Row) {

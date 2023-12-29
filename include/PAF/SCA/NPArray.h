@@ -61,7 +61,8 @@ class NPArrayBase {
     ///
     /// This method will assess if the on-disk storage matches the
     /// element type.
-    NPArrayBase(const std::string &filename, const char *expectedEltTy);
+    NPArrayBase(const std::string &filename, const char *expectedEltTy,
+                size_t maxNumRows = -1);
 
     /// Construct an NPArrayBase from several filenames.
     ///
@@ -227,6 +228,9 @@ class NPArrayBase {
     /// Save to file \p filename.
     bool save(const char *filename, const std::string &descr) const;
 
+    /// Save to file \p filename (std::string edition)
+    bool save(const std::string &filename, const std::string &descr) const;
+
     /// Save to output file stream \p os.
     bool save(std::ofstream &os, const std::string &descr) const;
 
@@ -280,8 +284,8 @@ template <class Ty> class NPArray : public NPArrayBase {
     NPArray(): NPArrayBase(sizeof(Ty)) {}
 
     /// Construct an NPArray from data stored in file \p filename.
-    NPArray(const std::string &filename)
-        : NPArrayBase(filename, getEltTyDescr<Ty>()) {}
+    NPArray(const std::string &filename, size_t maxNumRows=-1)
+        : NPArrayBase(filename, getEltTyDescr<Ty>(), maxNumRows) {}
 
     /// Construct an NPArray from multiple files, concatenating the Matrices
     /// along \p axis.
@@ -358,7 +362,7 @@ template <class Ty> class NPArray : public NPArrayBase {
     /// to \p Ty if need be. This does not affect the Matrix shape or number of
     /// elements, only their type. The type conversion to smaller types may
     /// truncate some information.
-    static NPArray readAs(const std::string &filename) {
+    static NPArray readAs(const std::string &filename, size_t maxNumRows = -1) {
         if (filename.empty())
             return NPArray(0, 0);
 
@@ -381,6 +385,7 @@ template <class Ty> class NPArray : public NPArrayBase {
             return res;
         }
 
+        num_rows = std::min(num_rows, maxNumRows);
         size_t num_elt = num_rows * num_cols;
         std::unique_ptr<Ty[]> data(new Ty[num_elt]);
 
