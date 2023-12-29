@@ -24,6 +24,7 @@
 #include <cassert>
 #include <cmath>
 #include <cstdint>
+#include <cstdlib>
 #include <cstring>
 #include <fstream>
 #include <functional>
@@ -681,6 +682,11 @@ template <class Ty> class NPArray : public NPArrayBase {
     /// Get a past-the-end row for this NPArray.
     Row row_end() const noexcept { return Row(*this, rows()); }
 
+    /// Convert all elements in this NPArray to their absolute value.
+    NPArray &abs() noexcept {
+        return abs<Ty>();
+    }
+
     /// Test if all elements in row \p i or column \p i satisfy predicate \p
     /// pred.
     bool all(Axis axis, size_t i, std::function<bool(Ty)> pred) const {
@@ -904,6 +910,25 @@ template <class Ty> class NPArray : public NPArrayBase {
     /// Provide a convenience shorthand for in-class operations (const
     /// version).
     Ty at(size_t row, size_t col) const { return (*this)(row, col); }
+
+    /// Convert all elements in this NPArray to their absolute value. A noop for
+    /// unsigned element types.
+    template <typename T, typename std::enable_if<
+                              std::is_unsigned<T>::value>::type * = nullptr>
+    NPArray &abs() noexcept {
+        return *this;
+    }
+
+    /// Convert all elements in this NPArray to their absolute value.
+    template <typename T, typename std::enable_if<
+                              std::is_signed<T>::value>::type * = nullptr>
+    NPArray &abs() noexcept {
+        for (size_t row = 0; row < rows(); row++)
+            for (size_t col = 0; col < cols(); col++)
+                at(row, col) = std::abs(at(row, col));
+
+        return *this;
+    }
 };
 
 /// Convert the type of the \p src NPArray elements from \p fromTy to \p newTy.
@@ -952,6 +977,12 @@ NPArray<newTy> viewAs(NPArray<fromTy> &&src) {
                   "destination type must be smaller than the source one");
     src.viewAs(sizeof(newTy));
     return *reinterpret_cast<NPArray<newTy>*>(&src);
+}
+
+/// Functional version of 'abs'.
+template <class Ty> NPArray<Ty> abs(const NPArray<Ty> &npy) {
+    NPArray<Ty> tmp(npy);
+    return tmp.abs();
 }
 
 /// Functional version of 'all' predicate checker on an NPArray for row / column

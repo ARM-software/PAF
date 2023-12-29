@@ -26,8 +26,10 @@
 
 #include <cstdio>
 #include <initializer_list>
+#include <limits>
 #include <memory>
 #include <string>
+#include <type_traits>
 #include <vector>
 #include <unistd.h>
 
@@ -1172,6 +1174,58 @@ TEST(NPArray, Row) {
 
     r.reset();
     EXPECT_EQ(r, a.row_begin());
+}
+
+template <typename Ty>
+std::enable_if_t<std::is_integral<Ty>::value> absCheck() {
+    const Ty init[] = {0, 1, 2, 3, 4, 5};
+    NPArray<Ty> a(init, 3, 2);
+    NPArray<Ty> b(init, 3, 2);
+    for (size_t r = 0; r < a.rows(); r++)
+        for (size_t c = 0; c < a.cols(); c++)
+            if (!((r == 0 && c == 0) || (r == 1 && c == 2)))
+                a(r, c) = -a(r, c);
+
+    if (std::is_signed<Ty>()) {
+        EXPECT_EQ(abs(a), b);
+        EXPECT_EQ(a.abs(), b);
+    } else {
+        auto c = abs(a);
+        for (size_t r = 0; r < a.rows(); r++)
+            for (size_t c = 0; c < a.cols(); c++)
+                if (!((r == 0 && c == 0) || (r == 1 && c == 2)))
+                    EXPECT_EQ(a(r, c),
+                              std::numeric_limits<Ty>::max() - b(r, c) + 1);
+        EXPECT_EQ(a.abs(), c);
+    }
+}
+
+template <typename Ty>
+std::enable_if_t<std::is_floating_point<Ty>::value> absCheck() {
+    const Ty init[] = {0.0, -1.0, -2.0, -3.0, -4.0, 5.0};
+    const Ty expect[] = {0.0, 1.0, 2.0, 3.0, 4.0, 5.0};
+
+    NPArray<Ty> a(init, 3, 2);
+    NPArray<Ty> b = NPArray<Ty>(init, 3, 2);
+
+    EXPECT_EQ(a.abs(), NPArray<Ty>(expect, 3, 2));
+    EXPECT_NE(a, b);
+    EXPECT_EQ(abs(b), a);
+}
+
+TEST(NPArray, abs) {
+    absCheck<uint8_t>();
+    absCheck<uint16_t>();
+    absCheck<uint32_t>();
+    absCheck<uint64_t>();
+
+    absCheck<int8_t>();
+    absCheck<int16_t>();
+    absCheck<int32_t>();
+    absCheck<int64_t>();
+
+    absCheck<float>();
+    absCheck<double>();
 }
 
 TEST(NPArray, all) {
