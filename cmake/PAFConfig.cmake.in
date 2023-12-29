@@ -18,7 +18,7 @@
 
 set(PAF_BUILD_DIR "@CMAKE_BINARY_DIR@")
 set(PAF_SOURCE_DIR "@CMAKE_SOURCE_DIR@")
-set(PAF_INCLUDE_DIR "${PAF_SOURCE_DIR}/include/PAF")
+set(PAF_INCLUDE_DIRS "${PAF_SOURCE_DIR}/include" "${PAF_BUILD_DIR}/third_party/src/tarmac-trace-utilities/include")
 set(PAF_LIBRARY_DIR "${PAF_BUILD_DIR}/lib")
 
 foreach(lib paf;fi;sca;tarmac)
