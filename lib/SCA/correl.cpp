@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: <text>Copyright 2021,2022 Arm Limited and/or its
+ * SPDX-FileCopyrightText: <text>Copyright 2021,2022,2024 Arm Limited and/or its
  * affiliates <open-source-office@arm.com></text>
  * SPDX-License-Identifier: Apache-2.0
  *
@@ -29,8 +29,8 @@ using std::vector;
 
 namespace PAF {
 namespace SCA {
-vector<double> correl(size_t b, size_t e, const NPArray<double> &traces,
-                      const vector<double> &ival) {
+NPArray<double> correl(size_t b, size_t e, const NPArray<double> &traces,
+                       const vector<double> &ival) {
 
     assert(b <= e && "Wrong begin / end samples");
     assert(b <= traces.cols() && "Not that many samples in the trace");
@@ -39,7 +39,7 @@ vector<double> correl(size_t b, size_t e, const NPArray<double> &traces,
            "Number of intermediate values does not match number of traces");
 
     if (b == e)
-        return vector<double>();
+        return NPArray<double>();
 
     const size_t nbtraces = traces.rows();
     const size_t nbsamples = e - b;
@@ -63,11 +63,11 @@ vector<double> correl(size_t b, size_t e, const NPArray<double> &traces,
         }
     }
 
-    vector<double> cvalue(nbsamples);
+    NPArray<double> cvalue(1, nbsamples);
     for (size_t s = 0; s < nbsamples; s++) {
-        cvalue[s] = nbtraces * sum_ht[s] - sum_h * sum_t[s];
-        cvalue[s] /= sqrt((sum_h * sum_h - nbtraces * sum_h_sq) *
-                          (sum_t[s] * sum_t[s] - nbtraces * sum_t_sq[s]));
+        cvalue(0, s) = nbtraces * sum_ht[s] - sum_h * sum_t[s];
+        cvalue(0, s) /= sqrt((sum_h * sum_h - nbtraces * sum_h_sq) *
+                             (sum_t[s] * sum_t[s] - nbtraces * sum_t_sq[s]));
     }
 
     return cvalue;

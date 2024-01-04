@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: <text>Copyright 2021,2022 Arm Limited and/or its
+ * SPDX-FileCopyrightText: <text>Copyright 2021,2022,2024 Arm Limited and/or its
  * affiliates <open-source-office@arm.com></text>
  * SPDX-License-Identifier: Apache-2.0
  *
@@ -18,7 +18,7 @@
  * This file is part of PAF, the Physical Attack Framework.
  */
 
-#include "PAF/SCA/NPUtils.h"
+#include "PAF/SCA/NPOperators.h"
 #include "PAF/SCA/SCA.h"
 #include "PAF/SCA/utils.h"
 
@@ -39,30 +39,30 @@ namespace PAF {
 namespace SCA {
 
 /// Welsh t-test with one group of traces and a classification array.
-vector<double> t_test(size_t b, size_t e, const NPArray<double> &traces,
-                      const vector<Classification> &classifier) {
+NPArray<double> t_test(size_t b, size_t e, const NPArray<double> &traces,
+                       const vector<Classification> &classifier) {
     assert(b <= e && "Wrong begin / end samples");
     assert(b <= traces.cols() && "Not that many samples in the trace");
     assert(e <= traces.cols() && "Not that many samples in the trace");
 
     if (b == e)
-        return vector<double>();
+        return NPArray<double>();
 
     const size_t nbtraces = traces.rows();
     const size_t nbsamples = e - b;
 
-    vector<double> tvalue(nbsamples);
+    NPArray<double> tvalue(1, nbsamples);
 
     for (size_t sample = 0; sample < nbsamples; sample++) {
-        AveragerWithVar avg0;
-        AveragerWithVar avg1;
+        MeanWithVar<NPArray<double>::DataTy> avg0;
+        MeanWithVar<NPArray<double>::DataTy> avg1;
         for (size_t tnum = 0; tnum < nbtraces; tnum++)
             switch (classifier[tnum]) {
             case Classification::GROUP_0:
-                avg0(traces(tnum, b + sample));
+                avg0(traces(tnum, b + sample), tnum, sample);
                 break;
             case Classification::GROUP_1:
-                avg1(traces(tnum, b + sample));
+                avg1(traces(tnum, b + sample), tnum, sample);
                 break;
             case Classification::IGNORE:
                 break;
@@ -71,9 +71,10 @@ vector<double> t_test(size_t b, size_t e, const NPArray<double> &traces,
         assert(avg0.count() > 1 && "group0 must have more than one trace");
         assert(avg1.count() > 1 && "group1 must have more than one trace");
 
-        tvalue[sample] = (avg0.mean() - avg1.mean()) /
-                         sqrt(avg0.var(/* ddof: */ 1) / double(avg0.count()) +
-                              avg1.var(/* ddof: */ 1) / double(avg1.count()));
+        tvalue(0, sample) =
+            (avg0.value() - avg1.value()) /
+            sqrt(avg0.var(/* ddof: */ 1) / double(avg0.count()) +
+                 avg1.var(/* ddof: */ 1) / double(avg1.count()));
     }
 
     return tvalue;
@@ -82,13 +83,13 @@ vector<double> t_test(size_t b, size_t e, const NPArray<double> &traces,
 /// Welsh t-test with one group of traces and a classification array.
 double t_test(size_t s, const NPArray<double> &traces,
               const vector<Classification> &classifier) {
-    const auto tvalues = t_test(s, s + 1, traces, classifier);
-    return tvalues[0];
+    const NPArray<double> tvalues = t_test(s, s + 1, traces, classifier);
+    return tvalues(0, 0);
 }
 
 /// Welsh t-test with 2 groups of traces.
-vector<double> t_test(size_t b, size_t e, const NPArray<double> &group0,
-                      const NPArray<double> &group1) {
+NPArray<double> t_test(size_t b, size_t e, const NPArray<double> &group0,
+                       const NPArray<double> &group1) {
     assert(b <= e && "Wrong begin / end samples");
     assert(b <= group0.cols() && "Not that many samples in group0 traces");
     assert(e <= group0.cols() && "Not that many samples in group0 traces");
@@ -98,24 +99,25 @@ vector<double> t_test(size_t b, size_t e, const NPArray<double> &group0,
     assert(group1.rows() > 1 && "group1 must have more than one trace");
 
     if (b == e)
-        return vector<double>();
+        return NPArray<double>();
 
     const size_t nbsamples = e - b;
 
     vector<double> variance0;
-    vector<double> mean0 = group0.mean(NPArray<double>::COLUMN, b, e,
-                                       &variance0, nullptr, /* ddof: */ 1);
+    NPArray<double> mean0 = group0.meanWithVar(
+        NPArray<double>::COLUMN, b, e, &variance0, nullptr, /* ddof: */ 1);
 
     vector<double> variance1;
-    vector<double> mean1 = group1.mean(NPArray<double>::COLUMN, b, e,
-                                       &variance1, nullptr, /* ddof: */ 1);
+    NPArray<double> mean1 = group1.meanWithVar(
+        NPArray<double>::COLUMN, b, e, &variance1, nullptr, /* ddof: */ 1);
 
-    vector<double> tvalue(nbsamples);
+    NPArray<double> tvalue(1, nbsamples);
 
     for (size_t sample = 0; sample < nbsamples; sample++) {
         double tmp0 = variance0[sample] / double(group0.rows());
         double tmp1 = variance1[sample] / double(group1.rows());
-        tvalue[sample] = (mean0[sample] - mean1[sample]) / sqrt(tmp0 + tmp1);
+        tvalue(0, sample) =
+            (mean0(0, sample) - mean1(0, sample)) / sqrt(tmp0 + tmp1);
     }
 
     return tvalue;
@@ -124,8 +126,8 @@ vector<double> t_test(size_t b, size_t e, const NPArray<double> &group0,
 /// Compute Welsh's t-test for sample s.
 double t_test(size_t s, const NPArray<double> &group0,
               const NPArray<double> &group1) {
-    const auto tvalues = t_test(s, s + 1, group0, group1);
-    return tvalues[0];
+    const NPArray<double> tvalues = t_test(s, s + 1, group0, group1);
+    return tvalues(0, 0);
 }
 
 /// Compute Student's t-test for sample s.
@@ -133,7 +135,7 @@ double t_test(size_t s, double m0, const NPArray<double> &traces) {
     assert(s <= traces.cols() && "Out of bound sample access in traces");
 
     double var;
-    double m = traces.mean(NPArray<double>::COLUMN, s, &var, nullptr, 1);
+    double m = traces.meanWithVar(NPArray<double>::COLUMN, s, &var, nullptr, 1);
     return sqrt(traces.rows()) * (m - m0) / sqrt(var);
 }
 
@@ -143,52 +145,52 @@ double t_test(size_t s, double m0, const NPArray<double> &traces,
               function<bool(size_t)> select) {
     assert(s <= traces.cols() && "Not that many samples in the trace");
 
-    AveragerWithVar avg;
+    MeanWithVar<NPArray<double>::DataTy> avg;
     for (size_t tnum = 0; tnum < traces.rows(); tnum++)
         if (select(tnum))
-            avg(traces(tnum, s));
+            avg(traces(tnum, s), tnum, s);
 
     if (avg.count() <= 1)
         return std::nan("");
 
-    return sqrt(double(avg.count())) * (avg.mean() - m0) /
+    return sqrt(double(avg.count())) * (avg.value() - m0) /
            sqrt(avg.var(/* ddof: */ 1));
 }
 
 /// Compute Student's t-test from samples b to e.
-vector<double> t_test(size_t b, size_t e, const vector<double> &m0,
-                      const NPArray<double> &traces) {
+NPArray<double> t_test(size_t b, size_t e, const vector<double> &m0,
+                       const NPArray<double> &traces) {
     assert(b <= e && "Wrong begin / end samples");
     assert(b < traces.cols() && "Not that many samples in traces");
     assert(e <= traces.cols() && "Not that many samples in traces");
     assert(m0.size() >= e - b && "Number of means in m0 must match range");
 
     if (b == e)
-        return vector<double>();
+        return NPArray<double>();
 
-    vector<double> tvalue(e - b);
+    NPArray<double> tvalue(1, e - b);
     for (size_t s = b; s < e; s++)
-        tvalue[s - b] = t_test(s, m0[s - b], traces);
+        tvalue(0, s - b) = t_test(s, m0[s - b], traces);
 
     return tvalue;
 }
 
 /// Compute Student's t-test from sample b to e for the traces where select
 /// returns true.
-vector<double> t_test(size_t b, size_t e, const vector<double> &m0,
-                      const NPArray<double> &traces,
-                      function<bool(size_t)> select) {
+NPArray<double> t_test(size_t b, size_t e, const vector<double> &m0,
+                       const NPArray<double> &traces,
+                       function<bool(size_t)> select) {
     assert(b <= e && "Wrong begin / end samples");
     assert(b < traces.cols() && "Not that many samples in traces");
     assert(e <= traces.cols() && "Not that many samples in traces");
     assert(m0.size() >= e - b && "Number of means in m0 must match range");
 
     if (b == e)
-        return vector<double>();
+        return NPArray<double>();
 
-    vector<double> tvalue(e - b);
+    NPArray<double> tvalue(1, e - b);
     for (size_t s = b; s < e; s++)
-        tvalue[s - b] = t_test(s, m0[s - b], traces, select);
+        tvalue(0, s - b) = t_test(s, m0[s - b], traces, select);
 
     return tvalue;
 }
@@ -206,7 +208,7 @@ class PerfectStats {
 
     PerfectStats() : cnt({0}) {}
 
-    void incr(TT t) { cnt[t] += 1;}
+    void incr(TT t) { cnt[t] += 1; }
     size_t count(TT t) const { return cnt[t]; }
 
     void dump(ostream &os, size_t ntg0, size_t ntg1) const {
@@ -236,15 +238,16 @@ class PerfectStats {
 };
 } // namespace
 
-vector<double> perfect_t_test(size_t b, size_t e, const NPArray<double> &group0,
-                              const NPArray<double> &group1, ostream *os) {
+NPArray<double> perfect_t_test(size_t b, size_t e,
+                               const NPArray<double> &group0,
+                               const NPArray<double> &group1, ostream *os) {
     assert(b <= e && "Wrong begin / end samples");
     assert(b < group0.cols() && "Not that many samples in traces");
     assert(e <= group0.cols() && "Not that many samples in traces");
     assert(group0.cols() == group1.cols() && "Mismatch in number of columns");
 
     PerfectStats PS;
-    vector<double> tt(e - b);
+    NPArray<double> tt(1, e - b);
 
     for (size_t s = b; s < e; s++) {
         double group0Value = group0(0, s);
@@ -259,21 +262,21 @@ vector<double> perfect_t_test(size_t b, size_t e, const NPArray<double> &group0,
         if (isGroup0Constant && isGroup1Constant) {
             if (group0Value == group1Value) {
                 PS.incr(PerfectStats::SAME_CONSTANT_VALUE);
-                tt[s - b] = 0.0;
+                tt(0, s - b) = 0.0;
             } else {
                 PS.incr(PerfectStats::DIFFERENT_CONSTANT_VALUES);
                 // TODO: report ?
-                tt[s - b] = 0.0;
+                tt(0, s - b) = 0.0;
             }
         } else if (isGroup0Constant || isGroup1Constant) {
             PS.incr(PerfectStats::STUDENT_T_TEST);
             if (isGroup0Constant)
-                tt[s - b] = t_test(s, group0Value, group1);
+                tt(0, s - b) = t_test(s, group0Value, group1);
             else
-                tt[s - b] = t_test(s, group1Value, group0);
+                tt(0, s - b) = t_test(s, group1Value, group0);
         } else {
             PS.incr(PerfectStats::WELSH_T_TEST);
-            tt[s - b] = t_test(s, s + 1, group0, group1)[0];
+            tt(0, s - b) = t_test(s, s + 1, group0, group1)(0, 0);
         }
     }
 
@@ -283,9 +286,10 @@ vector<double> perfect_t_test(size_t b, size_t e, const NPArray<double> &group0,
     return tt;
 }
 
-vector<double> perfect_t_test(size_t b, size_t e, const NPArray<double> &traces,
-                              const vector<Classification> &classifier,
-                              ostream *os) {
+NPArray<double> perfect_t_test(size_t b, size_t e,
+                               const NPArray<double> &traces,
+                               const vector<Classification> &classifier,
+                               ostream *os) {
     assert(b <= e && "Wrong begin / end samples");
     assert(b < traces.cols() && "Not that many samples in traces");
     assert(e <= traces.cols() && "Not that many samples in traces");
@@ -309,7 +313,7 @@ vector<double> perfect_t_test(size_t b, size_t e, const NPArray<double> &traces,
 
     // Return a somehow sensible result if we reach this case.
     if (group0Cnt <= 1 || group1Cnt <= 1)
-        return vector<double>();
+        return NPArray<double>();
 
     function<bool(size_t)> selectGroup0 = [&classifier](size_t s) {
         return classifier[s] == Classification::GROUP_0;
@@ -319,7 +323,7 @@ vector<double> perfect_t_test(size_t b, size_t e, const NPArray<double> &traces,
     };
 
     PerfectStats PS;
-    vector<double> tt(e - b);
+    NPArray<double> tt(1, e - b);
 
     for (size_t s = b; s < e; s++) {
         double group0Value, group1Value;
@@ -351,21 +355,21 @@ vector<double> perfect_t_test(size_t b, size_t e, const NPArray<double> &traces,
         if (isGroup0Constant && isGroup1Constant) {
             if (group0Value == group1Value) {
                 PS.incr(PerfectStats::SAME_CONSTANT_VALUE);
-                tt[s - b] = 0.0;
+                tt(0, s - b) = 0.0;
             } else {
                 PS.incr(PerfectStats::DIFFERENT_CONSTANT_VALUES);
                 // TODO: report ?
-                tt[s - b] = 0.0;
+                tt(0, s - b) = 0.0;
             }
         } else if (isGroup0Constant || isGroup1Constant) {
             PS.incr(PerfectStats::STUDENT_T_TEST);
             if (isGroup0Constant)
-                tt[s - b] = t_test(s, group0Value, traces, selectGroup1);
+                tt(0, s - b) = t_test(s, group0Value, traces, selectGroup1);
             else
-                tt[s - b] = t_test(s, group1Value, traces, selectGroup0);
+                tt(0, s - b) = t_test(s, group1Value, traces, selectGroup0);
         } else {
             PS.incr(PerfectStats::WELSH_T_TEST);
-            tt[s - b] = t_test(s, s + 1, traces, classifier)[0];
+            tt(0, s - b) = t_test(s, s + 1, traces, classifier)(0, 0);
         }
     }
 

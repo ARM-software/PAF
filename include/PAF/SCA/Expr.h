@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: <text>Copyright 2021,2022,2023 Arm Limited and/or its
+ * SPDX-FileCopyrightText: <text>Copyright 2021,2022,2023,2024 Arm Limited and/or its
  * affiliates <open-source-office@arm.com></text>
  * SPDX-License-Identifier: Apache-2.0
  *
@@ -72,9 +72,7 @@ class ValueType {
     }
 
     /// Get the number of bits in this type.
-    size_t getNumBits() const {
-        return getNumBits(Ty);
-    }
+    size_t getNumBits() const { return getNumBits(Ty); }
 
     /// Get a string representation of this ValueType.
     std::string repr() const {
@@ -222,7 +220,9 @@ class Input : public InputBase {
 };
 
 /// Define NPArray traits for use in NPInput.
-template <class Ty> struct NPInputTraits { static ValueType::Type getType(); };
+template <class Ty> struct NPInputTraits {
+    static ValueType::Type getType();
+};
 
 template <> struct NPInputTraits<NPArray<uint64_t>> {
     static ValueType::Type getType() { return ValueType::UINT64; }
@@ -244,13 +244,13 @@ template <class DataTy> class NPInput : public InputBase {
   public:
     NPInput() = delete;
     /// Construct an NPInput referring to named nprow[index].
-    NPInput(typename NPArray<DataTy>::Row &nprow, size_t index,
+    NPInput(typename NPArray<DataTy>::const_Row &nprow, size_t index,
             const std::string name)
         : InputBase(NPInputTraits<NPArray<DataTy>>::getType()), Row(nprow),
           Name(name), Index(index) {}
     /// Construct an NPInput referring to nprow[index], with optional name, C
     /// string version.
-    NPInput(typename NPArray<DataTy>::Row &nprow, size_t index,
+    NPInput(typename NPArray<DataTy>::const_Row &nprow, size_t index,
             const char *name = "")
         : NPInput(nprow, index, std::string(name)) {}
 
@@ -278,9 +278,9 @@ template <class DataTy> class NPInput : public InputBase {
     }
 
   private:
-    typename NPArray<DataTy>::Row &Row; ///< Our NPArray row.
-    const std::string Name;             ///< Our name.
-    const size_t Index;                 ///< Our index in the NPPArray row.
+    typename NPArray<DataTy>::const_Row &Row; ///< Our NPArray row.
+    const std::string Name;                   ///< Our name.
+    const size_t Index; ///< Our index in the NPPArray row.
 };
 
 /// Common base class for Unary operators.

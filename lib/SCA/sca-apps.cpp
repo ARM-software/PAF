@@ -1,6 +1,6 @@
 /*
- * SPDX-FileCopyrightText: <text>Copyright 2021,2022,2023 Arm Limited and/or its
- * affiliates <open-source-office@arm.com></text>
+ * SPDX-FileCopyrightText: <text>Copyright 2021,2022,2023,2024 Arm Limited
+ * and/or its affiliates <open-source-office@arm.com></text>
  * SPDX-License-Identifier: Apache-2.0
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -19,8 +19,8 @@
  */
 
 #include "PAF/SCA/sca-apps.h"
-#include "PAF/SCA/utils.h"
 #include "PAF/SCA/NPArray.h"
+#include "PAF/SCA/utils.h"
 
 #include "libtarmac/reporter.hh"
 
@@ -66,26 +66,26 @@ SCAApp::SCAApp(const char *appname, int argc, char *argv[])
     optnoval({"--perfect"}, "assume perfect inputs (i.e. no noise).",
              [this]() { perfect = true; });
     optval({"--decimate"}, "PERIOD%OFFSET",
-               "decimate result (default: PERIOD=1, OFFSET=0)",
-               [&](const string &s) {
-                   size_t pos = s.find('%');
-                   if (pos == string::npos)
-                       reporter->errx(
-                           EXIT_FAILURE,
-                           "'%' separator not found in decimation specifier");
+           "decimate result (default: PERIOD=1, OFFSET=0)",
+           [&](const string &s) {
+               size_t pos = s.find('%');
+               if (pos == string::npos)
+                   reporter->errx(
+                       EXIT_FAILURE,
+                       "'%' separator not found in decimation specifier");
 
-                   period = stoul(s);
-                   offset = stoul(s.substr(pos + 1));
+               period = stoul(s);
+               offset = stoul(s.substr(pos + 1));
 
-                   if (period == 0)
-                       reporter->errx(EXIT_FAILURE,
-                                      "decimation specification error: PERIOD "
-                                      "can not be 0");
-                   if (offset >= period)
-                       reporter->errx(EXIT_FAILURE,
-                                      "decimation specification error: OFFSET "
-                                      "must be strictly lower than PERIOD");
-               });
+               if (period == 0)
+                   reporter->errx(EXIT_FAILURE,
+                                  "decimation specification error: PERIOD "
+                                  "can not be 0");
+               if (offset >= period)
+                   reporter->errx(EXIT_FAILURE,
+                                  "decimation specification error: OFFSET "
+                                  "must be strictly lower than PERIOD");
+           });
     // Select samples to start / end with as well as the number of traces to
     // process.
     optval({"-f", "--from"}, "S", "start computation at sample S (default: 0).",
@@ -147,26 +147,31 @@ OutputBase::~OutputBase() {
     close();
 }
 
+void OutputBase::emitComment(const NPArray<double> &values, size_t decimate,
+                             size_t offset) const {
+    if (values.empty())
+        return;
+
+    assert(decimate > 0 && "decimate can not be 0");
+
+    for (size_t r = 0; r < values.rows(); r++) {
+        size_t index;
+        double max_v = find_max(values.cbegin(r), &index, decimate, offset);
+        *out << "# max = " << max_v << " at index ";
+        if (values.rows() > 1)
+            *out << r << ',';
+        *out << (index / decimate) << '\n';
+    }
+}
+
 class TerseOutput : public OutputBase {
   public:
     TerseOutput(const std::string &filename, bool append = true)
         : OutputBase(filename, append, /* binary: */ false) {}
 
-    virtual void emit(const std::vector<std::vector<double>> &values,
-                      size_t decimate, size_t offset) override {
-        if (values.empty())
-            return;
-
-        assert(decimate > 0 && "decimate can not be 0");
-        size_t rowNum = 0;
-        for (const auto &row : values) {
-            size_t max_index;
-            double max_v = find_max(row, &max_index, decimate, offset);
-            *out << "# max = " << max_v << " at index ";
-            if (values.size() > 1)
-                *out << rowNum++ << ',';
-            *out << (max_index / decimate) << '\n';
-        }
+    virtual void emit(const NPArray<double> &values, size_t decimate,
+                      size_t offset) const override {
+        emitComment(values, decimate, offset);
     }
 };
 
@@ -175,33 +180,21 @@ class GnuplotOutput : public OutputBase {
     GnuplotOutput(const std::string &filename)
         : OutputBase(filename, /* append: */ false, /* binary: */ false) {}
 
-    virtual void emit(const std::vector<std::vector<double>> &values,
-                      size_t decimate, size_t offset) override {
+    virtual void emit(const NPArray<double> &values, size_t decimate,
+                      size_t offset) const override {
         if (values.empty())
             return;
 
         assert(decimate > 0 && "decimate can not be 0");
 
-        size_t maxColumns = 0;
-        for (const auto &row : values)
-            maxColumns = std::max(maxColumns, row.size());
-
-        for (size_t col = offset; col < maxColumns; col += decimate) {
+        for (size_t col = offset; col < values.cols(); col += decimate) {
             *out << (col / decimate);
-            for (size_t row = 0; row < values.size(); row++)
-                *out << "  " << values[row][col];
+            for (size_t row = 0; row < values.rows(); row++)
+                *out << "  " << values(row, col);
             *out << '\n';
         }
 
-        size_t rowNum = 0;
-        for (const auto &row : values) {
-            size_t max_index;
-            double max_v = find_max(row, &max_index, decimate, offset);
-            *out << "# max = " << max_v << " at index ";
-            if (values.size() > 1)
-                *out << rowNum++ << ',';
-            *out << (max_index / decimate) << '\n';
-        }
+        emitComment(values, decimate, offset);
     }
 };
 
@@ -209,25 +202,26 @@ class NumpyOutput : public OutputBase {
   public:
     NumpyOutput(const std::string &filename)
         : OutputBase(filename, false, /* binary: */ true) {
-            assert(isFile() && "Numpy output must be to a file");
-        }
+        assert(isFile() && "Numpy output must be to a file");
+    }
 
-    virtual void emit(const std::vector<std::vector<double>> &values,
-                      size_t decimate, size_t offset) override {
+    virtual void emit(const NPArray<double> &values, size_t decimate,
+                      size_t offset) const override {
         if (values.empty())
             return;
 
         assert(decimate > 0 && "decimate can not be 0");
+
         ofstream *ofs = dynamic_cast<ofstream *>(out);
         if (!ofs)
             reporter->errx(EXIT_FAILURE, "Numpy output must be a file");
         if (decimate == 1) {
-            NPArray<double>(values).save(*ofs);
+            values.save(*ofs);
         } else {
-            NPArray<double> NP(values.size(), values[0].size() / decimate);
+            NPArray<double> NP(values.rows(), values.cols() / decimate);
             for (size_t i = 0; i < NP.rows(); i++)
                 for (size_t j = 0; j < NP.cols(); j++)
-                    NP(i, j) = values[i][j * decimate + offset];
+                    NP(i, j) = values(i, j * decimate + offset);
             NP.save(*ofs);
         }
     }
@@ -238,18 +232,18 @@ class PythonOutput : public OutputBase {
     PythonOutput(const std::string &filename, bool append = true)
         : OutputBase(filename, append, /* binary: */ false) {}
 
-    virtual void emit(const std::vector<std::vector<double>> &values,
-                      size_t decimate, size_t offset) override {
+    virtual void emit(const NPArray<double> &values, size_t decimate,
+                      size_t offset) const override {
         if (values.empty())
             return;
 
         assert(decimate > 0 && "decimate can not be 0");
 
-        for (const auto &row : values) {
+        for (size_t r = 0; r < values.rows(); r++) {
             *out << "waves.append(Waveform([";
             const char *sep = "";
-            for (size_t i = offset; i < row.size(); i += decimate) {
-                *out << sep << row[i];
+            for (size_t i = offset; i < values.cols(); i += decimate) {
+                *out << sep << values(r, i);
                 sep = ", ";
             }
             *out << "]))\n";

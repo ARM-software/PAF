@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: <text>Copyright 2021,2022,2023 Arm Limited and/or its
+ * SPDX-FileCopyrightText: <text>Copyright 2021,2022,2023,2024 Arm Limited and/or its
  * affiliates <open-source-office@arm.com></text>
  * SPDX-License-Identifier: Apache-2.0
  *
@@ -172,16 +172,15 @@ int main(int argc, char *argv[]) {
     // Construct the intermediate value expression.
     Expr::Context<uint32_t> context;
     if (inputs)
-        context.addVariable("in", inputs->row_begin());
+        context.addVariable("in", inputs->cbegin());
     if (keys)
-        context.addVariable("key", keys->row_begin());
+        context.addVariable("key", keys->cbegin());
     if (masks)
-        context.addVariable("mask", masks->row_begin());
+        context.addVariable("mask", masks->cbegin());
 
-    
     const size_t sample_to_stop_at = min(app.sample_end(), traces.cols());
     const size_t nbtraces = traces.rows();
-    vector<vector<double>> results; // Metric results.
+    NPArray<double> results; // Metric results.
 
     // Compute the metrics for each of the expressions.
     for (const auto &str : expr_strings) {
@@ -201,8 +200,9 @@ int main(int argc, char *argv[]) {
                     hamming_weight<uint32_t>(expr->eval().getValue(), -1);
 
             // Compute the metric.
-            results.emplace_back(
-                correl(app.sample_start(), sample_to_stop_at, traces, ivalues));
+            results = concatenate(
+                correl(app.sample_start(), sample_to_stop_at, traces, ivalues),
+                results, NPArray<double>::COLUMN);
         } break;
         case Metric::T_TEST: {
             // Build the classifier.
@@ -221,13 +221,14 @@ int main(int argc, char *argv[]) {
             }
 
             // Compute the metric.
-            results.emplace_back(
+            results = concatenate(
                 app.is_perfect()
                     ? perfect_t_test(app.sample_start(), sample_to_stop_at,
                                      traces, classifier,
                                      app.verbose() ? &cout : nullptr)
                     : t_test(app.sample_start(), sample_to_stop_at, traces,
-                             classifier));
+                             classifier),
+                results, NPArray<double>::COLUMN);
         } break;
         }
     }

@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: <text>Copyright 2021,2022 Arm Limited and/or its
+ * SPDX-FileCopyrightText: <text>Copyright 2021,2022,2024 Arm Limited and/or its
  * affiliates <open-source-office@arm.com></text>
  * SPDX-License-Identifier: Apache-2.0
  *
@@ -20,16 +20,15 @@
 
 #pragma once
 
-#include <string>
-#include <vector>
+#include "PAF/SCA/NPArray.h"
 
 namespace PAF {
 namespace SCA {
 
 // Returns the maximum value in data[0:n( and update index with the offset
 // where it was found in the array.
-double find_max(const std::vector<double> &data, size_t *index,
-                unsigned decimate = 1, unsigned offset = 0);
+double find_max(const NPArray<double>::const_Row &row, size_t *index,
+                size_t decimate = 1, size_t offset = 0);
 
 } // namespace SCA
 } // namespace PAF

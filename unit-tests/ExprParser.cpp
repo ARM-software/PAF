@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: <text>Copyright 2023 Arm Limited and/or its
+ * SPDX-FileCopyrightText: <text>Copyright 2023,2024 Arm Limited and/or its
  * affiliates <open-source-office@arm.com></text>
  * SPDX-License-Identifier: Apache-2.0
  *
@@ -150,8 +150,8 @@ TEST(Expr, parse_variable32) {
     const DataTy B_init[] = {0, 0x10, 0x20, 0x30, 0x40, 0x50, 0x0, 0x70};
     NPArray<DataTy> B(B_init, 2, 4);
     Expr::Context<DataTy> context;
-    context.addVariable("InA", A.row_begin());
-    context.addVariable("iN_b", B.row_begin());
+    context.addVariable("InA", A.cbegin());
+    context.addVariable("iN_b", B.cbegin());
 
     for (const auto &ec : {
              ExprChecker{

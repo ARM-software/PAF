@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: <text>Copyright 2021,2022,2023 Arm Limited and/or its
+ * SPDX-FileCopyrightText: <text>Copyright 2021,2022,2023,2024 Arm Limited and/or its
  * affiliates <open-source-office@arm.com></text>
  * SPDX-License-Identifier: Apache-2.0
  *
@@ -20,7 +20,7 @@
 
 #pragma once
 
-#include "PAF/SCA/NPUtils.h"
+#include "PAF/SCA/NPOperators.h"
 
 #include <algorithm>
 #include <cassert>
@@ -185,6 +185,9 @@ class NPArrayBase {
     /// Get the status of this NPArray.
     bool good() const noexcept { return errstr == nullptr; }
 
+    /// Is this NPArray empty ?
+    bool empty() const noexcept { return num_rows == 0 && num_columns == 0; }
+
     /// Insert (uninitialized) rows at position row.
     NPArrayBase &insert_rows(size_t row, size_t rows);
 
@@ -207,7 +210,7 @@ class NPArrayBase {
                "New element view must not be larger than the original one");
         assert(elt_size % newEltSize == 0 &&
                "Original element size is not a multiple of new element size");
-        num_columns *=  elt_size / newEltSize;
+        num_columns *= elt_size / newEltSize;
         elt_size = newEltSize;
     }
 
@@ -284,10 +287,10 @@ template <class Ty> class NPArray : public NPArrayBase {
                   "expecting an integral or floating point type");
 
     /// Construct an empty NPArray.
-    NPArray(): NPArrayBase(sizeof(Ty)) {}
+    NPArray() : NPArrayBase(sizeof(Ty)) {}
 
     /// Construct an NPArray from data stored in file \p filename.
-    NPArray(const std::string &filename, size_t maxNumRows=-1)
+    NPArray(const std::string &filename, size_t maxNumRows = -1)
         : NPArrayBase(filename, getEltTyDescr<Ty>(), maxNumRows) {}
 
     /// Construct an NPArray from multiple files, concatenating the Matrices
@@ -356,7 +359,7 @@ template <class Ty> class NPArray : public NPArrayBase {
                         output_num_cols, sizeof(Ty));
 
         if (tmp.good())
-            *static_cast<NPArrayBase*>(this) = std::move(tmp);
+            *static_cast<NPArrayBase *>(this) = std::move(tmp);
         else
             setError(tmp.error());
     }
@@ -542,7 +545,7 @@ template <class Ty> class NPArray : public NPArrayBase {
     }
 
     /// Get element located at [ \p row, \p col ] (const version).
-    Ty operator()(size_t row, size_t col) const noexcept {
+    const Ty &operator()(size_t row, size_t col) const noexcept {
         assert(row < rows() && "Row is out-of-range");
         assert(col < cols() && "Col is out-of-range");
         const Ty *p = getAs<Ty>();
@@ -610,20 +613,20 @@ template <class Ty> class NPArray : public NPArrayBase {
 
     /// The Row class is an adapter around an NPArray to provide a view
     /// of a row of the NPArray. It can be used as an iterator.
-    class Row {
+    template <typename NPArrayTy> class RowIterator {
       public:
-        Row() = delete;
+        RowIterator() = delete;
 
         /// Construct a Row view of nparray.
-        Row(const NPArray<DataTy> &nparray, size_t row) noexcept
+        RowIterator(NPArrayTy &nparray, size_t row) noexcept
             : nparray(&nparray), row(row), init_row(row) {}
 
         /// Copy constructor.
-        Row(const Row &Other) noexcept
+        RowIterator(const RowIterator &Other) noexcept
             : nparray(Other.nparray), row(Other.row), init_row(Other.row) {}
 
         /// Copy assignment.
-        Row &operator=(const Row &Other) noexcept {
+        RowIterator &operator=(const RowIterator &Other) noexcept {
             nparray = Other.nparray;
             row = Other.row;
             init_row = Other.row;
@@ -631,20 +634,22 @@ template <class Ty> class NPArray : public NPArrayBase {
         }
 
         /// Pre-increment this Row (move to the next row).
-        Row &operator++() noexcept {
+        RowIterator &operator++() noexcept {
             row++;
             return *this;
         }
 
         /// Post-increment this Row (move to the next row)
-        const Row operator++(int) noexcept {
-            Row copy(*this);
+        const RowIterator operator++(int) noexcept {
+            RowIterator copy(*this);
             row++;
             return copy;
         }
 
         /// Get the ith element in this Row.
-        DataTy operator[](size_t ith) const noexcept {
+        template <class T = NPArrayTy>
+        std::enable_if_t<!std::is_const<T>::value, typename NPArrayTy::DataTy> &
+        operator[](size_t ith) noexcept {
             assert(row < nparray->rows() &&
                    "NPArray::Row out of bound row access");
             assert(ith < nparray->cols() &&
@@ -652,8 +657,21 @@ template <class Ty> class NPArray : public NPArrayBase {
             return (*nparray)(row, ith);
         }
 
+        /// Get the ith element in this Row (const version).
+        const typename NPArrayTy::DataTy &
+        operator[](size_t ith) const noexcept {
+            assert(row < nparray->rows() &&
+                   "NPArray::Row out of bound row access");
+            assert(ith < nparray->cols() &&
+                   "NPArray::Row out of bound index access");
+            return (*nparray)(row, ith);
+        }
+
+        DataTy &operator*() noexcept { return (*this)[0]; }
+        const DataTy &operator*() const noexcept { return (*this)[0]; }
+
         /// Reset the row index to the one used at construction.
-        Row &reset() {
+        RowIterator &reset() {
             row = init_row;
             return *this;
         }
@@ -661,47 +679,261 @@ template <class Ty> class NPArray : public NPArrayBase {
         /// Compare 2 rows for equality (as iterators).
         ///
         /// This compares the rows as iterators, but not the rows' content.
-        bool operator==(const Row &Other) const noexcept {
+        bool operator==(const RowIterator &Other) const noexcept {
             return nparray == Other.nparray && row == Other.row;
         }
 
         /// Compare 2 rows for inequality (as iterators).
         ///
         /// This compares the rows as iterators, but not the rows' content.
-        bool operator!=(const Row &Other) const noexcept {
+        bool operator!=(const RowIterator &Other) const noexcept {
             return nparray != Other.nparray || row != Other.row;
         }
 
+        /// Get the first element in the current row.
+        template <class T = NPArrayTy>
+        std::enable_if_t<!std::is_const<T>::value, typename T::DataTy> *
+        begin() noexcept {
+            return &(*nparray)(row, 0);
+        }
+        /// Get the past-the-end element in the current row.
+        template <class T = NPArrayTy>
+        std::enable_if_t<!std::is_const<T>::value, typename T::DataTy> *
+        end() noexcept {
+            typename T::DataTy *e = &(*nparray)(row, nparray->cols() - 1);
+            return e + 1;
+        }
+
+        /// Get the first element in the current row (const version).
+        const typename NPArrayTy::DataTy *begin() const noexcept {
+            return &(*nparray)(row, 0);
+        }
+        /// Get the past-the-end element in the current row (const version).
+        const typename NPArrayTy::DataTy *end() const noexcept {
+            const typename NPArrayTy::DataTy *e =
+                &(*nparray)(row, nparray->cols() - 1);
+            return e + 1;
+        }
+
+        /// Get the number of elements in this row.
+        size_t size() const noexcept { return nparray->cols(); }
+
+        /// Is this row empty ?
+        bool empty() const noexcept { return nparray->empty(); }
+
       private:
-        const NPArray *nparray; ///< The NPArray this row refers to.
-        size_t row;             ///< row index in the NPArray.
-        size_t init_row;        ///< The row index used at construction.
+        NPArrayTy *nparray; ///< The NPArray this row refers to.
+        size_t row;         ///< row index in the NPArray.
+        size_t init_row;    ///< The row index used at construction.
     };
 
-    /// Get the first row from this NPArray.
-    Row row_begin() const noexcept { return Row(*this, 0); }
+    using Row = RowIterator<NPArray<Ty>>;
+    using const_Row = RowIterator<const NPArray<Ty>>;
+
+    /// Get the i'th row (default: first) from this NPArray.
+    Row begin(size_t i = 0) noexcept { return Row(*this, i); }
 
     /// Get a past-the-end row for this NPArray.
-    Row row_end() const noexcept { return Row(*this, rows()); }
+    Row end() noexcept { return Row(*this, rows()); }
+
+    /// Get the first row from this NPArray (const version).
+    const_Row cbegin(size_t i = 0) const noexcept {
+        return const_Row(*this, i);
+    }
+
+    /// Get a past-the-end row for this NPArray (const version).
+    const_Row cend() const noexcept { return const_Row(*this, rows()); }
+
+    /// Applies a default constructed \p unaryOperation to each element of the
+    /// NPArray and returns it.
+    template <template <typename, bool> class unaryOperation,
+              bool enableLocation = false>
+    std::enable_if_t<isCollector<DataTy, unaryOperation, enableLocation>::value,
+                     unaryOperation<DataTy, enableLocation>> foreach () const {
+        static_assert(
+            std::is_copy_constructible<
+                unaryOperation<DataTy, enableLocation>>(),
+            "unaryOperation for NPArray::foreach must be copy constructible");
+        static_assert(std::is_default_constructible<
+                          unaryOperation<DataTy, enableLocation>>(),
+                      "unaryOperation for NPArray::foreach must be default "
+                      "constructible");
+        unaryOperation<DataTy, enableLocation> op;
+        for (size_t row = 0; row < rows(); row++)
+            for (size_t col = 0; col < cols(); col++)
+                op(at(row, col), row, col);
+        return op;
+    }
+
+    /// Applies a default constructed \p unaryOperation to each element of the
+    /// NPArray and returns it.
+    template <template <typename, bool> class unaryOperation,
+              bool enableLocation = false>
+    std::enable_if_t<isCollector<DataTy, unaryOperation, enableLocation>::value,
+                     unaryOperation<DataTy, enableLocation>> foreach (Axis axis,
+                                                                      size_t i)
+        const {
+        static_assert(
+            std::is_copy_constructible<
+                unaryOperation<DataTy, enableLocation>>(),
+            "unaryOperation for NPArray::foreach must be copy constructible");
+        static_assert(std::is_default_constructible<
+                          unaryOperation<DataTy, enableLocation>>(),
+                      "unaryOperation for NPArray::foreach must be default "
+                      "constructible");
+        unaryOperation<DataTy, enableLocation> op;
+        switch (axis) {
+        case ROW:
+            assert(i < rows() &&
+                   "index is out of bound for row access in NPArray::foreach");
+            for (size_t col = 0; col < cols(); col++)
+                op(at(i, col), i, col);
+            break;
+        case COLUMN:
+            assert(
+                i < cols() &&
+                "index is out of bound for column access in NPArray::foreach");
+            for (size_t row = 0; row < rows(); row++)
+                op(at(row, i), row, i);
+            break;
+        }
+        return op;
+    }
+
+    /// Applies a default constructed \p unaryOperation to each element of the
+    /// NPArray and returns it.
+    template <template <typename, bool> class unaryOperation,
+              bool enableLocation = false>
+    std::enable_if_t<
+        isCollector<DataTy, unaryOperation, enableLocation>::value,
+        unaryOperation<DataTy, enableLocation>> foreach (Axis axis,
+                                                         size_t begin,
+                                                         size_t end) const {
+        static_assert(
+            std::is_copy_constructible<
+                unaryOperation<DataTy, enableLocation>>(),
+            "unaryOperation for NPArray::foreach must be copy constructible");
+        static_assert(std::is_default_constructible<
+                          unaryOperation<DataTy, enableLocation>>(),
+                      "unaryOperation for NPArray::foreach must be default "
+                      "constructible");
+        unaryOperation<DataTy, enableLocation> op;
+        assert(begin <= end && "begin index must be lower or equal to end "
+                               "index in NPArray::foreach");
+        switch (axis) {
+        case ROW:
+            assert(begin <= rows() && "begin index is out of bound for row "
+                                      "access in NPArray::foreach");
+            assert(
+                end <= rows() &&
+                "end index is out of bound for row access in NPArray::foreach");
+            for (size_t row = begin; row < end; row++)
+                for (size_t col = 0; col < cols(); col++)
+                    op(at(row, col), row, col);
+            break;
+        case COLUMN:
+            assert(begin <= cols() && "begin index is out of bound for column "
+                                      "access in NPArray::foreach");
+            assert(end <= cols() && "end index is out of bound for column "
+                                    "access in NPArray::foreach");
+            for (size_t row = 0; row < rows(); row++)
+                for (size_t col = begin; col < end; col++)
+                    op(at(row, col), row, col);
+            break;
+        }
+        return op;
+    }
+
+#define addOperator(fname, OpName)                                             \
+    /** Get the specific value in this NPArray. */                             \
+    Ty fname() const { return foreach<Min, false>().value(); }                 \
+    /** Get the minimum value in this NPArray row \p i (resp. column, as       \
+     defined by \p axis ). */                                                  \
+    Ty fname(Axis axis, size_t i) const {                                      \
+        return foreach<Min, false>(axis, i).value();                           \
+    }                                                                          \
+    /** Get the specific value in this NPArray in the range [ \p begin, \p end \
+     ( of rows (resp. columns, as defined by \p axis ). */                     \
+    Ty fname(Axis axis, size_t begin, size_t end) const {                      \
+        return foreach<Min, false>(axis, begin, end).value();                  \
+    }                                                                          \
+    /** Get the specific value in this NPArray. This variant returns           \
+     the location where the minimum was found. */                              \
+    Ty fname(size_t &row, size_t &col) const {                                 \
+        auto op = foreach<Min, true>();                                        \
+        row = op.row();                                                        \
+        col = op.col();                                                        \
+        return op.value();                                                     \
+    }                                                                          \
+    /** Get the specific value in this NPArray row \p i (resp. column, as      \
+     defined by \p axis ). This variant returns the location where the minimum \
+     was found. */                                                             \
+    Ty fname(size_t &row, size_t &col, Axis axis, size_t i) const {            \
+        auto op = foreach<Min, true>(axis, i);                                 \
+        row = op.row();                                                        \
+        col = op.col();                                                        \
+        return op.value();                                                     \
+    }                                                                          \
+    /** Get the specific value in this NPArray in the range [ \p begin, \p end \
+     ( of rows (resp. columns, as defined by \p axis ). This variant returns   \
+     the location where the minimum was found. */                              \
+    Ty fname(size_t &row, size_t &col, Axis axis, size_t begin, size_t end)    \
+        const {                                                                \
+        auto op = foreach<Min, true>(axis, begin, end);                        \
+        row = op.row();                                                        \
+        col = op.col();                                                        \
+        return op.value();                                                     \
+    }
+
+    addOperator(min, Min);
+    addOperator(minAbs, MinAbs);
+    addOperator(max, Max);
+    addOperator(maxAbs, MaxAbs);
+
+#undef addOperator
+
+    /// Modifies this NPArray by replacing each element with the result of
+    /// the application of \p unaryOperation to this element and returns
+    /// this NPArray.
+    template <template <typename, bool> class unaryOperation,
+              bool enableLocation = false>
+    std::enable_if_t<
+        isTransformer<DataTy, unaryOperation, enableLocation>::value, NPArray &>
+    apply() {
+        static_assert(
+            std::is_copy_constructible<
+                unaryOperation<DataTy, enableLocation>>(),
+            "unaryOperation for NPArray::apply must be copy constructible");
+        static_assert(std::is_default_constructible<
+                          unaryOperation<DataTy, enableLocation>>(),
+                      "unaryOperation for NPArray::apply must be default "
+                      "constructible");
+        unaryOperation<DataTy, enableLocation> op;
+        for (size_t row = 0; row < rows(); row++)
+            for (size_t col = 0; col < cols(); col++)
+                at(row, col) = op(at(row, col), row, col);
+        return *this;
+    }
 
     /// Convert all elements in this NPArray to their absolute value.
-    NPArray &abs() noexcept {
-        return abs<Ty>();
-    }
+    NPArray &abs() noexcept { return apply<Abs>(); }
+
+    /// Convert all elements in this NPArray to their absolute value.
+    NPArray &negate() noexcept { return apply<Negate>(); }
 
     /// Test if all elements in row \p i or column \p i satisfy predicate \p
     /// pred.
     bool all(Axis axis, size_t i, std::function<bool(Ty)> pred) const {
         switch (axis) {
         case ROW:
-            assert(i < rows() &&
+            assert(i <= rows() &&
                    "index is out of bound for row access in NPArray::all");
             for (size_t col = 0; col < cols(); col++)
                 if (!pred(at(i, col)))
                     return false;
             return true;
         case COLUMN:
-            assert(i < cols() &&
+            assert(i <= cols() &&
                    "index is out of bound column access in NPArray::all");
             for (size_t row = 0; row < rows(); row++)
                 if (!pred(at(row, i)))
@@ -724,224 +956,219 @@ template <class Ty> class NPArray : public NPArrayBase {
         return true;
     }
 
-    /// Sum elements in an NPArray in row \p i or column \p i.
-    Ty sum(Axis axis, size_t i) const {
-        Ty result;
-        switch (axis) {
-        case ROW:
-            assert(i < rows() &&
-                   "index is out of bound for row access in NPArray::sum");
-            result = at(i, 0);
-            for (size_t col = 1; col < cols(); col++)
-                result += at(i, col);
-            return result;
-        case COLUMN:
-            assert(i < cols() &&
-                   "index is out of bound column access in NPArray::sum");
-            result = at(0, i);
-            for (size_t row = 1; row < rows(); row++)
-                result += at(row, i);
-            return result;
-        }
+    /// Extracts the values from a range of \p unaryOperations.
+    template <template <typename, bool> class unaryOperation,
+              bool enableLocation = false>
+    static std::enable_if_t<
+        isCollector<DataTy, unaryOperation>::value,
+        NPArray<typename NPOperatorTraits<DataTy, unaryOperation,
+                                          enableLocation>::valueType>>
+    extract(const std::vector<unaryOperation<DataTy, enableLocation>> &ops) {
+        if (ops.empty())
+            return NPArray<
+                typename NPOperatorTraits<DataTy, unaryOperation>::valueType>();
+
+        NPArray<typename NPOperatorTraits<DataTy, unaryOperation>::valueType>
+            result(1, ops.size());
+        std::transform(ops.begin(), ops.end(), result.begin().begin(),
+                       [&](const auto &op) { return op.value(); });
+        return result;
     }
 
-    /// Sum elements in an NPArray on a range of rows or columns.
-    std::vector<Ty> sum(Axis axis, size_t begin, size_t end) const {
-        assert(begin <= end && "End of a range needs to be strictly greater "
-                               "than its begin in NPArray::sum");
-        // Deal gracefully without bogus ranges and return empty results.
-        if (begin >= end)
-            return std::vector<Ty>();
-        std::vector<Ty> result(end - begin);
+    /// Applies a range of default constructed \p unaryOperation to all elements
+    /// on each \p axis in the range [begin, end( and returns the range of
+    /// unaryOperations.
+    template <template <typename, bool> class unaryOperation,
+              bool enableLocation = false>
+    std::enable_if_t<isCollector<DataTy, unaryOperation, enableLocation>::value,
+                     std::vector<unaryOperation<DataTy, enableLocation>>>
+    foldOp(Axis axis, size_t begin, size_t end) const {
+        static_assert(
+            std::is_copy_constructible<
+                unaryOperation<DataTy, enableLocation>>(),
+            "unaryOperation for NPArray::fold must be copy constructible");
+        static_assert(std::is_default_constructible<
+                          unaryOperation<DataTy, enableLocation>>(),
+                      "unaryOperation for NPArray::fold must be default "
+                      "constructible");
+        assert(begin <= end && "begin index must be lower or equal to end "
+                               "index in NPArray::fold");
+        std::vector<unaryOperation<DataTy, enableLocation>> ops(end - begin);
         switch (axis) {
         case ROW:
-            assert(
-                begin < rows() &&
-                "begin index is out of bound for row access in NPArray::sum");
+            assert(begin <= rows() && "begin index is out of bound for row "
+                                      "access in NPArray::fold");
             assert(end <= rows() &&
-                   "end index is out of bound for row access in NPArray::sum");
+                   "end index is out of bound for row access in NPArray::fold");
             for (size_t row = begin; row < end; row++)
-                result[row - begin] = sum(axis, row);
-            return result;
+                for (size_t col = 0; col < cols(); col++)
+                    ops[row - begin](at(row, col), row, col);
+            break;
         case COLUMN:
-            assert(begin < cols() && "begin index is out of bound for column "
-                                     "access in NPArray::sum");
-            assert(
-                end <= cols() &&
-                "end index is out of bound for column access in NPArray::sum");
-            for (size_t col = begin; col < end; col++)
-                result[col - begin] = sum(axis, col);
-            return result;
+            assert(begin <= cols() && "begin index is out of bound for column "
+                                      "access in NPArray::fold");
+            assert(end <= cols() && "end index is out of bound for column "
+                                    "access in NPArray::fold");
+            for (size_t row = 0; row < rows(); row++)
+                for (size_t col = begin; col < end; col++)
+                    ops[col - begin](at(row, col), row, col);
+            break;
         }
+        return ops;
+    }
+
+    /// Applies a range of default constructed \p unaryOperation to all elements
+    /// on each \p axis of this NPArray and returns the range of
+    /// unaryOperations.
+    template <template <typename, bool> class unaryOperation,
+              bool enableLocation = false>
+    std::enable_if_t<isCollector<DataTy, unaryOperation>::value,
+                     std::vector<unaryOperation<DataTy, enableLocation>>>
+    foldOp(Axis axis) const {
+        static_assert(
+            std::is_copy_constructible<
+                unaryOperation<DataTy, enableLocation>>(),
+            "unaryOperation for NPArray::fold must be copy constructible");
+        static_assert(std::is_default_constructible<
+                          unaryOperation<DataTy, enableLocation>>(),
+                      "unaryOperation for NPArray::fold must be default "
+                      "constructible");
+        std::vector<unaryOperation<DataTy, enableLocation>> ops;
+        switch (axis) {
+        case ROW:
+            ops.resize(rows());
+            static_assert(std::is_same<void, decltype(ops[0](DataTy()))>::value,
+                          "unaryOperation in NPArray::fold must return void");
+            for (size_t row = 0; row < rows(); row++)
+                for (size_t col = 0; col < cols(); col++)
+                    ops[row](at(row, col), row, col);
+            break;
+        case COLUMN:
+            ops.resize(cols());
+            static_assert(std::is_same<void, decltype(ops[0](DataTy()))>::value,
+                          "unaryOperation in NPArray::fold must return void");
+            for (size_t row = 0; row < rows(); row++)
+                for (size_t col = 0; col < cols(); col++)
+                    ops[col](at(row, col), row, col);
+            break;
+        }
+        return ops;
+    }
+
+    /// Applies a default constructed \p unaryOperation to all elements on axis
+    /// \p axis (row / column) \p i and returns its value.
+    template <template <typename, bool> class unaryOperation,
+              bool enableLocation = false>
+    std::enable_if_t<isCollector<DataTy, unaryOperation, enableLocation>::value,
+                     typename NPOperatorTraits<DataTy, unaryOperation,
+                                               enableLocation>::valueType>
+    fold(Axis axis, size_t i) const {
+        return foreach<unaryOperation, enableLocation>(axis, i).value();
+    }
+
+    /// Applies a range of default constructed \p unaryOperation to all elements
+    /// on each \p axis in the range [begin, end( and returns the range of
+    /// computed values.
+    template <template <typename, bool> class unaryOperation,
+              bool enableLocation = false>
+    std::enable_if_t<isCollector<DataTy, unaryOperation, enableLocation>::value,
+                     NPArray<typename NPOperatorTraits<
+                         DataTy, unaryOperation, enableLocation>::valueType>>
+    fold(Axis axis, size_t begin, size_t end) const {
+        return extract(
+            foldOp<unaryOperation, enableLocation>(axis, begin, end));
+    }
+
+    /// Applies a range of default constructed \p unaryOperation to all elements
+    /// on each \p axis of this NPArray and returns the range of
+    /// computed values.
+    template <template <typename, bool> class unaryOperation,
+              bool enableLocation = false>
+    std::enable_if_t<isCollector<DataTy, unaryOperation, enableLocation>::value,
+                     NPArray<typename NPOperatorTraits<
+                         DataTy, unaryOperation, enableLocation>::valueType>>
+    fold(Axis axis) const {
+        return extract(foldOp<unaryOperation, enableLocation>(axis));
+    }
+
+    /// Sum elements in an NPArray in row \p i or column \p i.
+    Ty sum(Axis axis, size_t i) const { return fold<Accumulate>(axis, i); }
+
+    /// Sum elements in an NPArray on a range of rows or columns.
+    NPArray<Ty> sum(Axis axis, size_t begin, size_t end) const {
+        return fold<Accumulate>(axis, begin, end);
     }
 
     /// Sum elements in an NPArray along an \p axis --- for all rows/cols on
     /// that axis.
-    std::vector<Ty> sum(Axis axis) const {
-        switch (axis) {
-        case ROW:
-            return sum(axis, 0, rows());
-        case COLUMN:
-            return sum(axis, 0, cols());
-        }
-    }
+    NPArray<Ty> sum(Axis axis) const { return fold<Accumulate>(axis); }
 
     /// Compute the mean on row \p i or column \p i.
-    double mean(Axis axis, size_t i) const {
-        Averager avg;
-        switch (axis) {
-        case ROW:
-            assert(i < rows() &&
-                   "index is out of bound for row access in NPArray::mean");
-            for (size_t col = 0; col < cols(); col++)
-                avg(at(i, col));
-            break;
-        case COLUMN:
-            assert(i < cols() &&
-                   "index is out of bound for column access in NPArray::mean");
-            for (size_t row = 0; row < rows(); row++)
-                avg(at(row, i));
-            break;
-        }
-        return avg.mean();
+    double mean(Axis axis, size_t i) const { return fold<Mean>(axis, i); }
+
+    /// Compute the mean on a range of rows or on a range of columns.
+    NPArray<double> mean(Axis axis, size_t begin, size_t end) const {
+        return fold<Mean>(axis, begin, end);
     }
+
+    /// Compute the mean on all rows or all columns.
+    NPArray<double> mean(Axis axis) const { return fold<Mean>(axis); }
 
     /// Compute the mean on row \p i or column \p i. It also computes the
     /// variance (taking \p ddof into account) and the standard deviation.
-    double mean(Axis axis, size_t i, double *var, double *stddev = nullptr,
-                unsigned ddof = 0) const {
-        AveragerWithVar avg;
-        switch (axis) {
-        case ROW:
-            assert(i < rows() &&
-                   "index is out of bound for row access in NPArray::mean");
-            for (size_t col = 0; col < cols(); col++)
-                avg(at(i, col));
-            break;
-        case COLUMN:
-            assert(i < cols() &&
-                   "index is out of bound for column access in NPArray::mean");
-            for (size_t row = 0; row < rows(); row++)
-                avg(at(row, i));
-            break;
-        }
+    double meanWithVar(Axis axis, size_t i, double *var,
+                       double *stddev = nullptr, unsigned ddof = 0) const {
+        MeanWithVar<DataTy> avg(foreach<MeanWithVar>(axis, i));
         if (var)
             *var = avg.var(ddof);
         if (stddev)
             *stddev = avg.stddev();
-        return avg.mean();
-    }
-
-    /// Compute the mean on a range of rows or on a range of columns.
-    std::vector<double> mean(Axis axis, size_t begin, size_t end) const {
-        assert(begin <= end && "End of a range needs to be strictly greater "
-                               "than its begin in NPArray::mean");
-        switch (axis) {
-        case ROW:
-            assert(
-                begin < rows() &&
-                "begin index is out of bound for row access in NPArray::mean");
-            assert(end <= rows() &&
-                   "end index is out of bound for row access in NPArray::mean");
-            break;
-        case COLUMN:
-            assert(begin < cols() && "begin index is out of bound for column "
-                                     "access in NPArray::mean");
-            assert(
-                end <= cols() &&
-                "end index is out of bound for column access in NPArray::mean");
-            break;
-        }
-
-        // Deal gracefully without bogus ranges and return empty results.
-        if (begin >= end)
-            return std::vector<double>();
-
-        std::vector<double> result(end - begin);
-        for (size_t i = begin; i < end; i++)
-            result[i - begin] = mean(axis, i);
-
-        return result;
+        return avg.value();
     }
 
     /// Compute the mean on a range of rows or on a range of columns, optionally
     /// computing the variance (taking into account the \p ddof) and the
     /// standard deviation.
-    std::vector<double> mean(Axis axis, size_t begin, size_t end,
-                             std::vector<double> *var,
-                             std::vector<double> *stddev = nullptr,
-                             unsigned ddof = 0) const {
-        assert(begin <= end && "End of a range needs to be strictly greater "
-                               "than its begin in NPArray::mean");
-        switch (axis) {
-        case ROW:
-            assert(
-                begin < rows() &&
-                "begin index is out of bound for row access in NPArray::mean");
-            assert(end <= rows() &&
-                   "end index is out of bound for row access in NPArray::mean");
-            break;
-        case COLUMN:
-            assert(begin < cols() && "begin index is out of bound for column "
-                                     "access in NPArray::mean");
-            assert(
-                end <= cols() &&
-                "end index is out of bound for column access in NPArray::mean");
-            break;
+    NPArray<double> meanWithVar(Axis axis, size_t begin, size_t end,
+                                std::vector<double> *var,
+                                std::vector<double> *stddev = nullptr,
+                                unsigned ddof = 0) const {
+        std::vector<MeanWithVar<DataTy>> means(
+            foldOp<MeanWithVar>(axis, begin, end));
+        if (var) {
+            var->resize(means.size());
+            std::transform(means.begin(), means.end(), var->begin(),
+                           [&](const auto &op) { return op.var(ddof); });
         }
 
-        // Deal gracefully without bogus ranges and return empty results.
-        if (begin >= end) {
-            if (var)
-                var->resize(0);
-            if (stddev)
-                stddev->resize(0);
-            return std::vector<double>();
+        if (stddev) {
+            stddev->resize(means.size());
+            std::transform(means.begin(), means.end(), stddev->begin(),
+                           [&](const auto &op) { return op.stddev(); });
         }
 
-        std::vector<double> result(end - begin);
-        if (var)
-            var->resize(end - begin);
-        if (stddev)
-            stddev->resize(end - begin);
-        for (size_t i = begin; i < end; i++) {
-            if (!var && !stddev)
-                result[i - begin] = mean(axis, i);
-            else if (var && !stddev)
-                result[i - begin] =
-                    mean(axis, i, &(*var)[i - begin], nullptr, ddof);
-            else if (!var && stddev)
-                result[i - begin] =
-                    mean(axis, i, nullptr, &(*stddev)[i - begin]);
-            else
-                result[i - begin] = mean(axis, i, &(*var)[i - begin],
-                                         &(*stddev)[i - begin], ddof);
-        }
-
-        return result;
-    }
-
-    /// Compute the mean on all rows or all columns.
-    std::vector<double> mean(Axis axis) const {
-        switch (axis) {
-        case ROW:
-            return mean(axis, 0, rows());
-        case COLUMN:
-            return mean(axis, 0, cols());
-        }
+        return extract(means);
     }
 
     /// Compute the mean on all rows or all columns. It optionally computes the
     /// variance or the standard deviation.
-    std::vector<double> mean(Axis axis, std::vector<double> *var,
-                             std::vector<double> *stddev = nullptr,
-                             unsigned ddof = 0) const {
-        switch (axis) {
-        case ROW:
-            return mean(axis, 0, rows(), var, stddev, ddof);
-        case COLUMN:
-            return mean(axis, 0, cols(), var, stddev, ddof);
+    NPArray<double> meanWithVar(Axis axis, std::vector<double> *var,
+                                std::vector<double> *stddev = nullptr,
+                                unsigned ddof = 0) const {
+        std::vector<MeanWithVar<DataTy>> means(foldOp<MeanWithVar>(axis));
+        if (var) {
+            var->resize(means.size());
+            std::transform(means.begin(), means.end(), var->begin(),
+                           [&](const auto &op) { return op.var(ddof); });
         }
+
+        if (stddev) {
+            stddev->resize(means.size());
+            std::transform(means.begin(), means.end(), stddev->begin(),
+                           [&](const auto &op) { return op.stddev(); });
+        }
+
+        return extract(means);
     }
 
     /// Get the numpy descriptor string to use when saving in a numpy file.
@@ -954,25 +1181,6 @@ template <class Ty> class NPArray : public NPArrayBase {
     /// Provide a convenience shorthand for in-class operations (const
     /// version).
     Ty at(size_t row, size_t col) const { return (*this)(row, col); }
-
-    /// Convert all elements in this NPArray to their absolute value. A noop for
-    /// unsigned element types.
-    template <typename T, typename std::enable_if<
-                              std::is_unsigned<T>::value>::type * = nullptr>
-    NPArray &abs() noexcept {
-        return *this;
-    }
-
-    /// Convert all elements in this NPArray to their absolute value.
-    template <typename T, typename std::enable_if<
-                              std::is_signed<T>::value>::type * = nullptr>
-    NPArray &abs() noexcept {
-        for (size_t row = 0; row < rows(); row++)
-            for (size_t col = 0; col < cols(); col++)
-                at(row, col) = std::abs(at(row, col));
-
-        return *this;
-    }
 };
 
 /// Convert the type of the \p src NPArray elements from \p fromTy to \p newTy.
@@ -1004,7 +1212,7 @@ NPArray<newTy> &viewAs(NPArray<fromTy> &src) {
     static_assert(sizeof(newTy) < sizeof(fromTy),
                   "destination type must be smaller than the source one");
     src.viewAs(sizeof(newTy));
-    return *reinterpret_cast<NPArray<newTy>*>(&src);
+    return *reinterpret_cast<NPArray<newTy> *>(&src);
 }
 
 /// View the content of \p src as a different integral element type, allowing
@@ -1020,13 +1228,19 @@ NPArray<newTy> viewAs(NPArray<fromTy> &&src) {
     static_assert(sizeof(newTy) < sizeof(fromTy),
                   "destination type must be smaller than the source one");
     src.viewAs(sizeof(newTy));
-    return *reinterpret_cast<NPArray<newTy>*>(&src);
+    return *reinterpret_cast<NPArray<newTy> *>(&src);
 }
 
 /// Functional version of 'abs'.
 template <class Ty> NPArray<Ty> abs(const NPArray<Ty> &npy) {
     NPArray<Ty> tmp(npy);
     return tmp.abs();
+}
+
+/// Functional version of 'negate'.
+template <class Ty> NPArray<Ty> negate(const NPArray<Ty> &npy) {
+    NPArray<Ty> tmp(npy);
+    return tmp.negate();
 }
 
 /// Functional version of 'all' predicate checker on an NPArray for row / column
@@ -1052,14 +1266,14 @@ Ty sum(const NPArray<Ty> &npy, NPArrayBase::Axis axis, size_t i) {
 
 /// Functional version of the range 'sum' operation on NPArray.
 template <class Ty>
-std::vector<Ty> sum(const NPArray<Ty> &npy, NPArrayBase::Axis axis,
-                    size_t begin, size_t end) {
+NPArray<Ty> sum(const NPArray<Ty> &npy, NPArrayBase::Axis axis, size_t begin,
+                size_t end) {
     return npy.sum(axis, begin, end);
 }
 
 /// Functional version of 'sum' operation on NPArray.
 template <class Ty>
-std::vector<Ty> sum(const NPArray<Ty> &npy, NPArrayBase::Axis axis) {
+NPArray<Ty> sum(const NPArray<Ty> &npy, NPArrayBase::Axis axis) {
     return npy.sum(axis);
 }
 
@@ -1073,41 +1287,40 @@ double mean(const NPArray<Ty> &npy, NPArrayBase::Axis axis, size_t i) {
 /// It optionally computes the variance (taking ddof into account) and the
 /// standard deviation.
 template <class Ty>
-double mean(const NPArray<Ty> &npy, NPArrayBase::Axis axis, size_t i,
-            double *var, double *stddev = nullptr, unsigned ddof = 0) {
-    return npy.mean(axis, i, var, stddev, ddof);
+double meanWithVar(const NPArray<Ty> &npy, NPArrayBase::Axis axis, size_t i,
+                   double *var, double *stddev = nullptr, unsigned ddof = 0) {
+    return npy.meanWithVar(axis, i, var, stddev, ddof);
 }
 
 /// Functional version of the range 'mean' operation on NPArray.
 template <class Ty>
-std::vector<double> mean(const NPArray<Ty> &npy, NPArrayBase::Axis axis,
-                         size_t begin, size_t end) {
+NPArray<double> mean(const NPArray<Ty> &npy, NPArrayBase::Axis axis,
+                     size_t begin, size_t end) {
     return npy.mean(axis, begin, end);
 }
 
 /// Functional version of the range 'mean' operation on NPArray.
 template <class Ty>
-std::vector<double> mean(const NPArray<Ty> &npy, NPArrayBase::Axis axis,
-                         size_t begin, size_t end, std::vector<double> *var,
-                         std::vector<double> *stddev = nullptr,
-                         unsigned ddof = 0) {
-    return npy.mean(axis, begin, end, var, stddev, ddof);
+NPArray<double> meanWithVar(const NPArray<Ty> &npy, NPArrayBase::Axis axis,
+                            size_t begin, size_t end, std::vector<double> *var,
+                            std::vector<double> *stddev = nullptr,
+                            unsigned ddof = 0) {
+    return npy.meanWithVar(axis, begin, end, var, stddev, ddof);
 }
 
 /// Functional version of 'mean' operation on NPArray.
 template <class Ty>
-std::vector<double>
-mean(const NPArray<Ty> &npy, typename NPArrayBase::Axis axis) {
+NPArray<double> mean(const NPArray<Ty> &npy, typename NPArrayBase::Axis axis) {
     return npy.mean(axis);
 }
 
 /// Functional version of 'mean' operation on NPArray.
 template <class Ty>
-std::vector<double>
-mean(const NPArray<Ty> &npy, typename NPArrayBase::Axis axis,
-     std::vector<double> *var, std::vector<double> *stddev = nullptr,
-     unsigned ddof = 0) {
-    return npy.mean(axis, var, stddev, ddof);
+NPArray<double>
+meanWithVar(const NPArray<Ty> &npy, typename NPArrayBase::Axis axis,
+            std::vector<double> *var, std::vector<double> *stddev = nullptr,
+            unsigned ddof = 0) {
+    return npy.meanWithVar(axis, var, stddev, ddof);
 }
 
 template <class Ty>

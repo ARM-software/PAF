@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: <text>Copyright 2021,2022 Arm Limited and/or its
+ * SPDX-FileCopyrightText: <text>Copyright 2021,2022,2024 Arm Limited and/or its
  * affiliates <open-source-office@arm.com></text>
  * SPDX-License-Identifier: Apache-2.0
  *
@@ -117,29 +117,27 @@ int main(int argc, char *argv[]) {
     }
 
     // Compute the non-specific T-Test.
-    vector<vector<double>> results;
+    NPArray<double> results;
     switch (grouping) {
     case GROUP_BY_NPY:
-        results.emplace_back(
-            app.is_perfect()
-                ? perfect_t_test(app.sample_start(), sample_to_stop_at,
-                                 traces[0], traces[1],
-                                 app.verbose() ? &cout : nullptr)
-                : t_test(app.sample_start(), sample_to_stop_at, traces[0],
-                         traces[1]));
+        results = app.is_perfect()
+                      ? perfect_t_test(app.sample_start(), sample_to_stop_at,
+                                       traces[0], traces[1],
+                                       app.verbose() ? &cout : nullptr)
+                      : t_test(app.sample_start(), sample_to_stop_at, traces[0],
+                               traces[1]);
         break;
     case GROUP_INTERLEAVED: {
         vector<Classification> classifier(nbtraces);
         for (size_t i = 0; i < nbtraces; i++)
             classifier[i] =
                 i % 2 == 0 ? Classification::GROUP_0 : Classification::GROUP_1;
-        results.emplace_back(
-            app.is_perfect()
-                ? perfect_t_test(app.sample_start(), sample_to_stop_at,
-                                 traces[0], classifier,
-                                 app.verbose() ? &cout : nullptr)
-                : t_test(app.sample_start(), sample_to_stop_at, traces[0],
-                         classifier));
+        results = app.is_perfect()
+                      ? perfect_t_test(app.sample_start(), sample_to_stop_at,
+                                       traces[0], classifier,
+                                       app.verbose() ? &cout : nullptr)
+                      : t_test(app.sample_start(), sample_to_stop_at, traces[0],
+                               classifier);
     } break;
     }
 

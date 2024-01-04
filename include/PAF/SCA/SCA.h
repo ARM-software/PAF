@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: <text>Copyright 2021,2022 Arm Limited and/or its
+ * SPDX-FileCopyrightText: <text>Copyright 2021,2022,2024 Arm Limited and/or its
  * affiliates <open-source-office@arm.com></text>
  * SPDX-License-Identifier: Apache-2.0
  *
@@ -52,8 +52,8 @@ enum class Classification : char {
 
 /// Compute Welsh t-test from sample \p b to \p e on \p traces, using the
 /// classification from \p classifier.
-std::vector<double> t_test(size_t b, size_t e, const NPArray<double> &traces,
-                           const std::vector<Classification> &classifier);
+NPArray<double> t_test(size_t b, size_t e, const NPArray<double> &traces,
+                       const std::vector<Classification> &classifier);
 
 /// Compute Welsh t-test for sample \p s on \p traces, using the
 /// classification from \p classifier.
@@ -62,8 +62,8 @@ double t_test(size_t s, const NPArray<double> &traces,
 
 /// Compute Welsh's t-test from sample \p b to \p e on traces, assuming the
 /// traces have been split into \p group0 and \p group1.
-std::vector<double> t_test(size_t b, size_t e, const NPArray<double> &group0,
-                           const NPArray<double> &group1);
+NPArray<double> t_test(size_t b, size_t e, const NPArray<double> &group0,
+                       const NPArray<double> &group1);
 
 /// Compute Welsh's t-test for sample \p s on traces, assuming the traces
 /// have been split into \p group0 and \p group1.
@@ -79,14 +79,14 @@ double t_test(size_t s, double m0, const NPArray<double> &traces,
               std::function<bool(size_t)> select);
 
 /// Compute Student's t-test from samples \p b to \p e in \p traces.
-std::vector<double> t_test(size_t b, size_t e, const std::vector<double> &m0,
-                           const NPArray<double> &traces);
+NPArray<double> t_test(size_t b, size_t e, const std::vector<double> &m0,
+                       const NPArray<double> &traces);
 
 /// Compute Student's t-test from samples \p b to \p e in \p traces for traces
 /// for which \p select returns true.
-std::vector<double> t_test(size_t b, size_t e, const std::vector<double> &m0,
-                           const NPArray<double> &traces,
-                           std::function<bool(size_t)> select);
+NPArray<double> t_test(size_t b, size_t e, const std::vector<double> &m0,
+                       const NPArray<double> &traces,
+                       std::function<bool(size_t)> select);
 
 /// Compute the so-called perfect t-test between \p group0 and \p group1, from
 /// sample \p b to \p e.
@@ -99,10 +99,10 @@ std::vector<double> t_test(size_t b, size_t e, const std::vector<double> &m0,
 ///  - if variance(group0(t)) == 0 or variance(group1(t)) == 0, run a Student
 ///  t-test.
 ///  - run a Welsh t-test otherwise
-std::vector<double> perfect_t_test(size_t b, size_t e,
-                                   const NPArray<double> &group0,
-                                   const NPArray<double> &group1,
-                                   std::ostream *os = nullptr);
+NPArray<double> perfect_t_test(size_t b, size_t e,
+                               const NPArray<double> &group0,
+                               const NPArray<double> &group1,
+                               std::ostream *os = nullptr);
 
 /// Compute the so-called perfect t-test between 2 groups of traces from \p
 /// traces, grouped according to \p classifier, from sample \p b to \p e.
@@ -115,14 +115,14 @@ std::vector<double> perfect_t_test(size_t b, size_t e,
 ///  - if variance(group0(t)) == 0 or variance(group1(t)) == 0, run a Student
 ///  t-test.
 ///  - run a Welsh t-test otherwise
-std::vector<double>
-perfect_t_test(size_t b, size_t e, const NPArray<double> &traces,
-               const std::vector<Classification> &classifier,
-               std::ostream *os = nullptr);
+NPArray<double> perfect_t_test(size_t b, size_t e,
+                               const NPArray<double> &traces,
+                               const std::vector<Classification> &classifier,
+                               std::ostream *os = nullptr);
 
 /// Compute the Pearson correlation, from samples \p b to
 /// \p e, on \p traces using the \p ival intermediate values.
-std::vector<double> correl(size_t b, size_t e, const NPArray<double> &traces,
-                           const std::vector<double> &ival);
+NPArray<double> correl(size_t b, size_t e, const NPArray<double> &traces,
+                       const std::vector<double> &ival);
 } // namespace SCA
 } // namespace PAF

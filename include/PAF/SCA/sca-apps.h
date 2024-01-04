@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: <text>Copyright 2021,2022,2023 Arm Limited and/or its
+ * SPDX-FileCopyrightText: <text>Copyright 2021,2022,2023,2024 Arm Limited and/or its
  * affiliates <open-source-office@arm.com></text>
  * SPDX-License-Identifier: Apache-2.0
  *
@@ -19,6 +19,8 @@
  */
 
 #pragma once
+
+#include "PAF/SCA/NPArray.h"
 
 #include "libtarmac/argparse.hh"
 
@@ -45,8 +47,8 @@ class OutputBase {
                bool binary = false);
 
     /// Abstract method to write some values to this output.
-    virtual void emit(const std::vector<std::vector<double>> &values,
-                      size_t decimate, size_t offset) = 0;
+    virtual void emit(const NPArray<double> &values,
+                      size_t decimate, size_t offset) const = 0;
     virtual ~OutputBase();
 
     /// The different output formats supported by SCA applications.
@@ -56,6 +58,10 @@ class OutputBase {
         OUTPUT_PYTHON,  ///< Output in python format
         OUTPUT_NUMPY    ///< Output in numpy format
     };
+
+    /// Add a comment to the output.
+    void emitComment(const NPArray<double> &values, size_t decimate,
+                     size_t offset) const;
 
     /// Factory method to get an Output object that will write the data to file
     /// filename in the format selected by ty.
@@ -116,7 +122,7 @@ class SCAApp : public Argparse {
     size_t decimation_offset() const { return offset; }
 
     /// Write a sequence of values to this application's output file.
-    void output(const std::vector<std::vector<double>> &values) {
+    void output(const NPArray<double> &values) {
         out->emit(values, period, offset);
     }
 

@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: <text>Copyright 2021,2022,2023 Arm Limited and/or its
+ * SPDX-FileCopyrightText: <text>Copyright 2021,2022,2023,2024 Arm Limited and/or its
  * affiliates <open-source-office@arm.com></text>
  * SPDX-License-Identifier: Apache-2.0
  *
@@ -248,10 +248,10 @@ TEST(Expr, NPInputs) {
     PAF::SCA::NPArray<uint32_t> a32(u32_init, 1, 1);
     PAF::SCA::NPArray<uint64_t> a64(u64_init, 1, 1);
 
-    auto r8 = a8.row_begin();
-    auto r16 = a16.row_begin();
-    auto r32 = a32.row_begin();
-    auto r64 = a64.row_begin();
+    auto r8 = a8.cbegin();
+    auto r16 = a16.cbegin();
+    auto r32 = a32.cbegin();
+    auto r64 = a64.cbegin();
 
     EXPECT_EQ(NPInput<uint8_t>(r8, 0).getType(), ValueType::UINT8);
     EXPECT_EQ(NPInput<uint16_t>(r16, 0).getType(), ValueType::UINT16);
@@ -261,7 +261,7 @@ TEST(Expr, NPInputs) {
     const uint16_t a_init[] = {0,      1,      0xFFFF, 0xA0C0, 4,
                                0x0B0D, 0x1234, 7,      0x4321};
     PAF::SCA::NPArray<uint16_t> a(a_init, 3, 3);
-    auto r = a.row_begin();
+    auto r = a.cbegin();
 
     EXPECT_EQ(NPInput<uint16_t>(r, 0).getType(), ValueType::UINT16);
 

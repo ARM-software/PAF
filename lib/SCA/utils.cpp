@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: <text>Copyright 2021,2022 Arm Limited and/or its
+ * SPDX-FileCopyrightText: <text>Copyright 2021,2022,2024 Arm Limited and/or its
  * affiliates <open-source-office@arm.com></text>
  * SPDX-License-Identifier: Apache-2.0
  *
@@ -24,27 +24,26 @@
 #include <cmath>
 
 using std::fabs;
-using std::vector;
 
 namespace PAF {
 namespace SCA {
 
-double find_max(const vector<double> &data, size_t *index, unsigned decimate,
-                unsigned offset) {
+double find_max(const NPArray<double>::const_Row &row, size_t *index, size_t decimate,
+                size_t offset) {
     assert(decimate > 0 && "decimate can not be 0");
     assert(offset < decimate && "offset must be strictly lower than decimate");
 
-    if (data.empty()) {
+    if (row.empty()) {
         *index = -1;
         return 0.0;
     }
 
-    double max_v = data[offset];
+    double max_v = row[offset];
     *index = offset;
 
-    for (size_t i = decimate + offset; i < data.size(); i += decimate)
-        if (fabs(data[i]) > fabs(max_v)) {
-            max_v = data[i];
+    for (size_t i = decimate + offset; i < row.size(); i += decimate)
+        if (fabs(row[i]) > fabs(max_v)) {
+            max_v = row[i];
             *index = i;
         }
 

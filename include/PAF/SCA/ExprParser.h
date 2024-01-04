@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: <text>Copyright 2023 Arm Limited and/or its
+ * SPDX-FileCopyrightText: <text>Copyright 2023,2024 Arm Limited and/or its
  * affiliates <open-source-office@arm.com></text>
  * SPDX-License-Identifier: Apache-2.0
  *
@@ -35,10 +35,10 @@ namespace Expr {
 
 template <typename Ty> class Context {
   public:
-    using NPArrayRow = typename PAF::SCA::NPArray<Ty>::Row;
+    using NPArrayConstRow = typename PAF::SCA::NPArray<Ty>::const_Row;
     Context() : variables() {}
 
-    Context &addVariable(const std::string &name, NPArrayRow row) {
+    Context &addVariable(const std::string &name, const NPArrayConstRow &row) {
         variables.insert(std::make_pair(name, row));
         return *this;
     }
@@ -47,7 +47,7 @@ template <typename Ty> class Context {
         return variables.count(name);
     }
 
-    NPArrayRow &getVariable(const std::string &name) {
+    NPArrayConstRow &getVariable(const std::string &name) {
         assert(hasVariable(name) && "variable not found in context");
         return variables.find(name)->second;
     }
@@ -63,7 +63,7 @@ template <typename Ty> class Context {
     }
 
   private:
-    std::map<std::string, NPArrayRow> variables;
+    std::map<std::string, NPArrayConstRow> variables;
 };
 
 class ParserBase : public LWParser {
@@ -96,7 +96,7 @@ class ParserBase : public LWParser {
 
 template <typename Ty> class Parser : public ParserBase {
   public:
-    using NPArrayRow = typename PAF::SCA::NPArray<Ty>::Row;
+    using NPArrayConstRow = typename PAF::SCA::NPArray<Ty>::const_Row;
 
     Parser() = delete;
     Parser(Context<Ty> &context, const std::string &str)
@@ -238,7 +238,7 @@ template <typename Ty> class Parser : public ParserBase {
         size_t idx;
         if (!Parser(context, idx_str).ParserBase::parse(idx))
             return nullptr;
-        NPArrayRow &r = context.getVariable(identifier);
+        NPArrayConstRow &r = context.getVariable(identifier);
         return new NPInput<Ty>(r, idx, identifier);
     }
 };

@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: <text>Copyright 2021,2022,2023 Arm Limited and/or its
+ * SPDX-FileCopyrightText: <text>Copyright 2021,2022,2023,2024 Arm Limited and/or its
  * affiliates <open-source-office@arm.com></text>
  * SPDX-License-Identifier: Apache-2.0
  *
@@ -67,46 +67,46 @@ TEST(SCA, HammingDistance) {
 TEST(Utils, find_max) {
     double max_v;
     size_t max_index;
-    vector<double> a1({0.0, 1.0, 2.0, 3.0});
-    vector<double> a2({0.0, -1.0, -3.0, -2.0});
-    vector<double> a3({6.0, -1.0, -3.0, -2.0});
+    const NPArray<double> a1({0.0, 1.0, 2.0, 3.0}, 1, 4);
+    const NPArray<double> a2({0.0, -1.0, -3.0, -2.0}, 1, 4);
+    const NPArray<double> a3({6.0, -1.0, -3.0, -2.0}, 1, 4);
 
-    max_v = find_max(a1, &max_index);
+    max_v = find_max(a1.cbegin(), &max_index);
     EXPECT_EQ(max_v, 3.0);
     EXPECT_EQ(max_index, 3);
 
-    max_v = find_max(a2, &max_index);
+    max_v = find_max(a2.cbegin(), &max_index);
     EXPECT_EQ(max_v, -3.0);
     EXPECT_EQ(max_index, 2);
 
-    max_v = find_max(a3, &max_index);
+    max_v = find_max(a3.cbegin(), &max_index);
     EXPECT_EQ(max_v, 6.0);
     EXPECT_EQ(max_index, 0);
 
     // Test the empty vector case.
-    vector<double> a4;
-    max_v = find_max(a4, &max_index);
+    const NPArray<double> a4;
+    max_v = find_max(a4.cbegin(), &max_index);
     EXPECT_EQ(max_v, 0.0);
     EXPECT_EQ(max_index, -1);
 
     // Test with decimation.
-    max_v = find_max(a1, &max_index, 2, 0);
+    max_v = find_max(a1.cbegin(), &max_index, 2, 0);
     EXPECT_EQ(max_v, 2.0);
     EXPECT_EQ(max_index, 2);
 
-    max_v = find_max(a1, &max_index, 2, 1);
+    max_v = find_max(a1.cbegin(), &max_index, 2, 1);
     EXPECT_EQ(max_v, 3.0);
     EXPECT_EQ(max_index, 3);
 
-    max_v = find_max(a3, &max_index, 3, 0);
+    max_v = find_max(a3.cbegin(), &max_index, 3, 0);
     EXPECT_EQ(max_v, 6.0);
     EXPECT_EQ(max_index, 0);
 
-    max_v = find_max(a3, &max_index, 3, 1);
+    max_v = find_max(a3.cbegin(), &max_index, 3, 1);
     EXPECT_EQ(max_v, -1.0);
     EXPECT_EQ(max_index, 1);
 
-    max_v = find_max(a3, &max_index, 3, 2);
+    max_v = find_max(a3.cbegin(), &max_index, 3, 2);
     EXPECT_EQ(max_v, -3.0);
     EXPECT_EQ(max_index, 2);
 }
@@ -137,10 +137,10 @@ template <typename Ty, size_t rows, size_t cols> class WelshChecker {
         for (size_t tnum = 0; tnum < Ma.rows(); tnum++)
             c[tnum] = tnum % 2 == 0 ? Classification::GROUP_0
                                     : Classification::GROUP_1;
-        const vector<double> t = t_test(b, e, Ma, c);
+        const NPArray<double> t = t_test(b, e, Ma, c);
         EXPECT_EQ(t.size(), e - b);
         for (size_t i = b; i < e; i++)
-            EXPECT_NEAR(t[i - b], tvaluesOddEven[i], EPSILON);
+            EXPECT_NEAR(t(0, i - b), tvaluesOddEven[i], EPSILON);
     }
 
     // Check Welsh's t_test on a single column, with 2 groups.
@@ -151,10 +151,10 @@ template <typename Ty, size_t rows, size_t cols> class WelshChecker {
 
     // Check Welsh's t_test on a range of columns, with 2 groups.
     void check2(size_t b, size_t e) const {
-        vector<double> t = t_test(b, e, Ma, Mb);
+        const NPArray<double> t = t_test(b, e, Ma, Mb);
         EXPECT_EQ(t.size(), e - b);
         for (size_t i = b; i < e; i++)
-            EXPECT_NEAR(t[i - b], tvalues2[i], EPSILON);
+            EXPECT_NEAR(t(0, i - b), tvalues2[i], EPSILON);
     }
 
   private:
@@ -228,7 +228,7 @@ TEST(TTest, welsh) {
 
     // Check Welsh's t_test on each column.
     for (size_t i = 0; i < a.cols(); i++) {
-        C_a.check(i); // Classifier variant
+        C_a.check(i);  // Classifier variant
         C_a.check2(i); // 2 groups variant
     }
 
@@ -293,22 +293,22 @@ template <typename Ty, size_t rows, size_t cols> class StudentChecker {
         assert(b < cols && "Out of range begin");
         assert(e <= cols && "Out of range end");
         const vector<double> lm0(&m0[b], &m0[e]);
-        vector<double> t = t_test(b, e, lm0, a);
+        NPArray<double> t = t_test(b, e, lm0, a);
         EXPECT_EQ(t.size(), e - b);
         for (size_t i = b; i < e; i++)
-            EXPECT_NEAR(t[i - b], tvalues[i], EPSILON);
+            EXPECT_NEAR(t(0, i - b), tvalues[i], EPSILON);
 
         std::function<bool(size_t)> odd = [](size_t i) { return i % 2 == 1; };
         t = t_test(b, e, lm0, a, odd);
         EXPECT_EQ(t.size(), e - b);
         for (size_t i = b; i < e; i++)
-            EXPECT_NEAR(t[i - b], tvaluesOdd[i], EPSILON);
+            EXPECT_NEAR(t(0, i - b), tvaluesOdd[i], EPSILON);
 
         std::function<bool(size_t)> even = [](size_t i) { return i % 2 == 0; };
         t = t_test(b, e, lm0, a, even);
         EXPECT_EQ(t.size(), e - b);
         for (size_t i = b; i < e; i++)
-            EXPECT_NEAR(t[i - b], tvaluesEven[i], EPSILON);
+            EXPECT_NEAR(t(0, i - b), tvaluesEven[i], EPSILON);
     }
 
   private:
@@ -400,10 +400,10 @@ template <typename Ty, size_t rows, size_t cols> class PerfectChecker {
         for (size_t t = 0; t < rows; t++)
             classifier[t] =
                 t % 2 == 0 ? Classification::GROUP_0 : Classification::GROUP_1;
-        vector<double> t = perfect_t_test(b, e, Ma, classifier);
+        const NPArray<double> t = perfect_t_test(b, e, Ma, classifier);
         EXPECT_EQ(t.size(), e - b);
         for (size_t i = b; i < e; i++)
-            EXPECT_NEAR(t[i - b], tvaluesEvenOdd[i], EPSILON);
+            EXPECT_NEAR(t(0, i - b), tvaluesEvenOdd[i], EPSILON);
 
         ostringstream os;
         perfect_t_test(b, e, Ma, classifier, &os);
@@ -416,10 +416,10 @@ template <typename Ty, size_t rows, size_t cols> class PerfectChecker {
         assert(b < cols && "Out of range begin");
         assert(e <= cols && "Out of range end");
 
-        vector<double> t = perfect_t_test(b, e, Mb, Mc);
+        const NPArray<double> t = perfect_t_test(b, e, Mb, Mc);
         EXPECT_EQ(t.size(), e - b);
         for (size_t i = b; i < e; i++)
-            EXPECT_NEAR(t[i - b], tvalues[i], EPSILON);
+            EXPECT_NEAR(t(0, i - b), tvalues[i], EPSILON);
 
         ostringstream os;
         perfect_t_test(b, e, Mb, Mc, &os);
@@ -432,8 +432,8 @@ template <typename Ty, size_t rows, size_t cols> class PerfectChecker {
     const NPArray<Ty> &Mc;
     const std::vector<Ty> tvaluesEvenOdd;
     const std::vector<Ty> tvalues;
-};    
-}
+};
+} // namespace
 
 TEST(TTest, perfect) {
     // clang-format off
@@ -572,10 +572,10 @@ template <typename Ty, size_t rows, size_t cols> class PearsonChecker {
         vector<double> iv(Ma.rows());
         for (size_t tnum = 0; tnum < Ma.rows(); tnum++)
             iv[tnum] = Miv(0, tnum);
-        const vector<double> p = correl(b, e, Ma, iv);
+        const NPArray<double> p = correl(b, e, Ma, iv);
         EXPECT_EQ(p.size(), e - b);
         for (size_t i = b; i < e; i++)
-            EXPECT_NEAR(p[i - b], coeffs[i], EPSILON);
+            EXPECT_NEAR(p(0, i - b), coeffs[i], EPSILON);
     }
 
   private:
