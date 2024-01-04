@@ -18,7 +18,9 @@
  * This file is part of PAF, the Physical Attack Framework.
  */
 
+#include "PAF/SCA/NPUtils.h"
 #include "PAF/SCA/SCA.h"
+#include "PAF/SCA/utils.h"
 
 #include <array>
 #include <cassert>
@@ -52,43 +54,26 @@ vector<double> t_test(size_t b, size_t e, const NPArray<double> &traces,
     vector<double> tvalue(nbsamples);
 
     for (size_t sample = 0; sample < nbsamples; sample++) {
-        // Use a numerically stable algorithm to compute the mean and variance.
-        // The one from D. Knuth from "The Art of Computer Programming (1998)"
-        // is used here.
-        double mean0 = 0.0;
-        double mean1 = 0.0;
-        double variance0 = 0.0;
-        double variance1 = 0.0;
-        unsigned n0 = 0;
-        unsigned n1 = 0;
-        double delta1, delta2;
+        AveragerWithVar avg0;
+        AveragerWithVar avg1;
         for (size_t tnum = 0; tnum < nbtraces; tnum++)
             switch (classifier[tnum]) {
             case Classification::GROUP_0:
-                n0 += 1;
-                delta1 = traces(tnum, b + sample) - mean0;
-                mean0 += delta1 / double(n0);
-                delta2 = traces(tnum, b + sample) - mean0;
-                variance0 += delta1 * delta2;
+                avg0(traces(tnum, b + sample));
                 break;
             case Classification::GROUP_1:
-                n1 += 1;
-                delta1 = traces(tnum, b + sample) - mean1;
-                mean1 += delta1 / double(n1);
-                delta2 = traces(tnum, b + sample) - mean1;
-                variance1 += delta1 * delta2;
+                avg1(traces(tnum, b + sample));
                 break;
             case Classification::IGNORE:
                 break;
             }
 
-        assert(n0 > 1 && "group0 must have more than one trace");
-        assert(n1 > 1 && "group1 must have more than one trace");
-        variance0 /= double(n0 - 1);
-        variance1 /= double(n1 - 1);
+        assert(avg0.count() > 1 && "group0 must have more than one trace");
+        assert(avg1.count() > 1 && "group1 must have more than one trace");
 
-        tvalue[sample] = (mean0 - mean1) /
-                         sqrt(variance0 / double(n0) + variance1 / double(n1));
+        tvalue[sample] = (avg0.mean() - avg1.mean()) /
+                         sqrt(avg0.var(/* ddof: */ 1) / double(avg0.count()) +
+                              avg1.var(/* ddof: */ 1) / double(avg1.count()));
     }
 
     return tvalue;
@@ -158,28 +143,16 @@ double t_test(size_t s, double m0, const NPArray<double> &traces,
               function<bool(size_t)> select) {
     assert(s <= traces.cols() && "Not that many samples in the trace");
 
-    // Use a numerically stable algorithm to compute the mean and variance.
-    // The one from D. Knuth from "The Art of Computer Programming (1998)"
-    // is used here.
-    double mean = 0.0;
-    double variance = 0.0;
-    unsigned n = 0;
-    double delta1, delta2;
+    AveragerWithVar avg;
     for (size_t tnum = 0; tnum < traces.rows(); tnum++)
-        if (select(tnum)) {
-            n += 1;
-            delta1 = traces(tnum, s) - mean;
-            mean += delta1 / double(n);
-            delta2 = traces(tnum, s) - mean;
-            variance += delta1 * delta2;
-        }
+        if (select(tnum))
+            avg(traces(tnum, s));
 
-    if (n <= 1)
+    if (avg.count() <= 1)
         return std::nan("");
 
-    variance /= double(n - 1);
-
-    return sqrt(double(n)) * (mean - m0) / sqrt(variance);
+    return sqrt(double(avg.count())) * (avg.mean() - m0) /
+           sqrt(avg.var(/* ddof: */ 1));
 }
 
 /// Compute Student's t-test from samples b to e.

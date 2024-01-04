@@ -37,6 +37,7 @@ set(PAF_TEST_SOURCES
   Misc.cpp
   Noise.cpp
   NPArray.cpp
+  NPUtils.cpp
   Oracle.cpp
   PAF.cpp
   Power.cpp
@@ -52,7 +53,7 @@ target_link_libraries(test-paf gtest fi sca paf tarmac)
 
 add_custom_target(check COMMENT "Run PAF unit tests")
 
-add_custom_target(check-paf 
+add_custom_target(check-paf
    COMMAND ${CMAKE_COMMAND} -E env LLVM_PROFILE_FILE=test-paf.profraw ${CMAKE_CURRENT_BINARY_DIR}/test-paf --gtest_color=yes --gtest_output=xml:test-paf.xml
 )
 if (PAF_BUILD_WITH_INSTRUMENTED_COVERAGE)
@@ -87,7 +88,7 @@ if (PAF_BUILD_WITH_INSTRUMENTED_COVERAGE)
               -Xdemangler=${PAF_LLVM_CXXFILT_EXE}
               -ignore-filename-regex=build\/include\/
               -ignore-filename-regex=unit-tests\/
-              -ignore-filename-regex=tools\/  
+              -ignore-filename-regex=tools\/
               ${PAF_GTESTS_PROGRAMS}
       BYPRODUCTS unit-tests.profdata html/index.html
       DEPENDS ${PAF_GTESTS_PROFRAW}
