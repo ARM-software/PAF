@@ -26,8 +26,6 @@
 
 #include "gtest/gtest.h"
 
-using namespace testing;
-
 using std::ostringstream;
 using std::string;
 

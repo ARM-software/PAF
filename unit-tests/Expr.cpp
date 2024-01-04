@@ -28,7 +28,6 @@
 #include <memory>
 
 using namespace PAF::SCA::Expr;
-using namespace testing;
 
 using std::unique_ptr;
 

@@ -34,7 +34,6 @@
 #include <unistd.h>
 
 using namespace PAF::SCA;
-using namespace testing;
 
 using std::string;
 using std::unique_ptr;

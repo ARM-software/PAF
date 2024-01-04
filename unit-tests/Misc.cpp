@@ -25,7 +25,6 @@
 
 #include "gtest/gtest.h"
 
-using namespace testing;
 using namespace std;
 
 TEST(Misc, split) {

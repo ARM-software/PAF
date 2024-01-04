@@ -25,7 +25,6 @@
 #include "gtest/gtest.h"
 
 using namespace PAF::SCA;
-using namespace testing;
 
 using std::unique_ptr;
 

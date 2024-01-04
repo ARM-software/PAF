@@ -33,7 +33,6 @@ template <typename Ty> void PrintTo(const Interval<Ty> &I, std::ostream *os) {
 
 #include "gtest/gtest.h"
 
-using namespace testing;
 using namespace std;
 
 using TInterval = PAF::Interval<uint64_t>;

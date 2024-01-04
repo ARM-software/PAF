@@ -26,8 +26,6 @@
 
 #include <sstream>
 
-using namespace testing;
-
 using PAF::FI::Classifier;
 using PAF::FI::Oracle;
 using std::ostringstream;

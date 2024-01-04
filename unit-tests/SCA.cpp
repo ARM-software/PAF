@@ -32,7 +32,6 @@
 #include <vector>
 
 using namespace PAF::SCA;
-using namespace testing;
 
 using std::cout;
 using std::ostringstream;

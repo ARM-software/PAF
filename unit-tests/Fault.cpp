@@ -29,8 +29,6 @@
 #include <sstream>
 #include <string>
 
-using namespace testing;
-
 using std::string;
 
 using PAF::FI::BreakPoint;

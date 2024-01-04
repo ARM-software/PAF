@@ -36,8 +36,6 @@
 #error SAMPLES_SRC_DIR not defined
 #endif
 
-using namespace testing;
-
 using std::array;
 using std::istringstream;
 using std::string;
