@@ -1,6 +1,6 @@
 /*
- * SPDX-FileCopyrightText: <text>Copyright 2021,2022,2023,2024 Arm Limited and/or its
- * affiliates <open-source-office@arm.com></text>
+ * SPDX-FileCopyrightText: <text>Copyright 2021,2022,2023,2024 Arm Limited
+ * and/or its affiliates <open-source-office@arm.com></text>
  * SPDX-License-Identifier: Apache-2.0
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -30,8 +30,8 @@
 #include <memory>
 #include <string>
 #include <type_traits>
-#include <vector>
 #include <unistd.h>
+#include <vector>
 
 using namespace PAF::SCA;
 
@@ -139,12 +139,18 @@ TEST(NPArray, defaultConstruct) {
 TEST(NPArray, base) {
     const uint32_t v_init[] = {0, 1, 2, 3};
     const uint32_t v2_init[] = {0, 1, 2, 4};
-    EXPECT_TRUE(NPArray<uint32_t>(v_init, 1, 4) == NPArray<uint32_t>(v_init, 1, 4));
-    EXPECT_FALSE(NPArray<uint32_t>(v_init, 1, 4) != NPArray<uint32_t>(v_init, 1, 4));
-    EXPECT_FALSE(NPArray<uint32_t>(v_init, 1, 4) == NPArray<uint32_t>(v_init, 4, 1));
-    EXPECT_FALSE(NPArray<uint32_t>(v_init, 1, 4) == NPArray<uint32_t>(v_init, 2, 2));
-    EXPECT_FALSE(NPArray<uint32_t>(v_init, 1, 4) == NPArray<uint32_t>(v2_init, 1, 4));
-    EXPECT_TRUE(NPArray<uint32_t>(v_init, 1, 4) != NPArray<uint32_t>(v2_init, 1, 4));
+    EXPECT_TRUE(NPArray<uint32_t>(v_init, 1, 4) ==
+                NPArray<uint32_t>(v_init, 1, 4));
+    EXPECT_FALSE(NPArray<uint32_t>(v_init, 1, 4) !=
+                 NPArray<uint32_t>(v_init, 1, 4));
+    EXPECT_FALSE(NPArray<uint32_t>(v_init, 1, 4) ==
+                 NPArray<uint32_t>(v_init, 4, 1));
+    EXPECT_FALSE(NPArray<uint32_t>(v_init, 1, 4) ==
+                 NPArray<uint32_t>(v_init, 2, 2));
+    EXPECT_FALSE(NPArray<uint32_t>(v_init, 1, 4) ==
+                 NPArray<uint32_t>(v2_init, 1, 4));
+    EXPECT_TRUE(NPArray<uint32_t>(v_init, 1, 4) !=
+                NPArray<uint32_t>(v2_init, 1, 4));
 
     NPArray<uint32_t> v1(v_init, 1, 4);
     NPArray<uint32_t> vOther(v2_init, 4, 1);
@@ -1020,7 +1026,8 @@ TEST_F(NPArrayF, convert) {
     testConvert<double, uint64_t>();
 }
 
-template <typename toTy, typename fromTy> void testReadAs(const string &filename) {
+template <typename toTy, typename fromTy>
+void testReadAs(const string &filename) {
     const fromTy init1[] = {0, 1, 2, 3, 4, 5, 6, 7};
     const toTy init2[] = {0, 1, 2, 3, 4, 5, 6, 7};
 
@@ -1199,7 +1206,7 @@ TEST(NPArray, Row) {
     NPArray<int64_t>::Row r = a.begin();
     NPArray<int64_t>::Row end = a.end();
     size_t row_number = 0;
-    while(r != end) {
+    while (r != end) {
         EXPECT_FALSE(r.empty());
         EXPECT_EQ(r.size(), 3);
         EXPECT_EQ(r[0], a(row_number, 0));
@@ -1231,7 +1238,7 @@ TEST(NPArray, RowIterator) {
 
     size_t i = 0;
     for (NPArray<int64_t>::const_Row row = a.cbegin(); row != a.cend(); row++)
-        for (const auto &e: row)
+        for (const auto &e : row)
             EXPECT_EQ(e, MI64_init[i++]);
 
     i = 0;
@@ -1294,8 +1301,7 @@ TEST(NPArray, abs) {
     absCheck<double>();
 }
 
-template <typename Ty>
-void negCheck() {
+template <typename Ty> void negCheck() {
     const Ty init[] = {Ty(-1), Ty(-2), Ty(-3), 1, 2, 3};
     const Ty expect[] = {1, 2, 3, Ty(-1), Ty(-2), Ty(-3)};
 
@@ -1322,6 +1328,508 @@ TEST(NPArray, negate) {
 
     negCheck<float>();
     negCheck<double>();
+}
+
+template <typename Ty> void scalarMulCheck() {
+    NPArray<Ty> a({0, 1, 2, 3, 4, 5}, 2, 3);
+    const NPArray<Ty> expect({0, 3, 6, 9, 12, 15}, 2, 3);
+
+    EXPECT_EQ(Ty(3) * a, expect);
+    EXPECT_EQ(a * Ty(3), expect);
+    a *= Ty(3);
+    EXPECT_EQ(a, expect);
+}
+
+TEST(NPArray, scalarMul) {
+    scalarMulCheck<uint8_t>();
+    scalarMulCheck<uint16_t>();
+    scalarMulCheck<uint32_t>();
+    scalarMulCheck<uint64_t>();
+
+    scalarMulCheck<int8_t>();
+    scalarMulCheck<int16_t>();
+    scalarMulCheck<int32_t>();
+    scalarMulCheck<int64_t>();
+
+    scalarMulCheck<float>();
+    scalarMulCheck<double>();
+}
+
+template <typename Ty> void scalarDivCheck() {
+    NPArray<Ty> a({0, 10, 20, 30, 40, 50}, 3, 2);
+    const NPArray<Ty> expect({0, 2, 4, 6, 8, 10}, 3, 2);
+
+    EXPECT_EQ(a / Ty(5), expect);
+    a /= Ty(5);
+    EXPECT_EQ(a, expect);
+}
+
+TEST(NPArray, scalarDiv) {
+    scalarDivCheck<uint8_t>();
+    scalarDivCheck<uint16_t>();
+    scalarDivCheck<uint32_t>();
+    scalarDivCheck<uint64_t>();
+
+    scalarDivCheck<int8_t>();
+    scalarDivCheck<int16_t>();
+    scalarDivCheck<int32_t>();
+    scalarDivCheck<int64_t>();
+
+    scalarDivCheck<float>();
+    scalarDivCheck<double>();
+}
+
+template <typename Ty> void scalarAddCheck() {
+    NPArray<Ty> a({0, 1, 2, 3, 4, 5}, 1, 6);
+    const NPArray<Ty> expect({1, 2, 3, 4, 5, 6}, 1, 6);
+
+    EXPECT_EQ(Ty(1) + a, expect);
+    EXPECT_EQ(a + Ty(1), expect);
+    a += Ty(1);
+    EXPECT_EQ(a, expect);
+}
+
+TEST(NPArray, scalarAdd) {
+    scalarAddCheck<uint8_t>();
+    scalarAddCheck<uint16_t>();
+    scalarAddCheck<uint32_t>();
+    scalarAddCheck<uint64_t>();
+
+    scalarAddCheck<int8_t>();
+    scalarAddCheck<int16_t>();
+    scalarAddCheck<int32_t>();
+    scalarAddCheck<int64_t>();
+
+    scalarAddCheck<float>();
+    scalarAddCheck<double>();
+}
+
+template <typename Ty> void scalarSubCheck() {
+    NPArray<Ty> a({1, 2, 3, 4, 5, 6}, 6, 1);
+    const NPArray<Ty> expect({0, 1, 2, 3, 4, 5}, 6, 1);
+    const NPArray<Ty> expect2({0, Ty(-1), Ty(-2), Ty(-3), Ty(-4), Ty(-5)}, 6,
+                              1);
+
+    EXPECT_EQ(Ty(1) - a, expect2);
+    EXPECT_EQ(a - Ty(1), expect);
+    a -= Ty(1);
+    EXPECT_EQ(a, expect);
+}
+
+TEST(NPArray, scalarSub) {
+    scalarSubCheck<uint8_t>();
+    scalarSubCheck<uint16_t>();
+    scalarSubCheck<uint32_t>();
+    scalarSubCheck<uint64_t>();
+
+    scalarSubCheck<int8_t>();
+    scalarSubCheck<int16_t>();
+    scalarSubCheck<int32_t>();
+    scalarSubCheck<int64_t>();
+
+    scalarSubCheck<float>();
+    scalarSubCheck<double>();
+}
+
+template <typename Ty> void scalarAbsDiffCheck() {
+    NPArray<Ty> a({1, 2, 3, 4, 5, 6}, 2, 3);
+    const NPArray<Ty> expect({3, 2, 1, 0, 1, 2}, 2, 3);
+
+    EXPECT_EQ(absdiff(Ty(4), a), expect);
+    EXPECT_EQ(absdiff(a, Ty(4)), expect);
+    a.absdiff(4);
+    EXPECT_EQ(a, expect);
+}
+
+TEST(NPArray, scalarAbsdiff) {
+    scalarAbsDiffCheck<uint8_t>();
+    scalarAbsDiffCheck<uint16_t>();
+    scalarAbsDiffCheck<uint32_t>();
+    scalarAbsDiffCheck<uint64_t>();
+
+    scalarAbsDiffCheck<int8_t>();
+    scalarAbsDiffCheck<int16_t>();
+    scalarAbsDiffCheck<int32_t>();
+    scalarAbsDiffCheck<int64_t>();
+
+    scalarAbsDiffCheck<float>();
+    scalarAbsDiffCheck<double>();
+}
+
+template <typename Ty, template <typename> class Op, bool verbose = false>
+struct eltWiseOpCheckerBase {
+
+    // Matrices
+    const NPArray<Ty> Am;
+    const NPArray<Ty> Bm;
+
+    // Horizontal vectors
+    const NPArray<Ty> Ahv;
+    const NPArray<Ty> Bhv;
+
+    // Vertical vectors
+    const NPArray<Ty> Avv;
+    const NPArray<Ty> Bvv;
+
+    // Scalars
+    const NPArray<Ty> As;
+    const NPArray<Ty> Bs;
+
+    // Expected value
+    const NPArray<Ty> Em_m;   // matrix Op matrix -> matrix
+    const NPArray<Ty> Em_vv;  // matrix Op | -> matrix
+    const NPArray<Ty> Em_hv;  // matrix Op - -> matrix
+    const NPArray<Ty> Em_s;   // matrix Op scalar -> matrix
+    const NPArray<Ty> Evv_m;  // | Op matrix -> matrix
+    const NPArray<Ty> Evv_vv; // | Op | -> |
+    const NPArray<Ty> Evv_s;  // | Op scalar -> |
+    const NPArray<Ty> Ehv_m;  // - Op matrix -> matrix
+    const NPArray<Ty> Ehv_hv; // - Op - -> -
+    const NPArray<Ty> Ehv_s;  // - Op scalar -> -
+    const NPArray<Ty> Es_m;   // scalar Op matrix -> matrix
+    const NPArray<Ty> Es_vv;  // scalar Op | -> |
+    const NPArray<Ty> Es_hv;  // scalar Op - -> -
+    const NPArray<Ty> Es_s;   // scalar Op scalar -> scalar
+
+    static const constexpr size_t D = 3;
+
+#define initA                                                                  \
+    { 2, 3, 4, 5, 6, 7, 8, 9, 10 }
+#define initB                                                                  \
+    { 3, 5, 7, 9, 11, 13, 15, 17, 19 }
+
+    eltWiseOpCheckerBase()
+        : // Matrices
+          Am(initA, D, D), Bm(initB, D, D),
+          // Horizontal vectors
+          Ahv(initA, 1, D), Bhv(initB, 1, D),
+          // Vertical vectors
+          Avv(initA, D, 1), Bvv(initB, D, 1),
+          // Scalars
+          As(initA, 1, 1), Bs(initB, 1, 1),
+          // matrix Op matrix -> matrix
+          Em_m(
+              {
+                  // clang-format off
+                Op<Ty>()(Am(0,0), Bm(0,0)), Op<Ty>()(Am(0,1), Bm(0,1)), Op<Ty>()(Am(0,2), Bm(0,2)),
+                Op<Ty>()(Am(1,0), Bm(1,0)), Op<Ty>()(Am(1,1), Bm(1,1)), Op<Ty>()(Am(1,2), Bm(1,2)),
+                Op<Ty>()(Am(2,0), Bm(2,0)), Op<Ty>()(Am(2,1), Bm(2,1)), Op<Ty>()(Am(2,2), Bm(2,2))
+                  // clang-format on
+              },
+              D, D),
+          // matrix Op | -> matrix
+          Em_vv(
+              {
+                  // clang-format off
+                Op<Ty>()(Am(0,0), Bvv(0,0)), Op<Ty>()(Am(0,1), Bvv(0,0)), Op<Ty>()(Am(0,2), Bvv(0,0)),
+                Op<Ty>()(Am(1,0), Bvv(1,0)), Op<Ty>()(Am(1,1), Bvv(1,0)), Op<Ty>()(Am(1,2), Bvv(1,0)),
+                Op<Ty>()(Am(2,0), Bvv(2,0)), Op<Ty>()(Am(2,1), Bvv(2,0)), Op<Ty>()(Am(2,2), Bvv(2,0))
+                  // clang-format on
+              },
+              D, D),
+          // matrix Op - -> matrix
+          Em_hv(
+              {
+                  // clang-format off
+                Op<Ty>()(Am(0,0), Bhv(0,0)), Op<Ty>()(Am(0,1), Bhv(0,1)), Op<Ty>()(Am(0,2), Bhv(0,2)),
+                Op<Ty>()(Am(1,0), Bhv(0,0)), Op<Ty>()(Am(1,1), Bhv(0,1)), Op<Ty>()(Am(1,2), Bhv(0,2)),
+                Op<Ty>()(Am(2,0), Bhv(0,0)), Op<Ty>()(Am(2,1), Bhv(0,1)), Op<Ty>()(Am(2,2), Bhv(0,2))
+                  // clang-format on
+              },
+              D, D),
+          // matrix Op scalar -> matrix
+          Em_s(
+              {
+                  // clang-format off
+                Op<Ty>()(Am(0,0), Bs(0,0)), Op<Ty>()(Am(0,1), Bs(0,0)), Op<Ty>()(Am(0,2), Bs(0,0)),
+                Op<Ty>()(Am(1,0), Bs(0,0)), Op<Ty>()(Am(1,1), Bs(0,0)), Op<Ty>()(Am(1,2), Bs(0,0)),
+                Op<Ty>()(Am(2,0), Bs(0,0)), Op<Ty>()(Am(2,1), Bs(0,0)), Op<Ty>()(Am(2,2), Bs(0,0))
+                  // clang-format on
+              },
+              D, D),
+          // | Op matrix -> matrix
+          Evv_m(
+              {
+                  // clang-format off
+                Op<Ty>()(Avv(0,0), Bm(0,0)), Op<Ty>()(Avv(0,0), Bm(0,1)), Op<Ty>()(Avv(0,0), Bm(0,2)),
+                Op<Ty>()(Avv(1,0), Bm(1,0)), Op<Ty>()(Avv(1,0), Bm(1,1)), Op<Ty>()(Avv(1,0), Bm(1,2)),
+                Op<Ty>()(Avv(2,0), Bm(2,0)), Op<Ty>()(Avv(2,0), Bm(2,1)), Op<Ty>()(Avv(2,0), Bm(2,2))
+                  // clang-format on
+              },
+              D, D),
+          // | Op | -> |
+          Evv_vv(
+              {
+                  // clang-format off
+                Op<Ty>()(Avv(0,0), Bvv(0,0)),
+                Op<Ty>()(Avv(1,0), Bvv(1,0)),
+                Op<Ty>()(Avv(2,0), Bvv(2,0))
+                  // clang-format on
+              },
+              D, 1),
+          // | Op scalar -> |
+          Evv_s(
+              {
+                  // clang-format off
+                Op<Ty>()(Avv(0,0), Bs(0,0)),
+                Op<Ty>()(Avv(1,0), Bs(0,0)),
+                Op<Ty>()(Avv(2,0), Bs(0,0))
+                  // clang-format on
+              },
+              D, 1),
+          // - Op matrix -> matrix
+          Ehv_m(
+              {
+                  // clang-format off
+                Op<Ty>()(Ahv(0,0), Bm(0,0)), Op<Ty>()(Ahv(0,1), Bm(0,1)), Op<Ty>()(Ahv(0,2), Bm(0,2)),
+                Op<Ty>()(Ahv(0,0), Bm(1,0)), Op<Ty>()(Ahv(0,1), Bm(1,1)), Op<Ty>()(Ahv(0,2), Bm(1,2)),
+                Op<Ty>()(Ahv(0,0), Bm(2,0)), Op<Ty>()(Ahv(0,1), Bm(2,1)), Op<Ty>()(Ahv(0,2), Bm(2,2))
+                  // clang-format on
+              },
+              D, D),
+          // - Op - -> -
+          Ehv_hv(
+              {
+                  // clang-format off
+                Op<Ty>()(Ahv(0,0), Bhv(0,0)), Op<Ty>()(Ahv(0,1), Bhv(0,1)), Op<Ty>()(Ahv(0,2), Bhv(0,2))
+                  // clang-format on
+              },
+              1, D),
+          // - Op scalar -> -
+          Ehv_s(
+              {
+                  // clang-format off
+                Op<Ty>()(Ahv(0,0), Bs(0,0)), Op<Ty>()(Ahv(0,1), Bs(0,0)), Op<Ty>()(Ahv(0,2), Bs(0,0))
+                  // clang-format on
+              },
+              1, D),
+          // scalar Op matrix -> matrix
+          Es_m(
+              {
+                  // clang-format off
+                Op<Ty>()(As(0,0), Bm(0,0)), Op<Ty>()(As(0,0), Bm(0,1)), Op<Ty>()(As(0,0), Bm(0,2)),
+                Op<Ty>()(As(0,0), Bm(1,0)), Op<Ty>()(As(0,0), Bm(1,1)), Op<Ty>()(As(0,0), Bm(1,2)),
+                Op<Ty>()(As(0,0), Bm(2,0)), Op<Ty>()(As(0,0), Bm(2,1)), Op<Ty>()(As(0,0), Bm(2,2))
+                  // clang-format on
+              },
+              D, D),
+          // scalar Op | -> |
+          Es_vv(
+              {
+                  // clang-format off
+                Op<Ty>()(As(0,0), Bvv(0,0)),
+                Op<Ty>()(As(0,0), Bvv(1,0)),
+                Op<Ty>()(As(0,0), Bvv(2,0))
+                  // clang-format on
+              },
+              D, 1),
+          // scalar Op - -> -
+          Es_hv(
+              {
+                  // clang-format off
+                Op<Ty>()(As(0,0), Bhv(0,0)), Op<Ty>()(As(0,0), Bhv(0,1)), Op<Ty>()(As(0,0), Bhv(0,2))
+                  // clang-format on
+              },
+              1, D),
+          // scalar Op scalar -> scalar
+          Es_s({Op<Ty>()(As(0, 0), Bs(0, 0))}, 1, 1) {}
+#undef initA
+#undef initB
+
+    virtual void checkImpl(const NPArray<Ty> &lhs, const NPArray<Ty> &rhs,
+                           const NPArray<Ty> &exp) const = 0;
+
+    void check(const NPArray<Ty> &lhs, const NPArray<Ty> &rhs,
+               const NPArray<Ty> &exp) const {
+        if (verbose) {
+            lhs.dump(std::cerr, 0, 0, "lhs");
+            rhs.dump(std::cerr, 0, 0, "rhs");
+            exp.dump(std::cerr, 0, 0, "exp");
+        }
+        checkImpl(lhs, rhs, exp);
+    }
+
+    bool check() const {
+        // Check matrix Op matrix -> matrix
+        check(Am, Bm, Em_m);
+        // Check matrix Op | -> matrix
+        check(Am, Bvv, Em_vv);
+        // Check matrix Op - -> matrix
+        check(Am, Bhv, Em_hv);
+        // Check matrix Op scalar -> matrix
+        check(Am, Bs, Em_s);
+
+        // Check | Op matrix -> matrix
+        check(Avv, Bm, Evv_m);
+        // Check | Op | -> |
+        check(Avv, Bvv, Evv_vv);
+        // Check | Op scalar -> |
+        check(Avv, Bs, Evv_s);
+
+        // Check - Op matrix -> matrix
+        check(Ahv, Bm, Ehv_m);
+        // Check - Op - -> -
+        check(Ahv, Bhv, Ehv_hv);
+        // Check - Op scalar -> -
+        check(Ahv, Bs, Ehv_s);
+
+        // Check scalar Op matrix -> matrix
+        check(As, Bm, Es_m);
+        // Check scalar Op | -> |
+        check(As, Bvv, Es_vv);
+        // Check scalar Op - -> -
+        check(As, Bhv, Es_hv);
+        // Check scalar Op scalar -> scalar
+        check(As, Bs, Es_s);
+
+        return !testing::Test::HasFatalFailure() &&
+               !testing::Test::HasNonfatalFailure();
+    }
+};
+
+template <typename Ty, bool verbose = false>
+struct eltWiseMulChecker : public eltWiseOpCheckerBase<Ty, Multiply, verbose> {
+    void checkImpl(const NPArray<Ty> &lhs, const NPArray<Ty> &rhs,
+                   const NPArray<Ty> &exp) const override {
+        EXPECT_EQ(lhs * rhs, exp);
+        EXPECT_EQ(rhs * lhs, exp);
+
+        NPArray<Ty> tmp(lhs);
+        tmp *= rhs;
+        EXPECT_EQ(tmp, exp);
+
+        tmp = rhs;
+        tmp *= lhs;
+        EXPECT_EQ(tmp, exp);
+    }
+};
+
+TEST(NPArray, eltWiseMul) {
+    EXPECT_TRUE(eltWiseMulChecker<uint8_t>().check());
+    EXPECT_TRUE(eltWiseMulChecker<uint16_t>().check());
+    EXPECT_TRUE(eltWiseMulChecker<uint32_t>().check());
+    EXPECT_TRUE(eltWiseMulChecker<uint64_t>().check());
+
+    EXPECT_TRUE(eltWiseMulChecker<int8_t>().check());
+    EXPECT_TRUE(eltWiseMulChecker<int16_t>().check());
+    EXPECT_TRUE(eltWiseMulChecker<int32_t>().check());
+    EXPECT_TRUE(eltWiseMulChecker<int64_t>().check());
+
+    EXPECT_TRUE(eltWiseMulChecker<float>().check());
+    EXPECT_TRUE(eltWiseMulChecker<double>().check());
+}
+
+template <typename Ty, bool verbose = false>
+struct eltWiseAddChecker : public eltWiseOpCheckerBase<Ty, Add, verbose> {
+    void checkImpl(const NPArray<Ty> &lhs, const NPArray<Ty> &rhs,
+                   const NPArray<Ty> &exp) const override {
+        EXPECT_EQ(lhs + rhs, exp);
+        EXPECT_EQ(rhs + lhs, exp);
+
+        NPArray<Ty> tmp(lhs);
+        tmp += rhs;
+        EXPECT_EQ(tmp, exp);
+
+        tmp = rhs;
+        tmp += lhs;
+        EXPECT_EQ(tmp, exp);
+    }
+};
+
+TEST(NPArray, eltWiseAdd) {
+    EXPECT_TRUE(eltWiseAddChecker<uint8_t>().check());
+    EXPECT_TRUE(eltWiseAddChecker<uint16_t>().check());
+    EXPECT_TRUE(eltWiseAddChecker<uint32_t>().check());
+    EXPECT_TRUE(eltWiseAddChecker<uint64_t>().check());
+
+    EXPECT_TRUE(eltWiseAddChecker<int8_t>().check());
+    EXPECT_TRUE(eltWiseAddChecker<int16_t>().check());
+    EXPECT_TRUE(eltWiseAddChecker<int32_t>().check());
+    EXPECT_TRUE(eltWiseAddChecker<int64_t>().check());
+
+    EXPECT_TRUE(eltWiseAddChecker<float>().check());
+    EXPECT_TRUE(eltWiseAddChecker<double>().check());
+}
+
+template <typename Ty, bool verbose = false>
+struct eltWiseSubChecker : public eltWiseOpCheckerBase<Ty, Substract, verbose> {
+    void checkImpl(const NPArray<Ty> &lhs, const NPArray<Ty> &rhs,
+                   const NPArray<Ty> &exp) const override {
+        EXPECT_EQ(lhs - rhs, exp);
+
+        NPArray<Ty> tmp(lhs);
+        tmp -= rhs;
+        EXPECT_EQ(tmp, exp);
+    }
+};
+
+TEST(NPArray, eltWiseSub) {
+    EXPECT_TRUE(eltWiseSubChecker<uint8_t>().check());
+    EXPECT_TRUE(eltWiseSubChecker<uint16_t>().check());
+    EXPECT_TRUE(eltWiseSubChecker<uint32_t>().check());
+    EXPECT_TRUE(eltWiseSubChecker<uint64_t>().check());
+
+    EXPECT_TRUE(eltWiseSubChecker<int8_t>().check());
+    EXPECT_TRUE(eltWiseSubChecker<int16_t>().check());
+    EXPECT_TRUE(eltWiseSubChecker<int32_t>().check());
+    EXPECT_TRUE(eltWiseSubChecker<int64_t>().check());
+
+    EXPECT_TRUE(eltWiseSubChecker<float>().check());
+    EXPECT_TRUE(eltWiseSubChecker<double>().check());
+}
+
+template <typename Ty, bool verbose = false>
+struct eltWiseDivChecker : public eltWiseOpCheckerBase<Ty, Divide, verbose> {
+    void checkImpl(const NPArray<Ty> &lhs, const NPArray<Ty> &rhs,
+                   const NPArray<Ty> &exp) const override {
+        EXPECT_EQ(lhs / rhs, exp);
+
+        NPArray<Ty> tmp(lhs);
+        tmp /= rhs;
+        EXPECT_EQ(tmp, exp);
+    }
+};
+
+TEST(NPArray, eltWiseDiv) {
+    EXPECT_TRUE(eltWiseDivChecker<uint8_t>().check());
+    EXPECT_TRUE(eltWiseDivChecker<uint16_t>().check());
+    EXPECT_TRUE(eltWiseDivChecker<uint32_t>().check());
+    EXPECT_TRUE(eltWiseDivChecker<uint64_t>().check());
+
+    EXPECT_TRUE(eltWiseDivChecker<int8_t>().check());
+    EXPECT_TRUE(eltWiseDivChecker<int16_t>().check());
+    EXPECT_TRUE(eltWiseDivChecker<int32_t>().check());
+    EXPECT_TRUE(eltWiseDivChecker<int64_t>().check());
+
+    EXPECT_TRUE(eltWiseDivChecker<float>().check());
+    EXPECT_TRUE(eltWiseDivChecker<double>().check());
+}
+
+template <typename Ty, bool verbose = false>
+struct eltWiseAbsDiffChecker : public eltWiseOpCheckerBase<Ty, AbsDiff, verbose> {
+    void checkImpl(const NPArray<Ty> &lhs, const NPArray<Ty> &rhs,
+                   const NPArray<Ty> &exp) const override {
+        EXPECT_EQ(absdiff(lhs, rhs), exp);
+
+        NPArray<Ty> tmp(lhs);
+        tmp.absdiff(rhs);
+        EXPECT_EQ(tmp, exp);
+    }
+};
+
+TEST(NPArray, eltWiseAbsDiff) {
+    EXPECT_TRUE(eltWiseAbsDiffChecker<uint8_t>().check());
+    EXPECT_TRUE(eltWiseAbsDiffChecker<uint16_t>().check());
+    EXPECT_TRUE(eltWiseAbsDiffChecker<uint32_t>().check());
+    EXPECT_TRUE(eltWiseAbsDiffChecker<uint64_t>().check());
+
+    EXPECT_TRUE(eltWiseAbsDiffChecker<int8_t>().check());
+    EXPECT_TRUE(eltWiseAbsDiffChecker<int16_t>().check());
+    EXPECT_TRUE(eltWiseAbsDiffChecker<int32_t>().check());
+    EXPECT_TRUE(eltWiseAbsDiffChecker<int64_t>().check());
+
+    EXPECT_TRUE(eltWiseAbsDiffChecker<float>().check());
+    EXPECT_TRUE(eltWiseAbsDiffChecker<double>().check());
 }
 
 TEST(NPArray, all) {
@@ -1378,8 +1886,7 @@ TEST(NPArray, all) {
 
 static constexpr double EPSILON = 0.000001;
 
-template <typename Ty, size_t rows, size_t cols>
-class SumChecker {
+template <typename Ty, size_t rows, size_t cols> class SumChecker {
 
   public:
     SumChecker(const NPArray<Ty> &a, std::initializer_list<Ty> sums_by_row,
@@ -1499,8 +2006,8 @@ TEST(NPArray, sum) {
     C_a.check(decltype(a)::ROW, 0, 0); // Empty range
     C_a.check(decltype(a)::ROW, 0, 1);
     C_a.check(decltype(a)::ROW, 0, 2);
-    C_a.check(decltype(a)::ROW, a.rows()-2, a.rows());
-    C_a.check(decltype(a)::ROW, a.rows()-1, a.rows());
+    C_a.check(decltype(a)::ROW, a.rows() - 2, a.rows());
+    C_a.check(decltype(a)::ROW, a.rows() - 1, a.rows());
     C_a.check(decltype(a)::ROW, 2, 3);
     C_a.check(decltype(a)::ROW, 2, 5);
 
@@ -1517,8 +2024,7 @@ TEST(NPArray, sum) {
     C_a.check(decltype(a)::COLUMN);
 }
 
-template <typename Ty, size_t rows, size_t cols>
-class MeanChecker {
+template <typename Ty, size_t rows, size_t cols> class MeanChecker {
 
   public:
     MeanChecker(const NPArray<Ty> &a, std::initializer_list<Ty> means_by_row,
@@ -1529,11 +2035,10 @@ class MeanChecker {
                 std::initializer_list<Ty> var1_by_col,
                 std::initializer_list<Ty> stddev_by_row,
                 std::initializer_list<Ty> stddev_by_col)
-        : a(a), means_by_row{means_by_row},
-          means_by_col(means_by_col), var0_by_row(var0_by_row),
-          var1_by_row(var1_by_row), var0_by_col(var0_by_col),
-          var1_by_col(var1_by_col), stddev_by_row(stddev_by_row),
-          stddev_by_col(stddev_by_col) {
+        : a(a), means_by_row{means_by_row}, means_by_col(means_by_col),
+          var0_by_row(var0_by_row), var1_by_row(var1_by_row),
+          var0_by_col(var0_by_col), var1_by_col(var1_by_col),
+          stddev_by_row(stddev_by_row), stddev_by_col(stddev_by_col) {
         // Some sanity checks.
         assert(means_by_row.size() == rows &&
                "expected row means size mismatch");
@@ -1782,7 +2287,7 @@ class MeanChecker {
     // Check a all rows / columns.
     void check(typename NPArray<Ty>::Axis axis) const {
 
-        NPArray<Ty> m, m1;  // Mean value
+        NPArray<Ty> m, m1;      // Mean value
         std::vector<Ty> v1;     // Variance (with ddof=1)
         std::vector<Ty> v0;     // Variance (with ddof=0)
         std::vector<Ty> stddev; // Standard deviation

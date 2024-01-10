@@ -1,6 +1,6 @@
 /*
- * SPDX-FileCopyrightText: <text>Copyright 2021,2022,2023,2024 Arm Limited and/or its
- * affiliates <open-source-office@arm.com></text>
+ * SPDX-FileCopyrightText: <text>Copyright 2021,2022,2023,2024 Arm Limited
+ * and/or its affiliates <open-source-office@arm.com></text>
  * SPDX-License-Identifier: Apache-2.0
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -803,8 +803,9 @@ template <class Ty> class NPArray : public NPArrayBase {
     /// NPArray and returns it.
     template <template <typename, bool> class unaryOperation,
               bool enableLocation = false>
-    std::enable_if_t<isCollector<DataTy, unaryOperation, enableLocation>::value,
-                     unaryOperation<DataTy, enableLocation>> foreach () const {
+    std::enable_if_t<
+        isNPCollector<DataTy, unaryOperation, enableLocation>::value,
+        unaryOperation<DataTy, enableLocation>> foreach () const {
         static_assert(
             std::is_copy_constructible<
                 unaryOperation<DataTy, enableLocation>>(),
@@ -824,10 +825,10 @@ template <class Ty> class NPArray : public NPArrayBase {
     /// NPArray and returns it.
     template <template <typename, bool> class unaryOperation,
               bool enableLocation = false>
-    std::enable_if_t<isCollector<DataTy, unaryOperation, enableLocation>::value,
-                     unaryOperation<DataTy, enableLocation>> foreach (Axis axis,
-                                                                      size_t i)
-        const {
+    std::enable_if_t<
+        isNPCollector<DataTy, unaryOperation, enableLocation>::value,
+        unaryOperation<DataTy, enableLocation>> foreach (Axis axis,
+                                                         size_t i) const {
         static_assert(
             std::is_copy_constructible<
                 unaryOperation<DataTy, enableLocation>>(),
@@ -860,7 +861,7 @@ template <class Ty> class NPArray : public NPArrayBase {
     template <template <typename, bool> class unaryOperation,
               bool enableLocation = false>
     std::enable_if_t<
-        isCollector<DataTy, unaryOperation, enableLocation>::value,
+        isNPCollector<DataTy, unaryOperation, enableLocation>::value,
         unaryOperation<DataTy, enableLocation>> foreach (Axis axis,
                                                          size_t begin,
                                                          size_t end) const {
@@ -950,23 +951,20 @@ template <class Ty> class NPArray : public NPArrayBase {
     /// Modifies this NPArray by replacing each element with the result of
     /// the application of \p unaryOperation to this element and returns
     /// this NPArray.
-    template <template <typename, bool> class unaryOperation,
-              bool enableLocation = false>
-    std::enable_if_t<
-        isTransformer<DataTy, unaryOperation, enableLocation>::value, NPArray &>
+    template <template <typename> class unaryOperation>
+    std::enable_if_t<isNPUnaryOperator<DataTy, unaryOperation>::value,
+                     NPArray &>
     apply() {
         static_assert(
-            std::is_copy_constructible<
-                unaryOperation<DataTy, enableLocation>>(),
+            std::is_copy_constructible<unaryOperation<DataTy>>(),
             "unaryOperation for NPArray::apply must be copy constructible");
-        static_assert(std::is_default_constructible<
-                          unaryOperation<DataTy, enableLocation>>(),
+        static_assert(std::is_default_constructible<unaryOperation<DataTy>>(),
                       "unaryOperation for NPArray::apply must be default "
                       "constructible");
-        unaryOperation<DataTy, enableLocation> op;
+        unaryOperation<DataTy> op;
         for (size_t row = 0; row < rows(); row++)
             for (size_t col = 0; col < cols(); col++)
-                at(row, col) = op(at(row, col), row, col);
+                at(row, col) = op(at(row, col));
         return *this;
     }
 
@@ -975,6 +973,171 @@ template <class Ty> class NPArray : public NPArrayBase {
 
     /// Convert all elements in this NPArray to their absolute value.
     NPArray &negate() noexcept { return apply<Negate>(); }
+
+    /// Modifies this NPArray by replacing each element with the result of
+    /// the application of \p binaryOperation to this element and returns
+    /// this NPArray.
+    template <template <typename> class binaryOperation>
+    std::enable_if_t<isNPBinaryOperator<DataTy, binaryOperation>::value,
+                     NPArray &>
+    apply(const DataTy &rhs) {
+        static_assert(
+            std::is_copy_constructible<binaryOperation<DataTy>>(),
+            "unaryOperation for NPArray::apply must be copy constructible");
+        static_assert(std::is_default_constructible<binaryOperation<DataTy>>(),
+                      "unaryOperation for NPArray::apply must be default "
+                      "constructible");
+        binaryOperation<DataTy> op;
+        for (size_t row = 0; row < rows(); row++)
+            for (size_t col = 0; col < cols(); col++)
+                at(row, col) = op(at(row, col), rhs);
+        return *this;
+    }
+
+    /// In-place scalar multiplication of this NPArray by \p v.
+    NPArray &operator*=(const DataTy &rhs) { return apply<Multiply>(rhs); }
+    /// In-place scalar addition of this NPArray by \p v.
+    NPArray &operator+=(const DataTy &rhs) { return apply<Add>(rhs); }
+    /// In-place scalar substraction of this NPArray by \p v.
+    NPArray &operator-=(const DataTy &rhs) { return apply<Substract>(rhs); }
+    /// In-place scalar division of this NPArray by \p v.
+    NPArray &operator/=(const DataTy &rhs) { return apply<Divide>(rhs); }
+    /// In-place absolute difference of this NPArray and the scalar \p v.
+    NPArray &absdiff(const DataTy &rhs) { return apply<AbsDiff>(rhs); }
+
+    /// Modifies this NPArray by replacing each element with the result of
+    /// the elementwise application of \p binaryOperation and returns
+    /// this NPArray. If \p v is a single row (resp. column) matrix, and its
+    /// number of columns (resp. rows), then its content is broadcasted for all
+    /// rows (resp. columns).
+    template <template <typename> class binaryOperation>
+    std::enable_if_t<isNPBinaryOperator<DataTy, binaryOperation>::value,
+                     NPArray &>
+    apply(const NPArray &rhs) {
+        static_assert(
+            std::is_copy_constructible<binaryOperation<DataTy>>(),
+            "unaryOperation for NPArray::apply must be copy constructible");
+        static_assert(std::is_default_constructible<binaryOperation<DataTy>>(),
+                      "unaryOperation for NPArray::apply must be default "
+                      "constructible");
+        assert(rows() == rhs.rows() || rows() == 1 ||
+               rhs.rows() == 1 &&
+                   "Rows dimensions must be equal or one of them must be 1");
+        assert(cols() == rhs.cols() || cols() == 1 ||
+               rhs.cols() == 1 &&
+                   "Columns dimensions must be equal or one of them must be 1");
+        binaryOperation<DataTy> op;
+        const uint8_t k =
+            ((rows() == 1 ? 1 : 0) << 3) | ((cols() == 1 ? 1 : 0) << 2) |
+            ((rhs.rows() == 1 ? 1 : 0) << 1) | ((rhs.cols() == 1 ? 1 : 0) << 0);
+        switch (k) {
+        case 0x0: // this: matrix + rhs: matrix -> matrix
+            for (size_t row = 0; row < rows(); row++)
+                for (size_t col = 0; col < cols(); col++)
+                    at(row, col) = op(at(row, col), rhs.at(row, col));
+            break;
+        case 0x1: // this: matrix + rhs: | -> matrix
+            for (size_t row = 0; row < rows(); row++)
+                for (size_t col = 0; col < cols(); col++)
+                    at(row, col) = op(at(row, col), rhs.at(row, 0));
+            break;
+        case 0x2: // this: matrix + rhs: - -> matrix
+            for (size_t row = 0; row < rows(); row++)
+                for (size_t col = 0; col < cols(); col++)
+                    at(row, col) = op(at(row, col), rhs.at(0, col));
+            break;
+        case 0x3: // this: matrix + rhs: scalar -> matrix
+            for (size_t row = 0; row < rows(); row++)
+                for (size_t col = 0; col < cols(); col++)
+                    at(row, col) = op(at(row, col), rhs.at(0, 0));
+            break;
+        case 0x4: // this: | + rhs: matrix -> matrix
+        {
+            NPArray tmp(*this);
+            *this = rhs;
+            for (size_t row = 0; row < rows(); row++)
+                for (size_t col = 0; col < cols(); col++)
+                    at(row, col) = op(tmp.at(row, 0), at(row, col));
+            break;
+        }
+        case 0x5: // this: | + rhs: | -> |
+            for (size_t row = 0; row < rows(); row++)
+                at(row, 0) = op(at(row, 0), rhs.at(row, 0));
+            break;
+        case 0x6: // this: | + rhs: -   !!!!!!
+            assert(0 && "Unhandled case in NP::apply, can not combine a single "
+                        "row with a single column");
+            break;
+        case 0x7: // this: | + rhs: scalar -> |
+            for (size_t row = 0; row < rows(); row++)
+                at(row, 0) = op(at(row, 0), rhs.at(0, 0));
+            break;
+        case 0x8: // this: - + rhs: matrix -> matrix
+        {
+            NPArray tmp(*this);
+            *this = rhs;
+            for (size_t row = 0; row < rows(); row++)
+                for (size_t col = 0; col < cols(); col++)
+                    at(row, col) = op(tmp.at(0, col), at(row, col));
+            break;
+        }
+        case 0x9: // this: - + rhs: | !!!!!!
+            assert(0 && "Unhandled case in NP::apply, can not combine a single "
+                        "row with a single column");
+            break;
+        case 0xa: // this: - + rhs: - -> -
+            for (size_t col = 0; col < cols(); col++)
+                at(0, col) = op(at(0, col), rhs.at(0, col));
+            break;
+        case 0xb: // this: - + rhs: scalar -> -
+            for (size_t col = 0; col < cols(); col++)
+                at(0, col) = op(at(0, col), rhs.at(0, 0));
+            break;
+        case 0xc: // this: scalar + rhs: matrix -> matrix
+        {
+            const DataTy tmp = at(0, 0);
+            *this = rhs;
+            for (size_t row = 0; row < rows(); row++)
+                for (size_t col = 0; col < cols(); col++)
+                    at(row, col) = op(tmp, at(row, col));
+            break;
+        }
+        case 0xd: // this: scalar + rhs: | -> |
+        {
+            const DataTy tmp = at(0, 0);
+            *this = rhs;
+            for (size_t row = 0; row < rows(); row++)
+                at(row, 0) = op(tmp, at(row, 0));
+            break;
+        }
+        case 0xe: // this: scalar + rhs: - -> -
+        {
+            const DataTy tmp = at(0, 0);
+            *this = rhs;
+            for (size_t col = 0; col < cols(); col++)
+                at(0, col) = op(tmp, at(0, col));
+            break;
+        }
+        case 0xf: // this: scalar + rhs: scalar -> scalar
+            at(0, 0) = op(at(0, 0), rhs.at(0, 0));
+            break;
+        default:
+            assert(0 && "Unhandled case in NP::apply");
+            break;
+        }
+        return *this;
+    }
+
+    /// In-place scalar multiplication of this NPArray by \p v.
+    NPArray &operator*=(const NPArray &rhs) { return apply<Multiply>(rhs); }
+    /// In-place scalar addition of this NPArray by \p v.
+    NPArray &operator+=(const NPArray &rhs) { return apply<Add>(rhs); }
+    /// In-place scalar substraction of this NPArray by \p v.
+    NPArray &operator-=(const NPArray &rhs) { return apply<Substract>(rhs); }
+    /// In-place scalar division of this NPArray by \p v.
+    NPArray &operator/=(const NPArray &rhs) { return apply<Divide>(rhs); }
+    /// In-place absolute difference of this NPArray and the scalar \p v.
+    NPArray &absdiff(const NPArray &rhs) { return apply<AbsDiff>(rhs); }
 
     /// Test if all elements in row \p i or column \p i satisfy predicate \p
     /// pred.
@@ -1015,7 +1178,7 @@ template <class Ty> class NPArray : public NPArrayBase {
     template <template <typename, bool> class unaryOperation,
               bool enableLocation = false>
     static std::enable_if_t<
-        isCollector<DataTy, unaryOperation>::value,
+        isNPCollector<DataTy, unaryOperation>::value,
         NPArray<typename NPOperatorTraits<DataTy, unaryOperation,
                                           enableLocation>::valueType>>
     extract(const std::vector<unaryOperation<DataTy, enableLocation>> &ops) {
@@ -1035,8 +1198,9 @@ template <class Ty> class NPArray : public NPArrayBase {
     /// unaryOperations.
     template <template <typename, bool> class unaryOperation,
               bool enableLocation = false>
-    std::enable_if_t<isCollector<DataTy, unaryOperation, enableLocation>::value,
-                     std::vector<unaryOperation<DataTy, enableLocation>>>
+    std::enable_if_t<
+        isNPCollector<DataTy, unaryOperation, enableLocation>::value,
+        std::vector<unaryOperation<DataTy, enableLocation>>>
     foldOp(Axis axis, size_t begin, size_t end) const {
         static_assert(
             std::is_copy_constructible<
@@ -1077,7 +1241,7 @@ template <class Ty> class NPArray : public NPArrayBase {
     /// unaryOperations.
     template <template <typename, bool> class unaryOperation,
               bool enableLocation = false>
-    std::enable_if_t<isCollector<DataTy, unaryOperation>::value,
+    std::enable_if_t<isNPCollector<DataTy, unaryOperation>::value,
                      std::vector<unaryOperation<DataTy, enableLocation>>>
     foldOp(Axis axis) const {
         static_assert(
@@ -1114,9 +1278,10 @@ template <class Ty> class NPArray : public NPArrayBase {
     /// \p axis (row / column) \p i and returns its value.
     template <template <typename, bool> class unaryOperation,
               bool enableLocation = false>
-    std::enable_if_t<isCollector<DataTy, unaryOperation, enableLocation>::value,
-                     typename NPOperatorTraits<DataTy, unaryOperation,
-                                               enableLocation>::valueType>
+    std::enable_if_t<
+        isNPCollector<DataTy, unaryOperation, enableLocation>::value,
+        typename NPOperatorTraits<DataTy, unaryOperation,
+                                  enableLocation>::valueType>
     fold(Axis axis, size_t i) const {
         return foreach<unaryOperation, enableLocation>(axis, i).value();
     }
@@ -1126,9 +1291,10 @@ template <class Ty> class NPArray : public NPArrayBase {
     /// computed values.
     template <template <typename, bool> class unaryOperation,
               bool enableLocation = false>
-    std::enable_if_t<isCollector<DataTy, unaryOperation, enableLocation>::value,
-                     NPArray<typename NPOperatorTraits<
-                         DataTy, unaryOperation, enableLocation>::valueType>>
+    std::enable_if_t<
+        isNPCollector<DataTy, unaryOperation, enableLocation>::value,
+        NPArray<typename NPOperatorTraits<DataTy, unaryOperation,
+                                          enableLocation>::valueType>>
     fold(Axis axis, size_t begin, size_t end) const {
         return extract(
             foldOp<unaryOperation, enableLocation>(axis, begin, end));
@@ -1139,9 +1305,10 @@ template <class Ty> class NPArray : public NPArrayBase {
     /// computed values.
     template <template <typename, bool> class unaryOperation,
               bool enableLocation = false>
-    std::enable_if_t<isCollector<DataTy, unaryOperation, enableLocation>::value,
-                     NPArray<typename NPOperatorTraits<
-                         DataTy, unaryOperation, enableLocation>::valueType>>
+    std::enable_if_t<
+        isNPCollector<DataTy, unaryOperation, enableLocation>::value,
+        NPArray<typename NPOperatorTraits<DataTy, unaryOperation,
+                                          enableLocation>::valueType>>
     fold(Axis axis) const {
         return extract(foldOp<unaryOperation, enableLocation>(axis));
     }
@@ -1296,6 +1463,78 @@ template <class Ty> NPArray<Ty> abs(const NPArray<Ty> &npy) {
 template <class Ty> NPArray<Ty> negate(const NPArray<Ty> &npy) {
     NPArray<Ty> tmp(npy);
     return tmp.negate();
+}
+
+/// Scalar multiplication (RHS version).
+template <class Ty>
+NPArray<Ty> operator*(const NPArray<Ty> &lhs, const Ty &rhs) {
+    return NPArray<Ty>(lhs) *= rhs;
+}
+/// Scalar multiplication (LHS version).
+template <class Ty>
+NPArray<Ty> operator*(const Ty &lhs, const NPArray<Ty> &rhs) {
+    return NPArray<Ty>(rhs) *= lhs;
+}
+/// Scalar division.
+template <class Ty>
+NPArray<Ty> operator/(const NPArray<Ty> &lhs, const Ty &rhs) {
+    return NPArray<Ty>(lhs) /= rhs;
+}
+/// Scalar addition (RHS version).
+template <class Ty>
+NPArray<Ty> operator+(const NPArray<Ty> &lhs, const Ty &rhs) {
+    return NPArray<Ty>(lhs) += rhs;
+}
+/// Scalar addition (LHS version).
+template <class Ty>
+NPArray<Ty> operator+(const Ty &lhs, const NPArray<Ty> &rhs) {
+    return NPArray<Ty>(rhs) += lhs;
+}
+/// Scalar substraction (RHS version).
+template <class Ty>
+NPArray<Ty> operator-(const NPArray<Ty> &lhs, const Ty &rhs) {
+    return NPArray<Ty>(lhs) -= rhs;
+}
+/// Scalar substraction (LHS version).
+template <class Ty>
+NPArray<Ty> operator-(const Ty &lhs, const NPArray<Ty> &rhs) {
+    NPArray<Ty> tmp(rhs);
+    tmp.negate();
+    return tmp += lhs;
+}
+/// Absolute difference (RHS version).
+template <class Ty> NPArray<Ty> absdiff(const NPArray<Ty> &lhs, const Ty &rhs) {
+    return NPArray<Ty>(lhs).absdiff(rhs);
+}
+/// Absolute difference (LHS version).
+template <class Ty> NPArray<Ty> absdiff(const Ty &lhs, const NPArray<Ty> &rhs) {
+    return NPArray<Ty>(rhs).absdiff(lhs);
+}
+
+/// Multiplication.
+template <class Ty>
+NPArray<Ty> operator*(const NPArray<Ty> &lhs, const NPArray<Ty> &rhs) {
+    return NPArray<Ty>(lhs) *= rhs;
+}
+/// Division.
+template <class Ty>
+NPArray<Ty> operator/(const NPArray<Ty> &lhs, const NPArray<Ty> &rhs) {
+    return NPArray<Ty>(lhs) /= rhs;
+}
+/// Addition.
+template <class Ty>
+NPArray<Ty> operator+(const NPArray<Ty> &lhs, const NPArray<Ty> &rhs) {
+    return NPArray<Ty>(lhs) += rhs;
+}
+/// Substraction.
+template <class Ty>
+NPArray<Ty> operator-(const NPArray<Ty> &lhs, const NPArray<Ty> &rhs) {
+    return NPArray<Ty>(lhs) -= rhs;
+}
+/// Absolute difference.
+template <class Ty>
+NPArray<Ty> absdiff(const NPArray<Ty> &lhs, const NPArray<Ty> &rhs) {
+    return NPArray<Ty>(lhs).absdiff(rhs);
 }
 
 /// Functional version of 'all' predicate checker on an NPArray for row / column

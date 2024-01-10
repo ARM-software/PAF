@@ -30,18 +30,22 @@ namespace SCA {
 
 struct NPOperator {};
 struct NPCollector : public NPOperator {};
-struct NPTransformer : public NPOperator {};
+struct NPUnaryOperator : public NPOperator {};
+struct NPBinaryOperator : public NPOperator {};
 
-template <typename DataTy, template <typename, bool> class operation,
-          bool enableLocation = false>
-struct isTransformer
+template <typename DataTy, template <typename> class operation>
+struct isNPUnaryOperator
     : std::integral_constant<
-          bool, std::is_base_of<NPTransformer,
-                                operation<DataTy, enableLocation>>::value> {};
+          bool, std::is_base_of<NPUnaryOperator, operation<DataTy>>::value> {};
+
+template <typename DataTy, template <typename> class operation>
+struct isNPBinaryOperator
+    : std::integral_constant<
+          bool, std::is_base_of<NPBinaryOperator, operation<DataTy>>::value> {};
 
 template <typename DataTy, template <typename, bool> class operation,
           bool enableLocation = false>
-struct isCollector
+struct isNPCollector
     : std::integral_constant<
           bool, std::is_base_of<NPCollector,
                                 operation<DataTy, enableLocation>>::value> {};
@@ -68,36 +72,68 @@ struct NPOperatorTraits {
 /// implemented.
 
 /// Get the absolute value of value \p v. A no-op if v is unsigned.
-template <typename Ty, bool enableLocation = false>
-class Abs : public NPTransformer {
-    static_assert(!enableLocation, "Abs does not support location information");
-    template <typename T>
-    static constexpr std::enable_if_t<std::is_unsigned<T>::value, T>
-    absolute(const T &v) noexcept {
+template <typename Ty> class Abs : public NPUnaryOperator {
+  public:
+    template <typename T = Ty>
+    constexpr std::enable_if_t<std::is_unsigned<T>::value, Ty>
+    operator()(const Ty &v) const noexcept {
         return v;
     }
-
-    template <typename T>
-    static constexpr std::enable_if_t<std::is_signed<Ty>::value, T>
-    absolute(const T &v) noexcept {
+    template <typename T = Ty>
+    constexpr std::enable_if_t<std::is_signed<T>::value, Ty>
+    operator()(const Ty &v) const {
         return std::abs(v);
-    }
-
-  public:
-    Ty operator()(const Ty &v, size_t row = 0, size_t col = 0) const noexcept {
-        return absolute<Ty>(v);
     }
 };
 
 /// Negate \p v.
-template <typename Ty, bool enableLocation = false>
-class Negate : public NPTransformer {
-    static_assert(!enableLocation,
-                  "Negate does not support location information");
-
+template <typename Ty> class Negate : public NPUnaryOperator {
   public:
-    Ty operator()(const Ty &v, size_t row = 0, size_t col = 0) const noexcept {
-        return -v;
+    constexpr Ty operator()(const Ty &v) const noexcept { return -v; }
+};
+
+/// Multiply by \p a by \p b and return the result.
+template <typename Ty> class Multiply : public NPBinaryOperator {
+  public:
+    constexpr Ty operator()(const Ty &a, const Ty &b) const noexcept {
+        return a * b;
+    }
+};
+
+/// Divide \p a by \p b and return the result.
+template <typename Ty> class Divide : public NPBinaryOperator {
+  public:
+    constexpr Ty operator()(const Ty &a, const Ty &b) const { return a / b; }
+};
+
+/// Add to \p a to \p b and return the result.
+template <typename Ty> class Add : public NPBinaryOperator {
+  public:
+    constexpr Ty operator()(const Ty &a, const Ty &b) const noexcept {
+        return a + b;
+    }
+};
+
+/// Substract \p b from \p a and return the result.
+template <typename Ty> class Substract : public NPBinaryOperator {
+  public:
+    constexpr Ty operator()(const Ty &a, const Ty &b) const noexcept {
+        return a - b;
+    }
+};
+
+/// Compute the absolute difference between \p a and \p b and return the result.
+template <typename Ty> class AbsDiff : public NPBinaryOperator {
+  public:
+    template <typename T = Ty>
+    constexpr std::enable_if_t<std::is_signed<T>::value, Ty>
+    operator()(const Ty &a, const Ty &b) const noexcept {
+        return Abs<Ty>()(a - b);
+    }
+    template <typename T = Ty>
+    constexpr std::enable_if_t<std::is_unsigned<T>::value, Ty>
+    operator()(const Ty &a, const Ty &b) const noexcept {
+        return a > b ? a - b : b - a;
     }
 };
 

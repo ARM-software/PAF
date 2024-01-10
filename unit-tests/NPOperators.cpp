@@ -27,14 +27,21 @@
 #include <limits>
 #include <type_traits>
 
+using PAF::SCA::Abs;
+using PAF::SCA::AbsDiff;
+using PAF::SCA::Add;
+using PAF::SCA::Divide;
 using PAF::SCA::Max;
 using PAF::SCA::MaxAbs;
 using PAF::SCA::Mean;
 using PAF::SCA::MeanWithVar;
 using PAF::SCA::Min;
 using PAF::SCA::MinAbs;
+using PAF::SCA::Multiply;
+using PAF::SCA::Negate;
 using PAF::SCA::NPArray;
 using PAF::SCA::NPArrayBase;
+using PAF::SCA::Substract;
 
 template <typename Ty> struct Expected {
     size_t row;
@@ -63,7 +70,7 @@ void dump(std::ostream &os, const Ty &val, size_t row, size_t col) {
 }
 
 template <template <typename, bool> class operation, typename Ty>
-struct NPOperatorChecker {
+struct NPCollectorChecker {
     using expected = Expected<Ty>;
 
     template <bool MinMax, bool enableLocation>
@@ -128,7 +135,7 @@ struct NPOperatorChecker {
 };
 
 template <template <typename, bool> class operation, typename Ty>
-struct MinMaxCheck : public NPOperatorChecker<operation, Ty> {
+struct MinMaxCheck : public NPCollectorChecker<operation, Ty> {
 
     using expected = Expected<Ty>;
 
@@ -137,7 +144,8 @@ struct MinMaxCheck : public NPOperatorChecker<operation, Ty> {
                            8, 9, 10, 11, 12, 13, 14, 15};
 
 #define test(...)                                                              \
-    NPOperatorChecker<operation, Ty>::template expect<MinMax, enableLocation>( \
+    NPCollectorChecker<operation, Ty>::template expect<MinMax,                 \
+                                                       enableLocation>(        \
         __VA_ARGS__)
 
         operation<Ty, enableLocation> op;
@@ -246,7 +254,7 @@ struct MinMaxCheck : public NPOperatorChecker<operation, Ty> {
     }
 };
 
-TEST(NPUtils, Min) {
+TEST(NPCollector, Min) {
     MinMaxCheck<Min, int8_t>().check<false, false>();
     MinMaxCheck<Min, int16_t>().check<false, false>();
     MinMaxCheck<Min, int32_t>().check<false, false>();
@@ -261,7 +269,7 @@ TEST(NPUtils, Min) {
     MinMaxCheck<Min, double>().check<false, false>();
 }
 
-TEST(NPUtils, MinWithLocation) {
+TEST(NPCollector, MinWithLocation) {
     MinMaxCheck<Min, int8_t>().check<false, true>();
     MinMaxCheck<Min, int16_t>().check<false, true>();
     MinMaxCheck<Min, int32_t>().check<false, true>();
@@ -276,7 +284,7 @@ TEST(NPUtils, MinWithLocation) {
     MinMaxCheck<Min, double>().check<false, true>();
 }
 
-TEST(NPUtils, Max) {
+TEST(NPCollector, Max) {
     MinMaxCheck<Max, int8_t>().check<true, false>();
     MinMaxCheck<Max, int16_t>().check<true, false>();
     MinMaxCheck<Max, int32_t>().check<true, false>();
@@ -291,7 +299,7 @@ TEST(NPUtils, Max) {
     MinMaxCheck<Max, double>().check<true, false>();
 }
 
-TEST(NPUtils, MaxWithLocation) {
+TEST(NPCollector, MaxWithLocation) {
     MinMaxCheck<Max, int8_t>().check<true, true>();
     MinMaxCheck<Max, int16_t>().check<true, true>();
     MinMaxCheck<Max, int32_t>().check<true, true>();
@@ -307,7 +315,7 @@ TEST(NPUtils, MaxWithLocation) {
 }
 
 template <template <typename, bool> class operation, typename Ty>
-struct MinMaxAbsCheck : public NPOperatorChecker<operation, Ty> {
+struct MinMaxAbsCheck : public NPCollectorChecker<operation, Ty> {
     using expected = Expected<Ty>;
 
     template <bool MinMax, bool enableLocation> void check() const {
@@ -315,7 +323,8 @@ struct MinMaxAbsCheck : public NPOperatorChecker<operation, Ty> {
                            8,      9, 10,     11, Ty(-12), 13, 14, 15};
 
 #define test(...)                                                              \
-    NPOperatorChecker<operation, Ty>::template expect<MinMax, enableLocation>( \
+    NPCollectorChecker<operation, Ty>::template expect<MinMax,                 \
+                                                       enableLocation>(        \
         __VA_ARGS__)
 
         operation<Ty, enableLocation> op;
@@ -466,7 +475,7 @@ struct MinMaxAbsCheck : public NPOperatorChecker<operation, Ty> {
 #undef test
 };
 
-TEST(NPUtils, MinAbs) {
+TEST(NPCollector, MinAbs) {
     MinMaxAbsCheck<MinAbs, int8_t>().check<false, false>();
     MinMaxAbsCheck<MinAbs, int16_t>().check<false, false>();
     MinMaxAbsCheck<MinAbs, int32_t>().check<false, false>();
@@ -481,7 +490,7 @@ TEST(NPUtils, MinAbs) {
     MinMaxAbsCheck<MinAbs, double>().check<false, false>();
 }
 
-TEST(NPUtils, MinAbsWithLocation) {
+TEST(NPCollector, MinAbsWithLocation) {
     MinMaxAbsCheck<MinAbs, int8_t>().check<false, true>();
     MinMaxAbsCheck<MinAbs, int16_t>().check<false, true>();
     MinMaxAbsCheck<MinAbs, int32_t>().check<false, true>();
@@ -496,7 +505,7 @@ TEST(NPUtils, MinAbsWithLocation) {
     MinMaxAbsCheck<MinAbs, double>().check<false, true>();
 }
 
-TEST(NPUtils, MaxAbs) {
+TEST(NPCollector, MaxAbs) {
     MinMaxAbsCheck<MaxAbs, int8_t>().check<true, false>();
     MinMaxAbsCheck<MaxAbs, int16_t>().check<true, false>();
     MinMaxAbsCheck<MaxAbs, int32_t>().check<true, false>();
@@ -511,7 +520,7 @@ TEST(NPUtils, MaxAbs) {
     MinMaxAbsCheck<MaxAbs, double>().check<true, false>();
 }
 
-TEST(NPUtils, MaxAbsWithLocation) {
+TEST(NPCollector, MaxAbsWithLocation) {
     MinMaxAbsCheck<MaxAbs, int8_t>().check<true, true>();
     MinMaxAbsCheck<MaxAbs, int16_t>().check<true, true>();
     MinMaxAbsCheck<MaxAbs, int32_t>().check<true, true>();
@@ -526,13 +535,13 @@ TEST(NPUtils, MaxAbsWithLocation) {
     MinMaxAbsCheck<MaxAbs, double>().check<true, true>();
 }
 
-TEST(NPUtils, AveragerBase) {
+TEST(NPCollector, AveragerBase) {
     Mean<uint32_t> avg0;
     EXPECT_EQ(avg0.count(), 0);
     EXPECT_EQ(avg0.value(), 0.0);
 }
 
-TEST(NPUtils, Averager) {
+TEST(NPCollector, Averager) {
     Mean<double> avg0;
     for (const double &d : {1.0, 2.0, 3.0, 4.0})
         avg0(d);
@@ -540,7 +549,7 @@ TEST(NPUtils, Averager) {
     EXPECT_EQ(avg0.value(), 2.5);
 }
 
-TEST(NPUtils, AveragerWithVarBase) {
+TEST(NPCollector, AveragerWithVarBase) {
     MeanWithVar<int32_t> avg0;
     EXPECT_EQ(avg0.count(), 0);
     EXPECT_EQ(avg0.value(), 0.0);
@@ -550,7 +559,7 @@ TEST(NPUtils, AveragerWithVarBase) {
     EXPECT_TRUE(std::isnan(avg0.stddev()));
 }
 
-TEST(NPUtils, AveragerWithVar) {
+TEST(NPCollector, AveragerWithVar) {
     MeanWithVar<double> avg0;
     for (const double &d : {3.0, 2.0, 3.0, 4.0})
         avg0(d);
@@ -560,4 +569,178 @@ TEST(NPUtils, AveragerWithVar) {
     EXPECT_EQ(avg0.var(0), .5);
     EXPECT_EQ(avg0.var(1), 2.0 / 3.0);
     EXPECT_EQ(avg0.stddev(), std::sqrt(0.5));
+}
+
+template <typename Ty> bool checkAbs() {
+    Abs<Ty> abs;
+    EXPECT_EQ(abs(Ty(5)), Ty(5));
+    EXPECT_EQ(abs(Ty(-2)), std::is_unsigned<Ty>() ? Ty(-2) : Ty(2));
+
+    return !testing::Test::HasFatalFailure() &&
+           !testing::Test::HasNonfatalFailure();
+}
+
+TEST(NPOperator, Abs) {
+    EXPECT_TRUE(checkAbs<uint8_t>());
+    EXPECT_TRUE(checkAbs<uint16_t>());
+    EXPECT_TRUE(checkAbs<uint32_t>());
+    EXPECT_TRUE(checkAbs<uint64_t>());
+
+    EXPECT_TRUE(checkAbs<int8_t>());
+    EXPECT_TRUE(checkAbs<int16_t>());
+    EXPECT_TRUE(checkAbs<int32_t>());
+    EXPECT_TRUE(checkAbs<int64_t>());
+
+    EXPECT_TRUE(checkAbs<float>());
+    EXPECT_TRUE(checkAbs<double>());
+}
+
+template <typename Ty> bool checkNegate() {
+    Negate<Ty> neg;
+    EXPECT_EQ(neg(Ty(5)), std::is_unsigned<Ty>()
+                              ? Ty(std::numeric_limits<Ty>::max() - 5 + 1)
+                              : Ty(-5));
+    EXPECT_EQ(neg(Ty(-2)), Ty(2));
+
+    return !testing::Test::HasFatalFailure() &&
+           !testing::Test::HasNonfatalFailure();
+}
+
+TEST(NPOperator, Negate) {
+    EXPECT_TRUE(checkNegate<uint8_t>());
+    EXPECT_TRUE(checkNegate<uint16_t>());
+    EXPECT_TRUE(checkNegate<uint32_t>());
+    EXPECT_TRUE(checkNegate<uint64_t>());
+
+    EXPECT_TRUE(checkNegate<int8_t>());
+    EXPECT_TRUE(checkNegate<int16_t>());
+    EXPECT_TRUE(checkNegate<int32_t>());
+    EXPECT_TRUE(checkNegate<int64_t>());
+
+    EXPECT_TRUE(checkNegate<float>());
+    EXPECT_TRUE(checkNegate<double>());
+}
+
+template <typename Ty> bool checkAdd() {
+    Add<Ty> add;
+    EXPECT_EQ(add(Ty(5), Ty(2)), Ty(7));
+    EXPECT_EQ(add(Ty(-2), Ty(5)), Ty(3));
+
+    return !testing::Test::HasFatalFailure() &&
+           !testing::Test::HasNonfatalFailure();
+}
+
+TEST(NPOperator, Add) {
+    EXPECT_TRUE(checkAdd<uint8_t>());
+    EXPECT_TRUE(checkAdd<uint16_t>());
+    EXPECT_TRUE(checkAdd<uint32_t>());
+    EXPECT_TRUE(checkAdd<uint64_t>());
+
+    EXPECT_TRUE(checkAdd<int8_t>());
+    EXPECT_TRUE(checkAdd<int16_t>());
+    EXPECT_TRUE(checkAdd<int32_t>());
+    EXPECT_TRUE(checkAdd<int64_t>());
+
+    EXPECT_TRUE(checkAdd<float>());
+    EXPECT_TRUE(checkAdd<double>());
+}
+
+template <typename Ty> bool checkMul() {
+    Multiply<Ty> mul;
+    EXPECT_EQ(mul(Ty(5), Ty(2)), Ty(10));
+    EXPECT_EQ(mul(Ty(-2), Ty(5)), Ty(-10));
+
+    return !testing::Test::HasFatalFailure() &&
+           !testing::Test::HasNonfatalFailure();
+}
+
+TEST(NPOperator, Mul) {
+    EXPECT_TRUE(checkMul<uint8_t>());
+    EXPECT_TRUE(checkMul<uint16_t>());
+    EXPECT_TRUE(checkMul<uint32_t>());
+    EXPECT_TRUE(checkMul<uint64_t>());
+
+    EXPECT_TRUE(checkMul<int8_t>());
+    EXPECT_TRUE(checkMul<int16_t>());
+    EXPECT_TRUE(checkMul<int32_t>());
+    EXPECT_TRUE(checkMul<int64_t>());
+
+    EXPECT_TRUE(checkMul<float>());
+    EXPECT_TRUE(checkMul<double>());
+}
+
+template <typename Ty> bool checkSub() {
+    Substract<Ty> sub;
+    EXPECT_EQ(sub(Ty(5), Ty(2)), Ty(3));
+    EXPECT_EQ(sub(Ty(-2), Ty(5)), Ty(-7));
+
+    return !testing::Test::HasFatalFailure() &&
+           !testing::Test::HasNonfatalFailure();
+}
+
+TEST(NPOperator, Sub) {
+    EXPECT_TRUE(checkSub<uint8_t>());
+    EXPECT_TRUE(checkSub<uint16_t>());
+    EXPECT_TRUE(checkSub<uint32_t>());
+    EXPECT_TRUE(checkSub<uint64_t>());
+
+    EXPECT_TRUE(checkSub<int8_t>());
+    EXPECT_TRUE(checkSub<int16_t>());
+    EXPECT_TRUE(checkSub<int32_t>());
+    EXPECT_TRUE(checkSub<int64_t>());
+
+    EXPECT_TRUE(checkSub<float>());
+    EXPECT_TRUE(checkSub<double>());
+}
+
+template <typename Ty> bool checkDiv() {
+    Divide<Ty> div;
+    EXPECT_EQ(div(Ty(10), Ty(2)), Ty(5));
+    EXPECT_EQ(div(Ty(-20), Ty(4)), Ty(-20) / Ty(4));
+
+    return !testing::Test::HasFatalFailure() &&
+           !testing::Test::HasNonfatalFailure();
+}
+
+TEST(NPOperator, Div) {
+    EXPECT_TRUE(checkDiv<uint8_t>());
+    EXPECT_TRUE(checkDiv<uint16_t>());
+    EXPECT_TRUE(checkDiv<uint32_t>());
+    EXPECT_TRUE(checkDiv<uint64_t>());
+
+    EXPECT_TRUE(checkDiv<int8_t>());
+    EXPECT_TRUE(checkDiv<int16_t>());
+    EXPECT_TRUE(checkDiv<int32_t>());
+    EXPECT_TRUE(checkDiv<int64_t>());
+
+    EXPECT_TRUE(checkDiv<float>());
+    EXPECT_TRUE(checkDiv<double>());
+}
+
+template <typename Ty> bool checkAbsdiff() {
+    AbsDiff<Ty> absdiff;
+    EXPECT_EQ(absdiff(Ty(10), Ty(2)), Ty(8));
+    EXPECT_EQ(absdiff(Ty(2), Ty(10)), Ty(8));
+    EXPECT_EQ(absdiff(Ty(-20), Ty(4)),
+              std::is_unsigned<Ty>()
+                  ? Ty(std::numeric_limits<Ty>::max() - 20 - 4 + 1)
+                  : Ty(24));
+
+    return !testing::Test::HasFatalFailure() &&
+           !testing::Test::HasNonfatalFailure();
+}
+
+TEST(NPOperator, Absdiff) {
+    EXPECT_TRUE(checkAbsdiff<uint8_t>());
+    EXPECT_TRUE(checkAbsdiff<uint16_t>());
+    EXPECT_TRUE(checkAbsdiff<uint32_t>());
+    EXPECT_TRUE(checkAbsdiff<uint64_t>());
+
+    EXPECT_TRUE(checkAbsdiff<int8_t>());
+    EXPECT_TRUE(checkAbsdiff<int16_t>());
+    EXPECT_TRUE(checkAbsdiff<int32_t>());
+    EXPECT_TRUE(checkAbsdiff<int64_t>());
+
+    EXPECT_TRUE(checkAbsdiff<float>());
+    EXPECT_TRUE(checkAbsdiff<double>());
 }
