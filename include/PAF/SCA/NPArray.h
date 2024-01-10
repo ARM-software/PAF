@@ -156,6 +156,14 @@ class NPArrayBase {
         return *this;
     }
 
+    /// Swap with \p rhs.
+    NPArrayBase &swap(NPArrayBase &rhs) {
+        std::swap(num_rows, rhs.num_rows);
+        std::swap(num_columns, rhs.num_columns);
+        std::swap(data, rhs.data);
+        return *this;
+    }
+
     /// Are those NPArray equal ?
     bool operator==(const NPArrayBase &Other) const noexcept {
         if (element_size() != Other.element_size() || rows() != Other.rows() ||
@@ -513,6 +521,12 @@ template <class Ty> class NPArray : public NPArrayBase {
     /// Move assign an NParray.
     NPArray &operator=(NPArray &&Other) {
         this->NPArrayBase::operator=(std::move(Other));
+        return *this;
+    }
+
+    /// Swap with \p rhs.
+    NPArray &swap(NPArray &rhs) {
+        NPArrayBase::swap(rhs);
         return *this;
     }
 

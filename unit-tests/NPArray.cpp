@@ -241,6 +241,37 @@ TEST(NParray, descr) {
     EXPECT_EQ(NPArray<double>::descr(), "f8");
 }
 
+TEST(NPArray, swap) {
+    const int16_t init1[] = {0, 1, 2, 3, 4, 5, 6, 7};
+    const int16_t init2[] = {10, 11, 12, 13, 14, 15, 16, 17};
+    NPArray<int16_t> a(init1, 2, 4);
+    NPArray<int16_t> b(init2, 4, 2);
+    EXPECT_EQ(a.rows(), 2);
+    EXPECT_EQ(a.cols(), 4);
+    EXPECT_EQ(a, NPArray<int16_t>(init1, 2, 4));
+    EXPECT_EQ(b.rows(), 4);
+    EXPECT_EQ(b.cols(), 2);
+    EXPECT_EQ(b, NPArray<int16_t>(init2, 4, 2));
+
+    a.swap(b);
+
+    EXPECT_EQ(b.rows(), 2);
+    EXPECT_EQ(b.cols(), 4);
+    EXPECT_EQ(b, NPArray<int16_t>(init1, 2, 4));
+    EXPECT_EQ(a.rows(), 4);
+    EXPECT_EQ(a.cols(), 2);
+    EXPECT_EQ(a, NPArray<int16_t>(init2, 4, 2));
+
+    std::swap(a, b);
+
+    EXPECT_EQ(a.rows(), 2);
+    EXPECT_EQ(a.cols(), 4);
+    EXPECT_EQ(a, NPArray<int16_t>(init1, 2, 4));
+    EXPECT_EQ(b.rows(), 4);
+    EXPECT_EQ(b.cols(), 2);
+    EXPECT_EQ(b, NPArray<int16_t>(init2, 4, 2));
+}
+
 TEST(NPArray, from_vector_vector) {
     vector<vector<double>> VD{{0., 1., 2., 3.}, {10., 11., 12., 13.}};
     NPArray<double> NPD(VD);
