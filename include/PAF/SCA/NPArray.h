@@ -403,70 +403,112 @@ template <class Ty> class NPArray : public NPArrayBase {
         size_t num_elt = num_rows * num_cols;
         std::unique_ptr<Ty[]> data(new Ty[num_elt]);
 
-        if (elt_ty == "i1")
-            for (size_t i = 0; i < num_elt; i++) {
-                int8_t tmp;
-                ifs.read(reinterpret_cast<char *>(&tmp), elt_size);
-                data[i] = static_cast<Ty>(tmp);
+        switch (elt_ty[0]) {
+        case 'i':
+            switch (elt_ty[1]) {
+            case '1':
+                for (size_t i = 0; i < num_elt; i++) {
+                    int8_t tmp;
+                    ifs.read(reinterpret_cast<char *>(&tmp), elt_size);
+                    data[i] = static_cast<Ty>(tmp);
+                }
+                break;
+            case '2':
+                for (size_t i = 0; i < num_elt; i++) {
+                    int16_t tmp;
+                    ifs.read(reinterpret_cast<char *>(&tmp), elt_size);
+                    data[i] = static_cast<Ty>(tmp);
+                }
+                break;
+            case '4':
+                for (size_t i = 0; i < num_elt; i++) {
+                    int32_t tmp;
+                    ifs.read(reinterpret_cast<char *>(&tmp), elt_size);
+                    data[i] = static_cast<Ty>(tmp);
+                }
+                break;
+            case '8':
+                for (size_t i = 0; i < num_elt; i++) {
+                    int64_t tmp;
+                    ifs.read(reinterpret_cast<char *>(&tmp), elt_size);
+                    data[i] = static_cast<Ty>(tmp);
+                }
+                break;
+            default: {
+                NPArray res(0, 0);
+                res.setError(
+                    "Unhandled signed integer content size in numpy file");
+                return res;
             }
-        else if (elt_ty == "i2")
-            for (size_t i = 0; i < num_elt; i++) {
-                int16_t tmp;
-                ifs.read(reinterpret_cast<char *>(&tmp), elt_size);
-                data[i] = static_cast<Ty>(tmp);
             }
-        else if (elt_ty == "i4")
-            for (size_t i = 0; i < num_elt; i++) {
-                int32_t tmp;
-                ifs.read(reinterpret_cast<char *>(&tmp), elt_size);
-                data[i] = static_cast<Ty>(tmp);
+            break;
+        case 'u':
+            switch (elt_ty[1]) {
+            case '1':
+                for (size_t i = 0; i < num_elt; i++) {
+                    uint8_t tmp;
+                    ifs.read(reinterpret_cast<char *>(&tmp), elt_size);
+                    data[i] = static_cast<Ty>(tmp);
+                }
+                break;
+            case '2':
+                for (size_t i = 0; i < num_elt; i++) {
+                    uint16_t tmp;
+                    ifs.read(reinterpret_cast<char *>(&tmp), elt_size);
+                    data[i] = static_cast<Ty>(tmp);
+                }
+                break;
+            case '4':
+                for (size_t i = 0; i < num_elt; i++) {
+                    uint32_t tmp;
+                    ifs.read(reinterpret_cast<char *>(&tmp), elt_size);
+                    data[i] = static_cast<Ty>(tmp);
+                }
+                break;
+            case '8':
+                for (size_t i = 0; i < num_elt; i++) {
+                    uint64_t tmp;
+                    ifs.read(reinterpret_cast<char *>(&tmp), elt_size);
+                    data[i] = static_cast<Ty>(tmp);
+                }
+                break;
+            default: {
+                NPArray res(0, 0);
+                res.setError(
+                    "Unhandled unsigned integer content size in numpy file");
+                return res;
             }
-        else if (elt_ty == "i8")
-            for (size_t i = 0; i < num_elt; i++) {
-                int64_t tmp;
-                ifs.read(reinterpret_cast<char *>(&tmp), elt_size);
-                data[i] = static_cast<Ty>(tmp);
             }
-        else if (elt_ty == "u1")
-            for (size_t i = 0; i < num_elt; i++) {
-                uint8_t tmp;
-                ifs.read(reinterpret_cast<char *>(&tmp), elt_size);
-                data[i] = static_cast<Ty>(tmp);
+            break;
+        case 'f':
+            switch (elt_ty[1]) {
+            case '4':
+                for (size_t i = 0; i < num_elt; i++) {
+                    float tmp;
+                    ifs.read(reinterpret_cast<char *>(&tmp), elt_size);
+                    data[i] = static_cast<Ty>(tmp);
+                }
+                break;
+            case '8':
+                for (size_t i = 0; i < num_elt; i++) {
+                    double tmp;
+                    ifs.read(reinterpret_cast<char *>(&tmp), elt_size);
+                    data[i] = static_cast<Ty>(tmp);
+                }
+                break;
+            default: {
+                NPArray res(0, 0);
+                res.setError(
+                    "Unhandled floating point content size in numpy file");
+                return res;
             }
-        else if (elt_ty == "u2")
-            for (size_t i = 0; i < num_elt; i++) {
-                uint16_t tmp;
-                ifs.read(reinterpret_cast<char *>(&tmp), elt_size);
-                data[i] = static_cast<Ty>(tmp);
             }
-        else if (elt_ty == "u4")
-            for (size_t i = 0; i < num_elt; i++) {
-                uint32_t tmp;
-                ifs.read(reinterpret_cast<char *>(&tmp), elt_size);
-                data[i] = static_cast<Ty>(tmp);
-            }
-        else if (elt_ty == "u8")
-            for (size_t i = 0; i < num_elt; i++) {
-                uint64_t tmp;
-                ifs.read(reinterpret_cast<char *>(&tmp), elt_size);
-                data[i] = static_cast<Ty>(tmp);
-            }
-        else if (elt_ty == "f4")
-            for (size_t i = 0; i < num_elt; i++) {
-                float tmp;
-                ifs.read(reinterpret_cast<char *>(&tmp), elt_size);
-                data[i] = static_cast<Ty>(tmp);
-            }
-        else if (elt_ty == "f8")
-            for (size_t i = 0; i < num_elt; i++) {
-                double tmp;
-                ifs.read(reinterpret_cast<char *>(&tmp), elt_size);
-                data[i] = static_cast<Ty>(tmp);
-            }
-        else {
+            break;
+        default: {
             NPArray res(0, 0);
-            res.setError("Unhandled content in numpy file");
+            res.setError("Unhandled content type in numpy file");
             return res;
+        }
         }
 
         return NPArray(std::move(data), num_rows, num_cols);
