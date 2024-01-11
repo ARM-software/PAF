@@ -30,7 +30,7 @@ using std::vector;
 namespace PAF {
 namespace SCA {
 NPArray<double> correl(size_t b, size_t e, const NPArray<double> &traces,
-                       const vector<double> &ival) {
+                       const NPArray<double> &ival) {
 
     assert(b <= e && "Wrong begin / end samples");
     assert(b <= traces.cols() && "Not that many samples in the trace");
@@ -44,31 +44,28 @@ NPArray<double> correl(size_t b, size_t e, const NPArray<double> &traces,
     const size_t nbtraces = traces.rows();
     const size_t nbsamples = e - b;
 
-    vector<double> sum_t(nbsamples, 0.0);
-    vector<double> sum_t2(nbsamples, 0.0);
-    vector<double> sum_ht(nbsamples, 0.0);
+    auto sum_t = NPArray<double>::zeros(1, nbsamples);
+    auto sum_t2 = NPArray<double>::zeros(1, nbsamples);
+    auto sum_ht = NPArray<double>::zeros(1, nbsamples);
     double sum_h = 0.0;
     double sum_h2 = 0.0;
 
     for (size_t t = 0; t < nbtraces; t++) {
-        const double iv = ival[t];
+        const double iv = ival(0, t);
         sum_h += iv;
         sum_h2 += iv * iv;
 
         for (size_t s = 0; s < nbsamples; s++) {
             const double v = traces(t, b + s);
-            sum_t[s] += v;
-            sum_t2[s] += v * v;
-            sum_ht[s] += v * iv;
+            sum_t(0, s) += v;
+            sum_t2(0, s) += v * v;
+            sum_ht(0, s) += v * iv;
         }
     }
 
-    NPArray<double> cvalue(1, nbsamples);
-    for (size_t s = 0; s < nbsamples; s++) {
-        cvalue(0, s) = nbtraces * sum_ht[s] - sum_h * sum_t[s];
-        cvalue(0, s) /= std::sqrt((sum_h * sum_h - nbtraces * sum_h2) *
-                             (sum_t[s] * sum_t[s] - nbtraces * sum_t2[s]));
-    }
+    NPArray<double> cvalue = (double(nbtraces) * sum_ht - sum_h * sum_t) /
+                             sqrt((sum_h * sum_h - double(nbtraces) * sum_h2) *
+                                  (sum_t * sum_t - double(nbtraces) * sum_t2));
 
     return cvalue;
 }

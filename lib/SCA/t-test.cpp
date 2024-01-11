@@ -51,33 +51,39 @@ NPArray<double> t_test(size_t b, size_t e, const NPArray<double> &traces,
     const size_t nbtraces = traces.rows();
     const size_t nbsamples = e - b;
 
-    NPArray<double> tvalue(1, nbsamples);
+    NPArray<double> mean0(1, nbsamples);
+    NPArray<double> var0(1, nbsamples);
+    NPArray<double> cnt0(1, nbsamples);
+    NPArray<double> mean1(1, nbsamples);
+    NPArray<double> var1(1, nbsamples);
+    NPArray<double> cnt1(1, nbsamples);
 
     for (size_t sample = 0; sample < nbsamples; sample++) {
-        MeanWithVar<NPArray<double>::DataTy> avg0;
-        MeanWithVar<NPArray<double>::DataTy> avg1;
+        MeanWithVar<NPArray<double>::DataTy> avg[2];
         for (size_t tnum = 0; tnum < nbtraces; tnum++)
             switch (classifier[tnum]) {
             case Classification::GROUP_0:
-                avg0(traces(tnum, b + sample), tnum, sample);
+                avg[0](traces(tnum, b + sample), tnum, sample);
                 break;
             case Classification::GROUP_1:
-                avg1(traces(tnum, b + sample), tnum, sample);
+                avg[1](traces(tnum, b + sample), tnum, sample);
                 break;
             case Classification::IGNORE:
                 break;
             }
 
-        assert(avg0.count() > 1 && "group0 must have more than one trace");
-        assert(avg1.count() > 1 && "group1 must have more than one trace");
+        assert(avg[0].count() > 1 && "group0 must have more than one trace");
+        mean0(0, sample) = avg[0].value();
+        var0(0, sample) = avg[0].var(/* ddof: */ 1);
+        cnt0(0, sample) = double(avg[0].count());
 
-        tvalue(0, sample) =
-            (avg0.value() - avg1.value()) /
-            std::sqrt(avg0.var(/* ddof: */ 1) / double(avg0.count()) +
-                      avg1.var(/* ddof: */ 1) / double(avg1.count()));
+        assert(avg[1].count() > 1 && "group1 must have more than one trace");
+        mean1(0, sample) = avg[1].value();
+        var1(0, sample) = avg[1].var(/* ddof: */ 1);
+        cnt1(0, sample) = double(avg[1].count());
     }
 
-    return tvalue;
+    return (mean0 - mean1) / sqrt(var0/cnt0 + var1/cnt1);
 }
 
 /// Welsh t-test with one group of traces and a classification array.
@@ -101,26 +107,16 @@ NPArray<double> t_test(size_t b, size_t e, const NPArray<double> &group0,
     if (b == e)
         return NPArray<double>();
 
-    const size_t nbsamples = e - b;
-
-    vector<double> variance0;
+    NPArray<double> variance0;
     NPArray<double> mean0 = group0.meanWithVar(
         NPArray<double>::COLUMN, b, e, &variance0, nullptr, /* ddof: */ 1);
 
-    vector<double> variance1;
+    NPArray<double> variance1;
     NPArray<double> mean1 = group1.meanWithVar(
         NPArray<double>::COLUMN, b, e, &variance1, nullptr, /* ddof: */ 1);
 
-    NPArray<double> tvalue(1, nbsamples);
-
-    for (size_t sample = 0; sample < nbsamples; sample++) {
-        double tmp0 = variance0[sample] / double(group0.rows());
-        double tmp1 = variance1[sample] / double(group1.rows());
-        tvalue(0, sample) =
-            (mean0(0, sample) - mean1(0, sample)) / std::sqrt(tmp0 + tmp1);
-    }
-
-    return tvalue;
+    return (mean0 - mean1) / sqrt(variance0 / double(group0.rows()) +
+                                  variance1 / double(group1.rows()));
 }
 
 /// Compute Welsh's t-test for sample s.

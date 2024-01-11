@@ -194,9 +194,9 @@ int main(int argc, char *argv[]) {
         switch (METRIC) {
         case Metric::PEARSON_CORRELATION: {
             // Compute the intermediate values.
-            vector<double> ivalues(nbtraces);
+            NPArray<double> ivalues(1, nbtraces);
             for (size_t tnum = 0; tnum < nbtraces; context.incr(), tnum++)
-                ivalues[tnum] =
+                ivalues(0, tnum) =
                     hamming_weight<uint32_t>(expr->eval().getValue(), -1);
 
             // Compute the metric.

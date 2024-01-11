@@ -569,9 +569,7 @@ template <typename Ty, size_t rows, size_t cols> class PearsonChecker {
 
     // Check Pearson correlation on a range of columns.
     void check(size_t b, size_t e) const {
-        vector<double> iv(Ma.rows());
-        for (size_t tnum = 0; tnum < Ma.rows(); tnum++)
-            iv[tnum] = Miv(0, tnum);
+        const NPArray<double> iv = convert<double>(Miv);
         const NPArray<double> p = correl(b, e, Ma, iv);
         EXPECT_EQ(p.size(), e - b);
         for (size_t i = b; i < e; i++)

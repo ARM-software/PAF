@@ -123,6 +123,6 @@ NPArray<double> perfect_t_test(size_t b, size_t e,
 /// Compute the Pearson correlation, from samples \p b to
 /// \p e, on \p traces using the \p ival intermediate values.
 NPArray<double> correl(size_t b, size_t e, const NPArray<double> &traces,
-                       const std::vector<double> &ival);
+                       const NPArray<double> &ival);
 } // namespace SCA
 } // namespace PAF

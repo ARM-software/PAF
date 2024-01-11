@@ -563,7 +563,7 @@ template <class Ty> class NPArray : public NPArrayBase {
     NPArray(const std::vector<Ty> &init, size_t num_rows, size_t num_columns)
         : NPArrayBase(nullptr, num_rows, num_columns, sizeof(Ty)) {
         NPArrayBase::fill(reinterpret_cast<const char *>(init.data()),
-             init.size() * sizeof(Ty));
+                          init.size() * sizeof(Ty));
     }
 
     /// Construct an NPArray from a vector<vector<Ty>>.
@@ -1400,21 +1400,21 @@ template <class Ty> class NPArray : public NPArrayBase {
     /// computing the variance (taking into account the \p ddof) and the
     /// standard deviation.
     NPArray<double> meanWithVar(Axis axis, size_t begin, size_t end,
-                                std::vector<double> *var,
-                                std::vector<double> *stddev = nullptr,
+                                NPArray<double> *var,
+                                NPArray<double> *stddev = nullptr,
                                 unsigned ddof = 0) const {
         std::vector<MeanWithVar<DataTy>> means(
             foldOp<MeanWithVar>(axis, begin, end));
         if (var) {
-            var->resize(means.size());
-            std::transform(means.begin(), means.end(), var->begin(),
-                           [&](const auto &op) { return op.var(ddof); });
+            var->resize(1, means.size());
+            for (size_t i = 0; i < means.size(); i++)
+                (*var)(0, i) = means[i].var(ddof);
         }
 
         if (stddev) {
-            stddev->resize(means.size());
-            std::transform(means.begin(), means.end(), stddev->begin(),
-                           [&](const auto &op) { return op.stddev(); });
+            stddev->resize(1, means.size());
+            for (size_t i = 0; i < means.size(); i++)
+                (*stddev)(0, i) = means[i].stddev();
         }
 
         return extract(means);
@@ -1422,20 +1422,20 @@ template <class Ty> class NPArray : public NPArrayBase {
 
     /// Compute the mean on all rows or all columns. It optionally computes the
     /// variance or the standard deviation.
-    NPArray<double> meanWithVar(Axis axis, std::vector<double> *var,
-                                std::vector<double> *stddev = nullptr,
+    NPArray<double> meanWithVar(Axis axis, NPArray<double> *var,
+                                NPArray<double> *stddev = nullptr,
                                 unsigned ddof = 0) const {
         std::vector<MeanWithVar<DataTy>> means(foldOp<MeanWithVar>(axis));
         if (var) {
-            var->resize(means.size());
-            std::transform(means.begin(), means.end(), var->begin(),
-                           [&](const auto &op) { return op.var(ddof); });
+            var->resize(1, means.size());
+            for (size_t i = 0; i < means.size(); i++)
+                (*var)(0, i) = means[i].var(ddof);
         }
 
         if (stddev) {
-            stddev->resize(means.size());
-            std::transform(means.begin(), means.end(), stddev->begin(),
-                           [&](const auto &op) { return op.stddev(); });
+            stddev->resize(1, means.size());
+            for (size_t i = 0; i < means.size(); i++)
+                (*stddev)(0, i) = means[i].stddev();
         }
 
         return extract(means);
@@ -1652,8 +1652,8 @@ NPArray<double> mean(const NPArray<Ty> &npy, NPArrayBase::Axis axis,
 /// Functional version of the range 'mean' operation on NPArray.
 template <class Ty>
 NPArray<double> meanWithVar(const NPArray<Ty> &npy, NPArrayBase::Axis axis,
-                            size_t begin, size_t end, std::vector<double> *var,
-                            std::vector<double> *stddev = nullptr,
+                            size_t begin, size_t end, NPArray<double> *var,
+                            NPArray<double> *stddev = nullptr,
                             unsigned ddof = 0) {
     return npy.meanWithVar(axis, begin, end, var, stddev, ddof);
 }
@@ -1668,7 +1668,7 @@ NPArray<double> mean(const NPArray<Ty> &npy, typename NPArrayBase::Axis axis) {
 template <class Ty>
 NPArray<double>
 meanWithVar(const NPArray<Ty> &npy, typename NPArrayBase::Axis axis,
-            std::vector<double> *var, std::vector<double> *stddev = nullptr,
+            NPArray<double> *var, NPArray<double> *stddev = nullptr,
             unsigned ddof = 0) {
     return npy.meanWithVar(axis, var, stddev, ddof);
 }
