@@ -307,6 +307,18 @@ TEST(NPArray, from_vector_vector) {
             EXPECT_EQ(NPM2(row, col), VM2[row][col]);
 }
 
+TEST(NPArray, fill) {
+    const vector<vector<uint16_t>> VM1{{1, 2}, {3, 4}};
+    const NPArray<uint16_t> a2_2(VM1);
+
+    NPArray<uint16_t> a({1, 2, 3, 4}, 2, 2);
+    EXPECT_EQ(a, a2_2);
+
+    // Can we use a longer initialization list ?
+    NPArray<uint16_t> b({1, 2, 3, 4}, 1, 1);
+    EXPECT_EQ(b, NPArray<uint16_t>({1}, 1, 1));
+}
+
 TEST(NPArray, index_setter) {
     const int64_t MI64_init[] = {0, 1, 2, 3, 4, 5};
     // Matrix col insertion (at the beginning).

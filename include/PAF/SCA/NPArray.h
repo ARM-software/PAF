@@ -265,9 +265,9 @@ class NPArrayBase {
     }
 
     /// Fill our internal buffer with externally provided data.
-    void fill(const char *buf, size_t size) noexcept {
-        assert(size <= num_rows * num_columns * elt_size &&
-               "data buffer size mismatch");
+    void fill(const char *buf, size_t buf_size) noexcept {
+        const size_t size = num_rows * num_columns * elt_size;
+        assert(buf_size >= size && "data buffer size is too small");
         memcpy(data.get(), buf, size);
     }
 
@@ -496,11 +496,10 @@ template <class Ty> class NPArray : public NPArrayBase {
 
     /// Construct an NPArray from an initializer_list and number of
     /// rows and columns.
-    NPArray(std::initializer_list<Ty> init, size_t num_rows, size_t num_columns)
+    NPArray(const std::vector<Ty> &init, size_t num_rows, size_t num_columns)
         : NPArrayBase(nullptr, num_rows, num_columns, sizeof(Ty)) {
-        std::vector<Ty> tmp(init);
-        fill(reinterpret_cast<const char *>(tmp.data()),
-             tmp.size() * sizeof(Ty));
+        fill(reinterpret_cast<const char *>(init.data()),
+             init.size() * sizeof(Ty));
     }
 
     /// Construct an NPArray from a vector<vector<Ty>>.
