@@ -24,6 +24,7 @@
 
 #include "gtest/gtest.h"
 
+#include <cmath>
 #include <cstdio>
 #include <initializer_list>
 #include <limits>
@@ -1330,6 +1331,65 @@ TEST(NPArray, negate) {
     negCheck<double>();
 }
 
+template <typename Ty> void sqrtCheck() {
+    const Ty init[] = {4, 9, 16};
+    const Ty expect[] = {2, 3, 4};
+
+    NPArray<Ty> a(init, 1, 3);
+    NPArray<Ty> b(init, 1, 3);
+    const NPArray<Ty> exp(expect, 1, 3);
+
+    EXPECT_EQ(a.sqrt(), exp);
+    EXPECT_EQ(a, exp);
+    EXPECT_EQ(sqrt(b), exp);
+    EXPECT_EQ(b, NPArray<Ty>(init, 1, 3));
+}
+
+TEST(NPArray, sqrt) {
+    sqrtCheck<uint8_t>();
+    sqrtCheck<uint16_t>();
+    sqrtCheck<uint32_t>();
+    sqrtCheck<uint64_t>();
+
+    sqrtCheck<int8_t>();
+    sqrtCheck<int16_t>();
+    sqrtCheck<int32_t>();
+    sqrtCheck<int64_t>();
+
+    sqrtCheck<float>();
+    sqrtCheck<double>();
+}
+
+template <typename Ty> void logCheck() {
+    const Ty init[] = {4, 9, 16};
+    const Ty expect[] = {Ty(std::log(Ty(4))), Ty(std::log(Ty(9))),
+                         Ty(std::log(Ty(16)))};
+
+    NPArray<Ty> a(init, 1, 3);
+    NPArray<Ty> b(init, 1, 3);
+    const NPArray<Ty> exp(expect, 1, 3);
+
+    EXPECT_EQ(a.log(), exp);
+    EXPECT_EQ(a, exp);
+    EXPECT_EQ(log(b), exp);
+    EXPECT_EQ(b, NPArray<Ty>(init, 1, 3));
+}
+
+TEST(NPArray, log) {
+    logCheck<uint8_t>();
+    logCheck<uint16_t>();
+    logCheck<uint32_t>();
+    logCheck<uint64_t>();
+
+    logCheck<int8_t>();
+    logCheck<int16_t>();
+    logCheck<int32_t>();
+    logCheck<int64_t>();
+
+    logCheck<float>();
+    logCheck<double>();
+}
+
 template <typename Ty> void scalarMulCheck() {
     NPArray<Ty> a({0, 1, 2, 3, 4, 5}, 2, 3);
     const NPArray<Ty> expect({0, 3, 6, 9, 12, 15}, 2, 3);
@@ -1806,7 +1866,8 @@ TEST(NPArray, eltWiseDiv) {
 }
 
 template <typename Ty, bool verbose = false>
-struct eltWiseAbsDiffChecker : public eltWiseOpCheckerBase<Ty, AbsDiff, verbose> {
+struct eltWiseAbsDiffChecker
+    : public eltWiseOpCheckerBase<Ty, AbsDiff, verbose> {
     void checkImpl(const NPArray<Ty> &lhs, const NPArray<Ty> &rhs,
                    const NPArray<Ty> &exp) const override {
         EXPECT_EQ(absdiff(lhs, rhs), exp);

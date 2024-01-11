@@ -31,6 +31,7 @@ using PAF::SCA::Abs;
 using PAF::SCA::AbsDiff;
 using PAF::SCA::Add;
 using PAF::SCA::Divide;
+using PAF::SCA::Log;
 using PAF::SCA::Max;
 using PAF::SCA::MaxAbs;
 using PAF::SCA::Mean;
@@ -41,6 +42,7 @@ using PAF::SCA::Multiply;
 using PAF::SCA::Negate;
 using PAF::SCA::NPArray;
 using PAF::SCA::NPArrayBase;
+using PAF::SCA::Sqrt;
 using PAF::SCA::Substract;
 
 template <typename Ty> struct Expected {
@@ -619,6 +621,53 @@ TEST(NPOperator, Negate) {
 
     EXPECT_TRUE(checkNegate<float>());
     EXPECT_TRUE(checkNegate<double>());
+}
+
+template <typename Ty> bool checkSqrt() {
+    Sqrt<Ty> sqrt;
+    EXPECT_EQ(sqrt(Ty(4)), Ty(2));
+    EXPECT_EQ(sqrt(Ty(64)), Ty(8));
+
+    return !testing::Test::HasFatalFailure() &&
+           !testing::Test::HasNonfatalFailure();
+}
+
+TEST(NPOperator, Sqrt) {
+    EXPECT_TRUE(checkSqrt<uint8_t>());
+    EXPECT_TRUE(checkSqrt<uint16_t>());
+    EXPECT_TRUE(checkSqrt<uint32_t>());
+    EXPECT_TRUE(checkSqrt<uint64_t>());
+
+    EXPECT_TRUE(checkSqrt<int8_t>());
+    EXPECT_TRUE(checkSqrt<int16_t>());
+    EXPECT_TRUE(checkSqrt<int32_t>());
+    EXPECT_TRUE(checkSqrt<int64_t>());
+
+    EXPECT_TRUE(checkSqrt<float>());
+    EXPECT_TRUE(checkSqrt<double>());
+}
+
+template <typename Ty> bool checkLog() {
+    Log<Ty> log;
+    EXPECT_EQ(log(Ty(64)), Ty(std::log(Ty(64))));
+
+    return !testing::Test::HasFatalFailure() &&
+           !testing::Test::HasNonfatalFailure();
+}
+
+TEST(NPOperator, Log) {
+    EXPECT_TRUE(checkLog<uint8_t>());
+    EXPECT_TRUE(checkLog<uint16_t>());
+    EXPECT_TRUE(checkLog<uint32_t>());
+    EXPECT_TRUE(checkLog<uint64_t>());
+
+    EXPECT_TRUE(checkLog<int8_t>());
+    EXPECT_TRUE(checkLog<int16_t>());
+    EXPECT_TRUE(checkLog<int32_t>());
+    EXPECT_TRUE(checkLog<int64_t>());
+
+    EXPECT_TRUE(checkLog<float>());
+    EXPECT_TRUE(checkLog<double>());
 }
 
 template <typename Ty> bool checkAdd() {

@@ -974,6 +974,12 @@ template <class Ty> class NPArray : public NPArrayBase {
     /// Convert all elements in this NPArray to their absolute value.
     NPArray &negate() noexcept { return apply<Negate>(); }
 
+    /// Convert all elements in this NPArray to their natural logarithm value.
+    NPArray &log() noexcept { return apply<Log>(); }
+
+    /// Convert all elements in this NPArray to their square root value.
+    NPArray &sqrt() noexcept { return apply<Sqrt>(); }
+
     /// Modifies this NPArray by replacing each element with the result of
     /// the application of \p binaryOperation to this element and returns
     /// this NPArray.
@@ -1455,14 +1461,22 @@ NPArray<newTy> viewAs(NPArray<fromTy> &&src) {
 
 /// Functional version of 'abs'.
 template <class Ty> NPArray<Ty> abs(const NPArray<Ty> &npy) {
-    NPArray<Ty> tmp(npy);
-    return tmp.abs();
+    return NPArray<Ty>(npy).abs();
 }
 
 /// Functional version of 'negate'.
 template <class Ty> NPArray<Ty> negate(const NPArray<Ty> &npy) {
-    NPArray<Ty> tmp(npy);
-    return tmp.negate();
+    return NPArray<Ty>(npy).negate();
+}
+
+/// Functional version of 'log'.
+template <class Ty> NPArray<Ty> log(const NPArray<Ty> &npy) {
+    return NPArray<Ty>(npy).log();
+}
+
+/// Functional version of 'negate'.
+template <class Ty> NPArray<Ty> sqrt(const NPArray<Ty> &npy) {
+    return NPArray<Ty>(npy).sqrt();
 }
 
 /// Scalar multiplication (RHS version).

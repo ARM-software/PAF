@@ -92,6 +92,18 @@ template <typename Ty> class Negate : public NPUnaryOperator {
     constexpr Ty operator()(const Ty &v) const noexcept { return -v; }
 };
 
+/// Square root of \p v.
+template <typename Ty> class Sqrt : public NPUnaryOperator {
+  public:
+    constexpr Ty operator()(const Ty &v) const noexcept { return std::sqrt(v); }
+};
+
+/// Natural logarithm of \p v.
+template <typename Ty> class Log : public NPUnaryOperator {
+  public:
+    constexpr Ty operator()(const Ty &v) const noexcept { return std::log(v); }
+};
+
 /// Multiply by \p a by \p b and return the result.
 template <typename Ty> class Multiply : public NPBinaryOperator {
   public:

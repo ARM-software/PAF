@@ -45,20 +45,20 @@ NPArray<double> correl(size_t b, size_t e, const NPArray<double> &traces,
     const size_t nbsamples = e - b;
 
     vector<double> sum_t(nbsamples, 0.0);
-    vector<double> sum_t_sq(nbsamples, 0.0);
+    vector<double> sum_t2(nbsamples, 0.0);
     vector<double> sum_ht(nbsamples, 0.0);
     double sum_h = 0.0;
-    double sum_h_sq = 0.0;
+    double sum_h2 = 0.0;
 
     for (size_t t = 0; t < nbtraces; t++) {
         const double iv = ival[t];
         sum_h += iv;
-        sum_h_sq += iv * iv;
+        sum_h2 += iv * iv;
 
         for (size_t s = 0; s < nbsamples; s++) {
             const double v = traces(t, b + s);
             sum_t[s] += v;
-            sum_t_sq[s] += v * v;
+            sum_t2[s] += v * v;
             sum_ht[s] += v * iv;
         }
     }
@@ -66,8 +66,8 @@ NPArray<double> correl(size_t b, size_t e, const NPArray<double> &traces,
     NPArray<double> cvalue(1, nbsamples);
     for (size_t s = 0; s < nbsamples; s++) {
         cvalue(0, s) = nbtraces * sum_ht[s] - sum_h * sum_t[s];
-        cvalue(0, s) /= sqrt((sum_h * sum_h - nbtraces * sum_h_sq) *
-                             (sum_t[s] * sum_t[s] - nbtraces * sum_t_sq[s]));
+        cvalue(0, s) /= std::sqrt((sum_h * sum_h - nbtraces * sum_h2) *
+                             (sum_t[s] * sum_t[s] - nbtraces * sum_t2[s]));
     }
 
     return cvalue;

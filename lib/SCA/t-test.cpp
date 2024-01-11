@@ -73,8 +73,8 @@ NPArray<double> t_test(size_t b, size_t e, const NPArray<double> &traces,
 
         tvalue(0, sample) =
             (avg0.value() - avg1.value()) /
-            sqrt(avg0.var(/* ddof: */ 1) / double(avg0.count()) +
-                 avg1.var(/* ddof: */ 1) / double(avg1.count()));
+            std::sqrt(avg0.var(/* ddof: */ 1) / double(avg0.count()) +
+                      avg1.var(/* ddof: */ 1) / double(avg1.count()));
     }
 
     return tvalue;
@@ -117,7 +117,7 @@ NPArray<double> t_test(size_t b, size_t e, const NPArray<double> &group0,
         double tmp0 = variance0[sample] / double(group0.rows());
         double tmp1 = variance1[sample] / double(group1.rows());
         tvalue(0, sample) =
-            (mean0(0, sample) - mean1(0, sample)) / sqrt(tmp0 + tmp1);
+            (mean0(0, sample) - mean1(0, sample)) / std::sqrt(tmp0 + tmp1);
     }
 
     return tvalue;
@@ -136,7 +136,7 @@ double t_test(size_t s, double m0, const NPArray<double> &traces) {
 
     double var;
     double m = traces.meanWithVar(NPArray<double>::COLUMN, s, &var, nullptr, 1);
-    return sqrt(traces.rows()) * (m - m0) / sqrt(var);
+    return std::sqrt(traces.rows()) * (m - m0) / std::sqrt(var);
 }
 
 /// Compute Student's t-test for sample s for the traces where select returns
@@ -153,8 +153,8 @@ double t_test(size_t s, double m0, const NPArray<double> &traces,
     if (avg.count() <= 1)
         return std::nan("");
 
-    return sqrt(double(avg.count())) * (avg.value() - m0) /
-           sqrt(avg.var(/* ddof: */ 1));
+    return std::sqrt(double(avg.count())) * (avg.value() - m0) /
+           std::sqrt(avg.var(/* ddof: */ 1));
 }
 
 /// Compute Student's t-test from samples b to e.
