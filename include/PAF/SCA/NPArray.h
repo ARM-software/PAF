@@ -212,6 +212,19 @@ class NPArrayBase {
     /// direction.
     NPArrayBase &extend(const NPArrayBase &other, Axis axis);
 
+    /// Make sure this NPArrayBase has enough storage to store \p new_num_row x
+    /// \p new_num_cols element. If the current storage has the exact size, no
+    /// re-allocation occurs. In all other cases, a re-allocation will occur
+    /// (and all data will be lost).
+    NPArrayBase &resize(size_t new_num_rows, size_t new_num_columns) {
+        const size_t new_size = new_num_rows * new_num_columns;
+        if (new_size != size())
+            data.reset(new char[new_size * element_size()]);
+        num_rows = new_num_rows;
+        num_columns = new_num_columns;
+        return *this;
+    }
+
     /// Change the matrix underlying element size.
     void viewAs(size_t newEltSize) {
         assert(elt_size > newEltSize &&

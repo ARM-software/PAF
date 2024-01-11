@@ -284,6 +284,26 @@ TEST(NParray, descr) {
     EXPECT_EQ(NPArray<double>::descr(), "f8");
 }
 
+TEST(NPArray, resize) {
+    NPArray<int16_t> a(2, 4);
+    EXPECT_EQ(a.rows(), 2);
+    EXPECT_EQ(a.cols(), 4);
+    EXPECT_EQ(a.size(), 8);
+    EXPECT_EQ(a.element_size(), sizeof(uint16_t));
+
+    a.resize(1, 2);
+    EXPECT_EQ(a.rows(), 1);
+    EXPECT_EQ(a.cols(), 2);
+    EXPECT_EQ(a.size(), 2);
+    EXPECT_EQ(a.element_size(), sizeof(uint16_t));
+
+    a.resize(10, 5);
+    EXPECT_EQ(a.rows(), 10);
+    EXPECT_EQ(a.cols(), 5);
+    EXPECT_EQ(a.size(), 50);
+    EXPECT_EQ(a.element_size(), sizeof(uint16_t));
+}
+
 TEST(NPArray, swap) {
     const int16_t init1[] = {0, 1, 2, 3, 4, 5, 6, 7};
     const int16_t init2[] = {10, 11, 12, 13, 14, 15, 16, 17};
