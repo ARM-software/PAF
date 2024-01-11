@@ -137,6 +137,42 @@ TEST(NPArray, defaultConstruct) {
     EXPECT_EQ(def.element_size(), sizeof(uint16_t));
 }
 
+TEST(NPArray, fill) {
+    NPArray<uint16_t> a = NPArray<uint16_t>(6, 8).fill(123);
+    EXPECT_EQ(a.rows(), 6);
+    EXPECT_EQ(a.cols(), 8);
+    for (size_t r = 0; r < a.rows(); r++)
+        for (size_t c = 0; c < a.cols(); c++)
+            EXPECT_EQ(a(r, c), 123);
+}
+
+TEST(NPArray, zeros) {
+    NPArray<uint16_t> z = NPArray<uint16_t>::zeros(2, 3);
+    EXPECT_EQ(z.rows(), 2);
+    EXPECT_EQ(z.cols(), 3);
+    for (size_t r = 0; r < z.rows(); r++)
+        for (size_t c = 0; c < z.cols(); c++)
+            EXPECT_EQ(z(r, c), 0);
+}
+
+TEST(NPArray, ones) {
+    NPArray<uint16_t> o = NPArray<uint16_t>::ones(2, 3);
+    EXPECT_EQ(o.rows(), 2);
+    EXPECT_EQ(o.cols(), 3);
+    for (size_t r = 0; r < o.rows(); r++)
+        for (size_t c = 0; c < o.cols(); c++)
+            EXPECT_EQ(o(r, c), 1);
+}
+
+TEST(NPArray, identity) {
+    NPArray<uint16_t> id = NPArray<uint16_t>::identity(3);
+    EXPECT_EQ(id.rows(), 3);
+    EXPECT_EQ(id.cols(), 3);
+    for (size_t r = 0; r < id.rows(); r++)
+        for (size_t c = 0; c < id.cols(); c++)
+            EXPECT_EQ(id(r, c), c == r ? 1 : 0);
+}
+
 TEST(NPArray, base) {
     const uint32_t v_init[] = {0, 1, 2, 3};
     const uint32_t v2_init[] = {0, 1, 2, 4};
@@ -314,7 +350,7 @@ TEST(NPArray, from_vector_vector) {
             EXPECT_EQ(NPM2(row, col), VM2[row][col]);
 }
 
-TEST(NPArray, fill) {
+TEST(NPArray, fillConstruct) {
     const vector<vector<uint16_t>> VM1{{1, 2}, {3, 4}};
     const NPArray<uint16_t> a2_2(VM1);
 

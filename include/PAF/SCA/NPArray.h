@@ -540,7 +540,7 @@ template <class Ty> class NPArray : public NPArrayBase {
     /// rows and columns.
     NPArray(const std::vector<Ty> &init, size_t num_rows, size_t num_columns)
         : NPArrayBase(nullptr, num_rows, num_columns, sizeof(Ty)) {
-        fill(reinterpret_cast<const char *>(init.data()),
+        NPArrayBase::fill(reinterpret_cast<const char *>(init.data()),
              init.size() * sizeof(Ty));
     }
 
@@ -552,6 +552,34 @@ template <class Ty> class NPArray : public NPArrayBase {
 
     /// Move construct an NParray.
     NPArray(NPArray &&Other) : NPArrayBase(std::move(Other)) {}
+
+    /// Set all elements in this NPArray to \p v.
+    NPArray &fill(const Ty &v) {
+        for (size_t r = 0; r < rows(); r++)
+            for (size_t c = 0; c < cols(); c++)
+                at(r, c) = v;
+        return *this;
+    }
+
+    /// Get a zero initialized NPArray of \p num_rows rows and \p num_cols
+    /// columns.
+    static NPArray zeros(size_t num_rows, size_t num_cols) {
+        return NPArray(num_rows, num_cols).fill(0);
+    }
+
+    /// Get an NPArray of \p num_rows rows and \p num_cols columns initialized
+    /// with 1.
+    static NPArray ones(size_t num_rows, size_t num_cols) {
+        return NPArray(num_rows, num_cols).fill(1);
+    }
+
+    /// Get an identity NPArray.
+    static NPArray identity(size_t dim) {
+        NPArray tmp = zeros(dim, dim);
+        for (size_t i = 0; i < dim; i++)
+            tmp(i, i) = 1;
+        return tmp;
+    }
 
     /// Copy assign an NParray.
     NPArray &operator=(const NPArray &Other) {
