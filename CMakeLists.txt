@@ -31,11 +31,6 @@ set(CMAKE_CXX_STANDARD 14)
 
 project(PAF LANGUAGES CXX)
 
-# Force a build type if none was specified.
-if(NOT DEFINED CMAKE_BUILD_TYPE OR NOT DEFINED ${CMAKE_BUILD_TYPE})
-  set(CMAKE_BUILD_TYPE "Debug")
-endif()
-
 # Set path for custom modules, and load modules.
 set(CMAKE_MODULE_PATH
   ${CMAKE_MODULE_PATH}
