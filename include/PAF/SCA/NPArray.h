@@ -860,21 +860,21 @@ template <class Ty> class NPArray : public NPArrayBase {
 
 #define addOperator(fname, OpName)                                             \
     /** Get the specific value in this NPArray. */                             \
-    Ty fname() const { return foreach<Min, false>().value(); }                 \
+    Ty fname() const { return foreach<OpName, false>().value(); }              \
     /** Get the minimum value in this NPArray row \p i (resp. column, as       \
      defined by \p axis ). */                                                  \
     Ty fname(Axis axis, size_t i) const {                                      \
-        return foreach<Min, false>(axis, i).value();                           \
+        return foreach<OpName, false>(axis, i).value();                        \
     }                                                                          \
     /** Get the specific value in this NPArray in the range [ \p begin, \p end \
      ( of rows (resp. columns, as defined by \p axis ). */                     \
     Ty fname(Axis axis, size_t begin, size_t end) const {                      \
-        return foreach<Min, false>(axis, begin, end).value();                  \
+        return foreach<OpName, false>(axis, begin, end).value();               \
     }                                                                          \
     /** Get the specific value in this NPArray. This variant returns           \
      the location where the minimum was found. */                              \
     Ty fname(size_t &row, size_t &col) const {                                 \
-        auto op = foreach<Min, true>();                                        \
+        auto op = foreach<OpName, true>();                                     \
         row = op.row();                                                        \
         col = op.col();                                                        \
         return op.value();                                                     \
@@ -883,7 +883,7 @@ template <class Ty> class NPArray : public NPArrayBase {
      defined by \p axis ). This variant returns the location where the minimum \
      was found. */                                                             \
     Ty fname(size_t &row, size_t &col, Axis axis, size_t i) const {            \
-        auto op = foreach<Min, true>(axis, i);                                 \
+        auto op = foreach<OpName, true>(axis, i);                              \
         row = op.row();                                                        \
         col = op.col();                                                        \
         return op.value();                                                     \
@@ -893,7 +893,7 @@ template <class Ty> class NPArray : public NPArrayBase {
      the location where the minimum was found. */                              \
     Ty fname(size_t &row, size_t &col, Axis axis, size_t begin, size_t end)    \
         const {                                                                \
-        auto op = foreach<Min, true>(axis, begin, end);                        \
+        auto op = foreach<OpName, true>(axis, begin, end);                     \
         row = op.row();                                                        \
         col = op.col();                                                        \
         return op.value();                                                     \
