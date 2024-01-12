@@ -263,12 +263,21 @@ class NPArrayBase {
 
   protected:
     /// Get a pointer to type Ty to the array (const version).
-    template <class Ty> const Ty *getAs() const noexcept {
-        return reinterpret_cast<Ty *>(data.get());
+    template <class Ty>
+    const Ty *getAs(const size_t &row, const size_t &col) const noexcept {
+        assert(row < rows() && "Row is out-of-range");
+        assert(col < cols() && "Col is out-of-range");
+        const Ty *p = reinterpret_cast<Ty *>(data.get());
+        return &p[row * num_columns + col];
     }
+
     /// Get a pointer to type Ty to the array.
-    template <class Ty> Ty *getAs() noexcept {
-        return reinterpret_cast<Ty *>(data.get());
+    template <class Ty>
+    Ty *getAs(const size_t &row, const size_t &col) noexcept {
+        assert(row < rows() && "Row is out-of-range");
+        assert(col < cols() && "Col is out-of-range");
+        Ty *p = reinterpret_cast<Ty *>(data.get());
+        return &p[row * num_columns + col];
     }
 
     /// Set the error string and state.
@@ -633,26 +642,18 @@ template <class Ty> class NPArray : public NPArrayBase {
     }
 
     /// Get element located at [ \p row, \p col ].
-    Ty &operator()(size_t row, size_t col) noexcept {
-        assert(row < rows() && "Row is out-of-range");
-        assert(col < cols() && "Col is out-of-range");
-        Ty *p = getAs<Ty>();
-        return p[row * cols() + col];
+    Ty &operator()(const size_t &row, const size_t &col) noexcept {
+        return *getAs<Ty>(row, col);
     }
 
     /// Get element located at [ \p row, \p col ] (const version).
-    const Ty &operator()(size_t row, size_t col) const noexcept {
-        assert(row < rows() && "Row is out-of-range");
-        assert(col < cols() && "Col is out-of-range");
-        const Ty *p = getAs<Ty>();
-        return p[row * cols() + col];
+    const Ty &operator()(const size_t &row, const size_t &col) const noexcept {
+        return *getAs<Ty>(row, col);
     }
 
     /// Get a pointer to row \p row.
-    const Ty *operator()(size_t row) const noexcept {
-        assert(row < rows() && "Row is out-of-range");
-        const Ty *p = getAs<Ty>();
-        return &p[row * cols()];
+    const Ty *operator()(const size_t &row) const noexcept {
+        return *getAs<Ty>(row, 0);
     }
 
     /// Dump an ascii representation of the NPY array to \p os.
