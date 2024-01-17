@@ -1083,6 +1083,58 @@ TEST_F(NPArrayF, convert) {
     testConvert<double, uint64_t>();
 }
 
+template <typename Ty> struct ExtractChecker {
+    const NPArray<Ty> A;
+    // Middle row / col.
+    const NPArray<Ty> E1r, E1c;
+    // Middle row / col.
+    const NPArray<Ty> E2r, E2c;
+    // Duplicate row / col.
+    const NPArray<Ty> E2dr, E2dc;
+
+    ExtractChecker()
+        : A({0, 1, 2, 3, 4, 5, 6, 7, 8}, 3, 3),
+          // Middle row / col.
+          E1r({3, 4, 5}, 1, 3), E1c({1, 4, 7}, 3, 1),
+          // Middle row / col.
+          E2r({0, 1, 2, 6, 7, 8}, 2, 3), E2c({0, 2, 3, 5, 6, 8}, 3, 2),
+          // Duplicate row / col.
+          E2dr({3, 4, 5, 3, 4, 5}, 2, 3), E2dc({1, 1, 4, 4, 7, 7}, 3, 2) {}
+
+    void check() {
+        // Empty row / col extraction.
+        EXPECT_TRUE(A.extract(NPArray<Ty>::ROW, {}).empty());
+        EXPECT_TRUE(A.extract(NPArray<Ty>::COLUMN, {}).empty());
+
+        // Middle row / col extraction.
+        EXPECT_EQ(A.extract(NPArray<Ty>::ROW, {1}), E1r);
+        EXPECT_EQ(A.extract(NPArray<Ty>::COLUMN, {1}), E1c);
+
+        // Sides' rows / cols extraction.
+        EXPECT_EQ(A.extract(NPArray<Ty>::ROW, {0, 2}), E2r);
+        EXPECT_EQ(A.extract(NPArray<Ty>::COLUMN, {0, 2}), E2c);
+
+        // Extract duplicate rows, cols.
+        EXPECT_EQ(A.extract(NPArray<Ty>::ROW, {1, 1}), E2dr);
+        EXPECT_EQ(A.extract(NPArray<Ty>::COLUMN, {1, 1}), E2dc);
+    }
+};
+
+TEST(NPArray, extract) {
+    ExtractChecker<uint8_t>().check();
+    ExtractChecker<uint16_t>().check();
+    ExtractChecker<uint8_t>().check();
+    ExtractChecker<uint16_t>().check();
+
+    ExtractChecker<int8_t>().check();
+    ExtractChecker<int16_t>().check();
+    ExtractChecker<int8_t>().check();
+    ExtractChecker<int16_t>().check();
+
+    ExtractChecker<float>().check();
+    ExtractChecker<double>().check();
+}
+
 template <typename toTy, typename fromTy>
 void testReadAs(const string &filename) {
     const fromTy init1[] = {0, 1, 2, 3, 4, 5, 6, 7};

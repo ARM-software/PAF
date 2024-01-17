@@ -641,6 +641,36 @@ template <class Ty> class NPArray : public NPArrayBase {
         return *this;
     }
 
+    /// Get a new NPArray, generated from the rows (resp. columns, according to
+    /// \p axis ) matching \p indices , in the order where the indices were
+    /// supplied.
+    NPArray extract(Axis axis, const std::vector<size_t> &indices) const {
+        if (indices.empty())
+            return NPArray();
+        switch (axis) {
+        case ROW: {
+            NPArray tmp(indices.size(), cols());
+            size_t r = 0;
+            for (const auto &i : indices) {
+                for (size_t c = 0; c < cols(); c++)
+                    tmp(r, c) = at(i, c);
+                r++;
+            }
+            return tmp;
+        }
+        case COLUMN: {
+            NPArray tmp(rows(), indices.size());
+            size_t c = 0;
+            for (const auto &i : indices) {
+                for (size_t r = 0; r < rows(); r++)
+                    tmp(r, c) = at(r, i);
+                c++;
+            }
+            return tmp;
+        }
+        }
+    }
+
     /// Get element located at [ \p row, \p col ].
     Ty &operator()(const size_t &row, const size_t &col) noexcept {
         return *getAs<Ty>(row, col);
