@@ -30,8 +30,13 @@ endif()
 add_custom_target(doc)
 
 if (DOXYGEN_FOUND)
+  if (DOXYGEN_VERSION VERSION_LESS 1.10)
+    set(PAF_DOXYFILE_IN ${CMAKE_CURRENT_SOURCE_DIR}/PAF.doxyfile.pre-1.10.in)
+  else()
+    set(PAF_DOXYFILE_IN ${CMAKE_CURRENT_SOURCE_DIR}/PAF.doxyfile.in)
+  endif()
   configure_file(
-    ${CMAKE_CURRENT_SOURCE_DIR}/PAF.doxyfile.in
+    ${PAF_DOXYFILE_IN}
     ${CMAKE_CURRENT_BINARY_DIR}/PAF.doxyfile)
 
   add_dependencies(doc paf-html)
@@ -39,7 +44,7 @@ if (DOXYGEN_FOUND)
     COMMAND ${DOXYGEN_EXECUTABLE} ${CMAKE_CURRENT_BINARY_DIR}/PAF.doxyfile
     WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
     COMMENT "Generating PAF html documentation with doxygen." VERBATIM)
-  
+
   if (LLVM_BUILD_DOCS)
     add_dependencies(doxygen paf-html)
   endif()
