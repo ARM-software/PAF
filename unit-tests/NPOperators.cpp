@@ -31,6 +31,12 @@ using PAF::SCA::Abs;
 using PAF::SCA::AbsDiff;
 using PAF::SCA::Add;
 using PAF::SCA::Divide;
+using PAF::SCA::isEqual;
+using PAF::SCA::isGreater;
+using PAF::SCA::isGreaterOrEqual;
+using PAF::SCA::isLess;
+using PAF::SCA::isLessOrEqual;
+using PAF::SCA::isNotEqual;
 using PAF::SCA::Log;
 using PAF::SCA::Max;
 using PAF::SCA::MaxAbs;
@@ -44,6 +50,55 @@ using PAF::SCA::NPArray;
 using PAF::SCA::NPArrayBase;
 using PAF::SCA::Sqrt;
 using PAF::SCA::Substract;
+
+template <typename Ty> void checkCmpPredicates() {
+    // Equality
+    EXPECT_TRUE(isEqual<Ty>(0)(0));
+    EXPECT_TRUE(isEqual<Ty>(3)(3));
+    EXPECT_FALSE(isEqual<Ty>(0)(3));
+    EXPECT_FALSE(isEqual<Ty>(3)(0));
+
+    // Inequality
+    EXPECT_FALSE(isNotEqual<Ty>(0)(0));
+    EXPECT_FALSE(isNotEqual<Ty>(3)(3));
+    EXPECT_TRUE(isNotEqual<Ty>(0)(3));
+    EXPECT_TRUE(isNotEqual<Ty>(3)(0));
+
+    // >
+    EXPECT_TRUE(isGreater<Ty>(2)(3));
+    EXPECT_FALSE(isGreater<Ty>(2)(2));
+    EXPECT_FALSE(isGreater<Ty>(2)(1));
+
+    // >=
+    EXPECT_TRUE(isGreaterOrEqual<Ty>(2)(3));
+    EXPECT_TRUE(isGreaterOrEqual<Ty>(2)(2));
+    EXPECT_FALSE(isGreaterOrEqual<Ty>(2)(1));
+
+    // <=
+    EXPECT_FALSE(isLessOrEqual<Ty>(2)(3));
+    EXPECT_TRUE(isLessOrEqual<Ty>(2)(2));
+    EXPECT_TRUE(isLessOrEqual<Ty>(2)(1));
+
+    // <
+    EXPECT_FALSE(isLess<Ty>(2)(3));
+    EXPECT_FALSE(isLess<Ty>(2)(2));
+    EXPECT_TRUE(isLess<Ty>(2)(1));
+}
+
+TEST(NPPredicate, cmpPredicates) {
+    checkCmpPredicates<int8_t>();
+    checkCmpPredicates<int16_t>();
+    checkCmpPredicates<int32_t>();
+    checkCmpPredicates<int64_t>();
+
+    checkCmpPredicates<uint8_t>();
+    checkCmpPredicates<uint16_t>();
+    checkCmpPredicates<uint32_t>();
+    checkCmpPredicates<uint64_t>();
+
+    checkCmpPredicates<float>();
+    checkCmpPredicates<double>();
+}
 
 template <typename Ty> struct Expected {
     size_t row;

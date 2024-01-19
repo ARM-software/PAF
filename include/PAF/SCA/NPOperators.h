@@ -22,6 +22,7 @@
 
 #include <cmath>
 #include <cstddef>
+#include <functional>
 #include <limits>
 #include <type_traits>
 
@@ -29,9 +30,22 @@ namespace PAF {
 namespace SCA {
 
 struct NPOperator {};
+
+/// \ingroup Predicates
+/// @{
+/// NPPredicate is the type for all predicates that NParray algorithm (all, any,
+/// none, count) can use.
+struct NPPredicate : public NPOperator {};
+/// @}
+
 struct NPCollector : public NPOperator {};
 struct NPUnaryOperator : public NPOperator {};
 struct NPBinaryOperator : public NPOperator {};
+
+template <typename DataTy, template <typename> class predicate>
+struct isNPPredicate
+    : std::integral_constant<
+          bool, std::is_base_of<NPPredicate, predicate<DataTy>>::value> {};
 
 template <typename DataTy, template <typename> class operation>
 struct isNPUnaryOperator
@@ -64,6 +78,59 @@ struct NPOperatorTraits {
     typedef typename std::remove_reference<
         typename std::remove_const<decltype(operation<DataTy, enableLocation>()(
             DataTy(), 0, 0))>::type>::type applicationReturnType;
+};
+
+/// NPPredicates implement the function call operator and must be copyable.
+
+template <typename Ty> struct isEqual : public NPPredicate {
+    const Ty V;
+    // TODO: move this to a template parameter with C++20.
+    constexpr isEqual(const Ty &V): V(V) {}
+    constexpr bool operator()(const Ty &v) const {
+        return v == V;
+    }
+};
+
+template <typename Ty> struct isNotEqual : public NPPredicate {
+    const Ty V;
+    // TODO: move this to a template parameter with C++20.
+    constexpr isNotEqual(const Ty &V): V(V) {}
+    constexpr bool operator()(const Ty &v) const {
+        return v != V;
+    }
+};
+
+template <typename Ty> struct isLess : public NPPredicate {
+    const Ty V;
+    // TODO: move this to a template parameter with C++20.
+    constexpr isLess(const Ty &V): V(V) {}
+    constexpr bool operator()(const Ty &v) const {
+        return v < V;
+    }
+};
+template <typename Ty> struct isLessOrEqual : public NPPredicate {
+    const Ty V;
+    // TODO: move this to a template parameter with C++20.
+    constexpr isLessOrEqual(const Ty &V): V(V) {}
+    constexpr bool operator()(const Ty &v) const {
+        return v <= V;
+    }
+};
+template <typename Ty> struct isGreater : public NPPredicate {
+    const Ty V;
+    // TODO: move this to a template parameter with C++20.
+    constexpr isGreater(const Ty &V): V(V) {}
+    constexpr bool operator()(const Ty &v) const {
+        return v > V;
+    }
+};
+template <typename Ty> struct isGreaterOrEqual : public NPPredicate {
+    const Ty V;
+    // TODO: move this to a template parameter with C++20.
+    constexpr isGreaterOrEqual(const Ty &V): V(V) {}
+    constexpr bool operator()(const Ty &v) const {
+        return v >= V;
+    }
 };
 
 /// NPOperators provides several generally useful functors to be used with

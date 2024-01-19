@@ -246,14 +246,12 @@ NPArray<double> perfect_t_test(size_t b, size_t e,
     NPArray<double> tt(1, e - b);
 
     for (size_t s = b; s < e; s++) {
-        double group0Value = group0(0, s);
-        const bool isGroup0Constant =
-            group0.all(NPArray<double>::COLUMN, s,
-                       [&](double v) { return v == group0Value; });
-        double group1Value = group1(0, s);
-        const bool isGroup1Constant =
-            group1.all(NPArray<double>::COLUMN, s,
-                       [&](double v) { return v == group1Value; });
+        const double group0Value = group0(0, s);
+        const bool isGroup0Constant = group0.all(NPArray<double>::COLUMN, s,
+                                                 isEqual<double>(group0Value));
+        const double group1Value = group1(0, s);
+        const bool isGroup1Constant = group1.all(NPArray<double>::COLUMN, s,
+                                                 isEqual<double>(group1Value));
 
         if (isGroup0Constant && isGroup1Constant) {
             if (group0Value == group1Value) {

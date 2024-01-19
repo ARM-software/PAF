@@ -29,7 +29,6 @@
 #include <cstdlib>
 #include <cstring>
 #include <fstream>
-#include <functional>
 #include <initializer_list>
 #include <memory>
 #include <ostream>
@@ -871,6 +870,281 @@ template <class Ty> class NPArray : public NPArrayBase {
     /// Get a past-the-end row for this NPArray (const version).
     const_Row cend() const noexcept { return const_Row(*this, rows()); }
 
+    /// \defgroup Predicates Predicate operations on NParrays
+    /// @{
+    /// Test if all elements in this NPArray satisfy predicate \p pred.
+    template <class predicate> bool all(predicate &&pred) const {
+        if (empty())
+            return false;
+        for (size_t row = 0; row < rows(); row++)
+            for (size_t col = 0; col < cols(); col++)
+                if (!pred(at(row, col)))
+                    return false;
+        return true;
+    }
+
+    /// Test if all elements in row \p i or column \p i satisfy predicate
+    /// \p pred.
+    template <class predicate>
+    bool all(Axis axis, size_t i, predicate &&pred) const {
+        switch (axis) {
+        case ROW:
+            assert(i <= rows() &&
+                   "index is out of bound for row access in NPArray::all");
+            for (size_t col = 0; col < cols(); col++)
+                if (!pred(at(i, col)))
+                    return false;
+            return true;
+        case COLUMN:
+            assert(i <= cols() &&
+                   "index is out of bound column access in NPArray::all");
+            for (size_t row = 0; row < rows(); row++)
+                if (!pred(at(row, i)))
+                    return false;
+            return true;
+        }
+    }
+
+    /// Test if all elements in the range [ \p begin , \p end ( on \p axis
+    /// satisfy predicate \p pred.
+    template <class predicate>
+    bool all(Axis axis, size_t begin, size_t end, predicate &&pred) const {
+        assert(begin <= end && "range's end needs to be strictly greater "
+                               "than begin in NPArray::all");
+        if (begin >= end)
+            return false;
+        switch (axis) {
+        case ROW:
+            assert(
+                begin <= rows() &&
+                "begin index is out of bound for row access in NPArray::all");
+            assert(end <= rows() &&
+                   "end index is out of bound for row access in NPArray::all");
+            for (size_t row = begin; row < end; row++)
+                for (size_t col = 0; col < cols(); col++)
+                    if (!pred(at(row, col)))
+                        return false;
+            return true;
+        case COLUMN:
+            assert(begin <= cols() && "begin index is out of bound for column "
+                                      "access in NPArray::all");
+            assert(
+                end <= cols() &&
+                "end index is out of bound for column access in NPArray::all");
+            for (size_t row = 0; row < rows(); row++)
+                for (size_t col = begin; col < end; col++)
+                    if (!pred(at(row, col)))
+                        return false;
+            return true;
+        }
+    }
+
+    /// Test if any of the elements in this NPArray satisfy predicate \p pred.
+    template <class predicate> bool any(predicate &&pred) const {
+        if (empty())
+            return false;
+        for (size_t row = 0; row < rows(); row++)
+            for (size_t col = 0; col < cols(); col++)
+                if (pred(at(row, col)))
+                    return true;
+        return false;
+    }
+
+    /// Test if any of the elements in row \p i or column \p i satisfy predicate
+    /// \p pred.
+    template <class predicate>
+    bool any(Axis axis, size_t i, predicate &&pred) const {
+        switch (axis) {
+        case ROW:
+            assert(i <= rows() &&
+                   "index is out of bound for row access in NPArray::any");
+            for (size_t col = 0; col < cols(); col++)
+                if (pred(at(i, col)))
+                    return true;
+            return false;
+        case COLUMN:
+            assert(i <= cols() &&
+                   "index is out of bound column access in NPArray::any");
+            for (size_t row = 0; row < rows(); row++)
+                if (pred(at(row, i)))
+                    return true;
+            return false;
+        }
+    }
+
+    /// Test if any of the elements in the range [ \p begin , \p end ( on \p
+    /// axis satisfy predicate \p pred.
+    template <class predicate>
+    bool any(Axis axis, size_t begin, size_t end, predicate &&pred) const {
+        assert(begin <= end && "range's end needs to be strictly greater "
+                               "than begin in NPArray::all");
+        if (begin >= end)
+            return false;
+        switch (axis) {
+        case ROW:
+            assert(
+                begin <= rows() &&
+                "begin index is out of bound for row access in NPArray::any");
+            assert(end <= rows() &&
+                   "end index is out of bound for row access in NPArray::any");
+            for (size_t row = begin; row < end; row++)
+                for (size_t col = 0; col < cols(); col++)
+                    if (pred(at(row, col)))
+                        return true;
+            return false;
+        case COLUMN:
+            assert(begin <= cols() && "begin index is out of bound for column "
+                                      "access in NPArray::any");
+            assert(
+                end <= cols() &&
+                "end index is out of bound for column access in NPArray::any");
+            for (size_t row = 0; row < rows(); row++)
+                for (size_t col = begin; col < end; col++)
+                    if (pred(at(row, col)))
+                        return true;
+            return false;
+        }
+    }
+
+    /// Test if none of the elements in this NPArray satisfy predicate \p pred.
+    template <class predicate> bool none(predicate &&pred) const {
+        if (empty())
+            return false;
+        for (size_t row = 0; row < rows(); row++)
+            for (size_t col = 0; col < cols(); col++)
+                if (pred(at(row, col)))
+                    return false;
+        return true;
+    }
+
+    /// Test if none of the elements in row \p i or column \p i satisfy
+    /// predicate \p pred.
+    template <class predicate>
+    bool none(Axis axis, size_t i, predicate &&pred) const {
+        switch (axis) {
+        case ROW:
+            assert(i <= rows() &&
+                   "index is out of bound for row access in NPArray::none");
+            for (size_t col = 0; col < cols(); col++)
+                if (pred(at(i, col)))
+                    return false;
+            return true;
+        case COLUMN:
+            assert(i <= cols() &&
+                   "index is out of bound column access in NPArray::none");
+            for (size_t row = 0; row < rows(); row++)
+                if (pred(at(row, i)))
+                    return false;
+            return true;
+        }
+    }
+
+    /// Test if none of the elements in the range [ \p begin , \p end ( on \p
+    /// axis satisfy predicate \p pred.
+    template <class predicate>
+    bool none(Axis axis, size_t begin, size_t end, predicate &&pred) const {
+        assert(begin <= end && "range's end needs to be strictly greater "
+                               "than begin in NPArray::none");
+        if (begin >= end)
+            return false;
+        switch (axis) {
+        case ROW:
+            assert(
+                begin <= rows() &&
+                "begin index is out of bound for row access in NPArray::none");
+            assert(end <= rows() &&
+                   "end index is out of bound for row access in NPArray::none");
+            for (size_t row = begin; row < end; row++)
+                for (size_t col = 0; col < cols(); col++)
+                    if (pred(at(row, col)))
+                        return false;
+            return true;
+        case COLUMN:
+            assert(begin <= cols() && "begin index is out of bound for column "
+                                      "access in NPArray::none");
+            assert(
+                end <= cols() &&
+                "end index is out of bound for column access in NPArray::none");
+            for (size_t row = 0; row < rows(); row++)
+                for (size_t col = begin; col < end; col++)
+                    if (pred(at(row, col)))
+                        return false;
+            return true;
+        }
+    }
+
+    /// Count how many of the elements in this NPArray satisfy predicate \p
+    /// pred.
+    template <class predicate> size_t count(predicate &&pred) const {
+        size_t cnt = 0;
+        if (empty())
+            return cnt;
+        for (size_t row = 0; row < rows(); row++)
+            for (size_t col = 0; col < cols(); col++)
+                if (pred(at(row, col)))
+                    cnt += 1;
+        return cnt;
+    }
+
+    /// Count how many of the elements in row \p i or column \p i satisfy
+    /// predicate \p pred.
+    template <class predicate>
+    size_t count(Axis axis, size_t i, predicate &&pred) const {
+        size_t cnt = 0;
+        switch (axis) {
+        case ROW:
+            assert(i <= rows() &&
+                   "index is out of bound for row access in NPArray::count");
+            for (size_t col = 0; col < cols(); col++)
+                if (pred(at(i, col)))
+                    cnt += 1;
+            return cnt;
+        case COLUMN:
+            assert(i <= cols() &&
+                   "index is out of bound column access in NPArray::count");
+            for (size_t row = 0; row < rows(); row++)
+                if (pred(at(row, i)))
+                    cnt += 1;
+            return cnt;
+        }
+    }
+
+    /// Count how many of the elements in the range [ \p begin , \p end ( on \p
+    /// axis satisfy predicate \p pred.
+    template <class predicate>
+    size_t count(Axis axis, size_t begin, size_t end, predicate &&pred) const {
+        assert(begin <= end && "range's end needs to be strictly greater "
+                               "than begin in NPArray::count");
+        size_t cnt = 0;
+        if (begin >= end)
+            return cnt;
+        switch (axis) {
+        case ROW:
+            assert(
+                begin <= rows() &&
+                "begin index is out of bound for row access in NPArray::count");
+            assert(
+                end <= rows() &&
+                "end index is out of bound for row access in NPArray::count");
+            for (size_t row = begin; row < end; row++)
+                for (size_t col = 0; col < cols(); col++)
+                    if (pred(at(row, col)))
+                        cnt += 1;
+            return cnt;
+        case COLUMN:
+            assert(begin <= cols() && "begin index is out of bound for column "
+                                      "access in NPArray::count");
+            assert(end <= cols() && "end index is out of bound for column "
+                                    "access in NPArray::count");
+            for (size_t row = 0; row < rows(); row++)
+                for (size_t col = begin; col < end; col++)
+                    if (pred(at(row, col)))
+                        cnt += 1;
+            return cnt;
+        }
+    }
+    /// @}
+
     /// Applies a default constructed \p unaryOperation to each element of the
     /// NPArray and returns it.
     template <template <typename, bool> class unaryOperation,
@@ -1216,41 +1490,6 @@ template <class Ty> class NPArray : public NPArrayBase {
     NPArray &operator/=(const NPArray &rhs) { return apply<Divide>(rhs); }
     /// In-place absolute difference of this NPArray and the scalar \p v.
     NPArray &absdiff(const NPArray &rhs) { return apply<AbsDiff>(rhs); }
-
-    /// Test if all elements in row \p i or column \p i satisfy predicate \p
-    /// pred.
-    bool all(Axis axis, size_t i, std::function<bool(Ty)> pred) const {
-        switch (axis) {
-        case ROW:
-            assert(i <= rows() &&
-                   "index is out of bound for row access in NPArray::all");
-            for (size_t col = 0; col < cols(); col++)
-                if (!pred(at(i, col)))
-                    return false;
-            return true;
-        case COLUMN:
-            assert(i <= cols() &&
-                   "index is out of bound column access in NPArray::all");
-            for (size_t row = 0; row < rows(); row++)
-                if (!pred(at(row, i)))
-                    return false;
-            return true;
-        }
-    }
-
-    /// Test if all elements in row \p i or column \p i satisfy predicate \p
-    /// pred.
-    bool all(Axis axis, size_t begin, size_t end,
-             std::function<bool(Ty)> pred) const {
-        assert(begin <= end && "End of a range needs to be strictly greater "
-                               "than its begin in NPArray::all");
-        if (begin >= end)
-            return false;
-        for (size_t i = begin; i < end; i++)
-            if (!all(axis, i, pred))
-                return false;
-        return true;
-    }
 
     /// Extracts the values from a range of \p unaryOperations.
     template <template <typename, bool> class unaryOperation,
@@ -1623,20 +1862,94 @@ NPArray<Ty> absdiff(const NPArray<Ty> &lhs, const NPArray<Ty> &rhs) {
     return NPArray<Ty>(lhs).absdiff(rhs);
 }
 
+/// \ingroup Predicates
+/// @{
+/// Functional version of 'all' predicate checker on a complete NPArray.
+template <typename Ty, class predicate>
+bool all(const NPArray<Ty> &npy, predicate &&pred) {
+    return npy.all(pred);
+}
+
 /// Functional version of 'all' predicate checker on an NPArray for row / column
 /// \p i.
-template <class Ty>
+template <typename Ty, class predicate>
 bool all(const NPArray<Ty> &npy, NPArrayBase::Axis axis, size_t i,
-         std::function<bool(Ty)> pred) {
+         predicate &&pred) {
     return npy.all(axis, i, pred);
 }
 
 /// Functional version of 'all' predicate checker for a range of rows / columns.
-template <class Ty>
+template <typename Ty, class predicate>
 bool all(const NPArray<Ty> &npy, NPArrayBase::Axis axis, size_t begin,
-         size_t end, std::function<bool(Ty)> pred) {
+         size_t end, predicate &&pred) {
     return npy.all(axis, begin, end, pred);
 }
+
+/// Functional version of 'any' predicate checker on a complete NPArray.
+template <typename Ty, class predicate>
+bool any(const NPArray<Ty> &npy, predicate &&pred) {
+    return npy.any(pred);
+}
+
+/// Functional version of 'any' predicate checker on an NPArray for row / column
+/// \p i.
+template <typename Ty, class predicate>
+bool any(const NPArray<Ty> &npy, NPArrayBase::Axis axis, size_t i,
+         predicate &&pred) {
+    return npy.any(axis, i, pred);
+}
+
+/// Functional version of 'any' predicate checker for a range of rows / columns.
+template <typename Ty, class predicate>
+bool any(const NPArray<Ty> &npy, NPArrayBase::Axis axis, size_t begin,
+         size_t end, predicate &&pred) {
+    return npy.any(axis, begin, end, pred);
+}
+
+/// Functional version of 'none' predicate checker on a complete NPArray.
+template <typename Ty, class predicate>
+bool none(const NPArray<Ty> &npy, predicate &&pred) {
+    return npy.none(pred);
+}
+
+/// Functional version of 'none' predicate checker on an NPArray for row /
+/// column \p i.
+template <typename Ty, class predicate>
+bool none(const NPArray<Ty> &npy, NPArrayBase::Axis axis, size_t i,
+          predicate &&pred) {
+    return npy.none(axis, i, pred);
+}
+
+/// Functional version of 'none' predicate checker for a range of rows /
+/// columns.
+template <typename Ty, class predicate>
+bool none(const NPArray<Ty> &npy, NPArrayBase::Axis axis, size_t begin,
+          size_t end, predicate &&pred) {
+    return npy.none(axis, begin, end, pred);
+}
+
+/// Functional version of 'count' predicate checker on a complete NPArray.
+template <typename Ty, class predicate>
+size_t count(const NPArray<Ty> &npy, predicate &&pred) {
+    return npy.count(pred);
+}
+
+/// Functional version of 'count' predicate checker on an NPArray for row /
+/// column \p i.
+template <typename Ty, class predicate>
+size_t count(const NPArray<Ty> &npy, NPArrayBase::Axis axis, size_t i,
+             predicate &&pred) {
+    return npy.count(axis, i, pred);
+}
+
+/// Functional version of 'count' predicate checker for a range of rows /
+/// columns.
+template <typename Ty, class predicate>
+size_t count(const NPArray<Ty> &npy, NPArrayBase::Axis axis, size_t begin,
+             size_t end, predicate &&pred) {
+    return npy.count(axis, begin, end, pred);
+}
+/// @}
 
 /// Functional version of 'sum' operation on NPArray on specific row/col.
 template <class Ty>
