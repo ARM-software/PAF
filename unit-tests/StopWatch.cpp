@@ -23,6 +23,8 @@
 
 #include <sstream>
 #include <string>
+#include <chrono>
+#include <thread>
 
 #include "gtest/gtest.h"
 
@@ -52,6 +54,8 @@ TEST(StopWatch, StopWatch) {
     StopWatchBase::TimePoint start = SW.start();
     EXPECT_TRUE(SW.running());
     EXPECT_STREQ(SW.units(), " seconds");
+    using namespace std::chrono_literals;
+    std::this_thread::sleep_for(1s);
     StopWatchBase::TimePoint end = SW.stop();
     EXPECT_GT(end, start);
     EXPECT_EQ(SW.elapsed(), StopWatchBase::elapsed(end, start));
@@ -60,7 +64,7 @@ TEST(StopWatch, StopWatch) {
 TEST(StopWatch, AutoStopWatch) {
     ostringstream os;
     {
-        PAF::AutoStopWatch ASW(os, "MyName");
+        AutoStopWatch ASW(os, "MyName");
 
         EXPECT_STREQ(ASW.units(), " seconds");
     }
