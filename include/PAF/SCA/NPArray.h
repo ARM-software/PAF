@@ -194,7 +194,7 @@ class NPArrayBase {
     bool good() const noexcept { return errstr == nullptr; }
 
     /// Is this NPArray empty ?
-    bool empty() const noexcept { return num_rows == 0 && num_columns == 0; }
+    bool empty() const noexcept { return num_rows == 0 || num_columns == 0; }
 
     /// Insert (uninitialized) rows at position row.
     NPArrayBase &insert_rows(size_t row, size_t rows);

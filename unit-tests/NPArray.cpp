@@ -94,6 +94,13 @@ TEST(NPArrayBase, base) {
     EXPECT_EQ(f.element_size(), 4);
 }
 
+TEST(NPArray, empty) {
+    EXPECT_TRUE(NPArray<int32_t>(0, 12).empty());
+    EXPECT_TRUE(NPArray<int32_t>(3, 0).empty());
+    EXPECT_TRUE(NPArray<int32_t>(0, 0).empty());
+    EXPECT_FALSE(NPArray<int32_t>(2, 3).empty());
+}
+
 TestWithTempFiles(NPArrayBaseF, "test-NPArrayBase.npy.XXXXXX", 2);
 
 TEST_F(NPArrayBaseF, readFromFile) {
