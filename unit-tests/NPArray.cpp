@@ -2015,52 +2015,50 @@ TEST(NPArray, all) {
     isEqual<int64_t> equalsOne(1);
 
     // Check each row / each column.
-    EXPECT_TRUE(a.all(decltype(a)::COLUMN, 0, equalsOne));
-    EXPECT_TRUE(a.all(decltype(a)::COLUMN, 1, equalsOne));
-    EXPECT_FALSE(a.all(decltype(a)::COLUMN, 2, equalsOne));
-    EXPECT_TRUE(a.all(decltype(a)::ROW, 0, equalsOne));
-    EXPECT_TRUE(a.all(decltype(a)::ROW, 1, equalsOne));
-    EXPECT_FALSE(a.all(decltype(a)::ROW, 2, equalsOne));
+    EXPECT_TRUE(a.all(equalsOne, decltype(a)::COLUMN, 0));
+    EXPECT_TRUE(a.all(equalsOne, decltype(a)::COLUMN, 1));
+    EXPECT_FALSE(a.all(equalsOne, decltype(a)::COLUMN, 2));
+    EXPECT_TRUE(a.all(equalsOne, decltype(a)::ROW, 0));
+    EXPECT_TRUE(a.all(equalsOne, decltype(a)::ROW, 1));
+    EXPECT_FALSE(a.all(equalsOne, decltype(a)::ROW, 2));
 
     // Check each row / each column (functional version).
-    EXPECT_TRUE(all(a, decltype(a)::COLUMN, 0, equalsOne));
-    EXPECT_TRUE(all(a, decltype(a)::COLUMN, 1, equalsOne));
-    EXPECT_FALSE(all(a, decltype(a)::COLUMN, 2, equalsOne));
-    EXPECT_TRUE(all(a, decltype(a)::ROW, 0, equalsOne));
-    EXPECT_TRUE(all(a, decltype(a)::ROW, 1, equalsOne));
-    EXPECT_FALSE(all(a, decltype(a)::ROW, 2, equalsOne));
+    EXPECT_TRUE(all(a, equalsOne, decltype(a)::COLUMN, 0));
+    EXPECT_TRUE(all(a, equalsOne, decltype(a)::COLUMN, 1));
+    EXPECT_FALSE(all(a, equalsOne, decltype(a)::COLUMN, 2));
+    EXPECT_TRUE(all(a, equalsOne, decltype(a)::ROW, 0));
+    EXPECT_TRUE(all(a, equalsOne, decltype(a)::ROW, 1));
+    EXPECT_FALSE(all(a, equalsOne, decltype(a)::ROW, 2));
 
     // Check column / row ranges.
-    EXPECT_FALSE(a.all(decltype(a)::COLUMN, 0, 0,
-                       equalsOne)); // Empty range.
-    EXPECT_TRUE(a.all(decltype(a)::COLUMN, 0, 1, equalsOne));
-    EXPECT_TRUE(a.all(decltype(a)::COLUMN, 0, 2, equalsOne));
-    EXPECT_FALSE(a.all(decltype(a)::COLUMN, 0, 3, equalsOne));
-    EXPECT_FALSE(a.all(decltype(a)::COLUMN, 1, 3, equalsOne));
-    EXPECT_FALSE(a.all(decltype(a)::COLUMN, 2, 3, equalsOne));
+    EXPECT_FALSE(a.all(equalsOne, decltype(a)::COLUMN, 0, 0)); // Empty range.
+    EXPECT_TRUE(a.all(equalsOne, decltype(a)::COLUMN, 0, 1));
+    EXPECT_TRUE(a.all(equalsOne, decltype(a)::COLUMN, 0, 2));
+    EXPECT_FALSE(a.all(equalsOne, decltype(a)::COLUMN, 0, 3));
+    EXPECT_FALSE(a.all(equalsOne, decltype(a)::COLUMN, 1, 3));
+    EXPECT_FALSE(a.all(equalsOne, decltype(a)::COLUMN, 2, 3));
 
-    EXPECT_FALSE(a.all(decltype(a)::ROW, 0, 0, equalsOne)); // Empty range.
-    EXPECT_TRUE(a.all(decltype(a)::ROW, 0, 1, equalsOne));
-    EXPECT_TRUE(a.all(decltype(a)::ROW, 0, 2, equalsOne));
-    EXPECT_FALSE(a.all(decltype(a)::ROW, 0, 3, equalsOne));
-    EXPECT_FALSE(a.all(decltype(a)::ROW, 1, 3, equalsOne));
-    EXPECT_FALSE(a.all(decltype(a)::ROW, 2, 3, equalsOne));
+    EXPECT_FALSE(a.all(equalsOne, decltype(a)::ROW, 0, 0)); // Empty range.
+    EXPECT_TRUE(a.all(equalsOne, decltype(a)::ROW, 0, 1));
+    EXPECT_TRUE(a.all(equalsOne, decltype(a)::ROW, 0, 2));
+    EXPECT_FALSE(a.all(equalsOne, decltype(a)::ROW, 0, 3));
+    EXPECT_FALSE(a.all(equalsOne, decltype(a)::ROW, 1, 3));
+    EXPECT_FALSE(a.all(equalsOne, decltype(a)::ROW, 2, 3));
 
     // Check column / row ranges (functional version).
-    EXPECT_FALSE(all(a, decltype(a)::COLUMN, 0, 0,
-                     equalsOne)); // Empty range.
-    EXPECT_TRUE(all(a, decltype(a)::COLUMN, 0, 1, equalsOne));
-    EXPECT_TRUE(all(a, decltype(a)::COLUMN, 0, 2, equalsOne));
-    EXPECT_FALSE(all(a, decltype(a)::COLUMN, 0, 3, equalsOne));
-    EXPECT_FALSE(all(a, decltype(a)::COLUMN, 1, 3, equalsOne));
-    EXPECT_FALSE(all(a, decltype(a)::COLUMN, 2, 3, equalsOne));
+    EXPECT_FALSE(all(a, equalsOne, decltype(a)::COLUMN, 0, 0)); // Empty range.
+    EXPECT_TRUE(all(a, equalsOne, decltype(a)::COLUMN, 0, 1));
+    EXPECT_TRUE(all(a, equalsOne, decltype(a)::COLUMN, 0, 2));
+    EXPECT_FALSE(all(a, equalsOne, decltype(a)::COLUMN, 0, 3));
+    EXPECT_FALSE(all(a, equalsOne, decltype(a)::COLUMN, 1, 3));
+    EXPECT_FALSE(all(a, equalsOne, decltype(a)::COLUMN, 2, 3));
 
-    EXPECT_FALSE(all(a, decltype(a)::ROW, 0, 0, equalsOne)); // Empty range.
-    EXPECT_TRUE(all(a, decltype(a)::ROW, 0, 1, equalsOne));
-    EXPECT_TRUE(all(a, decltype(a)::ROW, 0, 2, equalsOne));
-    EXPECT_FALSE(all(a, decltype(a)::ROW, 0, 3, equalsOne));
-    EXPECT_FALSE(all(a, decltype(a)::ROW, 1, 3, equalsOne));
-    EXPECT_FALSE(all(a, decltype(a)::ROW, 2, 3, equalsOne));
+    EXPECT_FALSE(all(a, equalsOne, decltype(a)::ROW, 0, 0)); // Empty range.
+    EXPECT_TRUE(all(a, equalsOne, decltype(a)::ROW, 0, 1));
+    EXPECT_TRUE(all(a, equalsOne, decltype(a)::ROW, 0, 2));
+    EXPECT_FALSE(all(a, equalsOne, decltype(a)::ROW, 0, 3));
+    EXPECT_FALSE(all(a, equalsOne, decltype(a)::ROW, 1, 3));
+    EXPECT_FALSE(all(a, equalsOne, decltype(a)::ROW, 2, 3));
 
     // Check the complete matrix.
     EXPECT_FALSE(NPArray<int64_t>().all(equalsOne));
@@ -2080,52 +2078,50 @@ TEST(NPArray, any) {
     isEqual<uint32_t> equalsZero(0);
 
     // Check each row / each column.
-    EXPECT_FALSE(a.any(decltype(a)::COLUMN, 0, equalsZero));
-    EXPECT_FALSE(a.any(decltype(a)::COLUMN, 1, equalsZero));
-    EXPECT_TRUE(a.any(decltype(a)::COLUMN, 2, equalsZero));
-    EXPECT_FALSE(a.any(decltype(a)::ROW, 0, equalsZero));
-    EXPECT_FALSE(a.any(decltype(a)::ROW, 1, equalsZero));
-    EXPECT_TRUE(a.any(decltype(a)::ROW, 2, equalsZero));
+    EXPECT_FALSE(a.any(equalsZero, decltype(a)::COLUMN, 0));
+    EXPECT_FALSE(a.any(equalsZero, decltype(a)::COLUMN, 1));
+    EXPECT_TRUE(a.any(equalsZero, decltype(a)::COLUMN, 2));
+    EXPECT_FALSE(a.any(equalsZero, decltype(a)::ROW, 0));
+    EXPECT_FALSE(a.any(equalsZero, decltype(a)::ROW, 1));
+    EXPECT_TRUE(a.any(equalsZero, decltype(a)::ROW, 2));
 
     // Check each row / each column (functional version).
-    EXPECT_FALSE(any(a, decltype(a)::COLUMN, 0, equalsZero));
-    EXPECT_FALSE(any(a, decltype(a)::COLUMN, 1, equalsZero));
-    EXPECT_TRUE(any(a, decltype(a)::COLUMN, 2, equalsZero));
-    EXPECT_FALSE(any(a, decltype(a)::ROW, 0, equalsZero));
-    EXPECT_FALSE(any(a, decltype(a)::ROW, 1, equalsZero));
-    EXPECT_TRUE(any(a, decltype(a)::ROW, 2, equalsZero));
+    EXPECT_FALSE(any(a, equalsZero, decltype(a)::COLUMN, 0));
+    EXPECT_FALSE(any(a, equalsZero, decltype(a)::COLUMN, 1));
+    EXPECT_TRUE(any(a, equalsZero, decltype(a)::COLUMN, 2));
+    EXPECT_FALSE(any(a, equalsZero, decltype(a)::ROW, 0));
+    EXPECT_FALSE(any(a, equalsZero, decltype(a)::ROW, 1));
+    EXPECT_TRUE(any(a, equalsZero, decltype(a)::ROW, 2));
 
     // Check column / row ranges.
-    EXPECT_FALSE(a.any(decltype(a)::COLUMN, 0, 0,
-                       equalsZero)); // Empty range.
-    EXPECT_FALSE(a.any(decltype(a)::COLUMN, 0, 1, equalsZero));
-    EXPECT_FALSE(a.any(decltype(a)::COLUMN, 0, 2, equalsZero));
-    EXPECT_TRUE(a.any(decltype(a)::COLUMN, 0, 3, equalsZero));
-    EXPECT_TRUE(a.any(decltype(a)::COLUMN, 1, 3, equalsZero));
-    EXPECT_TRUE(a.any(decltype(a)::COLUMN, 2, 3, equalsZero));
+    EXPECT_FALSE(a.any(equalsZero, decltype(a)::COLUMN, 0, 0)); // Empty range.
+    EXPECT_FALSE(a.any(equalsZero, decltype(a)::COLUMN, 0, 1));
+    EXPECT_FALSE(a.any(equalsZero, decltype(a)::COLUMN, 0, 2));
+    EXPECT_TRUE(a.any(equalsZero, decltype(a)::COLUMN, 0, 3));
+    EXPECT_TRUE(a.any(equalsZero, decltype(a)::COLUMN, 1, 3));
+    EXPECT_TRUE(a.any(equalsZero, decltype(a)::COLUMN, 2, 3));
 
-    EXPECT_FALSE(a.any(decltype(a)::ROW, 0, 0, equalsZero)); // Empty range.
-    EXPECT_FALSE(a.any(decltype(a)::ROW, 0, 1, equalsZero));
-    EXPECT_FALSE(a.any(decltype(a)::ROW, 0, 2, equalsZero));
-    EXPECT_TRUE(a.any(decltype(a)::ROW, 0, 3, equalsZero));
-    EXPECT_TRUE(a.any(decltype(a)::ROW, 1, 3, equalsZero));
-    EXPECT_TRUE(a.any(decltype(a)::ROW, 2, 3, equalsZero));
+    EXPECT_FALSE(a.any(equalsZero, decltype(a)::ROW, 0, 0)); // Empty range.
+    EXPECT_FALSE(a.any(equalsZero, decltype(a)::ROW, 0, 1));
+    EXPECT_FALSE(a.any(equalsZero, decltype(a)::ROW, 0, 2));
+    EXPECT_TRUE(a.any(equalsZero, decltype(a)::ROW, 0, 3));
+    EXPECT_TRUE(a.any(equalsZero, decltype(a)::ROW, 1, 3));
+    EXPECT_TRUE(a.any(equalsZero, decltype(a)::ROW, 2, 3));
 
     // Check column / row ranges (functional version).
-    EXPECT_FALSE(any(a, decltype(a)::COLUMN, 0, 0,
-                     equalsZero)); // Empty range.
-    EXPECT_FALSE(any(a, decltype(a)::COLUMN, 0, 1, equalsZero));
-    EXPECT_FALSE(any(a, decltype(a)::COLUMN, 0, 2, equalsZero));
-    EXPECT_TRUE(any(a, decltype(a)::COLUMN, 0, 3, equalsZero));
-    EXPECT_TRUE(any(a, decltype(a)::COLUMN, 1, 3, equalsZero));
-    EXPECT_TRUE(any(a, decltype(a)::COLUMN, 2, 3, equalsZero));
+    EXPECT_FALSE(any(a, equalsZero, decltype(a)::COLUMN, 0, 0)); // Empty range.
+    EXPECT_FALSE(any(a, equalsZero, decltype(a)::COLUMN, 0, 1));
+    EXPECT_FALSE(any(a, equalsZero, decltype(a)::COLUMN, 0, 2));
+    EXPECT_TRUE(any(a, equalsZero, decltype(a)::COLUMN, 0, 3));
+    EXPECT_TRUE(any(a, equalsZero, decltype(a)::COLUMN, 1, 3));
+    EXPECT_TRUE(any(a, equalsZero, decltype(a)::COLUMN, 2, 3));
 
-    EXPECT_FALSE(any(a, decltype(a)::ROW, 0, 0, equalsZero)); // Empty range.
-    EXPECT_FALSE(any(a, decltype(a)::ROW, 0, 1, equalsZero));
-    EXPECT_FALSE(any(a, decltype(a)::ROW, 0, 2, equalsZero));
-    EXPECT_TRUE(any(a, decltype(a)::ROW, 0, 3, equalsZero));
-    EXPECT_TRUE(any(a, decltype(a)::ROW, 1, 3, equalsZero));
-    EXPECT_TRUE(any(a, decltype(a)::ROW, 2, 3, equalsZero));
+    EXPECT_FALSE(any(a, equalsZero, decltype(a)::ROW, 0, 0)); // Empty range.
+    EXPECT_FALSE(any(a, equalsZero, decltype(a)::ROW, 0, 1));
+    EXPECT_FALSE(any(a, equalsZero, decltype(a)::ROW, 0, 2));
+    EXPECT_TRUE(any(a, equalsZero, decltype(a)::ROW, 0, 3));
+    EXPECT_TRUE(any(a, equalsZero, decltype(a)::ROW, 1, 3));
+    EXPECT_TRUE(any(a, equalsZero, decltype(a)::ROW, 2, 3));
 
     // Check the complete matrix.
     EXPECT_FALSE(NPArray<uint32_t>().any(equalsZero));
@@ -2145,52 +2141,51 @@ TEST(NPArray, none) {
     isEqual<int8_t> equalsZero(0);
 
     // Check each row / each column.
-    EXPECT_TRUE(a.none(decltype(a)::COLUMN, 0, equalsZero));
-    EXPECT_TRUE(a.none(decltype(a)::COLUMN, 1, equalsZero));
-    EXPECT_FALSE(a.none(decltype(a)::COLUMN, 2, equalsZero));
-    EXPECT_TRUE(a.none(decltype(a)::ROW, 0, equalsZero));
-    EXPECT_TRUE(a.none(decltype(a)::ROW, 1, equalsZero));
-    EXPECT_FALSE(a.none(decltype(a)::ROW, 2, equalsZero));
+    EXPECT_TRUE(a.none(equalsZero, decltype(a)::COLUMN, 0));
+    EXPECT_TRUE(a.none(equalsZero, decltype(a)::COLUMN, 1));
+    EXPECT_FALSE(a.none(equalsZero, decltype(a)::COLUMN, 2));
+    EXPECT_TRUE(a.none(equalsZero, decltype(a)::ROW, 0));
+    EXPECT_TRUE(a.none(equalsZero, decltype(a)::ROW, 1));
+    EXPECT_FALSE(a.none(equalsZero, decltype(a)::ROW, 2));
 
     // Check each row / each column (functional version).
-    EXPECT_TRUE(none(a, decltype(a)::COLUMN, 0, equalsZero));
-    EXPECT_TRUE(none(a, decltype(a)::COLUMN, 1, equalsZero));
-    EXPECT_FALSE(none(a, decltype(a)::COLUMN, 2, equalsZero));
-    EXPECT_TRUE(none(a, decltype(a)::ROW, 0, equalsZero));
-    EXPECT_TRUE(none(a, decltype(a)::ROW, 1, equalsZero));
-    EXPECT_FALSE(none(a, decltype(a)::ROW, 2, equalsZero));
+    EXPECT_TRUE(none(a, equalsZero, decltype(a)::COLUMN, 0));
+    EXPECT_TRUE(none(a, equalsZero, decltype(a)::COLUMN, 1));
+    EXPECT_FALSE(none(a, equalsZero, decltype(a)::COLUMN, 2));
+    EXPECT_TRUE(none(a, equalsZero, decltype(a)::ROW, 0));
+    EXPECT_TRUE(none(a, equalsZero, decltype(a)::ROW, 1));
+    EXPECT_FALSE(none(a, equalsZero, decltype(a)::ROW, 2));
 
     // Check column / row ranges.
-    EXPECT_FALSE(a.none(decltype(a)::COLUMN, 0, 0,
-                        equalsZero)); // Empty range.
-    EXPECT_TRUE(a.none(decltype(a)::COLUMN, 0, 1, equalsZero));
-    EXPECT_TRUE(a.none(decltype(a)::COLUMN, 0, 2, equalsZero));
-    EXPECT_FALSE(a.none(decltype(a)::COLUMN, 0, 3, equalsZero));
-    EXPECT_FALSE(a.none(decltype(a)::COLUMN, 1, 3, equalsZero));
-    EXPECT_FALSE(a.none(decltype(a)::COLUMN, 2, 3, equalsZero));
+    EXPECT_FALSE(a.none(equalsZero, decltype(a)::COLUMN, 0, 0)); // Empty range.
+    EXPECT_TRUE(a.none(equalsZero, decltype(a)::COLUMN, 0, 1));
+    EXPECT_TRUE(a.none(equalsZero, decltype(a)::COLUMN, 0, 2));
+    EXPECT_FALSE(a.none(equalsZero, decltype(a)::COLUMN, 0, 3));
+    EXPECT_FALSE(a.none(equalsZero, decltype(a)::COLUMN, 1, 3));
+    EXPECT_FALSE(a.none(equalsZero, decltype(a)::COLUMN, 2, 3));
 
-    EXPECT_FALSE(a.none(decltype(a)::ROW, 0, 0, equalsZero)); // Empty range.
-    EXPECT_TRUE(a.none(decltype(a)::ROW, 0, 1, equalsZero));
-    EXPECT_TRUE(a.none(decltype(a)::ROW, 0, 2, equalsZero));
-    EXPECT_FALSE(a.none(decltype(a)::ROW, 0, 3, equalsZero));
-    EXPECT_FALSE(a.none(decltype(a)::ROW, 1, 3, equalsZero));
-    EXPECT_FALSE(a.none(decltype(a)::ROW, 2, 3, equalsZero));
+    EXPECT_FALSE(a.none(equalsZero, decltype(a)::ROW, 0, 0)); // Empty range.
+    EXPECT_TRUE(a.none(equalsZero, decltype(a)::ROW, 0, 1));
+    EXPECT_TRUE(a.none(equalsZero, decltype(a)::ROW, 0, 2));
+    EXPECT_FALSE(a.none(equalsZero, decltype(a)::ROW, 0, 3));
+    EXPECT_FALSE(a.none(equalsZero, decltype(a)::ROW, 1, 3));
+    EXPECT_FALSE(a.none(equalsZero, decltype(a)::ROW, 2, 3));
 
     // Check column / row ranges (functional version).
-    EXPECT_FALSE(none(a, decltype(a)::COLUMN, 0, 0,
-                      equalsZero)); // Empty range.
-    EXPECT_TRUE(none(a, decltype(a)::COLUMN, 0, 1, equalsZero));
-    EXPECT_TRUE(none(a, decltype(a)::COLUMN, 0, 2, equalsZero));
-    EXPECT_FALSE(none(a, decltype(a)::COLUMN, 0, 3, equalsZero));
-    EXPECT_FALSE(none(a, decltype(a)::COLUMN, 1, 3, equalsZero));
-    EXPECT_FALSE(none(a, decltype(a)::COLUMN, 2, 3, equalsZero));
+    EXPECT_FALSE(
+        none(a, equalsZero, decltype(a)::COLUMN, 0, 0)); // Empty range.
+    EXPECT_TRUE(none(a, equalsZero, decltype(a)::COLUMN, 0, 1));
+    EXPECT_TRUE(none(a, equalsZero, decltype(a)::COLUMN, 0, 2));
+    EXPECT_FALSE(none(a, equalsZero, decltype(a)::COLUMN, 0, 3));
+    EXPECT_FALSE(none(a, equalsZero, decltype(a)::COLUMN, 1, 3));
+    EXPECT_FALSE(none(a, equalsZero, decltype(a)::COLUMN, 2, 3));
 
-    EXPECT_FALSE(none(a, decltype(a)::ROW, 0, 0, equalsZero)); // Empty range.
-    EXPECT_TRUE(none(a, decltype(a)::ROW, 0, 1, equalsZero));
-    EXPECT_TRUE(none(a, decltype(a)::ROW, 0, 2, equalsZero));
-    EXPECT_FALSE(none(a, decltype(a)::ROW, 0, 3, equalsZero));
-    EXPECT_FALSE(none(a, decltype(a)::ROW, 1, 3, equalsZero));
-    EXPECT_FALSE(none(a, decltype(a)::ROW, 2, 3, equalsZero));
+    EXPECT_FALSE(none(a, equalsZero, decltype(a)::ROW, 0, 0)); // Empty range.
+    EXPECT_TRUE(none(a, equalsZero, decltype(a)::ROW, 0, 1));
+    EXPECT_TRUE(none(a, equalsZero, decltype(a)::ROW, 0, 2));
+    EXPECT_FALSE(none(a, equalsZero, decltype(a)::ROW, 0, 3));
+    EXPECT_FALSE(none(a, equalsZero, decltype(a)::ROW, 1, 3));
+    EXPECT_FALSE(none(a, equalsZero, decltype(a)::ROW, 2, 3));
 
     // Check the complete matrix.
     EXPECT_FALSE(NPArray<int8_t>().none(equalsZero));
@@ -2210,51 +2205,51 @@ TEST(NPArray, count) {
     isEqual<double> equalsOne(1.0);
 
     // Check each row / each column.
-    EXPECT_EQ(a.count(decltype(a)::COLUMN, 0, equalsOne), 3);
-    EXPECT_EQ(a.count(decltype(a)::COLUMN, 1, equalsOne), 3);
-    EXPECT_EQ(a.count(decltype(a)::COLUMN, 2, equalsOne), 2);
-    EXPECT_EQ(a.count(decltype(a)::ROW, 0, equalsOne), 3);
-    EXPECT_EQ(a.count(decltype(a)::ROW, 1, equalsOne), 3);
-    EXPECT_EQ(a.count(decltype(a)::ROW, 2, equalsOne), 2);
+    EXPECT_EQ(a.count(equalsOne, decltype(a)::COLUMN, 0), 3);
+    EXPECT_EQ(a.count(equalsOne, decltype(a)::COLUMN, 1), 3);
+    EXPECT_EQ(a.count(equalsOne, decltype(a)::COLUMN, 2), 2);
+    EXPECT_EQ(a.count(equalsOne, decltype(a)::ROW, 0), 3);
+    EXPECT_EQ(a.count(equalsOne, decltype(a)::ROW, 1), 3);
+    EXPECT_EQ(a.count(equalsOne, decltype(a)::ROW, 2), 2);
 
     // Check each row / each column (functional version).
-    EXPECT_EQ(count(a, decltype(a)::COLUMN, 0, equalsOne), 3);
-    EXPECT_EQ(count(a, decltype(a)::COLUMN, 1, equalsOne), 3);
-    EXPECT_EQ(count(a, decltype(a)::COLUMN, 2, equalsOne), 2);
-    EXPECT_EQ(count(a, decltype(a)::ROW, 0, equalsOne), 3);
-    EXPECT_EQ(count(a, decltype(a)::ROW, 1, equalsOne), 3);
-    EXPECT_EQ(count(a, decltype(a)::ROW, 2, equalsOne), 2);
+    EXPECT_EQ(count(a, equalsOne, decltype(a)::COLUMN, 0), 3);
+    EXPECT_EQ(count(a, equalsOne, decltype(a)::COLUMN, 1), 3);
+    EXPECT_EQ(count(a, equalsOne, decltype(a)::COLUMN, 2), 2);
+    EXPECT_EQ(count(a, equalsOne, decltype(a)::ROW, 0), 3);
+    EXPECT_EQ(count(a, equalsOne, decltype(a)::ROW, 1), 3);
+    EXPECT_EQ(count(a, equalsOne, decltype(a)::ROW, 2), 2);
 
     // Check column / row ranges.
-    EXPECT_EQ(a.count(decltype(a)::COLUMN, 0, 0, equalsOne), 0); // Empty range.
-    EXPECT_EQ(a.count(decltype(a)::COLUMN, 0, 1, equalsOne), 3);
-    EXPECT_EQ(a.count(decltype(a)::COLUMN, 0, 2, equalsOne), 6);
-    EXPECT_EQ(a.count(decltype(a)::COLUMN, 0, 3, equalsOne), 8);
-    EXPECT_EQ(a.count(decltype(a)::COLUMN, 1, 3, equalsOne), 5);
-    EXPECT_EQ(a.count(decltype(a)::COLUMN, 2, 3, equalsOne), 2);
+    EXPECT_EQ(a.count(equalsOne, decltype(a)::COLUMN, 0, 0), 0); // Empty range.
+    EXPECT_EQ(a.count(equalsOne, decltype(a)::COLUMN, 0, 1), 3);
+    EXPECT_EQ(a.count(equalsOne, decltype(a)::COLUMN, 0, 2), 6);
+    EXPECT_EQ(a.count(equalsOne, decltype(a)::COLUMN, 0, 3), 8);
+    EXPECT_EQ(a.count(equalsOne, decltype(a)::COLUMN, 1, 3), 5);
+    EXPECT_EQ(a.count(equalsOne, decltype(a)::COLUMN, 2, 3), 2);
 
-    EXPECT_EQ(a.count(decltype(a)::ROW, 0, 0, equalsOne), 0); // Empty range.
-    EXPECT_EQ(a.count(decltype(a)::ROW, 0, 1, equalsOne), 3);
-    EXPECT_EQ(a.count(decltype(a)::ROW, 0, 2, equalsOne), 6);
-    EXPECT_EQ(a.count(decltype(a)::ROW, 0, 3, equalsOne), 8);
-    EXPECT_EQ(a.count(decltype(a)::ROW, 1, 3, equalsOne), 5);
-    EXPECT_EQ(a.count(decltype(a)::ROW, 2, 3, equalsOne), 2);
+    EXPECT_EQ(a.count(equalsOne, decltype(a)::ROW, 0, 0), 0); // Empty range.
+    EXPECT_EQ(a.count(equalsOne, decltype(a)::ROW, 0, 1), 3);
+    EXPECT_EQ(a.count(equalsOne, decltype(a)::ROW, 0, 2), 6);
+    EXPECT_EQ(a.count(equalsOne, decltype(a)::ROW, 0, 3), 8);
+    EXPECT_EQ(a.count(equalsOne, decltype(a)::ROW, 1, 3), 5);
+    EXPECT_EQ(a.count(equalsOne, decltype(a)::ROW, 2, 3), 2);
 
     // Check column / row ranges (functional version).
-    EXPECT_EQ(count(a, decltype(a)::COLUMN, 0, 0, equalsOne),
+    EXPECT_EQ(count(a, equalsOne, decltype(a)::COLUMN, 0, 0),
               0); // Empty range.
-    EXPECT_EQ(count(a, decltype(a)::COLUMN, 0, 1, equalsOne), 3);
-    EXPECT_EQ(count(a, decltype(a)::COLUMN, 0, 2, equalsOne), 6);
-    EXPECT_EQ(count(a, decltype(a)::COLUMN, 0, 3, equalsOne), 8);
-    EXPECT_EQ(count(a, decltype(a)::COLUMN, 1, 3, equalsOne), 5);
-    EXPECT_EQ(count(a, decltype(a)::COLUMN, 2, 3, equalsOne), 2);
+    EXPECT_EQ(count(a, equalsOne, decltype(a)::COLUMN, 0, 1), 3);
+    EXPECT_EQ(count(a, equalsOne, decltype(a)::COLUMN, 0, 2), 6);
+    EXPECT_EQ(count(a, equalsOne, decltype(a)::COLUMN, 0, 3), 8);
+    EXPECT_EQ(count(a, equalsOne, decltype(a)::COLUMN, 1, 3), 5);
+    EXPECT_EQ(count(a, equalsOne, decltype(a)::COLUMN, 2, 3), 2);
 
-    EXPECT_EQ(count(a, decltype(a)::ROW, 0, 0, equalsOne), 0); // Empty range.
-    EXPECT_EQ(count(a, decltype(a)::ROW, 0, 1, equalsOne), 3);
-    EXPECT_EQ(count(a, decltype(a)::ROW, 0, 2, equalsOne), 6);
-    EXPECT_EQ(count(a, decltype(a)::ROW, 0, 3, equalsOne), 8);
-    EXPECT_EQ(count(a, decltype(a)::ROW, 1, 3, equalsOne), 5);
-    EXPECT_EQ(count(a, decltype(a)::ROW, 2, 3, equalsOne), 2);
+    EXPECT_EQ(count(a, equalsOne, decltype(a)::ROW, 0, 0), 0); // Empty range.
+    EXPECT_EQ(count(a, equalsOne, decltype(a)::ROW, 0, 1), 3);
+    EXPECT_EQ(count(a, equalsOne, decltype(a)::ROW, 0, 2), 6);
+    EXPECT_EQ(count(a, equalsOne, decltype(a)::ROW, 0, 3), 8);
+    EXPECT_EQ(count(a, equalsOne, decltype(a)::ROW, 1, 3), 5);
+    EXPECT_EQ(count(a, equalsOne, decltype(a)::ROW, 2, 3), 2);
 
     // Check the complete matrix.
     EXPECT_EQ(NPArray<double>().count(equalsOne), 0);

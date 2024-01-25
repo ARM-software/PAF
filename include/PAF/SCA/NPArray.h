@@ -312,7 +312,7 @@ template <class Ty> class NPArray : public NPArrayBase {
     /// The array elements' type.
     typedef Ty DataTy;
 
-    static_assert(std::is_arithmetic<DataTy>(),
+    static_assert(std::is_arithmetic<Ty>(),
                   "expecting an integral or floating point type");
 
     /// Construct an empty NPArray.
@@ -886,7 +886,7 @@ template <class Ty> class NPArray : public NPArrayBase {
     /// Test if all elements in row \p i or column \p i satisfy predicate
     /// \p pred.
     template <class predicate>
-    bool all(Axis axis, size_t i, predicate &&pred) const {
+    bool all(const predicate &pred, Axis axis, size_t i) const {
         switch (axis) {
         case ROW:
             assert(i <= rows() &&
@@ -908,7 +908,7 @@ template <class Ty> class NPArray : public NPArrayBase {
     /// Test if all elements in the range [ \p begin , \p end ( on \p axis
     /// satisfy predicate \p pred.
     template <class predicate>
-    bool all(Axis axis, size_t begin, size_t end, predicate &&pred) const {
+    bool all(const predicate &pred, Axis axis, size_t begin, size_t end) const {
         assert(begin <= end && "range's end needs to be strictly greater "
                                "than begin in NPArray::all");
         if (begin >= end)
@@ -940,7 +940,7 @@ template <class Ty> class NPArray : public NPArrayBase {
     }
 
     /// Test if any of the elements in this NPArray satisfy predicate \p pred.
-    template <class predicate> bool any(predicate &&pred) const {
+    template <class predicate> bool any(const predicate &pred) const {
         if (empty())
             return false;
         for (size_t row = 0; row < rows(); row++)
@@ -953,7 +953,7 @@ template <class Ty> class NPArray : public NPArrayBase {
     /// Test if any of the elements in row \p i or column \p i satisfy predicate
     /// \p pred.
     template <class predicate>
-    bool any(Axis axis, size_t i, predicate &&pred) const {
+    bool any(const predicate &pred, Axis axis, size_t i) const {
         switch (axis) {
         case ROW:
             assert(i <= rows() &&
@@ -975,7 +975,7 @@ template <class Ty> class NPArray : public NPArrayBase {
     /// Test if any of the elements in the range [ \p begin , \p end ( on \p
     /// axis satisfy predicate \p pred.
     template <class predicate>
-    bool any(Axis axis, size_t begin, size_t end, predicate &&pred) const {
+    bool any(const predicate &pred, Axis axis, size_t begin, size_t end) const {
         assert(begin <= end && "range's end needs to be strictly greater "
                                "than begin in NPArray::all");
         if (begin >= end)
@@ -1007,7 +1007,7 @@ template <class Ty> class NPArray : public NPArrayBase {
     }
 
     /// Test if none of the elements in this NPArray satisfy predicate \p pred.
-    template <class predicate> bool none(predicate &&pred) const {
+    template <class predicate> bool none(const predicate &pred) const {
         if (empty())
             return false;
         for (size_t row = 0; row < rows(); row++)
@@ -1020,7 +1020,7 @@ template <class Ty> class NPArray : public NPArrayBase {
     /// Test if none of the elements in row \p i or column \p i satisfy
     /// predicate \p pred.
     template <class predicate>
-    bool none(Axis axis, size_t i, predicate &&pred) const {
+    bool none(const predicate &pred, Axis axis, size_t i) const {
         switch (axis) {
         case ROW:
             assert(i <= rows() &&
@@ -1042,7 +1042,7 @@ template <class Ty> class NPArray : public NPArrayBase {
     /// Test if none of the elements in the range [ \p begin , \p end ( on \p
     /// axis satisfy predicate \p pred.
     template <class predicate>
-    bool none(Axis axis, size_t begin, size_t end, predicate &&pred) const {
+    bool none(const predicate &pred, Axis axis, size_t begin, size_t end) const {
         assert(begin <= end && "range's end needs to be strictly greater "
                                "than begin in NPArray::none");
         if (begin >= end)
@@ -1075,7 +1075,7 @@ template <class Ty> class NPArray : public NPArrayBase {
 
     /// Count how many of the elements in this NPArray satisfy predicate \p
     /// pred.
-    template <class predicate> size_t count(predicate &&pred) const {
+    template <class predicate> size_t count(const predicate &pred) const {
         size_t cnt = 0;
         if (empty())
             return cnt;
@@ -1089,7 +1089,7 @@ template <class Ty> class NPArray : public NPArrayBase {
     /// Count how many of the elements in row \p i or column \p i satisfy
     /// predicate \p pred.
     template <class predicate>
-    size_t count(Axis axis, size_t i, predicate &&pred) const {
+    size_t count(const predicate &pred, Axis axis, size_t i) const {
         size_t cnt = 0;
         switch (axis) {
         case ROW:
@@ -1112,7 +1112,7 @@ template <class Ty> class NPArray : public NPArrayBase {
     /// Count how many of the elements in the range [ \p begin , \p end ( on \p
     /// axis satisfy predicate \p pred.
     template <class predicate>
-    size_t count(Axis axis, size_t begin, size_t end, predicate &&pred) const {
+    size_t count(const predicate &pred, Axis axis, size_t begin, size_t end) const {
         assert(begin <= end && "range's end needs to be strictly greater "
                                "than begin in NPArray::count");
         size_t cnt = 0;
@@ -1145,45 +1145,42 @@ template <class Ty> class NPArray : public NPArrayBase {
     }
     /// @}
 
-    /// Applies a default constructed \p unaryOperation to each element of the
+    /// \defgroup Collectors Collect some metric (e.g. min, max, ...), passed as
+    /// an \p NPCollector function object, optionally including the row / col
+    /// information over each element of an NPArray (or a selected range of it)
+    /// and return it. The NPCollector object must be copyable.
+    /// @{
+
+    /// Applies a \p NPCollector function object to each element of the
     /// NPArray and returns it.
-    template <template <typename, bool> class unaryOperation,
+    template <template <typename, bool> class collectorOp,
               bool enableLocation = false>
     std::enable_if_t<
-        isNPCollector<DataTy, unaryOperation, enableLocation>::value,
-        unaryOperation<DataTy, enableLocation>> foreach () const {
-        static_assert(
-            std::is_copy_constructible<
-                unaryOperation<DataTy, enableLocation>>(),
-            "unaryOperation for NPArray::foreach must be copy constructible");
-        static_assert(std::is_default_constructible<
-                          unaryOperation<DataTy, enableLocation>>(),
-                      "unaryOperation for NPArray::foreach must be default "
-                      "constructible");
-        unaryOperation<DataTy, enableLocation> op;
+        isNPCollector<Ty, collectorOp, enableLocation>::value &&
+            std::is_copy_constructible<collectorOp<Ty, enableLocation>>(),
+        collectorOp<
+            Ty, enableLocation>> foreach (const collectorOp<Ty, enableLocation>
+                                              &collectOp) const {
+        collectorOp<Ty, enableLocation> op(collectOp);
         for (size_t row = 0; row < rows(); row++)
             for (size_t col = 0; col < cols(); col++)
                 op(at(row, col), row, col);
         return op;
     }
 
-    /// Applies a default constructed \p unaryOperation to each element of the
-    /// NPArray and returns it.
-    template <template <typename, bool> class unaryOperation,
+    /// Applies a \p NPCollector function object to each element in the \p i'th
+    /// row (resp. column) as specified by \p axis in the NPArray and returns
+    /// it.
+    template <template <typename, bool> class collectorOp,
               bool enableLocation = false>
     std::enable_if_t<
-        isNPCollector<DataTy, unaryOperation, enableLocation>::value,
-        unaryOperation<DataTy, enableLocation>> foreach (Axis axis,
-                                                         size_t i) const {
-        static_assert(
-            std::is_copy_constructible<
-                unaryOperation<DataTy, enableLocation>>(),
-            "unaryOperation for NPArray::foreach must be copy constructible");
-        static_assert(std::is_default_constructible<
-                          unaryOperation<DataTy, enableLocation>>(),
-                      "unaryOperation for NPArray::foreach must be default "
-                      "constructible");
-        unaryOperation<DataTy, enableLocation> op;
+        isNPCollector<Ty, collectorOp, enableLocation>::value &&
+            std::is_copy_constructible<collectorOp<Ty, enableLocation>>(),
+        collectorOp<
+            Ty, enableLocation>> foreach (const collectorOp<Ty, enableLocation>
+                                              &collectOp,
+                                          Axis axis, size_t i) const {
+        collectorOp<Ty, enableLocation> op(collectOp);
         switch (axis) {
         case ROW:
             assert(i < rows() &&
@@ -1202,26 +1199,22 @@ template <class Ty> class NPArray : public NPArrayBase {
         return op;
     }
 
-    /// Applies a default constructed \p unaryOperation to each element of the
-    /// NPArray and returns it.
-    template <template <typename, bool> class unaryOperation,
+    /// Applies a \p NPCollector function object to each element along axis \p
+    /// axis in the [ \p begin , \p end range of columns (resp. rows, as
+    /// specified by \p axis) of the NPArray and returns it.
+    template <template <typename, bool> class collectorOp,
               bool enableLocation = false>
     std::enable_if_t<
-        isNPCollector<DataTy, unaryOperation, enableLocation>::value,
-        unaryOperation<DataTy, enableLocation>> foreach (Axis axis,
-                                                         size_t begin,
-                                                         size_t end) const {
-        static_assert(
-            std::is_copy_constructible<
-                unaryOperation<DataTy, enableLocation>>(),
-            "unaryOperation for NPArray::foreach must be copy constructible");
-        static_assert(std::is_default_constructible<
-                          unaryOperation<DataTy, enableLocation>>(),
-                      "unaryOperation for NPArray::foreach must be default "
-                      "constructible");
-        unaryOperation<DataTy, enableLocation> op;
+        isNPCollector<Ty, collectorOp, enableLocation>::value &&
+            std::is_copy_constructible<collectorOp<Ty, enableLocation>>(),
+        collectorOp<
+            Ty, enableLocation>> foreach (const collectorOp<Ty, enableLocation>
+                                              &collectOp,
+                                          Axis axis, size_t begin,
+                                          size_t end) const {
         assert(begin <= end && "begin index must be lower or equal to end "
                                "index in NPArray::foreach");
+        collectorOp<Ty, enableLocation> op(collectOp);
         switch (axis) {
         case ROW:
             assert(begin <= rows() && "begin index is out of bound for row "
@@ -1246,23 +1239,23 @@ template <class Ty> class NPArray : public NPArrayBase {
         return op;
     }
 
-#define addOperator(fname, OpName)                                             \
+#define addCollector(fname, OpName)                                            \
     /** Get the specific value in this NPArray. */                             \
-    Ty fname() const { return foreach<OpName, false>().value(); }              \
+    Ty fname() const { return foreach (OpName<Ty, false>()).value(); }         \
     /** Get the minimum value in this NPArray row \p i (resp. column, as       \
      defined by \p axis ). */                                                  \
     Ty fname(Axis axis, size_t i) const {                                      \
-        return foreach<OpName, false>(axis, i).value();                        \
+        return foreach (OpName<Ty, false>(), axis, i).value();                 \
     }                                                                          \
     /** Get the specific value in this NPArray in the range [ \p begin, \p end \
      ( of rows (resp. columns, as defined by \p axis ). */                     \
     Ty fname(Axis axis, size_t begin, size_t end) const {                      \
-        return foreach<OpName, false>(axis, begin, end).value();               \
+        return foreach (OpName<Ty, false>(), axis, begin, end).value();        \
     }                                                                          \
     /** Get the specific value in this NPArray. This variant returns           \
      the location where the minimum was found. */                              \
     Ty fname(size_t &row, size_t &col) const {                                 \
-        auto op = foreach<OpName, true>();                                     \
+        auto op = foreach (OpName<Ty, true>());                                \
         row = op.row();                                                        \
         col = op.col();                                                        \
         return op.value();                                                     \
@@ -1271,7 +1264,7 @@ template <class Ty> class NPArray : public NPArrayBase {
      defined by \p axis ). This variant returns the location where the minimum \
      was found. */                                                             \
     Ty fname(size_t &row, size_t &col, Axis axis, size_t i) const {            \
-        auto op = foreach<OpName, true>(axis, i);                              \
+        auto op = foreach (OpName<Ty, true>(), axis, i);                       \
         row = op.row();                                                        \
         col = op.col();                                                        \
         return op.value();                                                     \
@@ -1281,33 +1274,33 @@ template <class Ty> class NPArray : public NPArrayBase {
      the location where the minimum was found. */                              \
     Ty fname(size_t &row, size_t &col, Axis axis, size_t begin, size_t end)    \
         const {                                                                \
-        auto op = foreach<OpName, true>(axis, begin, end);                     \
+        auto op = foreach (OpName<Ty, true>(), axis, begin, end);              \
         row = op.row();                                                        \
         col = op.col();                                                        \
         return op.value();                                                     \
     }
 
-    addOperator(min, Min);
-    addOperator(minAbs, MinAbs);
-    addOperator(max, Max);
-    addOperator(maxAbs, MaxAbs);
+    addCollector(min, Min);
+    addCollector(minAbs, MinAbs);
+    addCollector(max, Max);
+    addCollector(maxAbs, MaxAbs);
 
-#undef addOperator
+#undef addCollector
+    /// @}
+
+    /// \defgroup SelfApply Modifies this NPArray by replacing each element with
+    /// the result of the application of \p NPUnaryOperator function object to
+    /// this element and returns this NPArray.
+    /// @{
 
     /// Modifies this NPArray by replacing each element with the result of
-    /// the application of \p unaryOperation to this element and returns
+    /// the application of \p NPUnaryOperator to this element and returns
     /// this NPArray.
     template <template <typename> class unaryOperation>
-    std::enable_if_t<isNPUnaryOperator<DataTy, unaryOperation>::value,
+    std::enable_if_t<isNPUnaryOperator<Ty, unaryOperation>::value &
+                         std::is_copy_constructible<unaryOperation<Ty>>(),
                      NPArray &>
-    apply() {
-        static_assert(
-            std::is_copy_constructible<unaryOperation<DataTy>>(),
-            "unaryOperation for NPArray::apply must be copy constructible");
-        static_assert(std::is_default_constructible<unaryOperation<DataTy>>(),
-                      "unaryOperation for NPArray::apply must be default "
-                      "constructible");
-        unaryOperation<DataTy> op;
+    apply(const unaryOperation<Ty> &op) {
         for (size_t row = 0; row < rows(); row++)
             for (size_t col = 0; col < cols(); col++)
                 at(row, col) = op(at(row, col));
@@ -1315,31 +1308,31 @@ template <class Ty> class NPArray : public NPArrayBase {
     }
 
     /// Convert all elements in this NPArray to their absolute value.
-    NPArray &abs() noexcept { return apply<Abs>(); }
+    NPArray &abs() noexcept { return apply(Abs<Ty>()); }
 
     /// Convert all elements in this NPArray to their absolute value.
-    NPArray &negate() noexcept { return apply<Negate>(); }
+    NPArray &negate() noexcept { return apply(Negate<Ty>()); }
 
     /// Convert all elements in this NPArray to their natural logarithm value.
-    NPArray &log() noexcept { return apply<Log>(); }
+    NPArray &log() noexcept { return apply(Log<Ty>()); }
 
     /// Convert all elements in this NPArray to their square root value.
-    NPArray &sqrt() noexcept { return apply<Sqrt>(); }
+    NPArray &sqrt() noexcept { return apply(Sqrt<Ty>()); }
+    /// @}
+
+    /// \defgroup ScalarApply Modifies this NPArray by replacing each element
+    /// with the result of the application of \p NPBinaryOperator function
+    /// object to this element with a scalar operand and returns this NPArray.
+    /// @{
 
     /// Modifies this NPArray by replacing each element with the result of
-    /// the application of \p binaryOperation to this element and returns
-    /// this NPArray.
+    /// the application of \p binaryOperation to this element with a scalar
+    /// value and returns this NPArray.
     template <template <typename> class binaryOperation>
-    std::enable_if_t<isNPBinaryOperator<DataTy, binaryOperation>::value,
+    std::enable_if_t<isNPBinaryOperator<Ty, binaryOperation>::value &&
+                         std::is_copy_constructible<binaryOperation<Ty>>(),
                      NPArray &>
-    apply(const DataTy &rhs) {
-        static_assert(
-            std::is_copy_constructible<binaryOperation<DataTy>>(),
-            "unaryOperation for NPArray::apply must be copy constructible");
-        static_assert(std::is_default_constructible<binaryOperation<DataTy>>(),
-                      "unaryOperation for NPArray::apply must be default "
-                      "constructible");
-        binaryOperation<DataTy> op;
+    apply(const binaryOperation<Ty> &op, const Ty &rhs) {
         for (size_t row = 0; row < rows(); row++)
             for (size_t col = 0; col < cols(); col++)
                 at(row, col) = op(at(row, col), rhs);
@@ -1347,15 +1340,23 @@ template <class Ty> class NPArray : public NPArrayBase {
     }
 
     /// In-place scalar multiplication of this NPArray by \p v.
-    NPArray &operator*=(const DataTy &rhs) { return apply<Multiply>(rhs); }
+    NPArray &operator*=(const Ty &rhs) { return apply(Multiply<Ty>(), rhs); }
     /// In-place scalar addition of this NPArray by \p v.
-    NPArray &operator+=(const DataTy &rhs) { return apply<Add>(rhs); }
+    NPArray &operator+=(const Ty &rhs) { return apply(Add<Ty>(), rhs); }
     /// In-place scalar substraction of this NPArray by \p v.
-    NPArray &operator-=(const DataTy &rhs) { return apply<Substract>(rhs); }
+    NPArray &operator-=(const Ty &rhs) { return apply(Substract<Ty>(), rhs); }
     /// In-place scalar division of this NPArray by \p v.
-    NPArray &operator/=(const DataTy &rhs) { return apply<Divide>(rhs); }
+    NPArray &operator/=(const Ty &rhs) { return apply(Divide<Ty>(), rhs); }
     /// In-place absolute difference of this NPArray and the scalar \p v.
-    NPArray &absdiff(const DataTy &rhs) { return apply<AbsDiff>(rhs); }
+    NPArray &absdiff(const Ty &rhs) { return apply(AbsDiff<Ty>(), rhs); }
+    /// @}
+
+    /// \defgroup MatrixApply Those operations modifies this NPArray by
+    /// replacing each element with the result of the elementwise application of
+    /// an \p NPBinaryOperator and returns this NPArray. If \p rhs is a single
+    /// row (resp. column) matrix, and its number of columns (resp. rows), then
+    /// its content is broadcasted for all rows (resp. columns).
+    /// @{
 
     /// Modifies this NPArray by replacing each element with the result of
     /// the elementwise application of \p binaryOperation and returns
@@ -1363,22 +1364,16 @@ template <class Ty> class NPArray : public NPArrayBase {
     /// number of columns (resp. rows), then its content is broadcasted for all
     /// rows (resp. columns).
     template <template <typename> class binaryOperation>
-    std::enable_if_t<isNPBinaryOperator<DataTy, binaryOperation>::value,
+    std::enable_if_t<isNPBinaryOperator<Ty, binaryOperation>::value &&
+                         std::is_copy_constructible<binaryOperation<Ty>>(),
                      NPArray &>
-    apply(const NPArray &rhs) {
-        static_assert(
-            std::is_copy_constructible<binaryOperation<DataTy>>(),
-            "unaryOperation for NPArray::apply must be copy constructible");
-        static_assert(std::is_default_constructible<binaryOperation<DataTy>>(),
-                      "unaryOperation for NPArray::apply must be default "
-                      "constructible");
+    apply(const binaryOperation<Ty> &op, const NPArray &rhs) {
         assert(rows() == rhs.rows() || rows() == 1 ||
                rhs.rows() == 1 &&
                    "Rows dimensions must be equal or one of them must be 1");
         assert(cols() == rhs.cols() || cols() == 1 ||
                rhs.cols() == 1 &&
                    "Columns dimensions must be equal or one of them must be 1");
-        binaryOperation<DataTy> op;
         const uint8_t k =
             ((rows() == 1 ? 1 : 0) << 3) | ((cols() == 1 ? 1 : 0) << 2) |
             ((rhs.rows() == 1 ? 1 : 0) << 1) | ((rhs.cols() == 1 ? 1 : 0) << 0);
@@ -1480,71 +1475,78 @@ template <class Ty> class NPArray : public NPArrayBase {
         return *this;
     }
 
-    /// In-place scalar multiplication of this NPArray by \p v.
-    NPArray &operator*=(const NPArray &rhs) { return apply<Multiply>(rhs); }
-    /// In-place scalar addition of this NPArray by \p v.
-    NPArray &operator+=(const NPArray &rhs) { return apply<Add>(rhs); }
-    /// In-place scalar substraction of this NPArray by \p v.
-    NPArray &operator-=(const NPArray &rhs) { return apply<Substract>(rhs); }
-    /// In-place scalar division of this NPArray by \p v.
-    NPArray &operator/=(const NPArray &rhs) { return apply<Divide>(rhs); }
-    /// In-place absolute difference of this NPArray and the scalar \p v.
-    NPArray &absdiff(const NPArray &rhs) { return apply<AbsDiff>(rhs); }
+    /// In-place element-wise multiplication of this NPArray by \p rhs.
+    NPArray &operator*=(const NPArray &rhs) {
+        return apply(Multiply<Ty>(), rhs);
+    }
+    /// In-place element-wise addition of this NPArray by \p rhs.
+    NPArray &operator+=(const NPArray &rhs) { return apply(Add<Ty>(), rhs); }
+    /// In-place element-wise substraction of this NPArray by \p rhs.
+    NPArray &operator-=(const NPArray &rhs) {
+        return apply(Substract<Ty>(), rhs);
+    }
+    /// In-place element-wise division of this NPArray by \p rhs.
+    NPArray &operator/=(const NPArray &rhs) { return apply(Divide<Ty>(), rhs); }
+    /// In-place element-wise absolute difference of this NPArray and \p rhs.
+    NPArray &absdiff(const NPArray &rhs) { return apply(AbsDiff<Ty>(), rhs); }
+    /// @}
+
+    /// \defgroup FoldOperations Those operations fold a \p NPCollector function
+    /// object along an axis (or a subrange of it) and return a vector with the
+    /// result. This is performed in 2 steps, the first one being \p foldOp, the
+    /// second one begin the extraction of the data collected in the \p
+    /// NPCollector function objects with the \p extract method. Those 2 steps
+    /// are combined in the \p fold methods.
+    /// @{
 
     /// Extracts the values from a range of \p unaryOperations.
-    template <template <typename, bool> class unaryOperation,
+    template <template <typename, bool> class collectorOp,
               bool enableLocation = false>
-    static std::enable_if_t<
-        isNPCollector<DataTy, unaryOperation>::value,
-        NPArray<typename NPOperatorTraits<DataTy, unaryOperation,
-                                          enableLocation>::valueType>>
-    extract(const std::vector<unaryOperation<DataTy, enableLocation>> &ops) {
+    static std::enable_if_t<isNPCollector<Ty, collectorOp>::value,
+                            NPArray<typename NPOperatorTraits<
+                                Ty, collectorOp, enableLocation>::valueType>>
+    extract(const std::vector<collectorOp<Ty, enableLocation>> &ops) {
         if (ops.empty())
             return NPArray<
-                typename NPOperatorTraits<DataTy, unaryOperation>::valueType>();
+                typename NPOperatorTraits<Ty, collectorOp>::valueType>();
 
-        NPArray<typename NPOperatorTraits<DataTy, unaryOperation>::valueType>
-            result(1, ops.size());
+        NPArray<typename NPOperatorTraits<Ty, collectorOp>::valueType> result(
+            1, ops.size());
         std::transform(ops.begin(), ops.end(), result.begin().begin(),
                        [&](const auto &op) { return op.value(); });
         return result;
     }
 
-    /// Applies a range of default constructed \p unaryOperation to all elements
-    /// on each \p axis in the range [begin, end( and returns the range of
-    /// unaryOperations.
-    template <template <typename, bool> class unaryOperation,
+    /// Applies a range of copy constructed \p collectorOp function objects to
+    /// all elements on each \p axis in the range [begin, end( and returns the
+    /// range of \p collectorOp.
+    template <template <typename, bool> class collectorOp,
               bool enableLocation = false>
     std::enable_if_t<
-        isNPCollector<DataTy, unaryOperation, enableLocation>::value,
-        std::vector<unaryOperation<DataTy, enableLocation>>>
-    foldOp(Axis axis, size_t begin, size_t end) const {
-        static_assert(
-            std::is_copy_constructible<
-                unaryOperation<DataTy, enableLocation>>(),
-            "unaryOperation for NPArray::fold must be copy constructible");
-        static_assert(std::is_default_constructible<
-                          unaryOperation<DataTy, enableLocation>>(),
-                      "unaryOperation for NPArray::fold must be default "
-                      "constructible");
+        isNPCollector<Ty, collectorOp, enableLocation>() &&
+            std::is_copy_constructible<collectorOp<Ty, enableLocation>>(),
+        std::vector<collectorOp<Ty, enableLocation>>>
+    foldOp(const collectorOp<Ty, enableLocation> &op, Axis axis, size_t begin,
+           size_t end) const {
         assert(begin <= end && "begin index must be lower or equal to end "
-                               "index in NPArray::fold");
-        std::vector<unaryOperation<DataTy, enableLocation>> ops(end - begin);
+                               "index in NPArray::foldOp");
+        std::vector<collectorOp<Ty, enableLocation>> ops(end - begin, op);
         switch (axis) {
         case ROW:
             assert(begin <= rows() && "begin index is out of bound for row "
-                                      "access in NPArray::fold");
-            assert(end <= rows() &&
-                   "end index is out of bound for row access in NPArray::fold");
+                                      "access in NPArray::foldOp");
+            assert(
+                end <= rows() &&
+                "end index is out of bound for row access in NPArray::foldOp");
             for (size_t row = begin; row < end; row++)
                 for (size_t col = 0; col < cols(); col++)
                     ops[row - begin](at(row, col), row, col);
             break;
         case COLUMN:
             assert(begin <= cols() && "begin index is out of bound for column "
-                                      "access in NPArray::fold");
+                                      "access in NPArray::foldOp");
             assert(end <= cols() && "end index is out of bound for column "
-                                    "access in NPArray::fold");
+                                    "access in NPArray::foldOp");
             for (size_t row = 0; row < rows(); row++)
                 for (size_t col = begin; col < end; col++)
                     ops[col - begin](at(row, col), row, col);
@@ -1553,36 +1555,29 @@ template <class Ty> class NPArray : public NPArrayBase {
         return ops;
     }
 
-    /// Applies a range of default constructed \p unaryOperation to all elements
+    /// Applies a range of copy constructed \p collectorOp to all elements
     /// on each \p axis of this NPArray and returns the range of
-    /// unaryOperations.
-    template <template <typename, bool> class unaryOperation,
+    /// \p collectorOp.
+    template <template <typename, bool> class collectorOp,
               bool enableLocation = false>
-    std::enable_if_t<isNPCollector<DataTy, unaryOperation>::value,
-                     std::vector<unaryOperation<DataTy, enableLocation>>>
-    foldOp(Axis axis) const {
-        static_assert(
-            std::is_copy_constructible<
-                unaryOperation<DataTy, enableLocation>>(),
-            "unaryOperation for NPArray::fold must be copy constructible");
-        static_assert(std::is_default_constructible<
-                          unaryOperation<DataTy, enableLocation>>(),
-                      "unaryOperation for NPArray::fold must be default "
-                      "constructible");
-        std::vector<unaryOperation<DataTy, enableLocation>> ops;
+    std::enable_if_t<
+        isNPCollector<Ty, collectorOp>() &&
+            std::is_copy_constructible<collectorOp<Ty, enableLocation>>() &&
+            std::is_same<void, typename NPOperatorTraits<
+                                   Ty, collectorOp,
+                                   enableLocation>::applicationReturnType>(),
+        std::vector<collectorOp<Ty, enableLocation>>>
+    foldOp(const collectorOp<Ty, enableLocation> &op, Axis axis) const {
+        std::vector<collectorOp<Ty, enableLocation>> ops;
         switch (axis) {
         case ROW:
-            ops.resize(rows());
-            static_assert(std::is_same<void, decltype(ops[0](DataTy()))>::value,
-                          "unaryOperation in NPArray::fold must return void");
+            ops.resize(rows(), op);
             for (size_t row = 0; row < rows(); row++)
                 for (size_t col = 0; col < cols(); col++)
                     ops[row](at(row, col), row, col);
             break;
         case COLUMN:
-            ops.resize(cols());
-            static_assert(std::is_same<void, decltype(ops[0](DataTy()))>::value,
-                          "unaryOperation in NPArray::fold must return void");
+            ops.resize(cols(), op);
             for (size_t row = 0; row < rows(); row++)
                 for (size_t col = 0; col < cols(); col++)
                     ops[col](at(row, col), row, col);
@@ -1591,73 +1586,72 @@ template <class Ty> class NPArray : public NPArrayBase {
         return ops;
     }
 
-    /// Applies a default constructed \p unaryOperation to all elements on axis
+    /// Applies a default constructed \p collectorOp to all elements on axis
     /// \p axis (row / column) \p i and returns its value.
-    template <template <typename, bool> class unaryOperation,
+    template <template <typename, bool> class collectorOp,
               bool enableLocation = false>
     std::enable_if_t<
-        isNPCollector<DataTy, unaryOperation, enableLocation>::value,
-        typename NPOperatorTraits<DataTy, unaryOperation,
-                                  enableLocation>::valueType>
-    fold(Axis axis, size_t i) const {
-        return foreach<unaryOperation, enableLocation>(axis, i).value();
+        isNPCollector<Ty, collectorOp, enableLocation>::value,
+        typename NPOperatorTraits<Ty, collectorOp, enableLocation>::valueType>
+    fold(const collectorOp<Ty, enableLocation> &op, Axis axis, size_t i) const {
+        return foreach (op, axis, i).value();
     }
 
-    /// Applies a range of default constructed \p unaryOperation to all elements
+    /// Applies a range of default constructed \p collectorOp to all elements
     /// on each \p axis in the range [begin, end( and returns the range of
     /// computed values.
-    template <template <typename, bool> class unaryOperation,
+    template <template <typename, bool> class collectorOp,
               bool enableLocation = false>
-    std::enable_if_t<
-        isNPCollector<DataTy, unaryOperation, enableLocation>::value,
-        NPArray<typename NPOperatorTraits<DataTy, unaryOperation,
-                                          enableLocation>::valueType>>
-    fold(Axis axis, size_t begin, size_t end) const {
-        return extract(
-            foldOp<unaryOperation, enableLocation>(axis, begin, end));
+    std::enable_if_t<isNPCollector<Ty, collectorOp, enableLocation>::value,
+                     NPArray<typename NPOperatorTraits<
+                         Ty, collectorOp, enableLocation>::valueType>>
+    fold(const collectorOp<Ty, enableLocation> &op, Axis axis, size_t begin,
+         size_t end) const {
+        return extract(foldOp(op, axis, begin, end));
     }
 
-    /// Applies a range of default constructed \p unaryOperation to all elements
+    /// Applies a range of default constructed \p collectorOp to all elements
     /// on each \p axis of this NPArray and returns the range of
     /// computed values.
-    template <template <typename, bool> class unaryOperation,
+    template <template <typename, bool> class collectorOp,
               bool enableLocation = false>
-    std::enable_if_t<
-        isNPCollector<DataTy, unaryOperation, enableLocation>::value,
-        NPArray<typename NPOperatorTraits<DataTy, unaryOperation,
-                                          enableLocation>::valueType>>
-    fold(Axis axis) const {
-        return extract(foldOp<unaryOperation, enableLocation>(axis));
+    std::enable_if_t<isNPCollector<Ty, collectorOp, enableLocation>::value,
+                     NPArray<typename NPOperatorTraits<
+                         Ty, collectorOp, enableLocation>::valueType>>
+    fold(const collectorOp<Ty, enableLocation> &op, Axis axis) const {
+        return extract(foldOp(op, axis));
     }
 
     /// Sum elements in an NPArray in row \p i or column \p i.
-    Ty sum(Axis axis, size_t i) const { return fold<Accumulate>(axis, i); }
+    Ty sum(Axis axis, size_t i) const {
+        return fold(Accumulate<Ty>(), axis, i);
+    }
 
     /// Sum elements in an NPArray on a range of rows or columns.
     NPArray<Ty> sum(Axis axis, size_t begin, size_t end) const {
-        return fold<Accumulate>(axis, begin, end);
+        return fold(Accumulate<Ty>(), axis, begin, end);
     }
 
     /// Sum elements in an NPArray along an \p axis --- for all rows/cols on
     /// that axis.
-    NPArray<Ty> sum(Axis axis) const { return fold<Accumulate>(axis); }
+    NPArray<Ty> sum(Axis axis) const { return fold(Accumulate<Ty>(), axis); }
 
     /// Compute the mean on row \p i or column \p i.
-    double mean(Axis axis, size_t i) const { return fold<Mean>(axis, i); }
+    double mean(Axis axis, size_t i) const { return fold(Mean<Ty>(), axis, i); }
 
     /// Compute the mean on a range of rows or on a range of columns.
     NPArray<double> mean(Axis axis, size_t begin, size_t end) const {
-        return fold<Mean>(axis, begin, end);
+        return fold(Mean<Ty>(), axis, begin, end);
     }
 
     /// Compute the mean on all rows or all columns.
-    NPArray<double> mean(Axis axis) const { return fold<Mean>(axis); }
+    NPArray<double> mean(Axis axis) const { return fold(Mean<Ty>(), axis); }
 
     /// Compute the mean on row \p i or column \p i. It also computes the
     /// variance (taking \p ddof into account) and the standard deviation.
     double meanWithVar(Axis axis, size_t i, double *var,
                        double *stddev = nullptr, unsigned ddof = 0) const {
-        MeanWithVar<DataTy> avg(foreach<MeanWithVar>(axis, i));
+        MeanWithVar<Ty> avg = foreach (MeanWithVar<Ty>(), axis, i);
         if (var)
             *var = avg.var(ddof);
         if (stddev)
@@ -1672,8 +1666,8 @@ template <class Ty> class NPArray : public NPArrayBase {
                                 NPArray<double> *var,
                                 NPArray<double> *stddev = nullptr,
                                 unsigned ddof = 0) const {
-        std::vector<MeanWithVar<DataTy>> means(
-            foldOp<MeanWithVar>(axis, begin, end));
+        std::vector<MeanWithVar<Ty>> means =
+            foldOp(MeanWithVar<Ty>(), axis, begin, end);
         if (var) {
             var->resize(1, means.size());
             for (size_t i = 0; i < means.size(); i++)
@@ -1694,7 +1688,7 @@ template <class Ty> class NPArray : public NPArrayBase {
     NPArray<double> meanWithVar(Axis axis, NPArray<double> *var,
                                 NPArray<double> *stddev = nullptr,
                                 unsigned ddof = 0) const {
-        std::vector<MeanWithVar<DataTy>> means(foldOp<MeanWithVar>(axis));
+        std::vector<MeanWithVar<Ty>> means = foldOp(MeanWithVar<Ty>(), axis);
         if (var) {
             var->resize(1, means.size());
             for (size_t i = 0; i < means.size(); i++)
@@ -1709,9 +1703,10 @@ template <class Ty> class NPArray : public NPArrayBase {
 
         return extract(means);
     }
+    /// @}
 
     /// Get the numpy descriptor string to use when saving in a numpy file.
-    static std::string descr() { return getEltTyDescr<DataTy>(); }
+    static std::string descr() { return getEltTyDescr<Ty>(); }
 
   private:
     /// Provide a convenience shorthand for in-class operations.
@@ -1873,16 +1868,16 @@ bool all(const NPArray<Ty> &npy, predicate &&pred) {
 /// Functional version of 'all' predicate checker on an NPArray for row / column
 /// \p i.
 template <typename Ty, class predicate>
-bool all(const NPArray<Ty> &npy, NPArrayBase::Axis axis, size_t i,
-         predicate &&pred) {
-    return npy.all(axis, i, pred);
+bool all(const NPArray<Ty> &npy, predicate &&pred, NPArrayBase::Axis axis,
+         size_t i) {
+    return npy.all(pred, axis, i);
 }
 
 /// Functional version of 'all' predicate checker for a range of rows / columns.
 template <typename Ty, class predicate>
-bool all(const NPArray<Ty> &npy, NPArrayBase::Axis axis, size_t begin,
-         size_t end, predicate &&pred) {
-    return npy.all(axis, begin, end, pred);
+bool all(const NPArray<Ty> &npy, predicate &&pred, NPArrayBase::Axis axis,
+         size_t begin, size_t end) {
+    return npy.all(pred, axis, begin, end);
 }
 
 /// Functional version of 'any' predicate checker on a complete NPArray.
@@ -1894,16 +1889,16 @@ bool any(const NPArray<Ty> &npy, predicate &&pred) {
 /// Functional version of 'any' predicate checker on an NPArray for row / column
 /// \p i.
 template <typename Ty, class predicate>
-bool any(const NPArray<Ty> &npy, NPArrayBase::Axis axis, size_t i,
-         predicate &&pred) {
-    return npy.any(axis, i, pred);
+bool any(const NPArray<Ty> &npy, predicate &&pred, NPArrayBase::Axis axis,
+         size_t i) {
+    return npy.any(pred, axis, i);
 }
 
 /// Functional version of 'any' predicate checker for a range of rows / columns.
 template <typename Ty, class predicate>
-bool any(const NPArray<Ty> &npy, NPArrayBase::Axis axis, size_t begin,
-         size_t end, predicate &&pred) {
-    return npy.any(axis, begin, end, pred);
+bool any(const NPArray<Ty> &npy, predicate &&pred, NPArrayBase::Axis axis,
+         size_t begin, size_t end) {
+    return npy.any(pred, axis, begin, end);
 }
 
 /// Functional version of 'none' predicate checker on a complete NPArray.
@@ -1915,17 +1910,17 @@ bool none(const NPArray<Ty> &npy, predicate &&pred) {
 /// Functional version of 'none' predicate checker on an NPArray for row /
 /// column \p i.
 template <typename Ty, class predicate>
-bool none(const NPArray<Ty> &npy, NPArrayBase::Axis axis, size_t i,
-          predicate &&pred) {
-    return npy.none(axis, i, pred);
+bool none(const NPArray<Ty> &npy, predicate &&pred, NPArrayBase::Axis axis,
+          size_t i) {
+    return npy.none(pred, axis, i);
 }
 
 /// Functional version of 'none' predicate checker for a range of rows /
 /// columns.
 template <typename Ty, class predicate>
-bool none(const NPArray<Ty> &npy, NPArrayBase::Axis axis, size_t begin,
-          size_t end, predicate &&pred) {
-    return npy.none(axis, begin, end, pred);
+bool none(const NPArray<Ty> &npy, predicate &&pred, NPArrayBase::Axis axis,
+          size_t begin, size_t end) {
+    return npy.none(pred, axis, begin, end);
 }
 
 /// Functional version of 'count' predicate checker on a complete NPArray.
@@ -1937,17 +1932,17 @@ size_t count(const NPArray<Ty> &npy, predicate &&pred) {
 /// Functional version of 'count' predicate checker on an NPArray for row /
 /// column \p i.
 template <typename Ty, class predicate>
-size_t count(const NPArray<Ty> &npy, NPArrayBase::Axis axis, size_t i,
-             predicate &&pred) {
-    return npy.count(axis, i, pred);
+size_t count(const NPArray<Ty> &npy, predicate &&pred, NPArrayBase::Axis axis,
+             size_t i) {
+    return npy.count(pred, axis, i);
 }
 
 /// Functional version of 'count' predicate checker for a range of rows /
 /// columns.
 template <typename Ty, class predicate>
-size_t count(const NPArray<Ty> &npy, NPArrayBase::Axis axis, size_t begin,
-             size_t end, predicate &&pred) {
-    return npy.count(axis, begin, end, pred);
+size_t count(const NPArray<Ty> &npy, predicate &&pred, NPArrayBase::Axis axis,
+             size_t begin, size_t end) {
+    return npy.count(pred, axis, begin, end);
 }
 /// @}
 

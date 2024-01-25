@@ -29,7 +29,6 @@
 #include <memory>
 
 using std::array;
-using std::cout;
 using std::function;
 using std::ostream;
 using std::sqrt;
@@ -247,11 +246,11 @@ NPArray<double> perfect_t_test(size_t b, size_t e,
 
     for (size_t s = b; s < e; s++) {
         const double group0Value = group0(0, s);
-        const bool isGroup0Constant = group0.all(NPArray<double>::COLUMN, s,
-                                                 isEqual<double>(group0Value));
+        const bool isGroup0Constant = group0.all(isEqual<double>(group0Value),
+                                                 NPArray<double>::COLUMN, s);
         const double group1Value = group1(0, s);
-        const bool isGroup1Constant = group1.all(NPArray<double>::COLUMN, s,
-                                                 isEqual<double>(group1Value));
+        const bool isGroup1Constant = group1.all(isEqual<double>(group1Value),
+                                                 NPArray<double>::COLUMN, s);
 
         if (isGroup0Constant && isGroup1Constant) {
             if (group0Value == group1Value) {
