@@ -33,7 +33,7 @@ jobs:
     name: "Configure, build, test (with clang) + build doc"
     runs-on: ubuntu-20.04
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
     - name: apt update
       run: sudo apt-get update
     - name: Install dependencies for apps with a GUI, doxygen and Ninja
@@ -54,7 +54,7 @@ jobs:
     name: "Configure, build, test (with gcc) + build doc"
     runs-on: ubuntu-20.04
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
     - name: apt update
       run: sudo apt-get update
     - name: Install dependencies for apps with a GUI, doxygen and Ninja
