@@ -1,5 +1,5 @@
 ..
-  SPDX-FileCopyrightText: <text>Copyright 2021,2022 Arm Limited and/or its
+  SPDX-FileCopyrightText: <text>Copyright 2021,2022,2024 Arm Limited and/or its
   affiliates <open-source-office@arm.com></text>
   SPDX-License-Identifier: Apache-2.0
 
@@ -17,7 +17,7 @@
 
   This file is part of PAF, the Physical Attack Framework.
 
-|BadgeLicence| |CIUbuntu2004gcc| |CIUbuntu2004clang| |CImacOS13|
+|BadgeLicence| |CIUbuntu2004gcc| |CIUbuntu2004clang| |CImacOS13| |CImacOS14|
 
 .. |BadgeLicence| image:: https://img.shields.io/github/license/ARM-software/PAF
    :alt: PAF licence
@@ -34,6 +34,10 @@
 .. |CImacOS13| image:: https://github.com/ARM-software/PAF/actions/workflows/macos-13.yml/badge.svg
    :alt: Last build status on macOS Ventura
    :target: https://github.com/ARM-software/PAF/actions/workflows/macos-13.yml
+
+.. |CImacOS14| image:: https://github.com/ARM-software/PAF/actions/workflows/macos-14.yml/badge.svg
+   :alt: Last build status on macOS Sonoma
+   :target: https://github.com/ARM-software/PAF/actions/workflows/macos-14.yml
 
 ===============================================================================
 PAF, the Physical Attack Framework

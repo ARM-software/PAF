@@ -1,0 +1,44 @@
+# SPDX-FileCopyrightText: <text>Copyright 2024 Arm Limited and/or its
+# affiliates <open-source-office@arm.com></text>
+# SPDX-License-Identifier: Apache-2.0
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+# This file is part of PAF, the Physical Attack Framework.
+
+name: "macOS Sonoma"
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+env:
+  CMAKE_BUILD_TYPE: Debug
+  NUM_BUILD_JOBS: 2
+
+jobs:
+  configure_build_test_doc:
+    name: "Configure, build and test"
+    runs-on: macos-14
+    steps:
+    - uses: actions/checkout@v4
+    - name: Configure
+      run: CC=clang CXX=clang++ cmake -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE:STRING=${{env.CMAKE_BUILD_TYPE}}
+    - name: Build
+      working-directory: ${{github.workspace}}/build
+      run: make -j${{env.NUM_BUILD_JOBS}}
+    - name: Test
+      working-directory: ${{github.workspace}}/build
+      run: make check
