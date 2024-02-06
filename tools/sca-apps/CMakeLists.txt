@@ -1,4 +1,4 @@
-# SPDX-FileCopyrightText: <text>Copyright 2021,2022,2023 Arm Limited and/or its
+# SPDX-FileCopyrightText: <text>Copyright 2021-2024 Arm Limited and/or its
 # affiliates <open-source-office@arm.com></text>
 # SPDX-License-Identifier: Apache-2.0
 #
@@ -18,58 +18,50 @@
 
 add_paf_executable(calibration
   SOURCES calibration.cpp
-  LIBRARIES sca paf tarmac
-  DEPENDS tarmac-trace-utilities
+  LIBRARIES sca paf
   OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin"
   )
 
 add_paf_executable(np-cat
   SOURCES np-cat.cpp
-  LIBRARIES sca paf tarmac
-  DEPENDS tarmac-trace-utilities
+  LIBRARIES sca paf
   OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin"
   )
 
 add_paf_executable(np-create
   SOURCES np-create.cpp
-  LIBRARIES sca paf tarmac
-  DEPENDS tarmac-trace-utilities
+  LIBRARIES sca paf
   OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin"
   )
 
 add_paf_executable(np-expand
   SOURCES np-expand.cpp
-  LIBRARIES sca paf tarmac
-  DEPENDS tarmac-trace-utilities
+  LIBRARIES sca paf
   OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin"
   )
 
 add_paf_executable(np-utils
   SOURCES np-utils.cpp
-  LIBRARIES sca paf tarmac
-  DEPENDS tarmac-trace-utilities
+  LIBRARIES sca paf
   OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin"
   )
 
 add_paf_executable(ns-t-test
   SOURCES ns-t-test.cpp
-  LIBRARIES sca paf tarmac
-  DEPENDS tarmac-trace-utilities
+  LIBRARIES sca paf
   OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin"
   )
 
 add_paf_executable(t-test
   SOURCES metric.cpp
   COMPILE_DEFINITIONS "METRIC=Metric::T_TEST"
-  LIBRARIES sca paf tarmac
-  DEPENDS tarmac-trace-utilities
+  LIBRARIES sca paf
   OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin"
   )
 
 add_paf_executable(correl
   SOURCES metric.cpp
   COMPILE_DEFINITIONS "METRIC=Metric::PEARSON_CORRELATION"
-  LIBRARIES sca paf tarmac
-  DEPENDS tarmac-trace-utilities
+  LIBRARIES sca paf 
   OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin"
   )

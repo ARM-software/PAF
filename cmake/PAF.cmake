@@ -1,4 +1,4 @@
-# SPDX-FileCopyrightText: <text>Copyright 2021,2022 Arm Limited and/or its
+# SPDX-FileCopyrightText: <text>Copyright 2021,2022,2024 Arm Limited and/or its
 # affiliates <open-source-office@arm.com></text>
 # SPDX-License-Identifier: Apache-2.0
 #
@@ -15,6 +15,17 @@
 # limitations under the License.
 #
 # This file is part of PAF, the Physical Attack Framework.
+
+set(CMAKE_CXX_STANDARD 14)
+
+# Cache builds by default if CCache is found. Do this as early as possible.
+find_program(CCACHE_PROGRAM ccache)
+set(ENABLE_CCACHE_BUILD ON CACHE BOOL "Set to OFF to disable ccache build")
+if(ENABLE_CCACHE_BUILD)
+  if(CCACHE_PROGRAM)
+    set_property(GLOBAL PROPERTY RULE_LAUNCH_COMPILE "${CCACHE_PROGRAM}")
+  endif()
+endif()
 
 function(add_paf_library name)
   set(options "SHARED")
@@ -35,7 +46,7 @@ function(add_paf_library name)
   endif()
 
   if(ARG_DEPENDS)
-    add_dependencies(${name} ${ARG_DEPENDS})
+    target_link_libraries(${name} PUBLIC ${ARG_DEPENDS})
   endif()
 
   install(TARGETS ${name} ARCHIVE PUBLIC_HEADER
@@ -45,7 +56,7 @@ endfunction()
 function(add_paf_executable name)
   set(options "")
   set(oneValueArgs "OUTPUT_DIRECTORY")
-  set(multiValueArgs "DEPENDS;LIBRARIES;SOURCES;COMPILE_DEFINITIONS")
+  set(multiValueArgs "LIBRARIES;SOURCES;COMPILE_DEFINITIONS")
   cmake_parse_arguments(ARG
     "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN})
 
@@ -58,10 +69,6 @@ function(add_paf_executable name)
 
   if(ARG_OUTPUT_DIRECTORY)
     set_target_properties(${executable} PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${ARG_OUTPUT_DIRECTORY})
-  endif()
-
-  if(ARG_DEPENDS)
-    add_dependencies(${executable} ${ARG_DEPENDS})
   endif()
 
   if(ARG_COMPILE_DEFINITIONS)

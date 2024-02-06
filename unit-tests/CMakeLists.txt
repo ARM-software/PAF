@@ -1,4 +1,4 @@
-# SPDX-FileCopyrightText: <text>Copyright 2021,2022,2023,2024 Arm Limited and/or its
+# SPDX-FileCopyrightText: <text>Copyright 2021-2024 Arm Limited and/or its
 # affiliates <open-source-office@arm.com></text>
 # SPDX-License-Identifier: Apache-2.0
 #
@@ -22,11 +22,6 @@ if(CMAKE_SYSTEM_NAME MATCHES "Linux")
   add_link_options(-pthread)
 endif()
 
-add_custom_target(numpy ALL
-  ${PIP3} install numpy
-  DEPENDS python-venv
-)
-
 set(PAF_TEST_SOURCES
   ArchInfo.cpp
   Expr.cpp
@@ -49,7 +44,7 @@ set(PAF_TEST_SOURCES
 )
 add_executable(test-paf main.cpp ${PAF_TEST_SOURCES})
 set_target_properties(test-paf PROPERTIES COMPILE_DEFINITIONS "SAMPLES_SRC_DIR=\"${CMAKE_CURRENT_SOURCE_DIR}/samples/\"")
-target_link_libraries(test-paf gtest fi sca paf tarmac)
+target_link_libraries(test-paf GTest::gtest fi sca paf)
 
 add_custom_target(check COMMENT "Run PAF unit tests")
 
@@ -64,7 +59,7 @@ add_dependencies(check check-paf)
 
 macro(add_paf_np_python name)
   add_custom_target(check-${name}
-    COMMAND ${CMAKE_COMMAND} -E env LLVM_PROFILE_FILE=paf-${name}.profraw ${CMAKE_BINARY_DIR}/venv/bin/python3 ${CMAKE_CURRENT_SOURCE_DIR}/test-${name}.py ${CMAKE_BINARY_DIR}/bin/paf-${name}
+    COMMAND ${CMAKE_COMMAND} -E env LLVM_PROFILE_FILE=paf-${name}.profraw ${PYTHON3} ${CMAKE_CURRENT_SOURCE_DIR}/test-${name}.py ${CMAKE_BINARY_DIR}/bin/paf-${name}
   )
   add_dependencies(check check-${name})
   if (PAF_BUILD_WITH_INSTRUMENTED_COVERAGE)

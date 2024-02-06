@@ -1,4 +1,4 @@
-# SPDX-FileCopyrightText: <text>Copyright 2021,2022 Arm Limited and/or its
+# SPDX-FileCopyrightText: <text>Copyright 2021,2022,2024 Arm Limited and/or its
 # affiliates <open-source-office@arm.com></text>
 # SPDX-License-Identifier: Apache-2.0
 #
@@ -16,16 +16,16 @@
 #
 # This file is part of PAF, the Physical Attack Framework.
 
-add_custom_target(run-model ALL
-  ${PIP3} install -e ${CMAKE_CURRENT_SOURCE_DIR}
-  DEPENDS python-venv run-model.py campaign.py setup.py FI/__init__.py FI/faultcampaign.py FI/utils.py
-)
-
 add_custom_command(
-  TARGET run-model POST_BUILD
-  COMMAND ln -f -s "${CMAKE_BINARY_DIR}/venv/bin/run-model.py" "${CMAKE_BINARY_DIR}/bin/run-model.py"
-  COMMAND ln -f -s "${CMAKE_BINARY_DIR}/venv/bin/campaign.py" "${CMAKE_BINARY_DIR}/bin/campaign.py"
+  OUTPUT ${CMAKE_BINARY_DIR}/bin/run-model.py ${CMAKE_BINARY_DIR}/bin/campaign.py
+  COMMAND ${PIP3} install -e ${CMAKE_CURRENT_SOURCE_DIR}
+  COMMAND ln -f -s ${CMAKE_BINARY_DIR}/venv/bin/run-model.py ${CMAKE_BINARY_DIR}/bin/run-model.py
+  COMMAND ln -f -s ${CMAKE_BINARY_DIR}/venv/bin/campaign.py ${CMAKE_BINARY_DIR}/bin/campaign.py
+  DEPENDS run-model.py campaign.py setup.py FI/__init__.py FI/faultcampaign.py FI/utils.py PAF/__init__.py PAF/run_model.py
   VERBATIM)
+
+add_custom_target(run-model ALL
+  DEPENDS ${CMAKE_BINARY_DIR}/bin/run-model.py ${CMAKE_BINARY_DIR}/bin/campaign.py)
 
 # For now, for install, don't create a virtualenv, but rather ship the
 # run-model source code install. This allows to ship binaries and defer the

@@ -18,29 +18,18 @@
 
 cmake_minimum_required (VERSION 3.18.1)
 
-# Cache builds by default if CCache is found. Do this as early as possible.
-find_program(CCACHE_PROGRAM ccache)
-set(ENABLE_CCACHE_BUILD ON CACHE BOOL "Set to OFF to disable ccache build")
-if(ENABLE_CCACHE_BUILD)
-  if(CCACHE_PROGRAM)
-    set_property(GLOBAL PROPERTY RULE_LAUNCH_COMPILE "${CCACHE_PROGRAM}")
-  endif()
-endif()
-
-set(CMAKE_CXX_STANDARD 14)
-
-project(PAF LANGUAGES CXX)
-
 # Set path for custom modules, and load modules.
 set(CMAKE_MODULE_PATH
   ${CMAKE_MODULE_PATH}
   "${CMAKE_CURRENT_SOURCE_DIR}/cmake"
   )
+
 include(PAF)
 
-include(ExternalProject)
+project(PAF LANGUAGES CXX)
 
 set(EXTERNAL_PROJECT_CMAKE_ARGS
+      -G ${CMAKE_GENERATOR}
       -DCMAKE_CXX_COMPILER:PATH=${CMAKE_CXX_COMPILER}
       -DCMAKE_BUILD_TYPE:STRING=${CMAKE_BUILD_TYPE}
       -DCMAKE_INSTALL_PREFIX:PATH=${CMAKE_BINARY_DIR})
@@ -48,64 +37,39 @@ if(DEFINED CMAKE_EXPORT_COMPILE_COMMANDS)
   set(EXTERNAL_PROJECT_CMAKE_ARGS ${EXTERNAL_PROJECT_CMAKE_ARGS} -DCMAKE_EXPORT_COMPILE_COMMANDS:BOOL=${CMAKE_EXPORT_COMPILE_COMMANDS})
 endif()
 
-# PAF depends on tarmac-trace-utilities.
-ExternalProject_Add(tarmac-trace-utilities
-  PREFIX "third_party"
-  GIT_REPOSITORY "https://github.com/ARM-software/tarmac-trace-utilities"
-  GIT_TAG "59d93f724cb836062602612300ac0f609a4753ee"
-  CMAKE_ARGS "${EXTERNAL_PROJECT_CMAKE_ARGS};-DUSE_LIBINTL:BOOL=OFF"
-  BUILD_BYPRODUCTS "${CMAKE_BINARY_DIR}/lib/${CMAKE_STATIC_LIBRARY_PREFIX}tarmac${CMAKE_STATIC_LIBRARY_SUFFIX}"
-  )
-add_library(tarmac STATIC IMPORTED)
-set_target_properties(tarmac PROPERTIES IMPORTED_LOCATION "${CMAKE_BINARY_DIR}/lib/${CMAKE_STATIC_LIBRARY_PREFIX}tarmac${CMAKE_STATIC_LIBRARY_SUFFIX}")
-add_dependencies(tarmac tarmac-trace-utilities)
-# Install tarmac library and executables.
-install(FILES "${CMAKE_BINARY_DIR}/lib/${CMAKE_STATIC_LIBRARY_PREFIX}tarmac${CMAKE_STATIC_LIBRARY_SUFFIX}" TYPE LIB)
-set(TARMAC_EXECUTABLES browser callinfo calltree flamegraph gui-browser profile vcd)
-foreach(executable ${TARMAC_EXECUTABLES})
-  add_executable(tarmac-${executable} IMPORTED)
-  set_target_properties(tarmac-${executable} PROPERTIES IMPORTED_LOCATION "${CMAKE_BINARY_DIR}/bin/tarmac-${executable}${CMAKE_EXECUTABLE_SUFFIX}")
-  install(PROGRAMS "${CMAKE_BINARY_DIR}/bin/tarmac-${executable}${CMAKE_EXECUTABLE_SUFFIX}" TYPE BIN)
-endforeach()
+# Locally install the third party software PAF depends on.
+execute_process(
+  COMMAND ${CMAKE_COMMAND} -S ${CMAKE_SOURCE_DIR}/third_party -B ${CMAKE_BINARY_DIR}/third_party ${EXTERNAL_PROJECT_CMAKE_ARGS} 
+)
+execute_process(
+  COMMAND ${CMAKE_COMMAND} --build ${CMAKE_BINARY_DIR}/third_party
+)
+execute_process(
+  COMMAND ${CMAKE_COMMAND} --install ${CMAKE_BINARY_DIR}/third_party
+)
 
-# PAF unit testing is relying on the googletest framework.
-# The googletest framework install itself following the GNU Coding Standards
-# on a number of platforms, so add some heuristics to support those.
-set(LIBDIR_SUFFIX "")
-if(CMAKE_SYSTEM_NAME MATCHES "^(Linux|kFreeBSD|GNU)$")
-  if (NOT EXISTS "/etc/alpine-release" AND NOT EXISTS "/etc/arch-release" AND NOT EXISTS "/etc/debian_version")
-    # Not debian, alpine or arch so rely on CMAKE_SIZEOF_VOID_P:
-    if("${CMAKE_SIZEOF_VOID_P}" EQUAL "8")
-      set(LIBDIR_SUFFIX "64")
-    endif()
-  endif()
-endif()
+# PAF requires tarmac-trace-utilities.
+set(TarmacTraceUtilities_DIR "${CMAKE_BINARY_DIR}/lib/cmake//TarmacTraceUtilities"
+    CACHE PATH "Path to the tarmac-trace-utilities package configuration files")
+find_package(TarmacTraceUtilities REQUIRED
+  CONFIG
+  NO_DEFAULT_PATH
+  NO_PACKAGE_ROOT_PATH
+  NO_SYSTEM_ENVIRONMENT_PATH
+)
 
-ExternalProject_Add(googletest
-  PREFIX "third_party"
-  GIT_REPOSITORY "https://github.com/google/googletest"
-  GIT_TAG "v1.14.0"
-  GIT_SHALLOW TRUE
-  CMAKE_ARGS ${EXTERNAL_PROJECT_CMAKE_ARGS}
-  BUILD_BYPRODUCTS "${CMAKE_BINARY_DIR}/lib${LIBDIR_SUFFIX}/${CMAKE_STATIC_LIBRARY_PREFIX}gtest${CMAKE_STATIC_LIBRARY_SUFFIX}"
-  )
-add_library(gtest STATIC IMPORTED)
-set_target_properties(gtest PROPERTIES IMPORTED_LOCATION "${CMAKE_BINARY_DIR}/lib${LIBDIR_SUFFIX}/${CMAKE_STATIC_LIBRARY_PREFIX}gtest${CMAKE_STATIC_LIBRARY_SUFFIX}")
-add_dependencies(gtest googletest)
-
-# Install ourselves a python virtualenv. Python is used in the run-model part
-# as well as for testing.
-find_package(Python3 REQUIRED COMPONENTS Interpreter)
-if(NOT Python3_FOUND)
-    message(FATAL_ERROR "Could not find `python3`")
-endif()
+# PAF requires googletest. 
+set(GTest_DIR "${CMAKE_BINARY_DIR}/lib/cmake/GTest"
+    CACHE PATH "Path to the googletest package configuration files")
+find_package(GTest REQUIRED
+  CONFIG
+  NO_DEFAULT_PATH
+  NO_PACKAGE_ROOT_PATH
+  NO_SYSTEM_ENVIRONMENT_PATH
+)
 
 set(PIP3 "${CMAKE_BINARY_DIR}/venv/bin/pip3")
-add_custom_target(python-venv ALL
-  ${Python3_EXECUTABLE} -m venv ${CMAKE_BINARY_DIR}/venv
-  COMMAND ${PIP3} install --upgrade pip
-  COMMAND ${PIP3} install wheel
-)
+set(PYTHON3 "${CMAKE_BINARY_DIR}/venv/bin/python3")
 
 option(PAF_BUILD_DOCUMENTATION "Build PAF documentation" OFF)
 option(PAF_BUILD_WITH_INSTRUMENTED_COVERAGE "Build PAF with instrumented coverage" OFF)

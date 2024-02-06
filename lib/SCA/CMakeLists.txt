@@ -42,7 +42,7 @@ set(LIBSCA_SOURCES
 
 add_paf_library(sca
   OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/lib"
-  DEPENDS tarmac-trace-utilities
+  DEPENDS TarmacTraceUtilities::tarmac
   SOURCES "${LIBSCA_SOURCES}"
   PUBLIC_HEADERS "${LIBSCA_PUBLIC_HEADERS}"
   NAMESPACE "PAF/SCA"

@@ -1,4 +1,4 @@
-# SPDX-FileCopyrightText: <text>Copyright 2021,2022 Arm limited and/or its
+# SPDX-FileCopyrightText: <text>Copyright 2021,2022,2024 Arm limited and/or its
 # affiliates <open-source-office@arm.com></text>
 # SPDX-License-Identifier: Apache-2.0
 #
@@ -18,7 +18,6 @@
 
 add_paf_executable(power 
   SOURCES power.cpp
-  LIBRARIES sca paf tarmac
-  DEPENDS tarmac-trace-utilities
+  LIBRARIES sca paf
   OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin"
   )

@@ -31,7 +31,7 @@ set(LIBPAF_SOURCES
 
 add_paf_library(paf
   OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/lib"
-  DEPENDS tarmac-trace-utilities
+  DEPENDS TarmacTraceUtilities::tarmac
   SOURCES "${LIBPAF_SOURCES}"
   PUBLIC_HEADERS "${LIBPAF_PUBLIC_HEADERS}"
   NAMESPACE "PAF"
