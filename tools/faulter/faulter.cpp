@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: <text>Copyright 2021,2022 Arm Limited and/or its
+ * SPDX-FileCopyrightText: <text>Copyright 2021,2022,2024 Arm Limited and/or its
  * affiliates <open-source-office@arm.com></text>
  * SPDX-License-Identifier: Apache-2.0
  *
@@ -302,7 +302,7 @@ class InstructionSkipPlanner : public FaulterInjectionPlanner {
     virtual void operator()(const PAF::ReferenceInstruction &I) override {
         InstructionSkip *theFault = new InstructionSkip(
             I.time, I.pc, I.instruction, CPU.getNOP(I.width), I.width,
-            I.executed, PAF::trimSpacesAndComment(I.disassembly));
+            I.effect, PAF::trimSpacesAndComment(I.disassembly));
         theFault->setBreakpoint(I.pc, Breakpoints.count(I.pc));
         Breakpoints.add(I.pc);
         Campaign.addFault(theFault);

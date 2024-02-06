@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: <text>Copyright 2021,2022 Arm Limited and/or its
+ * SPDX-FileCopyrightText: <text>Copyright 2021,2022,2024 Arm Limited and/or its
  * affiliates <open-source-office@arm.com></text>
  * SPDX-License-Identifier: Apache-2.0
  *
@@ -210,7 +210,7 @@ class WLabelCollector : ParseReceiver {
             // Find the start / end time within the window.
             IN.node_at_time(ts.time, &SOP);
             SeqOrderPayload StartSOP(SOP);
-            TarmacLineParser TLP(IN.index.isBigEndian(), *this);
+            TarmacLineParser TLP(ParseParams(IN.index.isBigEndian()), *this);
             for (unsigned i = Window; i > 0; i--) {
                 if (!IN.get_previous_node(StartSOP, &StartSOP)) {
                     reporter->warn(
@@ -327,7 +327,7 @@ void RegisterAccess::dump(ostream &OS) const {
 
 void ReferenceInstruction::dump(ostream &OS) const {
     OS << "Time:" << time;
-    OS << " Executed:" << executed;
+    OS << " Executed:" << executed();
     OS << " PC:0x" << std::hex << pc << std::dec;
     OS << " ISet:" << iset;
     OS << " Width:" << width;

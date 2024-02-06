@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: <text>Copyright 2021,2022 Arm Limited and/or its
+ * SPDX-FileCopyrightText: <text>Copyright 2021,2022,2024 Arm Limited and/or its
  * affiliates <open-source-office@arm.com></text>
  * SPDX-License-Identifier: Apache-2.0
  *
@@ -267,7 +267,7 @@ struct ReferenceInstruction {
     /// The time at which the instruction was executed.
     Time time;
     /// True iff this instruction was actually executed.
-    bool executed;
+    InstructionEffect effect;
     /// The program counter for this instruction (i.e.  this instruction's
     /// address in memory)
     Addr pc;
@@ -290,7 +290,7 @@ struct ReferenceInstruction {
     ReferenceInstruction(const ReferenceInstruction &) = default;
     /// Move constructor.
     ReferenceInstruction(ReferenceInstruction &&Other)
-        : time(Other.time), executed(Other.executed), pc(Other.pc),
+        : time(Other.time), effect(Other.effect), pc(Other.pc),
           iset(Other.iset), width(Other.width), instruction(Other.instruction),
           disassembly(trimSpacesAndComment(Other.disassembly)),
           memaccess(std::move(Other.memaccess)),
@@ -298,31 +298,31 @@ struct ReferenceInstruction {
     /// Given a time, a program counter, an instruction set, an instruction
     /// width and opcode, and an execution status and a disassembly string,
     /// construct a ReferenceInstruction.
-    ReferenceInstruction(Time time, bool executed, Addr pc, ISet iset,
+    ReferenceInstruction(Time time, InstructionEffect effect, Addr pc, ISet iset,
                          unsigned width, uint32_t instruction,
                          const std::string &disassembly,
                          const std::vector<MemoryAccess> &memaccess,
                          const std::vector<RegisterAccess> &regaccess)
-        : time(time), executed(executed), pc(pc), iset(iset), width(width),
+        : time(time), effect(effect), pc(pc), iset(iset), width(width),
           instruction(instruction),
           disassembly(trimSpacesAndComment(disassembly)), memaccess(memaccess),
           regaccess(regaccess) {}
     /// Given a time, a program counter, an instruction set, an instruction
     /// width and opcode, and an execution status and a C-style disassembly
     /// string, construct a ReferenceInstruction.
-    ReferenceInstruction(Time time, bool executed, Addr pc, ISet iset,
+    ReferenceInstruction(Time time, InstructionEffect effect, Addr pc, ISet iset,
                          unsigned width, uint32_t instruction,
                          const char *disassembly,
                          const std::vector<MemoryAccess> &memaccess,
                          const std::vector<RegisterAccess> &regaccess)
-        : time(time), executed(executed), pc(pc), iset(iset), width(width),
+        : time(time), effect(effect), pc(pc), iset(iset), width(width),
           instruction(instruction),
           disassembly(trimSpacesAndComment(disassembly)), memaccess(memaccess),
           regaccess(regaccess) {}
 
     /// Constructor for a Tarmac parser.
     ReferenceInstruction(const InstructionEvent &ev)
-        : time(ev.time), executed(ev.executed), pc(ev.pc), iset(ev.iset),
+        : time(ev.time), effect(ev.effect), pc(ev.pc), iset(ev.iset),
           width(ev.width), instruction(ev.instruction),
           disassembly(trimSpacesAndComment(ev.disassembly)), memaccess(),
           regaccess() {}
@@ -332,7 +332,7 @@ struct ReferenceInstruction {
     /// Move assignment operator.
     ReferenceInstruction &operator=(ReferenceInstruction &&Other) {
         time = Other.time;
-        executed = Other.executed;
+        effect = Other.effect;
         pc = Other.pc;
         iset = Other.iset;
         width = Other.width;
@@ -373,6 +373,9 @@ struct ReferenceInstruction {
                 std::upper_bound(regaccess.begin(), regaccess.end(), R), R);
         return *this;
     }
+
+    /// Was this instruction executed ?
+    bool executed() const { return effect == IE_EXECUTED; }
 
     /// Dump this instruction in a human readable form to OS.
     void dump(std::ostream &OS) const;

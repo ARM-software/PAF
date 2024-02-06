@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: <text>Copyright 2021,2022 Arm Limited and/or its
+ * SPDX-FileCopyrightText: <text>Copyright 2021,2022,2024 Arm Limited and/or its
  * affiliates <open-source-office@arm.com></text>
  * SPDX-License-Identifier: Apache-2.0
  *
@@ -20,7 +20,6 @@
 
 #include "PAF/ArchInfo.h"
 #include "PAF/PAF.h"
-#include "libtarmac/parser.hh"
 
 #include <algorithm>
 #include <cassert>
@@ -1187,7 +1186,7 @@ unsigned V7MInfo::getCycles(const ReferenceInstruction &I,
     if (isBranch(I)) {
         // If the branch was not executed, it's basically a nop -- no pipeline
         // refill.
-        if (!I.executed)
+        if (!I.executed())
             return 1;
         // If the branch target is an un-aligned 32 bit instruction, there is a
         // 1 cycle penalty.

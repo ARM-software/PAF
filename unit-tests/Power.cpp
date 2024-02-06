@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: <text>Copyright 2021,2022,2023 Arm Limited and/or its
+ * SPDX-FileCopyrightText: <text>Copyright 2021-2024 Arm Limited and/or its
  * affiliates <open-source-office@arm.com></text>
  * SPDX-License-Identifier: Apache-2.0
  *
@@ -25,6 +25,7 @@
 #include "PAF/SCA/NPArray.h"
 #include "PAF/SCA/SCA.h"
 
+#include "libtarmac/parser.hh"
 #include "paf-unit-testing.h"
 
 #include "gtest/gtest.h"
@@ -201,7 +202,7 @@ TEST_F(YAMLInstrDumperF, Base) {
     const ReferenceInstruction I[2] = {
         // clang-format off
         {
-            28, true, 0x08326, ARM, 32, 0xf8db0800, "ldr.w      r0,[r11,#2048]",
+            28, IE_EXECUTED, 0x08326, ARM, 32, 0xf8db0800, "ldr.w      r0,[r11,#2048]",
             {
                 MemoryAccess(4, 0xf939b40, 0xdeadbeef, MemoryAccess::Type::Read)
             },
@@ -211,7 +212,7 @@ TEST_F(YAMLInstrDumperF, Base) {
             }
         },
         {
-            29, true, 0x0832a, THUMB, 16, 0x4408, "add      r0,r1",
+            29, IE_EXECUTED, 0x0832a, THUMB, 16, 0x4408, "add      r0,r1",
             {},
             {
                 RegisterAccess("r0", 0xdeadbef4, RegisterAccess::Type::Write),
@@ -599,7 +600,7 @@ class TestOracle : public PowerTrace::OracleBase {
 static const ReferenceInstruction Insts[] = {
     // clang-format off
     {
-        27, true, 0x089bc, THUMB, 16, 0x02105, "MOVS r1,#5",
+        27, IE_EXECUTED, 0x089bc, THUMB, 16, 0x02105, "MOVS r1,#5",
         {},
         {
             RegisterAccess("r1", 5, RegisterAccess::Type::Write),
@@ -607,7 +608,7 @@ static const ReferenceInstruction Insts[] = {
         }
     },
     {
-        28, true, 0x089be, THUMB, 16, 0x0460a, "MOV r2,r1",
+        28, IE_EXECUTED, 0x089be, THUMB, 16, 0x0460a, "MOV r2,r1",
         {},
         {
             RegisterAccess("r1", 5, RegisterAccess::Type::Read),
@@ -615,7 +616,7 @@ static const ReferenceInstruction Insts[] = {
         }
     },
     {
-        29, true, 0x08326, ARM, 32, 0xe9425504, "STRD r5,r1,[r2,#-0x10]",
+        29, IE_EXECUTED, 0x08326, ARM, 32, 0xe9425504, "STRD r5,r1,[r2,#-0x10]",
         {
             MemoryAccess(4, 0x00021afc, 5, MemoryAccess::Type::Write),
             MemoryAccess(4, 0x00021b00, 5, MemoryAccess::Type::Write)
@@ -623,7 +624,7 @@ static const ReferenceInstruction Insts[] = {
         {}
     },
     {
-        30, true, 0x0832a, ARM, 32, 0xe9d63401, "LDRD r3,r4,[r6,#4]",
+        30, IE_EXECUTED, 0x0832a, ARM, 32, 0xe9d63401, "LDRD r3,r4,[r6,#4]",
         {
             MemoryAccess(4, 0x00021f5c, 0x00000003, MemoryAccess::Type::Read),
             MemoryAccess(4, 0x00021f60, 0x00021f64, MemoryAccess::Type::Read)
@@ -1225,7 +1226,7 @@ TEST(PowerTrace, HammingWeightWithConfig) {
 // Test sequence for checking load-to-load / store-to-store hamming distance computation.
 static const ReferenceInstruction Insts2[] = {
     {
-        27, true, 0x08324, THUMB, 16, 0x02105, "movs r1,#5",
+        27, IE_EXECUTED, 0x08324, THUMB, 16, 0x02105, "movs r1,#5",
         {},
         {
             RegisterAccess("r1", 5, RegisterAccess::Type::Write),
@@ -1233,7 +1234,7 @@ static const ReferenceInstruction Insts2[] = {
         }
     },
     {
-        28, true, 0x08326, ARM, 32, 0xf8db0800, "ldr.w      r0,[r11,#2048]",
+        28, IE_EXECUTED, 0x08326, ARM, 32, 0xf8db0800, "ldr.w      r0,[r11,#2048]",
         {
             MemoryAccess(4, 0xf939b40, 0xdeadbeef, MemoryAccess::Type::Read)
         },
@@ -1243,7 +1244,7 @@ static const ReferenceInstruction Insts2[] = {
         }
     },
     {
-        29, true, 0x0832a, THUMB, 16, 0x4408, "add      r0,r1",
+        29, IE_EXECUTED, 0x0832a, THUMB, 16, 0x4408, "add      r0,r1",
         {},
         {
             RegisterAccess("r0", 0xdeadbef4, RegisterAccess::Type::Write),
@@ -1251,7 +1252,7 @@ static const ReferenceInstruction Insts2[] = {
         }
     },
     {
-        30, true, 0x0832c, ARM, 32, 0xf8cb07fc, "str.w      r0,[r11,#2044]",
+        30, IE_EXECUTED, 0x0832c, ARM, 32, 0xf8cb07fc, "str.w      r0,[r11,#2044]",
         {
             MemoryAccess(4, 0xf939b3c, 0xdeadbef4, MemoryAccess::Type::Write)
         },
@@ -1261,7 +1262,7 @@ static const ReferenceInstruction Insts2[] = {
         }
     },
     {
-        31, true, 0x08330, ARM, 32, 0xf8db07fc, "ldr.w      r0,[r11,#2044]",
+        31, IE_EXECUTED, 0x08330, ARM, 32, 0xf8db07fc, "ldr.w      r0,[r11,#2044]",
         {
             MemoryAccess(4, 0xf939b3c, 0xdeadbef4, MemoryAccess::Type::Read)
         },
@@ -1271,7 +1272,7 @@ static const ReferenceInstruction Insts2[] = {
         }
     },
     {
-        32, true, 0x08332, THUMB, 16, 0x4408, "add      r0,r1",
+        32, IE_EXECUTED, 0x08332, THUMB, 16, 0x4408, "add      r0,r1",
         {},
         {
             RegisterAccess("r0", 0xdeadbef9, RegisterAccess::Type::Write),
@@ -1279,7 +1280,7 @@ static const ReferenceInstruction Insts2[] = {
         }
     },
     {
-        33, true, 0x08334, ARM, 32, 0xf8cb0800, "str.w      r0,[r11,#2048]",
+        33, IE_EXECUTED, 0x08334, ARM, 32, 0xf8cb0800, "str.w      r0,[r11,#2048]",
         {
             MemoryAccess(4, 0xf939b40, 0xdeadbef9, MemoryAccess::Type::Write)
         },

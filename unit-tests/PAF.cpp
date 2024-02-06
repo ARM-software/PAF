@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: <text>Copyright 2021,2022,2023 Arm Limited and/or its
+ * SPDX-FileCopyrightText: <text>Copyright 2021-2024 Arm Limited and/or its
  * affiliates <open-source-office@arm.com></text>
  * SPDX-License-Identifier: Apache-2.0
  *
@@ -20,6 +20,7 @@
 
 #include "PAF/PAF.h"
 
+#include "libtarmac/parser.hh"
 #include "libtarmac/reporter.hh"
 #include "libtarmac/misc.hh"
 
@@ -356,14 +357,13 @@ TEST(MemoryAccess, dump) {
 
 TEST(ReferenceInstruction, base) {
     const ReferenceInstruction i1(
-        27, true, 0x0818a, THUMB, 16, 0x02100, "MOVS     r1,#0", {},
+        27, IE_EXECUTED, 0x0818a, THUMB, 16, 0x02100, "MOVS     r1,#0", {},
         {
             RegisterAccess("r1", 0, RegisterAccess::Type::Write),
-            RegisterAccess("cpsr", 0x61000000,
-                           RegisterAccess::Type::Write),
+            RegisterAccess("cpsr", 0x61000000, RegisterAccess::Type::Write),
         });
     EXPECT_EQ(i1.time, 27);
-    EXPECT_TRUE(i1.executed);
+    EXPECT_EQ(i1.effect, IE_EXECUTED);
     EXPECT_EQ(i1.pc, 0x0818a);
     EXPECT_EQ(i1.iset, THUMB);
     EXPECT_EQ(i1.width, 16);
@@ -382,12 +382,13 @@ TEST(ReferenceInstruction, base) {
     EXPECT_FALSE(i1 != i1);
 
     const ReferenceInstruction i2(
-        58, true, 0x08326, ARM, 32, 0xe9425504, "STRD     r5,r5,[r2,#-0x10]",
+        58, IE_EXECUTED, 0x08326, ARM, 32, 0xe9425504,
+        "STRD     r5,r5,[r2,#-0x10]",
         {MemoryAccess(4, 0x00021afc, 0, MemoryAccess::Type::Write),
          MemoryAccess(4, 0x00021b00, 0, MemoryAccess::Type::Write)},
         {});
     EXPECT_EQ(i2.time, 58);
-    EXPECT_TRUE(i2.executed);
+    EXPECT_EQ(i2.effect, IE_EXECUTED);
     EXPECT_EQ(i2.pc, 0x08326);
     EXPECT_EQ(i2.iset, ARM);
     EXPECT_EQ(i2.width, 32);
@@ -410,7 +411,7 @@ TEST(ReferenceInstruction, base) {
 
     // Only differs in execution time (and asm string).
     const ReferenceInstruction i3(
-        30, true, 0x0818a, THUMB, 16, 0x02100, "MOVS r1,#0", {},
+        30, IE_EXECUTED, 0x0818a, THUMB, 16, 0x02100, "MOVS r1,#0", {},
         {
             RegisterAccess("r1", 0, RegisterAccess::Type::Write),
             RegisterAccess("cpsr", 0x61000000, RegisterAccess::Type::Write),
@@ -419,7 +420,7 @@ TEST(ReferenceInstruction, base) {
 
     // Only differs in reg values.
     const ReferenceInstruction i4(
-        27, true, 0x0818a, THUMB, 16, 0x02100, "MOVS     r1,#0", {},
+        27, IE_EXECUTED, 0x0818a, THUMB, 16, 0x02100, "MOVS     r1,#0", {},
         {
             RegisterAccess("r1", 10, RegisterAccess::Type::Write),
             RegisterAccess("cpsr", 0x61000FFF, RegisterAccess::Type::Write),
@@ -427,7 +428,8 @@ TEST(ReferenceInstruction, base) {
     EXPECT_TRUE(i1 == i4);
 
     const ReferenceInstruction i5(
-        58, true, 0x08326, ARM, 32, 0xe9425504, "STRD     r5,r5,[r2,#-0x10]",
+        58, IE_EXECUTED, 0x08326, ARM, 32, 0xe9425504,
+        "STRD     r5,r5,[r2,#-0x10]",
         {MemoryAccess(4, 0x00000afc, 10, MemoryAccess::Type::Write),
          MemoryAccess(4, 0x00000b00, 20, MemoryAccess::Type::Write)},
         {});
@@ -465,7 +467,7 @@ TEST(ReferenceInstruction, parsing) {
             "27 clk R cpsr 61000000")
             .get();
     EXPECT_EQ(i1.time, 27);
-    EXPECT_TRUE(i1.executed);
+    EXPECT_EQ(i1.effect, IE_EXECUTED);
     EXPECT_EQ(i1.pc, 0x0818a);
     EXPECT_EQ(i1.iset, THUMB);
     EXPECT_EQ(i1.width, 16);
@@ -482,13 +484,13 @@ TEST(ReferenceInstruction, parsing) {
     EXPECT_EQ(i1.regaccess[0].access, RegisterAccess::Type::Write);
 
     const ReferenceInstruction i2 =
-        InstructionReceiver(
-          "58 clk IT (58) 00008326 e9425504 T thread : STRD  r5,r5,[r2,#-0x10]\n"
-          "58 clk MW4 00021b00 00000000\n"
-          "58 clk MW4 00021afc 00000000")
-          .get();
+        InstructionReceiver("58 clk IT (58) 00008326 e9425504 T thread : STRD  "
+                            "r5,r5,[r2,#-0x10]\n"
+                            "58 clk MW4 00021b00 00000000\n"
+                            "58 clk MW4 00021afc 00000000")
+            .get();
     EXPECT_EQ(i2.time, 58);
-    EXPECT_TRUE(i2.executed);
+    EXPECT_EQ(i2.effect, IE_EXECUTED);
     EXPECT_EQ(i2.pc, 0x08326);
     EXPECT_EQ(i2.iset, THUMB);
     EXPECT_EQ(i2.width, 32);
@@ -509,7 +511,8 @@ TEST(ReferenceInstruction, dump) {
     std::ostringstream os;
 
     const ReferenceInstruction i(
-        58, true, 0x08326, ARM, 32, 0xe9425504, "STRD     r5,r5,[r2,#-0x10]",
+        58, IE_EXECUTED, 0x08326, ARM, 32, 0xe9425504,
+        "STRD     r5,r5,[r2,#-0x10]",
         {MemoryAccess(4, 0x00021afc, 0, MemoryAccess::Type::Write),
          MemoryAccess(4, 0x00021b00, 0, MemoryAccess::Type::Write)},
         {});
@@ -559,7 +562,7 @@ TEST(MTAnalyzer, base) {
     TracePair Inputs = makeTracePair(SAMPLES_SRC_DIR "instances-v7m.trace",
                                      "instances-v7m.trace.index");
     // TODO: do not always rebuild it ?
-    run_indexer(Inputs, TraceParams(), /* big_endian */ false);
+    run_indexer(Inputs, IndexerParams(), /* big_endian */ false);
     TestMTAnalyzer T(Inputs, SAMPLES_SRC_DIR "instances-v7m.elf");
 
     // getInstances test.
@@ -571,7 +574,7 @@ TEST(MTAnalyzer, base) {
     EXPECT_TRUE(T.lookup_symbol("glob", symb_addr, symb_size));
     EXPECT_EQ(symb_size, 4);
 
-    const array<uint64_t, 4> valExp = { 125, 125, 126, 134 };
+    const array<uint64_t, 4> valExp = {125, 125, 126, 134};
     for (size_t i = 0; i < Instances.size(); i++) {
         EXPECT_EQ(T.getRegisterValueAtTime("r0", Instances[i].Start.time - 1),
                   i);
@@ -583,7 +586,7 @@ TEST(MTAnalyzer, base) {
         EXPECT_EQ(val, valExp[i]);
     }
 
-    for (size_t i = 0; i<Instances.size(); i++) {
+    for (size_t i = 0; i < Instances.size(); i++) {
         T.getFunctionBody(Instances[i], T);
         EXPECT_EQ(T.Instructions[0].disassembly, string("MUL r3,r0,r0"));
     }
@@ -601,11 +604,11 @@ TEST(MTAnalyzer, base) {
     // GetCallSites.
     vector<PAF::ExecutionRange> CallSites = T.getCallSitesTo("foo");
     EXPECT_EQ(CallSites.size(), 4);
-    for (const auto &cs: CallSites) {
+    for (const auto &cs : CallSites) {
         ReferenceInstruction CallInstr;
         EXPECT_TRUE(T.getInstructionAtTime(CallInstr, cs.Start.time));
         EXPECT_EQ(CallInstr.disassembly.substr(0, 3), "BL ");
-        EXPECT_EQ(cs.End.addr, cs.Start.addr + CallInstr.width/8);
+        EXPECT_EQ(cs.End.addr, cs.Start.addr + CallInstr.width / 8);
     }
 }
 
@@ -613,7 +616,7 @@ TEST(MTAnalyzer, labels) {
     TracePair Inputs = makeTracePair(SAMPLES_SRC_DIR "labels-v7m.trace",
                                      "labels-v7m.trace.index");
     // TODO: do not always rebuild it ?
-    run_indexer(Inputs, TraceParams(), /* big_endian */ false);
+    run_indexer(Inputs, IndexerParams(), /* big_endian */ false);
     TestMTAnalyzer T(Inputs, SAMPLES_SRC_DIR "labels-v7m.elf");
 
     // getLabelPairs test.
@@ -622,10 +625,9 @@ TEST(MTAnalyzer, labels) {
     EXPECT_EQ(LabelPairs.size(), 4);
 
     // getWLabels test.
-    vector<PAF::ExecutionRange> WLabels =
-        T.getWLabels({"MYWLABEL"}, 1);
+    vector<PAF::ExecutionRange> WLabels = T.getWLabels({"MYWLABEL"}, 1);
     EXPECT_EQ(WLabels.size(), 4);
-    for (const auto &cs: WLabels) {
+    for (const auto &cs : WLabels) {
         ReferenceInstruction WStartInstr, WEndInstr;
         // 3 instructions are expected (one per cycle).
         EXPECT_EQ(cs.End.time - cs.Start.time + 1, 3);
@@ -639,7 +641,7 @@ TEST(MTAnalyzer, markers) {
     TracePair Inputs = makeTracePair(SAMPLES_SRC_DIR "markers-v7m.trace",
                                      "markers-v7m.trace.index");
     // TODO: do not always rebuild it ?
-    run_indexer(Inputs, TraceParams(), /* big_endian */ false);
+    run_indexer(Inputs, IndexerParams(), /* big_endian */ false);
     TestMTAnalyzer T(Inputs, SAMPLES_SRC_DIR "markers-v7m.elf");
 
     // getBetweenFunctionMarkers test.

@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: <text>Copyright 2021,2022,2023 Arm Limited and/or its
+ * SPDX-FileCopyrightText: <text>Copyright 2021-2024 Arm Limited and/or its
  * affiliates <open-source-office@arm.com></text>
  * SPDX-License-Identifier: Apache-2.0
  *
@@ -105,26 +105,26 @@ TEST(V7MCPUInfo, isBranch) {
 
     const array<ReferenceInstruction, 20> instrs{{
         // clang-format off
-        {557, true, 0x010e24, THUMB, 16, 0x0d01b, "BEQ {pc}+0x3a", {}, {}},
-        {565, true, 0x00beba, THUMB, 16, 0x0d000, "BEQ {pc}+4", {}, {}},
-        {572, true, 0x008450, THUMB, 16, 0x0d43b, "BMI {pc}+0x7a", {}, {}},
-        {579, true, 0x008a3a, THUMB, 32, 0x0f000bc79, "B.W {pc}+0x8f6", {}, {}},
-        {585, true, 0x008482, THUMB, 16, 0x0d527, "BPL {pc}+0x52", {}, {}},
-        {589, true, 0x0084da, THUMB, 16, 0x0e7d3, "B {pc}-0x56", {}, {}},
-        {595, true, 0x008a46, THUMB, 32, 0x0f000bc7b, "B.W {pc}+0x8fa", {}, {}},
-        {602, true, 0x0092c4, THUMB, 16, 0x0d1ee, "BNE {pc}-0x20", {}, {}},
-        {606, true, 0x0092aa, THUMB, 16, 0x0d908, "BLS {pc}+0x14", {}, {}},
-        {609, true, 0x0092b2, THUMB, 16, 0x0d004, "BEQ {pc}+0xc", {}, {}},
-        {615, true, 0x008414, THUMB, 16, 0x0d04b, "BEQ {pc}+0x9a", {}, {}},
-        {621, true, 0x008420, THUMB, 16, 0x0d048, "BEQ {pc}+0x94", {}, {}},
-        {624, true, 0x008426, THUMB, 16, 0x0d534, "BPL {pc}+0x6c", {}, {}},
-        {627, true, 0x008496, THUMB, 16, 0x0d4cb, "BMI {pc}-0x66", {}, {}},
-        {633, true, 0x0084a4, THUMB, 16, 0x0d1c4, "BNE {pc}-0x74", {}, {}},
-        {642, true, 0x0084f8, THUMB, 16, 0x0d443, "BMI {pc}+0x8a", {}, {}},
-        {654, true, 0x00a004, THUMB, 32, 0xf001bf50, "B.W {pc}+0x1ea4", {}, {}},
-        {671, true, 0x010dfa, THUMB, 16, 0x0d821, "BHI {pc}+0x46", {}, {}},
-        {675, true, 0x010e04, THUMB, 16, 0x0d01c, "BEQ {pc}+0x3c", {}, {}},
-        {678, true, 0x010e0a, THUMB, 16, 0x0d803, "BHI {pc}+0xa", {}, {}},
+        {557, IE_EXECUTED, 0x010e24, THUMB, 16, 0x0d01b, "BEQ {pc}+0x3a", {}, {}},
+        {565, IE_EXECUTED, 0x00beba, THUMB, 16, 0x0d000, "BEQ {pc}+4", {}, {}},
+        {572, IE_EXECUTED, 0x008450, THUMB, 16, 0x0d43b, "BMI {pc}+0x7a", {}, {}},
+        {579, IE_EXECUTED, 0x008a3a, THUMB, 32, 0x0f000bc79, "B.W {pc}+0x8f6", {}, {}},
+        {585, IE_EXECUTED, 0x008482, THUMB, 16, 0x0d527, "BPL {pc}+0x52", {}, {}},
+        {589, IE_EXECUTED, 0x0084da, THUMB, 16, 0x0e7d3, "B {pc}-0x56", {}, {}},
+        {595, IE_EXECUTED, 0x008a46, THUMB, 32, 0x0f000bc7b, "B.W {pc}+0x8fa", {}, {}},
+        {602, IE_EXECUTED, 0x0092c4, THUMB, 16, 0x0d1ee, "BNE {pc}-0x20", {}, {}},
+        {606, IE_EXECUTED, 0x0092aa, THUMB, 16, 0x0d908, "BLS {pc}+0x14", {}, {}},
+        {609, IE_EXECUTED, 0x0092b2, THUMB, 16, 0x0d004, "BEQ {pc}+0xc", {}, {}},
+        {615, IE_EXECUTED, 0x008414, THUMB, 16, 0x0d04b, "BEQ {pc}+0x9a", {}, {}},
+        {621, IE_EXECUTED, 0x008420, THUMB, 16, 0x0d048, "BEQ {pc}+0x94", {}, {}},
+        {624, IE_EXECUTED, 0x008426, THUMB, 16, 0x0d534, "BPL {pc}+0x6c", {}, {}},
+        {627, IE_EXECUTED, 0x008496, THUMB, 16, 0x0d4cb, "BMI {pc}-0x66", {}, {}},
+        {633, IE_EXECUTED, 0x0084a4, THUMB, 16, 0x0d1c4, "BNE {pc}-0x74", {}, {}},
+        {642, IE_EXECUTED, 0x0084f8, THUMB, 16, 0x0d443, "BMI {pc}+0x8a", {}, {}},
+        {654, IE_EXECUTED, 0x00a004, THUMB, 32, 0xf001bf50, "B.W {pc}+0x1ea4", {}, {}},
+        {671, IE_EXECUTED, 0x010dfa, THUMB, 16, 0x0d821, "BHI {pc}+0x46", {}, {}},
+        {675, IE_EXECUTED, 0x010e04, THUMB, 16, 0x0d01c, "BEQ {pc}+0x3c", {}, {}},
+        {678, IE_EXECUTED, 0x010e0a, THUMB, 16, 0x0d803, "BHI {pc}+0xa", {}, {}},
         // clang-format on
     }};
 
@@ -136,18 +136,18 @@ TEST(V7MCPUInfo, getCycles) {
     unique_ptr<V7MInfo> CPU(new V7MInfo);
     const array<ReferenceInstruction, 5> instrs{{
         // clang-format off
-        /* 0: */ {565, true, 0x0081f2, THUMB, 16, 0x02100, "MOVS r1,#0", {},
+        /* 0: */ {565, IE_EXECUTED, 0x0081f2, THUMB, 16, 0x02100, "MOVS r1,#0", {},
                    {
                       RegisterAccess("r1", 0, RegisterAccess::Type::Write),
                       RegisterAccess("cpsr", 0x61000000, RegisterAccess::Type::Write),
                    }},
-        /* 1: */ {566, true, 0x0081f4, THUMB, 16, 0x0d000, "BEQ {pc}+4", {}, {}},
-        /* 2: */ {566, false, 0x0081f4, THUMB, 16, 0x0d000, "BEQ {pc}+4", {}, {}},
-        /* 3: */ {567, true, 0x0a05e, THUMB, 32,  0xeb0000d2, "ADD r0,r0,r2,LSR #3", {},
+        /* 1: */ {566, IE_EXECUTED, 0x0081f4, THUMB, 16, 0x0d000, "BEQ {pc}+4", {}, {}},
+        /* 2: */ {566, IE_CCFAIL, 0x0081f4, THUMB, 16, 0x0d000, "BEQ {pc}+4", {}, {}},
+        /* 3: */ {567, IE_EXECUTED, 0x0a05e, THUMB, 32,  0xeb0000d2, "ADD r0,r0,r2,LSR #3", {},
                    {
                       RegisterAccess("r0", 15, RegisterAccess::Type::Write),
                    }},
-        /* 4: */ {567, true, 0x0a060, THUMB, 32,  0xeb0000d2, "ADD r0,r0,r2,LSR #3", {},
+        /* 4: */ {567, IE_EXECUTED, 0x0a060, THUMB, 32,  0xeb0000d2, "ADD r0,r0,r2,LSR #3", {},
                    {
                      RegisterAccess("r0", 15, RegisterAccess::Type::Write),
                    }},
@@ -234,13 +234,13 @@ TEST(V7MCPUInfo, registers) {
 template <typename AInfo, ISet mode, unsigned width> struct TRB {
   public:
     TRB(uint32_t opc, const char *dis)
-        : Inst(0, true, 1, mode, width, opc, dis, {}, {}),
+        : Inst(0, IE_EXECUTED, 1, mode, width, opc, dis, {}, {}),
           Kind(InstrInfo::NO_KIND), AM() {}
     TRB(uint32_t opc, const char *dis, InstrInfo::InstructionKind K)
-        : Inst(0, true, 1, mode, width, opc, dis, {}, {}), Kind(K), AM() {}
+        : Inst(0, IE_EXECUTED, 1, mode, width, opc, dis, {}, {}), Kind(K), AM() {}
     TRB(uint32_t opc, const char *dis, InstrInfo::InstructionKind K,
         AddressingMode::OffsetFormat Offset, AddressingMode::BaseUpdate Update)
-        : Inst(0, true, 1, mode, width, opc, dis, {}, {}), Kind(K),
+        : Inst(0, IE_EXECUTED, 1, mode, width, opc, dis, {}, {}), Kind(K),
           AM(Offset, Update) {
         assert((K == InstrInfo::LOAD || K == InstrInfo::STORE) &&
                "AddressingMode is only available for loads and stores");

@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: <text>Copyright 2021,2022 Arm Limited and/or its
+ * SPDX-FileCopyrightText: <text>Copyright 2021,2022,2024 Arm Limited and/or its
  * affiliates <open-source-office@arm.com></text>
  * SPDX-License-Identifier: Apache-2.0
  *
@@ -442,7 +442,7 @@ namespace PAF {
             *this << sep << I->time;
             *this << sep << "0x" << std::hex << I->pc << std::dec;
             *this << sep << "0x" << std::hex << I->instruction << std::dec;
-            *this << sep << '"' << (I->executed ? 'X' : '-') << '"';
+            *this << sep << '"' << (I->executed() ? 'X' : '-') << '"';
             *this << sep << '"' << I->disassembly << '"';
 
             const char *space = "";

@@ -1,4 +1,4 @@
-# SPDX-FileCopyrightText: <text>Copyright 2021,2022,2023 Arm Limited and/or its
+# SPDX-FileCopyrightText: <text>Copyright 2021-2024 Arm Limited and/or its
 # affiliates <open-source-office@arm.com></text>
 # SPDX-License-Identifier: Apache-2.0
 #
@@ -52,8 +52,8 @@ endif()
 ExternalProject_Add(tarmac-trace-utilities
   PREFIX "third_party"
   GIT_REPOSITORY "https://github.com/ARM-software/tarmac-trace-utilities"
-  GIT_TAG "739b8ed3e0c25a519a8fb36de39a031e772eba3a"
-  CMAKE_ARGS "${EXTERNAL_PROJECT_CMAKE_ARGS}"
+  GIT_TAG "59d93f724cb836062602612300ac0f609a4753ee"
+  CMAKE_ARGS "${EXTERNAL_PROJECT_CMAKE_ARGS};-DUSE_LIBINTL:BOOL=OFF"
   BUILD_BYPRODUCTS "${CMAKE_BINARY_DIR}/lib/${CMAKE_STATIC_LIBRARY_PREFIX}tarmac${CMAKE_STATIC_LIBRARY_SUFFIX}"
   )
 add_library(tarmac STATIC IMPORTED)

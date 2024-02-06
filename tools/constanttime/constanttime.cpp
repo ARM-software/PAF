@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: <text>Copyright 2021,2022,2023 Arm Limited and/or its
+ * SPDX-FileCopyrightText: <text>Copyright 2021-2024 Arm Limited and/or its
  * affiliates <open-source-office@arm.com></text>
  * SPDX-License-Identifier: Apache-2.0
  *
@@ -47,7 +47,7 @@ class ReferenceTrace : public vector<PAF::ReferenceInstruction> {
         for (const auto &I : *this) {
             os << I.time;
             os << '\t';
-            os << (I.executed ? 'X' : '-');
+            os << (I.executed() ? 'X' : '-');
             os << '\t';
             os << I.disassembly;
             os << '\t';
@@ -101,7 +101,7 @@ class TraceComparator {
         if (I.pc == O.pc && I.iset == O.iset && I.width == O.width &&
             I.instruction == O.instruction) {
             if (!IgnoreConditionalExecutionDifferences)
-                if (I.executed != O.executed)
+                if (I.effect != O.effect)
                     return false;
             if (!IgnoreMemoryAccessDifferences) {
                 if (I.memaccess.size() != O.memaccess.size())

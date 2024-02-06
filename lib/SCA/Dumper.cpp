@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: <text>Copyright 2023 Arm Limited and/or its
+ * SPDX-FileCopyrightText: <text>Copyright 2023,2024 Arm Limited and/or its
  * affiliates <open-source-office@arm.com></text>
  * SPDX-License-Identifier: Apache-2.0
  *
@@ -108,7 +108,7 @@ void YAMLInstrDumper::dumpImpl(const ReferenceInstruction &I,
     *this << "pc: 0x" << I.pc;
     *this << ", opcode: 0x" << I.instruction;
     *this << ", size: " << std::dec << I.width;
-    *this << ", executed: " << (I.executed ? "True" : "False");
+    *this << ", executed: " << (I.executed() ? "True" : "False");
     *this << ", disassembly: \"" << I.disassembly << '"';
     if (dumpMemAccess) {
         *this << ", loads: [";
