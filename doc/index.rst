@@ -1,5 +1,5 @@
 ..
-  SPDX-FileCopyrightText: <text>Copyright 2021,2022,2023 Arm Limited and/or its
+  SPDX-FileCopyrightText: <text>Copyright 2021-2024 Arm Limited and/or its
   affiliates <open-source-office@arm.com></text>
   SPDX-License-Identifier: Apache-2.0
 
@@ -377,6 +377,28 @@ to use 100 traces of 20 samples each, and that each trace was using 4 data,
 then you should have 100 x 20 numpy array of ``doubles`` (in file say
 ``traces.npy``) and another 100 x 4 numpy array of ``uint32_t`` (in file say
 ``inputs.npy``).
+
+While PAF's power analysis is performed on a power trace in in NumpPy format,
+there are many ways to collect such traces:
+
+* real power acquisition from a development board, like the chipwhisperers from
+  `NewAE <https://www.newae.com/chipwhisperer>`_ for example.
+  These boards are very easy to use, and provide all the required equipment for
+  capturing the board power consumption at a very reasonable price compared to
+  buying some lab equipment (power supplies, scope, ...). They also come with
+  support software that makes them very easy to use. A notable framework that
+  makes use of these to study side channels is
+  `lip6dromel <https://gitlab.lip6.fr/heydeman/lip6dromel>`.
+
+* power estimation from an RTL simulation. Verilog (and VHDL) simulations can
+  record the signals states and transitions (known as waveforms) to a file in
+  ``vcd`` format (Value Change Dump) for example. This can be read and analyzed
+  by ``wan-power`` a tool provided by PAF to compute a power trace. Traces
+  ``fst`` format are also supported.
+
+* power estimation from an ISA simulation. FastModels can record the instruction
+  trace in the so-called tarmac format, and ``paf-power`` can read and analyze
+  these to compute a power trace.
 
 Tools usage
 ===========
@@ -783,7 +805,7 @@ PAF's side channel specific tools
 the power consumption of a device has correct settings (gain, ...).
 
 The command line syntax looks like:
-  ``paf-calibration`` *file.npy* [ *file.npy* ]
+  ``paf-calibration`` *file.npy* [ *file.npy* ]\*
 
 ``paf-calibration`` will accumulate statistics over the NPY files provided on
 the command line and then report them. It will report if some calibration is
@@ -1427,6 +1449,221 @@ The following options are recognized:
     [ 4.29554, 5.0181 ],
   ]
 
+``wan-zap-header``
+~~~~~~~~~~~~~~~~~~
+
+``wan-zap-header`` is a very simple utility that will clear the ``version``
+and ``timestamp`` fields in ``fst`` files given as argument. This makes it
+easier to compare waveforms recorded at different times for example or to
+simply compare waveform files hashes.
+
+The command line syntax looks like:
+  ``wan-zap-header`` *FST* [*FST*]\*
+
+``wan-zap-header`` is used internally by PAF for the sample ``fst`` files
+used for unit testing.
+
+Example usage:
+
+.. code-block:: bash
+
+  $ wan-zap-header Counters.fst
+  Zapping SimVersion='Icarus Verilog' in 'Counters.fst'
+  Zapping TimeStamp='Wed Apr 17 17:15:19 2024' in 'Counters.fst'
+
+``wan-info``
+~~~~~~~~~~~~
+
+``wan-info`` is a utility to display some basic information about a waveform file.
+
+The command line syntax looks like:
+  ``wan-info`` [*options*] *FILES*\+
+
+The following options are recognized:
+
+  ``--hier``
+    dump hierarchy
+
+For example, to display simulation information found in `Counters.vcd` (from PAF's unit tests samples):
+
+.. code-block:: bash
+
+  $ wan-info Counters.vcd
+  Input file: Counters.vcd
+  Start time: 0
+  End time: 110000
+  Timezero: 0
+  Timescale: 1 ps
+  Content:
+  - 2 modules
+  - 0 tasks
+  - 0 functions
+  - 0 blocks
+  - 2 alias
+  - 5 wires
+  - 3 registers
+  - 1 ints
+
+And to display information about the module and signal hierarchy in
+`Counters.fst`:
+
+.. code-block:: bash
+
+  $ wan-info --hier Counters.fst
+  File Counters.fst:
+  o tbench
+    - cnt2 [31:0] (wire)
+    - cnt1 [7:0] (wire)
+    - clk (register)
+    - reset (register)
+    o DUT
+      - clk (wire)
+      - reset (wire)
+      - cnt1 [7:0] (wire)
+      - cnt [8:0] (register)
+      - cnt2 [31:0] (integer)
+
+``wan-diff``
+~~~~~~~~~~~~
+
+``wan-diff`` is a utility to report the differences between 2 wavefiles. It
+often occurs that 2 simulations diverge at some point, and ``wan-diff`` can
+be used to pin-point to the differences, in time (when it first started to
+differ) and in name / value (the signals and how they differ). ``wan-diff``
+reports the difference is user selectable ways:
+
+* by signal (default)
+
+* by time
+
+``wan-diff`` also accepts a number of *filter* options:
+
+* by *type* to only consider *register* or *wires* for example,
+
+* by *scope* to only consider signals in a specific hierarchical part
+  of the system
+
+``wan-diff`` can also emit the difference to a waveform file, where
+for each signal with a difference, the signal will be shown as-is from
+the 2 files with a third *synthetic* signal, showing the difference
+with a xor of the 2 signals.
+
+The command line syntax looks like:
+  ``wan-diff`` [*options*] *FILE1* *FILE2*
+
+The following options are recognized:
+
+  ``--verbose``
+    verbose output
+
+  ``--output=FILE``
+    Save diff to FILE, in vcd or fst format according to
+    the file extension used.
+
+  ``--regs``
+    Diff registers only
+
+  ``--wires``
+    Diff wires only
+
+  ``--time-view``
+    Display difference by time, rather than by signal
+
+  ``--signal-summary``
+    Report a summary list of differing signals
+
+  ``--module-summary``
+    Report a summary list of modules with differing signals
+
+  ``--scope-filter=FILTER``
+    Filter scopes matching FILTER
+
+For example, suppose that we have have 2 (differing) simulations of our ``Counters``:
+
+.. code-block:: bash
+
+  $ wan-diff Counters.vcd Counters-1.vcd --verbose
+  Simulation duration: 110000
+  7 signals to analyze.
+  tbench.DUT/cnt [8:0] Kind::REGISTER difference
+   - 30000	000000011 <> 000000001
+   - 40000	000000100 <> 000000101
+
+  $ wan-diff Counters.vcd Counters-1.vcd --time-view --verbose
+  Simulation duration: 110000
+  7 signals to analyze.
+  30000
+   - 000000011 <> 000000001 Kind::REGISTER tbench.DUT/cnt [8:0]
+
+  40000
+   - 000000100 <> 000000101 Kind::REGISTER tbench.DUT/cnt [8:0]
+
+``wan-merge``
+~~~~~~~~~~~~~
+
+``wan-merge`` is a utility to to merge waveform files into a single file,
+provided there is no conflict in the module hierarchy and signal names.
+This can be useful in cases where the simulator emit files per hierarchy
+level in the design.
+
+The command line syntax looks like:
+  ``wan-merge`` [*options*] *FILES*\+
+
+The following options are recognized:
+
+  ``--verbose``
+    verbose output
+
+  ``--statistics``
+    emit statistics about the files read
+
+  ``--output=OUTPUT_FILE``
+    Save merged traces in OUTPUT_FILE
+
+``wan-power``
+~~~~~~~~~~~~~
+
+``wan-power`` is a utility to ...
+
+The command line syntax looks like:
+  ``wan-power`` [*options*] *F*[*,CYCLE_INFO*]...
+
+where *F* is an input file in fst or vcd format. It can optionnaly be completed
+with a *CYCLE_INFO* file. The *CYCLE_INFO* file is used to extract specific
+sections of the waveform, which happens when a simulation repeatedly ran some
+experiment and one wants to analyze only those experiments and produce one power
+trace per experiment. This is a text file, with one comma separated couple per
+line, defining the begin and end times of each experiment.
+
+The following options are recognized:
+
+    ``--verbose``
+      verbose output
+
+    ``--csv=CSV_FILE``
+      Save power trace in csv format to file ('-' for stdout)
+
+    ``--no-noise``
+      Don't add noise to the power trace
+
+    ``--regs``
+      Trace registers only
+
+    ``--wires``
+      Trace wires only
+
+    ``--hamming-weight``
+      Use hamming weight model
+
+    ``--hamming-distance``
+      Use hamming distance model
+
+    ``--decimate=PERIOD%OFFSET``
+      decimate output (default: PERIOD=1, OFFSET=0)
+
+    ``--scope-filter=FILTER``
+      Filter scopes matching FILTER
+
 Contributing to PAF
 ===================
 
@@ -1459,6 +1696,8 @@ The code base organization reflects different domains tackled by PAF:
 
 * side channel related libraries (in ``include/PAF/SCA`` and ``lib/SCA``)
 
+* waveforam analysis related libraries (in ``include/PAF/WAN`` and ``lib/WAN``)
+
 * common libraries (in ``include/PAF`` and ``lib/PAF``)
 
 and it also has mundane parts like :
@@ -1490,41 +1729,113 @@ written in Python have their dedicated unit tests. All unit tests have been
 grouped together, using CMake_'s `CTest
 <https://cmake.org/cmake/help/latest/module/CTest.html>`_.
 
-Unit tests can be run with the ``test`` target. For example, if PAF's codebase
+Unit tests can be run with the ``check`` target. For example, if PAF's codebase
 has been configured by ``cmake`` to use the ``ninja`` tool :
 
 .. code-block:: bash
 
-   $ ninja -C build/ test
+   $ ninja -C build/ check
    ninja: Entering directory `build/'
-   [0/1] Running tests...
-   Test project /Users/arndeg01/Software/CM-Security/PAF.git/build
-         Start  1: unit-Intervals
-    1/11 Test  #1: unit-Intervals ...................   Passed    0.02 sec
-         Start  2: unit-Oracle
-    2/11 Test  #2: unit-Oracle ......................   Passed    0.02 sec
-         Start  3: nputils-python-tests
-    3/11 Test  #3: nputils-python-tests .............   Passed    1.11 sec
-         Start  4: npcreate-python-tests
-    4/11 Test  #4: npcreate-python-tests ............   Passed    0.46 sec
-         Start  5: unit-CPUInfo
-    5/11 Test  #5: unit-CPUInfo .....................   Passed    0.02 sec
-         Start  6: unit-Fault
-    6/11 Test  #6: unit-Fault .......................   Passed    0.02 sec
-         Start  7: unit-PAF
-    7/11 Test  #7: unit-PAF .........................   Passed    0.02 sec
-         Start  8: unit-Power
-    8/11 Test  #8: unit-Power .......................   Passed    0.02 sec
-         Start  9: unit-SCA
-    9/11 Test  #9: unit-SCA .........................   Passed    0.06 sec
-         Start 10: unit-NPArray
-   10/11 Test #10: unit-NPArray .....................   Passed    0.02 sec
-         Start 11: unit-Expr
-   11/11 Test #11: unit-Expr ........................   Passed    0.02 sec
+  [==========] Running 253 tests from 60 test suites.
+  [----------] Global test environment set-up.
+  [----------] 1 test from AddressingMode
+  [ RUN      ] AddressingMode.base
+  [       OK ] AddressingMode.base (0 ms)
+  [----------] 1 test from AddressingMode (0 ms total)
 
-   100% tests passed, 0 tests failed out of 11
+  [----------] 1 test from InstrInfo
+  [ RUN      ] InstrInfo.inputRegisters
+  [       OK ] InstrInfo.inputRegisters (0 ms)
+  [----------] 1 test from InstrInfo (0 ms total)
 
-   Total Test time (real) =   1.83 sec
+  [----------] 1 test from ValueType
+  [ RUN      ] ValueType.Base
+  [       OK ] ValueType.Base (0 ms)
+  [----------] 1 test from ValueType (0 ms total)
+
+  [----------] 1 test from Value
+  [ RUN      ] Value.Base
+  [       OK ] Value.Base (0 ms)
+  [----------] 1 test from Value (0 ms total)
+
+  [----------] 10 tests from Expr
+  [ RUN      ] Expr.Constants
+  [       OK ] Expr.Constants (0 ms)
+  [ RUN      ] Expr.UnaryOps
+  [       OK ] Expr.UnaryOps (0 ms)
+  [ RUN      ] Expr.Truncate
+  [       OK ] Expr.Truncate (0 ms)
+  [ RUN      ] Expr.BinaryOps
+  [       OK ] Expr.BinaryOps (0 ms)
+  [ RUN      ] Expr.Inputs
+  [       OK ] Expr.Inputs (0 ms)
+  [ RUN      ] Expr.NPInputs
+  [       OK ] Expr.NPInputs (0 ms)
+  [ RUN      ] Expr.parse_empty
+  [       OK ] Expr.parse_empty (0 ms)
+  [ RUN      ] Expr.parse_literals
+  [       OK ] Expr.parse_literals (0 ms)
+  [ RUN      ] Expr.parse_operator
+  [       OK ] Expr.parse_operator (0 ms)
+  [ RUN      ] Expr.parse_variable32
+  [       OK ] Expr.parse_variable32 (0 ms)
+  [----------] 10 tests from Expr (0 ms total)
+
+  [----------] 2 tests from AES
+  [ RUN      ] AES.SBox
+  [       OK ] AES.SBox (0 ms)
+  [ RUN      ] AES.ISBox
+  [       OK ] AES.ISBox (0 ms)
+  [----------] 2 tests from AES (0 ms total)
+
+  [----------] 6 tests from Fault
+  [ RUN      ] Fault.BreakPoint
+  [       OK ] Fault.BreakPoint (0 ms)
+  [ RUN      ] Fault.FaultModelBase
+  [       OK ] Fault.FaultModelBase (0 ms)
+  [ RUN      ] Fault.InstructionSkip
+  [       OK ] Fault.InstructionSkip (0 ms)
+  [ RUN      ] Fault.CorruptRegDef
+  [       OK ] Fault.CorruptRegDef (0 ms)
+  [ RUN      ] Fault.FunctionInfo
+  [       OK ] Fault.FunctionInfo (0 ms)
+  [ RUN      ] Fault.Campaign
+  [       OK ] Fault.Campaign (0 ms)
+  [----------] 6 tests from Fault (0 ms total)
+
+  [----------] 1 test from Interval
+  [ RUN      ] Interval.basic
+  [       OK ] Interval.basic (0 ms)
+  [----------] 1 test from Interval (0 ms total)
+
+  [----------] 1 test from Intervals
+  [ RUN      ] Intervals.basic
+  [       OK ] Intervals.basic (0 ms)
+  [----------] 1 test from Intervals (0 ms total)
+
+  [----------] 23 tests from LWParser
+  [ RUN      ] LWParser.construct_default_position
+  [       OK ] LWParser.construct_default_position (0 ms)
+  ...
+  [ RUN      ] Waveform.visitWiresInSpecificScope
+  [       OK ] Waveform.visitWiresInSpecificScope (1 ms)
+  [----------] 19 tests from Waveform (25 ms total)
+
+  [----------] 1 test from WaveformF
+  [ RUN      ] WaveformF.toFile
+  [       OK ] WaveformF.toFile (25 ms)
+  [----------] 1 test from WaveformF (25 ms total)
+
+  [----------] 2 tests from FSTWaveFile
+  [ RUN      ] FSTWaveFile.Read
+  [       OK ] FSTWaveFile.Read (0 ms)
+  [ RUN      ] FSTWaveFile.getAllChangesTimes
+  [       OK ] FSTWaveFile.getAllChangesTimes (0 ms)
+  [----------] 2 tests from FSTWaveFile (1 ms total)
+
+  [----------] Global test environment tear-down
+  [==========] 253 tests from 60 test suites ran. (1809 ms total)
+  [  PASSED  ] 253 tests.
 
 End to end tests
 ~~~~~~~~~~~~~~~~

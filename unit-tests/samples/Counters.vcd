@@ -1,0 +1,124 @@
+$date
+	Wed Mar 27 20:29:54 2024
+$end
+$version
+	Icarus Verilog
+$end
+$timescale
+	1ps
+$end
+$scope module tbench $end
+$var wire 32 ! cnt2 [31:0] $end
+$var wire 8 " cnt1 [7:0] $end
+$var reg 1 # clk $end
+$var reg 1 $ reset $end
+$scope module DUT $end
+$var wire 1 # clk $end
+$var wire 1 $ reset $end
+$var wire 8 % cnt1 [7:0] $end
+$var reg 9 & cnt [8:0] $end
+$var integer 32 ' cnt2 [31:0] $end
+$upscope $end
+$upscope $end
+$enddefinitions $end
+$comment Show the parameter values. $end
+$dumpall
+$end
+#0
+$dumpvars
+b0 '
+b0 &
+b0 %
+0$
+1#
+b0 "
+b0 !
+$end
+#5000
+0#
+#10000
+b1 !
+b1 '
+b1 &
+1$
+1#
+#15000
+0#
+#20000
+b1 "
+b1 %
+b10 !
+b10 '
+b10 &
+1#
+#25000
+0#
+#30000
+b11 !
+b11 '
+b11 &
+1#
+#35000
+0#
+#40000
+b10 "
+b10 %
+b100 !
+b100 '
+b100 &
+1#
+#45000
+0#
+#50000
+b101 !
+b101 '
+b101 &
+1#
+#55000
+0#
+#60000
+b11 "
+b11 %
+b110 !
+b110 '
+b110 &
+1#
+#65000
+0#
+#70000
+b111 !
+b111 '
+b111 &
+1#
+#75000
+0#
+#80000
+b100 "
+b100 %
+b1000 !
+b1000 '
+b1000 &
+1#
+#85000
+0#
+#90000
+b1001 !
+b1001 '
+b1001 &
+1#
+#95000
+0#
+#100000
+b101 "
+b101 %
+b1010 !
+b1010 '
+b1010 &
+1#
+#105000
+0#
+#110000
+b1011 !
+b1011 '
+b1011 &
+1#

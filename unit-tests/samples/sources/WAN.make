@@ -1,4 +1,4 @@
-# SPDX-FileCopyrightText: <text>Copyright 2021,2022,2024 Arm Limited and/or its
+# SPDX-FileCopyrightText: <text>Copyright 2024 Arm Limited and/or its
 # affiliates <open-source-office@arm.com></text>
 # SPDX-License-Identifier: Apache-2.0
 #
@@ -16,7 +16,25 @@
 #
 # This file is part of PAF, the Physical Attack Framework.
 
-add_subdirectory(PAF)
-add_subdirectory(FI)
-add_subdirectory(SCA)
-add_subdirectory(WAN)
+# Rebuild the fst files used for testing.
+EXECS=Counters
+SRCS=$(addsuffix .sv,${EXECS})
+DUMPS=$(addsuffix .vcd,${EXECS}) $(addsuffix .fst,${EXECS})
+
+all: ${DUMPS}
+
+Counters: Counters.sv
+	iverilog -g2005-sv -o $@ $<
+
+Counters.fst: Counters
+	./$< -fst && \
+	mv Counters.waves $@ && \
+	../../../build/bin/wan-zap-header $@
+
+Counters.vcd: Counters
+	./$< -vcd && \
+	mv Counters.waves $@
+
+.PHONY: clean
+clean:
+	-rm ${EXECS} ${DUMPS}

@@ -38,13 +38,27 @@ set(PAF_TEST_SOURCES
   Power.cpp
   ProgressMonitor.cpp
   SCA.cpp
+  Signal.cpp
   StopWatch.cpp
   paf-unit-testing.cpp
   sca-apps.cpp
+  Scope.cpp
+  VCDWaveFile.cpp
+  WaveFile.cpp
+  Waveform.cpp
 )
+set(TEST_PAF_COMPILE_DEFINITIONS "SAMPLES_SRC_DIR=\"${CMAKE_CURRENT_SOURCE_DIR}/samples/\"")
+if(WITH_GTKWAVE_FST_SUPPORT)
+  list(APPEND PAF_TEST_SOURCES FSTWaveFile.cpp)
+  list(APPEND TEST_PAF_COMPILE_DEFINITIONS "HAS_GTKWAVE_FST=1")
+endif()
+
 add_executable(test-paf main.cpp ${PAF_TEST_SOURCES})
-set_target_properties(test-paf PROPERTIES COMPILE_DEFINITIONS "SAMPLES_SRC_DIR=\"${CMAKE_CURRENT_SOURCE_DIR}/samples/\"")
-target_link_libraries(test-paf GTest::gtest fi sca paf)
+target_include_directories(test-paf PRIVATE ${CMAKE_SOURCE_DIR}/lib/WAN ${CMAKE_SOURCE_DIR}/include)
+set_target_properties(test-paf
+    PROPERTIES COMPILE_DEFINITIONS "${TEST_PAF_COMPILE_DEFINITIONS}"
+)
+target_link_libraries(test-paf GTest::gtest fi sca paf wan)
 
 add_custom_target(check COMMENT "Run PAF unit tests")
 
@@ -82,6 +96,7 @@ if (PAF_BUILD_WITH_INSTRUMENTED_COVERAGE)
       COMMAND ${PAF_LLVM_COV_EXE} show --instr-profile=unit-tests.profdata -format html -o html
               -Xdemangler=${PAF_LLVM_CXXFILT_EXE}
               -ignore-filename-regex=build\/include\/
+              -ignore-filename-regex=build\/third_party\/
               -ignore-filename-regex=unit-tests\/
               -ignore-filename-regex=tools\/
               ${PAF_GTESTS_PROGRAMS}

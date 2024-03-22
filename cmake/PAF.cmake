@@ -30,7 +30,7 @@ endif()
 function(add_paf_library name)
   set(options "SHARED")
   set(oneValueArgs "OUTPUT_DIRECTORY;NAMESPACE")
-  set(multiValueArgs "DEPENDS;SOURCES;PUBLIC_HEADERS")
+  set(multiValueArgs "DEPENDS;SOURCES;PUBLIC_HEADERS;COMPILE_DEFINITIONS")
   cmake_parse_arguments(ARG
     "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN})
 
@@ -44,7 +44,9 @@ function(add_paf_library name)
   if(ARG_PUBLIC_HEADERS)
     set_target_properties(${name} PROPERTIES PUBLIC_HEADER "${ARG_PUBLIC_HEADERS}")
   endif()
-
+  if(ARG_COMPILE_DEFINITIONS)
+    target_compile_definitions(${name} PRIVATE "${ARG_COMPILE_DEFINITIONS}")
+  endif()
   if(ARG_DEPENDS)
     target_link_libraries(${name} PUBLIC ${ARG_DEPENDS})
   endif()
@@ -55,12 +57,18 @@ endfunction()
 
 function(add_paf_executable name)
   set(options "")
-  set(oneValueArgs "OUTPUT_DIRECTORY")
+  set(oneValueArgs "OUTPUT_DIRECTORY;EXEC_PREFIX")
   set(multiValueArgs "LIBRARIES;SOURCES;COMPILE_DEFINITIONS")
   cmake_parse_arguments(ARG
     "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN})
 
-  set(executable "paf-${name}")
+  if(ARG_EXEC_PREFIX)
+    set(prefix ${ARG_EXEC_PREFIX})
+  else()
+    set(prefix "paf")
+  endif()
+
+  set(executable "${prefix}-${name}")
   add_executable(${executable} ${ARG_SOURCES})
 
   if(ARG_LIBRARIES)

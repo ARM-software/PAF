@@ -1,0 +1,4 @@
+*.fst binary
+*.vcd binary
+*.elf binary
+*.trace binary

@@ -18,6 +18,8 @@
 
 cmake_minimum_required (VERSION 3.18.1)
 
+option(WITH_GTKWAVE_FST_SUPPORT "" ON)
+
 # Set path for custom modules, and load modules.
 set(CMAKE_MODULE_PATH
   ${CMAKE_MODULE_PATH}
@@ -26,20 +28,22 @@ set(CMAKE_MODULE_PATH
 
 include(PAF)
 
-project(PAF LANGUAGES CXX)
+project(PAF LANGUAGES C CXX)
 
 set(EXTERNAL_PROJECT_CMAKE_ARGS
       -G ${CMAKE_GENERATOR}
       -DCMAKE_CXX_COMPILER:PATH=${CMAKE_CXX_COMPILER}
+      -DCMAKE_C_COMPILER:PATH=${CMAKE_C_COMPILER}
       -DCMAKE_BUILD_TYPE:STRING=${CMAKE_BUILD_TYPE}
-      -DCMAKE_INSTALL_PREFIX:PATH=${CMAKE_BINARY_DIR})
+      -DCMAKE_INSTALL_PREFIX:PATH=${CMAKE_BINARY_DIR}
+      -DWITH_GTKWAVE_FST_SUPPORT:BOOL=${WITH_GTKWAVE_FST_SUPPORT})
 if(DEFINED CMAKE_EXPORT_COMPILE_COMMANDS)
   set(EXTERNAL_PROJECT_CMAKE_ARGS ${EXTERNAL_PROJECT_CMAKE_ARGS} -DCMAKE_EXPORT_COMPILE_COMMANDS:BOOL=${CMAKE_EXPORT_COMPILE_COMMANDS})
 endif()
 
 # Locally install the third party software PAF depends on.
 execute_process(
-  COMMAND ${CMAKE_COMMAND} -S ${CMAKE_SOURCE_DIR}/third_party -B ${CMAKE_BINARY_DIR}/third_party ${EXTERNAL_PROJECT_CMAKE_ARGS} 
+  COMMAND ${CMAKE_COMMAND} -S ${CMAKE_SOURCE_DIR}/third_party -B ${CMAKE_BINARY_DIR}/third_party ${EXTERNAL_PROJECT_CMAKE_ARGS}
 )
 execute_process(
   COMMAND ${CMAKE_COMMAND} --build ${CMAKE_BINARY_DIR}/third_party
@@ -58,7 +62,7 @@ find_package(TarmacTraceUtilities REQUIRED
   NO_SYSTEM_ENVIRONMENT_PATH
 )
 
-# PAF requires googletest. 
+# PAF requires googletest.
 set(GTest_DIR "${CMAKE_BINARY_DIR}/lib/cmake/GTest"
     CACHE PATH "Path to the googletest package configuration files")
 find_package(GTest REQUIRED
@@ -67,6 +71,11 @@ find_package(GTest REQUIRED
   NO_PACKAGE_ROOT_PATH
   NO_SYSTEM_ENVIRONMENT_PATH
 )
+
+# Search for GTKWave FST support files.
+if(WITH_GTKWAVE_FST_SUPPORT)
+ set(GTKWaveFst_DIR "${CMAKE_BINARY_DIR}/third_party/_deps/gtkwave-src/gtkwave3/src/helpers/fst")
+endif()
 
 set(PIP3 "${CMAKE_BINARY_DIR}/venv/bin/pip3")
 set(PYTHON3 "${CMAKE_BINARY_DIR}/venv/bin/python3")

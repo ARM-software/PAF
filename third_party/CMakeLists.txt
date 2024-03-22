@@ -26,9 +26,10 @@ set(CMAKE_MODULE_PATH
 
 include(PAF)
 
-project(third_party LANGUAGES CXX)
+project(third_party LANGUAGES C CXX)
 
 include(ExternalProject)
+include(FetchContent)
 
 set(EXTERNAL_PROJECT_CMAKE_ARGS
       -DCMAKE_CXX_COMPILER:PATH=${CMAKE_CXX_COMPILER}
@@ -49,7 +50,7 @@ ExternalProject_Add(tarmac-trace-utilities
   CMAKE_ARGS ${EXTERNAL_PROJECT_CMAKE_ARGS}
 )
 
-# PAF depends on googletest. 
+# PAF depends on googletest.
 ExternalProject_Add(googletest
   PREFIX "external"
   GIT_REPOSITORY "https://github.com/google/googletest"
@@ -57,6 +58,18 @@ ExternalProject_Add(googletest
   GIT_SHALLOW TRUE
   CMAKE_ARGS ${EXTERNAL_PROJECT_CMAKE_ARGS}
 )
+
+# Grab GTKWave source file, but don't build it here --- PAF only makes use
+# of the fstapi exported by GTKWave.
+if(WITH_GTKWAVE_FST_SUPPORT)
+  FetchContent_Declare(GTKWave
+    PREFIX "external"
+    GIT_REPOSITORY "https://github.com/gtkwave/gtkwave.git"
+    GIT_TAG "v3.3.116"
+    GIT_SHALLOW TRUE
+  )
+  FetchContent_MakeAvailable(GTKWave)
+endif()
 
 # Install ourselves a python virtualenv. Python is used in the run-model part
 # as well as for testing.

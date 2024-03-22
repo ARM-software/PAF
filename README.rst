@@ -120,13 +120,13 @@ PAF is distributed under the `Apache v2.0 License
 Third party software
 ====================
 
-PAF requires third party software that is not included in PAF's source code
+PAF uses third party software that is not included in PAF's source code
 repository. PAF's configure and build system, `CMake`, will automatically
 download, configure and build this third party software. As each of those
 third party software comes with its own specific license, you have to check
 their licenses comply with your own specific requirements.
 
-The third party software used by PAF is:
+The third party software required by PAF is:
 
 - `tarmac-trace-utilities <https://github.com/ARM-software/tarmac-trace-utilities>`_,
   licensed under https://github.com/ARM-software/tarmac-trace-utilities/blob/main/LICENSE.txt,
@@ -135,7 +135,7 @@ The third party software used by PAF is:
 - `pyyaml <https://pypi.org/project/PyYAML/>`_,
   and `pyelftools <https://pypi.org/project/pyelftools/>`_,
   and `tqdm <https://pypi.org/project/tqdm/>`_ are used by ``run-model.py`` and ancillary tools.
-  
+
 - `GoogleTest <https://github.com/google/googletest>`_,
   licensed under https://github.com/google/googletest/blob/main/LICENSE,
   is the unit testing framework used by PAF.
@@ -143,10 +143,24 @@ The third party software used by PAF is:
 - `numpy <https://numpy.org/>`_, licensed under https://github.com/numpy/numpy/blob/main/LICENSE.txt,
   is used by some unit tests.
 
+Other third party software that can optionally be used by PAF with PAF's
+configure and build system:
+
+- `GTKWave <https://github.com/gtkwave/gtkwave>`_ : PAF uses the `fstapi` to
+  have support for `fst` files, as shipped by ``GTKWave`` in the ``src/helpers/fst``
+  folder. Quoting GTKWave's `LICENSE.txt` file::
+
+    the dumpfile processing source code in ``src/helpers`` is licensed under the MIT
+    license in order to facilitate greater re-use.
+
+  The default is for CMake to use the `fstapi`. This can however be disabled by passing
+  at configure time `-DWITH_GTKWAVE_FST_SUPPORT:BOOL=OFF` to drop `fst` file
+  format support.
+
 Feedback, contributions and support
 ===================================
 
 Please use the GitHub issue tracker associated with this repository for feedback.
 
 Code contributions are most welcomed. Please make sure they stick to the style
-used in the rest of the PAF code and submit them via GitHub pull requests. 
+used in the rest of the PAF code and submit them via GitHub pull requests.
