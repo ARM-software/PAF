@@ -42,7 +42,7 @@ endif()
 ExternalProject_Add(tarmac-trace-utilities
   PREFIX "external"
   GIT_REPOSITORY "https://github.com/ARM-software/tarmac-trace-utilities"
-  GIT_TAG "75288d24ebd84d921a7e15a49ed86a73d35cfefe"
+  GIT_TAG "1b353b80819d34b164371bb55b2ddbe579fb8904"
   GIT_SHALLOW TRUE
   CMAKE_ARGS ${EXTERNAL_PROJECT_CMAKE_ARGS}
 )

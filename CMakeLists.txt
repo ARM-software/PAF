@@ -49,7 +49,7 @@ execute_process(
 )
 
 # PAF requires tarmac-trace-utilities.
-set(TarmacTraceUtilities_DIR "${CMAKE_BINARY_DIR}/lib/cmake//TarmacTraceUtilities"
+set(TarmacTraceUtilities_DIR "${CMAKE_BINARY_DIR}/lib/cmake/TarmacTraceUtilities"
     CACHE PATH "Path to the tarmac-trace-utilities package configuration files")
 find_package(TarmacTraceUtilities REQUIRED
   CONFIG
