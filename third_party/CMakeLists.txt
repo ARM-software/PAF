@@ -39,11 +39,13 @@ if(DEFINED CMAKE_EXPORT_COMPILE_COMMANDS)
 endif()
 
 # PAF depends on tarmac-trace-utilities.
+# Don't use a shallow clone here as it requires GIT_TAG to be a branch name
+# or a tag (see https://cmake.org/cmake/help/latest/module/ExternalProject.html)
 ExternalProject_Add(tarmac-trace-utilities
   PREFIX "external"
   GIT_REPOSITORY "https://github.com/ARM-software/tarmac-trace-utilities"
-  GIT_TAG "1b353b80819d34b164371bb55b2ddbe579fb8904"
-  GIT_SHALLOW TRUE
+  GIT_TAG "fe9247909724ed7270dcb14409cbc27cf675ac58"
+  GIT_SHALLOW OFF
   CMAKE_ARGS ${EXTERNAL_PROJECT_CMAKE_ARGS}
 )
 
