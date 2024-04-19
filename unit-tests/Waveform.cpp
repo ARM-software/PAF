@@ -287,7 +287,13 @@ TEST(Waveform, Basics) {
     EXPECT_EQ(W[s2.second], S1);
 
     // getObjectSize()
-    EXPECT_EQ(W.getObjectSize(), 1272);
+    size_t WSize = sizeof(Waveform);
+    WSize += W.getRootScope()->getObjectSize();
+    WSize += W.getFileName().size();
+    WSize += 3 * sizeof(PAF::WAN::TimeTy);
+    for (const auto &s : W)
+        WSize += sizeof(std::unique_ptr<Signal>) + s.getObjectSize();
+    EXPECT_EQ(W.getObjectSize(), WSize);
 }
 
 TEST(Waveform, timeScale) {

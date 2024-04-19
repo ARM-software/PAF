@@ -154,7 +154,7 @@ class Waveform {
 
         SignalDesc(const std::string &name, Kind kind, bool alias,
                    SignalIdxTy idx)
-            : name(name), kind(kind), alias(alias), idx(idx) {}
+            : name(name), idx(idx), kind(kind), alias(alias) {}
 
         SignalDesc() = delete;
         SignalDesc(const SignalDesc &) = default;
@@ -193,9 +193,9 @@ class Waveform {
 
       private:
         std::string name;
+        SignalIdxTy idx;
         Kind kind;
         bool alias;
-        SignalIdxTy idx;
     };
 
     // The Scope class provides a hierarchical view of the signals, and allows
@@ -871,7 +871,7 @@ class Waveform {
         size += version.size();
         size += date.size();
         size += comment.size();
-        size += allTimes.size() * sizeof(allTimes);
+        size += allTimes.size() * sizeof(allTimes[0]);
         size += root.getObjectSize();
         size += signals.size() * sizeof(signals[0]);
         for (const auto &s : signals)

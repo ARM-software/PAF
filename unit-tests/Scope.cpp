@@ -21,6 +21,7 @@
 #include "PAF/WAN/Signal.h"
 #include "PAF/WAN/Waveform.h"
 
+#include <memory>
 #include <string>
 #include <vector>
 
@@ -67,6 +68,11 @@ TEST(Scope, Basics) {
     EXPECT_FALSE(Root.isFunction());
     EXPECT_FALSE(Root.isBlock());
 
+    size_t rootSize = sizeof(Scope) + Root.getFullScopeName().size() +
+                      Root.getScopeName().size() +
+                      Root.getInstanceName().size();
+    EXPECT_EQ(Root.getObjectSize(), rootSize);
+
     Scope &T = Root.addModule("Top", "Top", "TestBench");
     EXPECT_TRUE(Root.hasSubScopes());
     EXPECT_TRUE(Root.hasSubScope("Top"));
@@ -82,11 +88,16 @@ TEST(Scope, Basics) {
     EXPECT_EQ(T.getFullScopeName(), "Top");
     EXPECT_EQ(T.getScopeName(), "TestBench");
     EXPECT_EQ(T.getInstanceName(), "Top");
+    size_t TSize = sizeof(Scope) + T.getFullScopeName().size() +
+                   T.getScopeName().size() + T.getInstanceName().size();
+    EXPECT_EQ(T.getObjectSize(), TSize);
     EXPECT_EQ(Root.getKind(), Waveform::Scope::Kind::MODULE);
     EXPECT_TRUE(Root.isModule());
     EXPECT_FALSE(Root.isTask());
     EXPECT_FALSE(Root.isFunction());
     EXPECT_FALSE(Root.isBlock());
+    rootSize += TSize + sizeof(std::unique_ptr<Scope>);
+    EXPECT_EQ(Root.getObjectSize(), rootSize);
 
     T.addSignal("SignalInT", SignalDesc::Kind::REGISTER, /* alias: */ false,
                 /* Idx: */ 4);
@@ -120,6 +131,11 @@ TEST(Scope, Basics) {
     EXPECT_EQ(SDR->getIdx(), 4);
     EXPECT_FALSE(SDR->isAlias());
     EXPECT_EQ(SDR->getKind(), SignalDesc::Kind::REGISTER);
+
+    TSize += sizeof(std::unique_ptr<SignalDesc>) + SDR->getObjectSize();
+    EXPECT_EQ(T.getObjectSize(), TSize);
+    rootSize += sizeof(std::unique_ptr<SignalDesc>) + SDR->getObjectSize();
+    EXPECT_EQ(Root.getObjectSize(), rootSize);
 
     Root.addSignal("SignalInRoot", SignalDesc::Kind::WIRE, /* alias: */ true,
                    /* Idx: */ 2);
@@ -172,8 +188,9 @@ TEST(Scope, Basics) {
     EXPECT_EQ(T.findSignalIdx("Top", "SignalInT"), searchResult(true, 4));
     EXPECT_EQ(T.findSignalIdx("Top", "SignalInRoot"), searchResult(false, -1));
 
-    // getObjectSize
-    EXPECT_EQ(Root.getObjectSize(), 414);
+    EXPECT_EQ(T.getObjectSize(), TSize);
+    rootSize += sizeof(std::unique_ptr<SignalDesc>) + SDW->getObjectSize();
+    EXPECT_EQ(Root.getObjectSize(), rootSize);
 }
 
 TEST(Scope, Dump) {
