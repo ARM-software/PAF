@@ -24,6 +24,7 @@ endif()
 
 set(PAF_TEST_SOURCES
   ArchInfo.cpp
+  Error.cpp
   Expr.cpp
   ExprParser.cpp
   Fault.cpp
@@ -43,6 +44,7 @@ set(PAF_TEST_SOURCES
   paf-unit-testing.cpp
   sca-apps.cpp
   Scope.cpp
+  SignalDesc.cpp
   VCDWaveFile.cpp
   WaveFile.cpp
   Waveform.cpp

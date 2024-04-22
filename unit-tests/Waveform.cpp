@@ -30,12 +30,14 @@
 
 #include <array>
 #include <memory>
+#include <sstream>
 #include <string>
 #include <vector>
 
 #include "gtest/gtest.h"
 
 using std::array;
+using std::ostringstream;
 using std::pair;
 using std::string;
 using std::vector;
@@ -516,58 +518,6 @@ TEST_F(WaveformF, toFile) {
     }
 }
 
-TEST(Waveform, scopeFilterEmpty) {
-    const Scope scope("random", "blabla", "blabla", Scope::Kind::MODULE);
-    EXPECT_EQ(Visitor::Options().filter(scope), FilterAction::VISIT_ALL);
-}
-
-TEST(Waveform, scopeFilterNotAPrefix) {
-    const Scope scope("rand", "blabla", "blabla", Scope::Kind::MODULE);
-    EXPECT_EQ(Visitor::Options().addScopeFilter("to").filter(scope),
-              FilterAction::SKIP_ALL);
-    EXPECT_EQ(Visitor::Options().addScopeFilter("torototo").filter(scope),
-              FilterAction::SKIP_ALL);
-    EXPECT_EQ(Visitor::Options()
-                  .addScopeFilter("to")
-                  .addScopeFilter("torototo")
-                  .filter(scope),
-              FilterAction::SKIP_ALL);
-    EXPECT_EQ(Visitor::Options()
-                  .addScopeFilter("torototo")
-                  .addScopeFilter("to")
-                  .filter(scope),
-              FilterAction::SKIP_ALL);
-    EXPECT_EQ(
-        Visitor::Options().addScopeFilter("rato").addScopeFilter("rani").filter(
-            scope),
-        FilterAction::SKIP_ALL);
-}
-
-TEST(Waveform, scopeFilterPrefix) {
-    const Scope scope("rand", "blabla", "blabla", Scope::Kind::MODULE);
-    EXPECT_EQ(Visitor::Options().addScopeFilter("ra").filter(scope),
-              FilterAction::VISIT_ALL);
-    EXPECT_EQ(Visitor::Options().addScopeFilter("rand").filter(scope),
-              FilterAction::VISIT_ALL);
-    EXPECT_EQ(Visitor::Options().addScopeFilter("random").filter(scope),
-              FilterAction::ENTER_SCOPE_ONLY);
-    EXPECT_EQ(Visitor::Options()
-                  .addScopeFilter("ra")
-                  .addScopeFilter("torototo")
-                  .filter(scope),
-              FilterAction::VISIT_ALL);
-    EXPECT_EQ(Visitor::Options()
-                  .addScopeFilter("torototo")
-                  .addScopeFilter("rand")
-                  .filter(scope),
-              FilterAction::VISIT_ALL);
-    EXPECT_EQ(Visitor::Options()
-                  .addScopeFilter("torototo")
-                  .addScopeFilter("random")
-                  .filter(scope),
-              FilterAction::ENTER_SCOPE_ONLY);
-}
-
 TEST(Waveform, visitAll) {
 
     for (const auto &file : filesToTest) {
@@ -666,4 +616,12 @@ TEST(Waveform, visitWiresInSpecificScope) {
         W.visit(WV1);
         WV1.finalChecks();
     }
+}
+
+TEST(Waveform, dumpMetadata) {
+    Waveform W("filename", 12, 45, -3);
+    ostringstream ostr;
+    W.dump_metadata(ostr);
+    EXPECT_EQ(ostr.str(), "Input file: filename\nStart time: 12\nEnd time: "
+                          "45\nTimezero: 0\nTimescale: 1 ms\n");
 }

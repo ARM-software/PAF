@@ -297,6 +297,130 @@ inline std::ostream &operator<<(std::ostream &os,
 }
 } // namespace
 
+TEST(Scope, VisitorOptions) {
+    const SignalDesc SDR = SignalDesc::Register("register", false, 1);
+    const SignalDesc SDW = SignalDesc::Wire("wire", false, 2);
+    const SignalDesc SDI = SignalDesc::Integer("integer", false, 3);
+
+    const Visitor::Options defaultOpt = Visitor::Options();
+    EXPECT_FALSE(defaultOpt.skip(SDR));
+    EXPECT_FALSE(defaultOpt.skip(SDW));
+    EXPECT_FALSE(defaultOpt.skip(SDI));
+    EXPECT_FALSE(defaultOpt.isAllSkipped());
+
+    const Visitor::Options skipAllOpt = Visitor::Options(true, true, true);
+    EXPECT_TRUE(skipAllOpt.skip(SDR));
+    EXPECT_TRUE(skipAllOpt.skip(SDW));
+    EXPECT_TRUE(skipAllOpt.skip(SDI));
+    EXPECT_TRUE(skipAllOpt.isAllSkipped());
+
+    const Visitor::Options skipRegsOpt = Visitor::Options(true, false, false);
+    EXPECT_TRUE(skipRegsOpt.skip(SDR));
+    EXPECT_FALSE(skipRegsOpt.skip(SDW));
+    EXPECT_FALSE(skipRegsOpt.skip(SDI));
+    EXPECT_FALSE(skipRegsOpt.isAllSkipped());
+    Visitor::Options skipRegsOpt2 = Visitor::Options().setSkipRegisters(true);
+    EXPECT_TRUE(skipRegsOpt2.skip(SDR));
+    EXPECT_FALSE(skipRegsOpt2.skip(SDW));
+    EXPECT_FALSE(skipRegsOpt2.skip(SDI));
+    EXPECT_FALSE(skipRegsOpt2.isAllSkipped());
+    skipRegsOpt2.setSkipRegisters(false);
+    EXPECT_FALSE(skipRegsOpt2.skip(SDR));
+    EXPECT_FALSE(skipRegsOpt2.skip(SDW));
+    EXPECT_FALSE(skipRegsOpt2.skip(SDI));
+    EXPECT_FALSE(skipRegsOpt2.isAllSkipped());
+
+    const Visitor::Options skipWiresOpt = Visitor::Options(false, true, false);
+    EXPECT_FALSE(skipWiresOpt.skip(SDR));
+    EXPECT_TRUE(skipWiresOpt.skip(SDW));
+    EXPECT_FALSE(skipWiresOpt.skip(SDI));
+    EXPECT_FALSE(skipWiresOpt.isAllSkipped());
+    Visitor::Options skipWiresOpt2 = Visitor::Options().setSkipWires(true);
+    EXPECT_FALSE(skipWiresOpt2.skip(SDR));
+    EXPECT_TRUE(skipWiresOpt2.skip(SDW));
+    EXPECT_FALSE(skipWiresOpt2.skip(SDI));
+    EXPECT_FALSE(skipWiresOpt2.isAllSkipped());
+    skipWiresOpt2.setSkipWires(false);
+    EXPECT_FALSE(skipWiresOpt2.skip(SDR));
+    EXPECT_FALSE(skipWiresOpt2.skip(SDW));
+    EXPECT_FALSE(skipWiresOpt2.skip(SDI));
+    EXPECT_FALSE(skipWiresOpt2.isAllSkipped());
+
+    const Visitor::Options skipIntsOpt = Visitor::Options(false, false, true);
+    EXPECT_FALSE(skipIntsOpt.skip(SDR));
+    EXPECT_FALSE(skipIntsOpt.skip(SDW));
+    EXPECT_TRUE(skipIntsOpt.skip(SDI));
+    EXPECT_FALSE(skipIntsOpt.isAllSkipped());
+    Visitor::Options skipIntsOpt2 = Visitor::Options().setSkipIntegers(true);
+    EXPECT_FALSE(skipIntsOpt2.skip(SDR));
+    EXPECT_FALSE(skipIntsOpt2.skip(SDW));
+    EXPECT_TRUE(skipIntsOpt2.skip(SDI));
+    EXPECT_FALSE(skipIntsOpt2.isAllSkipped());
+    skipIntsOpt2.setSkipIntegers(false);
+    EXPECT_FALSE(skipIntsOpt2.skip(SDR));
+    EXPECT_FALSE(skipIntsOpt2.skip(SDW));
+    EXPECT_FALSE(skipIntsOpt2.skip(SDI));
+    EXPECT_FALSE(skipIntsOpt2.isAllSkipped());
+
+    EXPECT_TRUE(Visitor::Options()
+                    .setSkipIntegers(true)
+                    .setSkipWires(true)
+                    .setSkipRegisters(true)
+                    .isAllSkipped());
+}
+
+TEST(Scope, filterEmpty) {
+    const Scope scope("random", "blabla", "blabla", Scope::Kind::MODULE);
+    EXPECT_EQ(Visitor::Options().filter(scope), FilterAction::VISIT_ALL);
+}
+
+TEST(Scope, filterNotAPrefix) {
+    const Scope scope("rand", "blabla", "blabla", Scope::Kind::MODULE);
+    EXPECT_EQ(Visitor::Options().addScopeFilter("to").filter(scope),
+              FilterAction::SKIP_ALL);
+    EXPECT_EQ(Visitor::Options().addScopeFilter("torototo").filter(scope),
+              FilterAction::SKIP_ALL);
+    EXPECT_EQ(Visitor::Options()
+                  .addScopeFilter("to")
+                  .addScopeFilter("torototo")
+                  .filter(scope),
+              FilterAction::SKIP_ALL);
+    EXPECT_EQ(Visitor::Options()
+                  .addScopeFilter("torototo")
+                  .addScopeFilter("to")
+                  .filter(scope),
+              FilterAction::SKIP_ALL);
+    EXPECT_EQ(
+        Visitor::Options().addScopeFilter("rato").addScopeFilter("rani").filter(
+            scope),
+        FilterAction::SKIP_ALL);
+}
+
+TEST(Scope, filterPrefix) {
+    const Scope scope("rand", "blabla", "blabla", Scope::Kind::MODULE);
+    EXPECT_EQ(Visitor::Options().addScopeFilter("ra").filter(scope),
+              FilterAction::VISIT_ALL);
+    EXPECT_EQ(Visitor::Options().addScopeFilter("rand").filter(scope),
+              FilterAction::VISIT_ALL);
+    EXPECT_EQ(Visitor::Options().addScopeFilter("random").filter(scope),
+              FilterAction::ENTER_SCOPE_ONLY);
+    EXPECT_EQ(Visitor::Options()
+                  .addScopeFilter("ra")
+                  .addScopeFilter("torototo")
+                  .filter(scope),
+              FilterAction::VISIT_ALL);
+    EXPECT_EQ(Visitor::Options()
+                  .addScopeFilter("torototo")
+                  .addScopeFilter("rand")
+                  .filter(scope),
+              FilterAction::VISIT_ALL);
+    EXPECT_EQ(Visitor::Options()
+                  .addScopeFilter("torototo")
+                  .addScopeFilter("random")
+                  .filter(scope),
+              FilterAction::ENTER_SCOPE_ONLY);
+}
+
 TEST(Scope, Visit) {
     Scope Root;
     Root.addSignal("SignalInRoot", SignalDesc::Kind::REGISTER, false, 2);

@@ -35,7 +35,8 @@ namespace PAF {
 namespace WAN {
 
 void Waveform::SignalDesc::dump(std::ostream &os) const {
-    os << "Kind: " << kind << " Alias: " << alias << '\n';
+    os << "Name: " << name << ", Kind: " << kind;
+    os << ", Alias: " << alias << ", Idx: " << idx << '\n';
 }
 
 Waveform::Visitor::FilterAction

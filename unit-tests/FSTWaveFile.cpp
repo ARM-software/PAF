@@ -63,3 +63,9 @@ TEST(FSTWaveFile, getAllChangesTimes) {
     for (size_t i = 0; i < times.size(); i++)
         EXPECT_EQ(times[i], i * 5000);
 }
+
+TEST(FSTWaveFile, emptyFSTHierarchyVisitor) {
+    FSTHierarchyVisitorBase V;
+    FSTWaveFile F(FSTInput, /* write: */ false);
+    F.visitHierarchy(&V);
+}
