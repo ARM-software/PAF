@@ -18,14 +18,11 @@
  * This file is part of PAF, the Physical Attack Framework.
  */
 
-#include <cassert>
-#include <cmath>
 #include <cstdlib>
 #include <iostream>
 #include <memory>
 #include <set>
 #include <string>
-#include <utility>
 #include <vector>
 
 #include "libtarmac/argparse.hh"

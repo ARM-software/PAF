@@ -23,7 +23,6 @@
 #include "libtarmac/reporter.hh"
 
 #include <cctype>
-#include <fstream>
 #include <string>
 #include <vector>
 

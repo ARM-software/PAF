@@ -24,7 +24,6 @@
 #include "paf-unit-testing.h"
 
 #include <array>
-#include <memory>
 #include <vector>
 
 #include "gtest/gtest.h"

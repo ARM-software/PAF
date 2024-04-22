@@ -21,7 +21,6 @@
 #include "faulter.h"
 
 #include "libtarmac/argparse.hh"
-#include "libtarmac/index.hh"
 #include "libtarmac/reporter.hh"
 #include "libtarmac/tarmacutil.hh"
 

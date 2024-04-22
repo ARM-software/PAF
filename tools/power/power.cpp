@@ -24,7 +24,6 @@
 #include "PAF/PAF.h"
 #include "PAF/SCA/Dumper.h"
 #include "PAF/SCA/Noise.h"
-#include "PAF/SCA/SCA.h"
 #include "PAF/utils/Misc.h"
 
 #include "libtarmac/argparse.hh"
@@ -35,7 +34,6 @@
 #include <fstream>
 #include <iostream>
 #include <memory>
-#include <random>
 #include <string>
 #include <utility>
 #include <vector>

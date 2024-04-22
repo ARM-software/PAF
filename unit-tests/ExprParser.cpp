@@ -21,8 +21,6 @@
 #include "PAF/SCA/ExprParser.h"
 #include "PAF/SCA/NPArray.h"
 
-#include "libtarmac/reporter.hh"
-
 #include "gtest/gtest.h"
 
 #include <cstdlib>

@@ -24,12 +24,8 @@
 
 #include "libtarmac/argparse.hh"
 
-#include <cassert>
-#include <fstream>
-#include <limits>
 #include <memory>
 #include <string>
-#include <vector>
 
 namespace PAF {
 namespace SCA {

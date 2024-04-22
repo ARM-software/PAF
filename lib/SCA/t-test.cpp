@@ -20,13 +20,11 @@
 
 #include "PAF/SCA/NPOperators.h"
 #include "PAF/SCA/SCA.h"
-#include "PAF/SCA/utils.h"
 
 #include <array>
 #include <cassert>
 #include <cmath>
 #include <iostream>
-#include <memory>
 
 using std::array;
 using std::function;

@@ -22,13 +22,10 @@
 
 #include "libtarmac/parser.hh"
 #include "libtarmac/reporter.hh"
-#include "libtarmac/misc.hh"
 
 #include "gtest/gtest.h"
 
 #include <array>
-#include <cmath>
-#include <iostream>
 #include <sstream>
 #include <string>
 #include <vector>

@@ -23,7 +23,6 @@
 #include "PAF/PAF.h"
 #include "PAF/SCA/Dumper.h"
 #include "PAF/SCA/NPArray.h"
-#include "PAF/SCA/SCA.h"
 
 #include "libtarmac/parser.hh"
 #include "paf-unit-testing.h"
@@ -31,7 +30,6 @@
 #include "gtest/gtest.h"
 
 #include <cmath>
-#include <fstream>
 #include <initializer_list>
 #include <iostream>
 #include <map>

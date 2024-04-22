@@ -30,7 +30,6 @@
 #include <iterator>
 #include <ostream>
 #include <string>
-#include <type_traits>
 #include <vector>
 
 namespace PAF {

@@ -24,12 +24,10 @@
 
 #include <algorithm>
 #include <cassert>
-#include <cmath>
 #include <cstdint>
 #include <cstdlib>
 #include <cstring>
 #include <fstream>
-#include <initializer_list>
 #include <memory>
 #include <ostream>
 #include <string>

@@ -21,11 +21,9 @@
 #include "PAF/WAN/VCDWaveFile.h"
 #include "PAF/Error.h"
 #include "PAF/WAN/Signal.h"
-#include "PAF/WAN/WaveFile.h"
 #include "PAF/WAN/Waveform.h"
 
 #include <algorithm>
-#include <array>
 #include <cmath>
 #include <cstddef>
 #include <cstdio>

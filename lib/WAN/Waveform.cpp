@@ -19,14 +19,11 @@
  */
 
 #include "PAF/WAN/Waveform.h"
-#include "PAF/Error.h"
 #include "PAF/WAN/Signal.h"
-#include "PAF/WAN/WaveFile.h"
 
 #include <array>
 #include <cassert>
 #include <cstring>
-#include <map>
 #include <string>
 
 using std::string;

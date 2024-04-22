@@ -18,7 +18,6 @@
  * This file is part of PAF, the Physical Attack Framework.
  */
 
-#include "PAF/WAN/Signal.h"
 #include "PAF/WAN/Waveform.h"
 
 #include <sstream>

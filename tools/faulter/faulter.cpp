@@ -31,7 +31,6 @@
 #include "libtarmac/parser.hh"
 #include "libtarmac/reporter.hh"
 
-#include <algorithm>
 #include <cassert>
 #include <cstdlib>
 #include <iostream>

@@ -20,8 +20,6 @@
 
 #include "PAF/FI/Oracle.h"
 
-#include "libtarmac/reporter.hh"
-
 #include "gtest/gtest.h"
 
 #include <sstream>

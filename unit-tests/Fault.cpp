@@ -21,11 +21,8 @@
 #include "PAF/FI/Fault.h"
 #include "PAF/FI/Oracle.h"
 
-#include "libtarmac/reporter.hh"
-
 #include "gtest/gtest.h"
 
-#include <memory>
 #include <sstream>
 #include <string>
 

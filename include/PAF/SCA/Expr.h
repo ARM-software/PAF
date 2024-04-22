@@ -25,7 +25,6 @@
 #include "libtarmac/reporter.hh"
 
 #include <cassert>
-#include <climits>
 #include <cstdint>
 #include <cstdlib>
 #include <memory>
