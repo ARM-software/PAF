@@ -245,11 +245,11 @@ struct MyVisitor : public Scope::Visitor {
         SignalDesc::Kind kind;
         SignalIdxTy idx;
         bool alias;
-        bool visited;
+        bool visited=false;
         Expectation(const string &fullScopeName, const string &signalName,
                     SignalDesc::Kind kind, SignalIdxTy idx, bool alias)
             : fullScopeName(fullScopeName), signalName(signalName), kind(kind),
-              idx(idx), alias(alias), visited(false) {}
+              idx(idx), alias(alias) {}
         bool operator==(const Expectation &RHS) const {
             return fullScopeName == RHS.fullScopeName &&
                    signalName == RHS.signalName && kind == RHS.kind &&
@@ -287,14 +287,6 @@ struct MyVisitor : public Scope::Visitor {
     unsigned i = 0;
 };
 
-inline std::ostream &operator<<(std::ostream &os,
-                                const MyVisitor::Expectation &V) {
-    os << V.fullScopeName;
-    os << ' ' << V.signalName;
-    os << ' ' << V.idx;
-    os << ' ' << V.visited;
-    return os;
-}
 } // namespace
 
 TEST(Scope, VisitorOptions) {

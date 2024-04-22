@@ -38,8 +38,8 @@ class ConstantNoiseSource : public NoiseSource {
 class NullNoise : public ConstantNoiseSource {
   public:
     NullNoise() : ConstantNoiseSource(0.0) {}
-    virtual ~NullNoise() {}
-    virtual double get() override { return 0.0; }
+    ~NullNoise() override {}
+    double get() override { return 0.0; }
 };
 
 class RandomNoiseSource : public NoiseSource {

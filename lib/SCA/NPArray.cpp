@@ -22,9 +22,11 @@
 #include "PAF/SCA/LWParser.h"
 
 #include <algorithm>
+#include <array>
 #include <cstdint>
 #include <memory>
 
+using std::array;
 using std::ifstream;
 using std::ofstream;
 using std::string;
@@ -152,7 +154,7 @@ char native_endianness() {
     return w.c[0] == 1 ? '>' : '<';
 }
 
-const char NPY_MAGIC[] = {'\x93', 'N', 'U', 'M', 'P', 'Y'};
+const array<char,6> NPY_MAGIC = {'\x93', 'N', 'U', 'M', 'P', 'Y'};
 
 /// Get the shape description for saving into a numpy file.
 string shape(size_t rows, size_t cols) {
@@ -200,9 +202,9 @@ bool NPArrayBase::get_information(ifstream &ifs, unsigned &major,
 
     ifs.seekg(0, ifs.beg);
 
-    char mbuf[sizeof(NPY_MAGIC)];
-    ifs.read(mbuf, sizeof(NPY_MAGIC));
-    for (size_t i = 0; i < sizeof(NPY_MAGIC); i++)
+    array<char, NPY_MAGIC.size()> mbuf;
+    ifs.read(mbuf.data(), NPY_MAGIC.size());
+    for (size_t i = 0; i < NPY_MAGIC.size(); i++)
         if (mbuf[i] != NPY_MAGIC[i]) {
             if (errstr)
                 *errstr = "wrong magic";
@@ -334,7 +336,7 @@ bool NPArrayBase::save(ofstream &os, const string &descr) const {
         return false;
 
     // Write magic number.
-    os.write(NPY_MAGIC, sizeof(NPY_MAGIC));
+    os.write(NPY_MAGIC.data(), NPY_MAGIC.size());
 
     const char NPY_VERSION[] = {1, 0};
     os.write(NPY_VERSION, sizeof(NPY_VERSION));

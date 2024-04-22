@@ -149,7 +149,7 @@ enum HammingTy { HAMMING_WEIGHT, HAMMING_DISTANCE };
 struct HammingVisitor : public Waveform::Visitor {
 
     HammingVisitor(const Waveform::Visitor::Options &options)
-        : Waveform::Visitor(nullptr, options), Power() {}
+        : Waveform::Visitor(nullptr, options), PowerTmp(), Power() {}
 
     HammingVisitor &setWaveform(const Waveform *wf, const RunInfo *ri) {
         W = wf;
@@ -272,7 +272,7 @@ struct HammingVisitor : public Waveform::Visitor {
         }
     }
 
-    const RunInfo *RI;
+    const RunInfo *RI = nullptr;
     map<TimeTy, double> PowerTmp;
     map<TimeTy, vector<double>> Power;
 };

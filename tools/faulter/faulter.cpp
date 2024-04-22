@@ -118,7 +118,6 @@ class SuccessorCollector {
         Addr addr;
         Point() : time(), addr() {}
         Point(Time t, Addr a) : time(t), addr(a) {}
-        Point(const Point &p) : time(p.time), addr(p.addr) {}
         Point(const InstructionEvent &ev) : time(ev.time), addr(ev.pc) {}
     };
 

@@ -28,6 +28,7 @@
 #include <fstream>
 #include <iostream>
 #include <string>
+#include <vector>
 
 using namespace std;
 
@@ -41,16 +42,16 @@ static string accessFstHeader(fstream &fst, const std::string &fileName,
 
     // Capture the current string value.
     fst.seekg(offset, ios_base::beg);
-    char buf[size + 1];
-    fst.get(buf, size);
-    buf[size] = 0;
+    vector<char> buf(size+1);
+    fst.get(buf.data(), size);
+    buf.back() = 0;
 
     // Zap it.
     fst.seekg(offset, ios_base::beg);
     fst.write(ZapMessage.c_str(), ZapMessage.size());
 
     // Return the captured value.
-    return string(buf);
+    return string(buf.data());
 }
 
 int main(int argc, char *argv[]) {
@@ -62,15 +63,15 @@ int main(int argc, char *argv[]) {
         if (!fst)
             die("Can not open '", argv[fn], "'");
 
-#define SIM_VERSION_OFFSET 74
-#define SIM_VERSION_SIZE 128
+        constexpr size_t SIM_VERSION_OFFSET = 74;
+        constexpr size_t SIM_VERSION_SIZE = 128;
         cout << "Zapping SimVersion='";
         cout << accessFstHeader(fst, argv[fn], SIM_VERSION_OFFSET,
                                 SIM_VERSION_SIZE);
         cout << "' in '" << argv[fn] << "'\n";
 
-#define TIMESTAMP_OFFSET 202
-#define TIMESTAMP_SIZE 119
+        constexpr size_t TIMESTAMP_OFFSET = 202;
+        constexpr size_t TIMESTAMP_SIZE = 119;
         cout << "Zapping TimeStamp='";
         cout << accessFstHeader(fst, argv[fn], TIMESTAMP_OFFSET,
                                 TIMESTAMP_SIZE);
