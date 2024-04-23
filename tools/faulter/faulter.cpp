@@ -324,7 +324,7 @@ class CorruptRegDefPlanner : public FaulterInjectionPlanner {
         instCnt++;
         Addr BkptAddr = successors[instCnt].addr;
         bool faultAdded = false;
-        for (const auto &Reg : I.regaccess) {
+        for (const auto &Reg : I.regAccess) {
             if (Reg.access == PAF::RegisterAccess::Type::WRITE) {
                 faultAdded = true;
                 CorruptRegDef *theFault = new CorruptRegDef(

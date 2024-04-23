@@ -531,7 +531,7 @@ class TestOracle : public PowerTrace::OracleBase {
             if (i != 0)
                 assert(Inst[i].time > t && "Time must be strictly monotonic");
             t = Inst[i].time;
-            for (const auto &RA : Inst[i].regaccess)
+            for (const auto &RA : Inst[i].regAccess)
                 if (RA.access == PAF::RegisterAccess::Type::WRITE)
                     if (registers.count(RA.name) == 0)
                         registers[RA.name] = registers.size();
@@ -547,7 +547,7 @@ class TestOracle : public PowerTrace::OracleBase {
                 regbank[Inst[i].time] = vector<uint64_t>(nr, defaultValue);
 
             // Add register updates to the snapshot
-            for (const auto &RA : Inst[i].regaccess) {
+            for (const auto &RA : Inst[i].regAccess) {
                 if (RA.access == PAF::RegisterAccess::Type::WRITE) {
                     assert(registers.count(RA.name) != 0 &&
                            "Unknown register name");
@@ -1116,7 +1116,7 @@ TEST(PowerTrace, HammingWeightWithConfig) {
     EXPECT_TRUE(TRBD.check(0, 3, {5, 0x21000000, 5, 3, 139108}));
     EXPECT_EQ(TMAD.instrWithAccesses(), 2);
     EXPECT_EQ(TMAD.lastAccessesSize(), 2);
-    EXPECT_TRUE(TMAD.check(Insts[3].memaccess));
+    EXPECT_TRUE(TMAD.check(Insts[3].memAccess));
     EXPECT_EQ(TID.numInstructions(), 4);
 
     TPD.reset();

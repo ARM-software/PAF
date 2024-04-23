@@ -74,10 +74,10 @@ class AttributeChecker : public MTAnalyzer {
                 instructions += 1;
                 const InstrInfo II = cpu.getInstrInfo(I);
                 // Check attributes here.
-                if (!I.memaccess.empty()) {
+                if (!I.memAccess.empty()) {
                     bool hasReadAccess = false;
                     bool hasWriteAccess = false;
-                    for (const auto &ma : I.memaccess) {
+                    for (const auto &ma : I.memAccess) {
                         if (ma.access == PAF::Access::Type::READ)
                             hasReadAccess = true;
                         if (ma.access == PAF::Access::Type::WRITE)

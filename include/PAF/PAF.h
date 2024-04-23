@@ -265,25 +265,25 @@ struct RegisterAccess : public Access {
 /// The ReferenceInstruction class models an execution executed in the Tarmac
 /// trace.
 struct ReferenceInstruction {
+    /// This instruction's disassembly.
+    std::string disassembly;
+    /// Memory accesses performed by this instruction.
+    std::vector<MemoryAccess> memAccess;
+    /// Register accesses performed by this instruction.
+    std::vector<RegisterAccess> regAccess;
     /// The time at which the instruction was executed.
     Time time;
-    /// True iff this instruction was actually executed.
-    InstructionEffect effect;
     /// The program counter for this instruction (i.e.  this instruction's
     /// address in memory)
     Addr pc;
+    /// True iff this instruction was actually executed.
+    InstructionEffect effect;
     /// This instruction's instruction set.
     ISet iset;
     /// The width of this instruction.
     unsigned width;
     /// This instruction's encoding.
     uint32_t instruction;
-    /// This instruction's disassembly.
-    std::string disassembly;
-    /// Memory accesses performed by this instruction.
-    std::vector<MemoryAccess> memaccess;
-    /// Register accesses performed by this instruction.
-    std::vector<RegisterAccess> regaccess;
 
     /// Empty constructor.
     ReferenceInstruction() {}
@@ -291,11 +291,11 @@ struct ReferenceInstruction {
     ReferenceInstruction(const ReferenceInstruction &) = default;
     /// Move constructor.
     ReferenceInstruction(ReferenceInstruction &&Other)
-        : time(Other.time), effect(Other.effect), pc(Other.pc),
-          iset(Other.iset), width(Other.width), instruction(Other.instruction),
-          disassembly(trimSpacesAndComment(Other.disassembly)),
-          memaccess(std::move(Other.memaccess)),
-          regaccess(std::move(Other.regaccess)) {}
+        : disassembly(trimSpacesAndComment(Other.disassembly)),
+          memAccess(std::move(Other.memAccess)),
+          regAccess(std::move(Other.regAccess)), time(Other.time), pc(Other.pc),
+          effect(Other.effect), iset(Other.iset), width(Other.width),
+          instruction(Other.instruction) {}
     /// Given a time, a program counter, an instruction set, an instruction
     /// width and opcode, and an execution status and a disassembly string,
     /// construct a ReferenceInstruction.
@@ -304,10 +304,9 @@ struct ReferenceInstruction {
                          const std::string &disassembly,
                          const std::vector<MemoryAccess> &memaccess,
                          const std::vector<RegisterAccess> &regaccess)
-        : time(time), effect(effect), pc(pc), iset(iset), width(width),
-          instruction(instruction),
-          disassembly(trimSpacesAndComment(disassembly)), memaccess(memaccess),
-          regaccess(regaccess) {}
+        : disassembly(trimSpacesAndComment(disassembly)), memAccess(memaccess),
+          regAccess(regaccess), time(time), pc(pc), effect(effect), iset(iset),
+          width(width), instruction(instruction) {}
     /// Given a time, a program counter, an instruction set, an instruction
     /// width and opcode, and an execution status and a C-style disassembly
     /// string, construct a ReferenceInstruction.
@@ -316,31 +315,29 @@ struct ReferenceInstruction {
                          const char *disassembly,
                          const std::vector<MemoryAccess> &memaccess,
                          const std::vector<RegisterAccess> &regaccess)
-        : time(time), effect(effect), pc(pc), iset(iset), width(width),
-          instruction(instruction),
-          disassembly(trimSpacesAndComment(disassembly)), memaccess(memaccess),
-          regaccess(regaccess) {}
+        : disassembly(trimSpacesAndComment(disassembly)), memAccess(memaccess),
+          regAccess(regaccess), time(time), pc(pc), effect(effect), iset(iset),
+          width(width), instruction(instruction) {}
 
     /// Constructor for a Tarmac parser.
     ReferenceInstruction(const InstructionEvent &ev)
-        : time(ev.time), effect(ev.effect), pc(ev.pc), iset(ev.iset),
-          width(ev.width), instruction(ev.instruction),
-          disassembly(trimSpacesAndComment(ev.disassembly)), memaccess(),
-          regaccess() {}
+        : disassembly(trimSpacesAndComment(ev.disassembly)), memAccess(),
+          regAccess(), time(ev.time), pc(ev.pc), effect(ev.effect),
+          iset(ev.iset), width(ev.width), instruction(ev.instruction) {}
 
     /// Copy assignment operator.
     ReferenceInstruction &operator=(const ReferenceInstruction &) = default;
     /// Move assignment operator.
     ReferenceInstruction &operator=(ReferenceInstruction &&Other) {
+        disassembly = trimSpacesAndComment(Other.disassembly);
+        memAccess = std::move(Other.memAccess);
+        regAccess = std::move(Other.regAccess);
         time = Other.time;
-        effect = Other.effect;
         pc = Other.pc;
+        effect = Other.effect;
         iset = Other.iset;
         width = Other.width;
         instruction = Other.instruction;
-        disassembly = trimSpacesAndComment(Other.disassembly);
-        memaccess = std::move(Other.memaccess);
-        regaccess = std::move(Other.regaccess);
         return *this;
     }
 
@@ -361,17 +358,17 @@ struct ReferenceInstruction {
 
     /// Add a MemoryAccess to this instruction.
     ReferenceInstruction &add(const MemoryAccess &M) {
-        memaccess.insert(
-            std::upper_bound(memaccess.begin(), memaccess.end(), M), M);
+        memAccess.insert(
+            std::upper_bound(memAccess.begin(), memAccess.end(), M), M);
         return *this;
     }
     /// Add a RegisterAccess to this instruction.
     ReferenceInstruction &add(const RegisterAccess &R) {
         // Some registers are aliasing in the tarmac trace, like MSP / R13_main,
         // so don't duplicate registers in our list.
-        if (find(regaccess.begin(), regaccess.end(), R) == regaccess.end())
-            regaccess.insert(
-                std::upper_bound(regaccess.begin(), regaccess.end(), R), R);
+        if (find(regAccess.begin(), regAccess.end(), R) == regAccess.end())
+            regAccess.insert(
+                std::upper_bound(regAccess.begin(), regAccess.end(), R), R);
         return *this;
     }
 

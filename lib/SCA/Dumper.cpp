@@ -112,9 +112,9 @@ void YAMLInstrDumper::dumpImpl(const ReferenceInstruction &I,
     *this << ", disassembly: \"" << I.disassembly << '"';
     if (dumpMemAccess) {
         *this << ", loads: [";
-        dumpMemAccessYAML(*this, I.memaccess, Access::Type::READ);
+        dumpMemAccessYAML(*this, I.memAccess, Access::Type::READ);
         *this << "], stores: [";
-        dumpMemAccessYAML(*this, I.memaccess, Access::Type::WRITE);
+        dumpMemAccessYAML(*this, I.memAccess, Access::Type::WRITE);
         *this << ']';
     }
     if (regs && dumpRegBank) {

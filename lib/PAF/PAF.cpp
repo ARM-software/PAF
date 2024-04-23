@@ -335,7 +335,7 @@ void ReferenceInstruction::dump(ostream &OS) const {
     OS << " Instruction:0x" << std::hex << instruction << std::dec;
     OS << ' ' << disassembly;
 
-    for (const MemoryAccess &M : memaccess) {
+    for (const MemoryAccess &M : memAccess) {
         OS << ' ';
         M.dump(OS);
     }

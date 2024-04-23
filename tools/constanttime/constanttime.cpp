@@ -51,7 +51,7 @@ class ReferenceTrace : public vector<PAF::ReferenceInstruction> {
             os << '\t';
             os << I.disassembly;
             os << '\t';
-            for (const PAF::MemoryAccess &M : I.memaccess) {
+            for (const PAF::MemoryAccess &M : I.memAccess) {
                 os << ' ';
                 M.dump(os);
             }
@@ -104,10 +104,10 @@ class TraceComparator {
                 if (I.effect != O.effect)
                     return false;
             if (!ignoreMemoryAccessDifferences) {
-                if (I.memaccess.size() != O.memaccess.size())
+                if (I.memAccess.size() != O.memAccess.size())
                     return false;
-                for (unsigned i = 0; i < I.memaccess.size(); i++)
-                    if (I.memaccess[i] != O.memaccess[i])
+                for (unsigned i = 0; i < I.memAccess.size(); i++)
+                    if (I.memAccess[i] != O.memAccess[i])
                         return false;
             }
             return true;

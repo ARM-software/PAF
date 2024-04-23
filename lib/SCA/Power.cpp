@@ -166,7 +166,7 @@ class HammingWeightPM : public PowerModelBase {
 
         memory.clear();
         // Memory access related power consumption estimation.
-        for (const PAF::MemoryAccess &MA : I.memaccess)
+        for (const PAF::MemoryAccess &MA : I.memAccess)
             memory.emplace_back(hwMemAddr(MA.addr), hwMemData(MA.value));
 
         psr = 0.0;
@@ -174,7 +174,7 @@ class HammingWeightPM : public PowerModelBase {
         outputRegs.clear();
         // Register accesses estimated power consumption
         if (config.withInstructionsInputs() || config.withInstructionsOutputs())
-            for (const PAF::RegisterAccess &RA : I.regaccess) {
+            for (const PAF::RegisterAccess &RA : I.regAccess) {
                 switch (RA.access) {
                 // Output registers.
                 case PAF::RegisterAccess::Type::WRITE:
@@ -272,13 +272,13 @@ class HammingDistancePM : public PowerModelBase {
 
         // Memory access related power consumption estimation.
         memory.clear();
-        for (unsigned i = 0; i < I.memaccess.size(); i++) {
+        for (unsigned i = 0; i < I.memAccess.size(); i++) {
             double AddrPwr = 0.0;
             double DataPwr = 0.0;
             if ((config.withMemAddress() || config.withMemData()) &&
                 (config.withMemoryAccessTransitions() ||
                  config.withMemoryUpdateTransitions())) {
-                const PAF::MemoryAccess &MA = I.memaccess[i];
+                const PAF::MemoryAccess &MA = I.memAccess[i];
                 switch (MA.access) {
                 case PAF::MemoryAccess::Type::READ:
                     // Address bus transitions modelling.
@@ -336,7 +336,7 @@ class HammingDistancePM : public PowerModelBase {
         psr = 0.0;
         outputRegs.clear();
         // Register accesses estimated power consumption
-        for (const PAF::RegisterAccess &RA : I.regaccess) {
+        for (const PAF::RegisterAccess &RA : I.regAccess) {
             switch (RA.access) {
             // Output registers.
             case PAF::RegisterAccess::Type::WRITE:
@@ -447,7 +447,7 @@ void CSVPowerDumper::dump(double total, double pc, double instr, double oreg,
 
         const char *space = "";
         *this << sep << '"';
-        for (const PAF::MemoryAccess &M : I->memaccess) {
+        for (const PAF::MemoryAccess &M : I->memAccess) {
             *this << space;
             space = " ";
             M.dump(*os);
@@ -456,7 +456,7 @@ void CSVPowerDumper::dump(double total, double pc, double instr, double oreg,
 
         space = "";
         *this << sep << '"';
-        for (const PAF::RegisterAccess &R : I->regaccess) {
+        for (const PAF::RegisterAccess &R : I->regAccess) {
             *this << space;
             space = " ";
             R.dump(*os);
@@ -504,7 +504,7 @@ void PowerTrace::analyze(const OracleBase &Oracle) {
         if (regBankDumper.enabled())
             regBankDumper.dump(regBank);
         if (memAccessDumper.enabled())
-            memAccessDumper.dump(I.pc, I.memaccess);
+            memAccessDumper.dump(I.pc, I.memAccess);
         if (instrDumper.enabled())
             instrDumper.dump(I, regBank);
 
@@ -570,14 +570,14 @@ PowerTrace PowerAnalyzer::getPowerTrace(
                 if ((I.instruction >> 25) == 0x74 &&
                     ((I.instruction >> 22) & 0x01) == 1 &&
                     ((index && !wback) || wback)) {
-                    if (I.memaccess.size() == 1) {
-                        MemoryAccess MA = I.memaccess[0];
+                    if (I.memAccess.size() == 1) {
+                        MemoryAccess MA = I.memAccess[0];
                         assert(MA.size == 8 && "Expecting an 8-byte memory "
                                                "access for LDRD or STRD");
-                        I.memaccess.clear();
-                        I.memaccess.emplace_back(
+                        I.memAccess.clear();
+                        I.memAccess.emplace_back(
                             4, MA.addr, MA.value & 0x0FFFFFFFF, MA.access);
-                        I.memaccess.emplace_back(
+                        I.memAccess.emplace_back(
                             4, MA.addr + 4, MA.value >> (8 * 4) & 0x0FFFFFFFF,
                             MA.access);
                     }

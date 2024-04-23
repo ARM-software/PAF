@@ -157,7 +157,7 @@ TEST(RegAcces, parsing) {
         }
 
         void operator()(const ReferenceInstruction &I) {
-            regAccesses = I.regaccess;
+            regAccesses = I.regAccess;
         }
 
       private:
@@ -293,7 +293,7 @@ TEST(MemAccess, parsing) {
         }
 
         void operator()(const ReferenceInstruction &I) {
-            memAccesses = I.memaccess;
+            memAccesses = I.memAccess;
         }
 
       private:
@@ -369,15 +369,15 @@ TEST(ReferenceInstruction, base) {
     EXPECT_EQ(i1.width, 16);
     EXPECT_EQ(i1.instruction, 0x02100);
     EXPECT_EQ(i1.disassembly, "MOVS r1,#0");
-    EXPECT_TRUE(i1.memaccess.empty());
-    EXPECT_FALSE(i1.regaccess.empty());
-    EXPECT_EQ(i1.regaccess.size(), 2);
-    EXPECT_EQ(i1.regaccess[0].name, "r1");
-    EXPECT_EQ(i1.regaccess[0].value, 0);
-    EXPECT_EQ(i1.regaccess[0].access, RegisterAccess::Type::WRITE);
-    EXPECT_EQ(i1.regaccess[1].name, "cpsr");
-    EXPECT_EQ(i1.regaccess[1].value, 0x61000000);
-    EXPECT_EQ(i1.regaccess[1].access, RegisterAccess::Type::WRITE);
+    EXPECT_TRUE(i1.memAccess.empty());
+    EXPECT_FALSE(i1.regAccess.empty());
+    EXPECT_EQ(i1.regAccess.size(), 2);
+    EXPECT_EQ(i1.regAccess[0].name, "r1");
+    EXPECT_EQ(i1.regAccess[0].value, 0);
+    EXPECT_EQ(i1.regAccess[0].access, RegisterAccess::Type::WRITE);
+    EXPECT_EQ(i1.regAccess[1].name, "cpsr");
+    EXPECT_EQ(i1.regAccess[1].value, 0x61000000);
+    EXPECT_EQ(i1.regAccess[1].access, RegisterAccess::Type::WRITE);
     EXPECT_TRUE(i1 == i1);
     EXPECT_FALSE(i1 != i1);
 
@@ -394,15 +394,15 @@ TEST(ReferenceInstruction, base) {
     EXPECT_EQ(i2.width, 32);
     EXPECT_EQ(i2.instruction, 0xe9425504);
     EXPECT_EQ(i2.disassembly, "STRD r5,r5,[r2,#-0x10]");
-    EXPECT_TRUE(i2.regaccess.empty());
-    EXPECT_FALSE(i2.memaccess.empty());
-    EXPECT_EQ(i2.memaccess.size(), 2);
-    EXPECT_EQ(i2.memaccess[0].addr, 0x021afc);
-    EXPECT_EQ(i2.memaccess[0].value, 0);
-    EXPECT_EQ(i2.memaccess[0].access, MemoryAccess::Type::WRITE);
-    EXPECT_EQ(i2.memaccess[1].addr, 0x021b00);
-    EXPECT_EQ(i2.memaccess[1].value, 0);
-    EXPECT_EQ(i2.memaccess[1].access, MemoryAccess::Type::WRITE);
+    EXPECT_TRUE(i2.regAccess.empty());
+    EXPECT_FALSE(i2.memAccess.empty());
+    EXPECT_EQ(i2.memAccess.size(), 2);
+    EXPECT_EQ(i2.memAccess[0].addr, 0x021afc);
+    EXPECT_EQ(i2.memAccess[0].value, 0);
+    EXPECT_EQ(i2.memAccess[0].access, MemoryAccess::Type::WRITE);
+    EXPECT_EQ(i2.memAccess[1].addr, 0x021b00);
+    EXPECT_EQ(i2.memAccess[1].value, 0);
+    EXPECT_EQ(i2.memAccess[1].access, MemoryAccess::Type::WRITE);
     EXPECT_TRUE(i2 == i2);
     EXPECT_FALSE(i2 != i2);
 
@@ -473,15 +473,15 @@ TEST(ReferenceInstruction, parsing) {
     EXPECT_EQ(i1.width, 16);
     EXPECT_EQ(i1.instruction, 0x02100);
     EXPECT_EQ(i1.disassembly, "MOVS r1, #0");
-    EXPECT_TRUE(i1.memaccess.empty());
-    EXPECT_FALSE(i1.regaccess.empty());
-    EXPECT_EQ(i1.regaccess.size(), 2);
-    EXPECT_EQ(i1.regaccess[1].name, "r1");
-    EXPECT_EQ(i1.regaccess[1].value, 0);
-    EXPECT_EQ(i1.regaccess[1].access, RegisterAccess::Type::WRITE);
-    EXPECT_EQ(i1.regaccess[0].name, "psr");
-    EXPECT_EQ(i1.regaccess[0].value, 0x61000000);
-    EXPECT_EQ(i1.regaccess[0].access, RegisterAccess::Type::WRITE);
+    EXPECT_TRUE(i1.memAccess.empty());
+    EXPECT_FALSE(i1.regAccess.empty());
+    EXPECT_EQ(i1.regAccess.size(), 2);
+    EXPECT_EQ(i1.regAccess[1].name, "r1");
+    EXPECT_EQ(i1.regAccess[1].value, 0);
+    EXPECT_EQ(i1.regAccess[1].access, RegisterAccess::Type::WRITE);
+    EXPECT_EQ(i1.regAccess[0].name, "psr");
+    EXPECT_EQ(i1.regAccess[0].value, 0x61000000);
+    EXPECT_EQ(i1.regAccess[0].access, RegisterAccess::Type::WRITE);
 
     const ReferenceInstruction i2 =
         InstructionReceiver("58 clk IT (58) 00008326 e9425504 T thread : STRD  "
@@ -496,15 +496,15 @@ TEST(ReferenceInstruction, parsing) {
     EXPECT_EQ(i2.width, 32);
     EXPECT_EQ(i2.instruction, 0xe9425504);
     EXPECT_EQ(i2.disassembly, "STRD r5,r5,[r2,#-0x10]");
-    EXPECT_TRUE(i2.regaccess.empty());
-    EXPECT_FALSE(i2.memaccess.empty());
-    EXPECT_EQ(i2.memaccess.size(), 2);
-    EXPECT_EQ(i2.memaccess[0].addr, 0x021afc);
-    EXPECT_EQ(i2.memaccess[0].value, 0);
-    EXPECT_EQ(i2.memaccess[0].access, MemoryAccess::Type::WRITE);
-    EXPECT_EQ(i2.memaccess[1].addr, 0x021b00);
-    EXPECT_EQ(i2.memaccess[1].value, 0);
-    EXPECT_EQ(i2.memaccess[1].access, MemoryAccess::Type::WRITE);
+    EXPECT_TRUE(i2.regAccess.empty());
+    EXPECT_FALSE(i2.memAccess.empty());
+    EXPECT_EQ(i2.memAccess.size(), 2);
+    EXPECT_EQ(i2.memAccess[0].addr, 0x021afc);
+    EXPECT_EQ(i2.memAccess[0].value, 0);
+    EXPECT_EQ(i2.memAccess[0].access, MemoryAccess::Type::WRITE);
+    EXPECT_EQ(i2.memAccess[1].addr, 0x021b00);
+    EXPECT_EQ(i2.memAccess[1].value, 0);
+    EXPECT_EQ(i2.memAccess[1].access, MemoryAccess::Type::WRITE);
 }
 
 TEST(ReferenceInstruction, dump) {
