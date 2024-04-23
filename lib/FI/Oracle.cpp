@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: <text>Copyright 2021,2022 Arm Limited and/or its
+ * SPDX-FileCopyrightText: <text>Copyright 2021,2022,2024 Arm Limited and/or its
  * affiliates <open-source-office@arm.com></text>
  * SPDX-License-Identifier: Apache-2.0
  *
@@ -34,9 +34,9 @@ using std::string;
 using std::vector;
 
 void Classifier::RegCmp::dump(std::ostream &os) const {
-    os << "{ Reg: \"" << RegName << "\"";
+    os << "{ Reg: \"" << regName << "\"";
     os << ", Cmp: \"";
-    switch (CmpOp) {
+    switch (cmpOp) {
     case CC::EQ:
         os << "EQ";
         break;
@@ -57,16 +57,16 @@ void Classifier::RegCmp::dump(std::ostream &os) const {
         break;
     }
     os << "\"";
-    os << ", Value: 0x" << hex << RegValue << dec;
+    os << ", Value: 0x" << hex << regValue << dec;
     os << "}";
 }
 
 void Classifier::MemCmp::dump(std::ostream &os) const {
-    os << "{ SymbolName: \"" << SymbolName << "\"";
-    os << ", Address: 0x" << hex << Address << dec;
+    os << "{ SymbolName: \"" << symbolName << "\"";
+    os << ", Address: 0x" << hex << address << dec;
     os << ", Data: [";
     string separator;
-    for (const uint8_t D : Data) {
+    for (const uint8_t D : data) {
         os << separator;
         os << "0x" << hex << int(D) << dec;
         separator = ", ";
@@ -75,25 +75,25 @@ void Classifier::MemCmp::dump(std::ostream &os) const {
 }
 
 void Classifier::ClassificationExpr::dump(std::ostream &os) const {
-    switch (ExprKind) {
-    case Kind::NoEffect:
+    switch (exprKind) {
+    case Kind::NO_EFFECT:
         os << "[\"noeffect\",[";
         break;
-    case Kind::Crash:
+    case Kind::CRASH:
         os << "[\"crash\",[";
         break;
-    case Kind::Caught:
+    case Kind::CAUGHT:
         os << "[\"caught\",[";
         break;
-    case Kind::Success:
+    case Kind::SUCCESS:
         os << "[\"success\",[";
         break;
-    case Kind::Undecided:
+    case Kind::UNDECIDED:
         os << "[\"undecided\",[";
         break;
     }
     string separator;
-    for (const Cmp *C : Checkers) {
+    for (const Cmp *cmp : checkers) {
         os << separator;
         // FIXME: implement !
         separator = ", ";
@@ -103,17 +103,17 @@ void Classifier::ClassificationExpr::dump(std::ostream &os) const {
 
 void Classifier::dump(std::ostream &os) const {
     os << "  - { Pc: ";
-    if (AddressSet)
-        os << "0x" << std::hex << Address << std::dec;
+    if (addressSet)
+        os << "0x" << std::hex << address << std::dec;
     else
-        os << '"' << SymbolName << '"';
+        os << '"' << symbolName << '"';
     os << ", Classification: [";
 
-    if (ClassificationExpressions.empty())
+    if (classificationExpressions.empty())
         os << "[\"noeffect\",[]]";
     else {
         string separator;
-        for (const ClassificationExpr &CE : ClassificationExpressions) {
+        for (const ClassificationExpr &CE : classificationExpressions) {
             os << separator;
             CE.dump(os);
             separator = ", ";
@@ -168,19 +168,19 @@ bool Oracle::addClassifier(const string &spec) {
         return true;
 
     ClassifierParser P(spec);
-#define consume(kw) consume(kw, sizeof(kw) - 1)
-#define lookAhead(kw) lookAhead(kw, sizeof(kw) - 1)
+#define CONSUME(kw) consume(kw, sizeof(kw) - 1)
+#define LOOK_AHEAD(kw) lookAhead(kw, sizeof(kw) - 1)
 
     // A classifier starts with a ClassificationLocation
     Classifier::Kind K;
-    if (P.consume("@(")) {
-        K = Classifier::Kind::Entry;
-    } else if (P.consume("callsite(")) {
-        K = Classifier::Kind::CallSite;
-    } else if (P.consume("return(")) {
-        K = Classifier::Kind::Return;
-    } else if (P.consume("resumesite(")) {
-        K = Classifier::Kind::ResumeSite;
+    if (P.CONSUME("@(")) {
+        K = Classifier::Kind::ENTRY;
+    } else if (P.CONSUME("callsite(")) {
+        K = Classifier::Kind::CALL_SITE;
+    } else if (P.CONSUME("return(")) {
+        K = Classifier::Kind::RETURN;
+    } else if (P.CONSUME("resumesite(")) {
+        K = Classifier::Kind::RESUME_SITE;
     } else {
         reporter->warn("failed to parse a ClassificationLocation in '%s'",
                        spec.c_str());
@@ -195,21 +195,21 @@ bool Oracle::addClassifier(const string &spec) {
         return false;
     }
 
-    Classifiers.emplace_back(location, K);
+    classifiers.emplace_back(location, K);
     // The classifier body will be within the '{' '}'.
-    if (P.consume("{")) {
-        if (P.consume("success"))
-            Classifiers.back().addSuccessClassification();
-        else if (P.consume("caught"))
-            Classifiers.back().addCaughtClassification();
-        else if (P.consume("crash"))
-            Classifiers.back().addCrashClassification();
-        else if (P.consume("noeffect"))
-            Classifiers.back().addNoEffectClassification();
-        else if (P.consume("undecided"))
-            Classifiers.back().addUndecidedClassification();
-        else if (P.lookAhead("}")) // An empty body is equivalent to NoEffect.
-            Classifiers.back().addNoEffectClassification();
+    if (P.CONSUME("{")) {
+        if (P.CONSUME("success"))
+            classifiers.back().addSuccessClassification();
+        else if (P.CONSUME("caught"))
+            classifiers.back().addCaughtClassification();
+        else if (P.CONSUME("crash"))
+            classifiers.back().addCrashClassification();
+        else if (P.CONSUME("noeffect"))
+            classifiers.back().addNoEffectClassification();
+        else if (P.CONSUME("undecided"))
+            classifiers.back().addUndecidedClassification();
+        else if (P.LOOK_AHEAD("}")) // An empty body is equivalent to NoEffect.
+            classifiers.back().addNoEffectClassification();
         else {
             reporter->warn("expecting a closing '}' or a ClassificationExpr to "
                            "classifier body in '%s'.",
@@ -217,7 +217,7 @@ bool Oracle::addClassifier(const string &spec) {
             return false;
         }
 
-        if (!P.consume("}")) {
+        if (!P.CONSUME("}")) {
             reporter->warn(
                 "expecting a closing '}' or a ClassificationExpr to the "
                 "classifier body in '%s'.",

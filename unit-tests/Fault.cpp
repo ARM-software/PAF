@@ -31,27 +31,27 @@ using std::string;
 using PAF::FI::BreakPoint;
 using PAF::FI::CorruptRegDef;
 using PAF::FI::FaultModelBase;
-using PAF::FI::InjectionRangeInfo;
 using PAF::FI::InjectionCampaign;
+using PAF::FI::InjectionRangeInfo;
 using PAF::FI::InstructionSkip;
 using PAF::FI::Oracle;
 
 TEST(Fault, BreakPoint) {
     BreakPoint BDefault;
-    EXPECT_EQ(BDefault.Address, 0);
-    EXPECT_EQ(BDefault.Count, 0);
+    EXPECT_EQ(BDefault.address, 0);
+    EXPECT_EQ(BDefault.count, 0);
 
     BreakPoint b0(1234, 7);
-    EXPECT_EQ(b0.Address, 1234);
-    EXPECT_EQ(b0.Count, 7);
+    EXPECT_EQ(b0.address, 1234);
+    EXPECT_EQ(b0.count, 7);
 
     // Copy
     BreakPoint b1(b0);
-    EXPECT_EQ(b1.Address, 1234);
-    EXPECT_EQ(b1.Count, 7);
+    EXPECT_EQ(b1.address, 1234);
+    EXPECT_EQ(b1.count, 7);
     b1 = BreakPoint(4567, 2);
-    EXPECT_EQ(b1.Address, 4567);
-    EXPECT_EQ(b1.Count, 2);
+    EXPECT_EQ(b1.address, 4567);
+    EXPECT_EQ(b1.count, 2);
 
     // Dump
     std::ostringstream out;
@@ -72,12 +72,12 @@ TEST(Fault, FaultModelBase) {
             return "FaultModelTest";
         }
 
-        unsigned long getTime() const { return Time; }
-        uint64_t getAddress() const { return Address; }
-        uint32_t getInstruction() const { return Instruction; }
-        unsigned getWidth() const { return Width; }
-        const string &getDisassembly() const { return Disassembly; }
-        unsigned long getId() const { return Id; }
+        unsigned long getTime() const { return time; }
+        uint64_t getAddress() const { return address; }
+        uint32_t getInstruction() const { return instruction; }
+        unsigned getWidth() const { return width; }
+        const string &getDisassembly() const { return disassembly; }
+        unsigned long getId() const { return id; }
 
         virtual void dump(std::ostream &os) const override {
             FaultModelBase::dump(os);
@@ -149,8 +149,8 @@ TEST(Fault, CorruptRegDef) {
 
 TEST(Fault, FunctionInfo) {
     InjectionRangeInfo iri1("a_function", /* StartTime: */ 1,
-                          /* EndTime: */ 2, /* StartAddress: */ 0x832a,
-                          /* EndAddress: */ 0x8340);
+                            /* EndTime: */ 2, /* StartAddress: */ 0x832a,
+                            /* EndAddress: */ 0x8340);
     std::ostringstream out;
     iri1.dump(out);
     EXPECT_EQ(out.str(), "{ Name: \"a_function\", StartTime: 1, EndTime: 2, "
@@ -181,7 +181,8 @@ TEST(Fault, Campaign) {
         out.str(),
         "Image: \"image.elf\"\nReferenceTrace: \"trace.tarmac\"\nMaxTraceTime: "
         "1000\nProgramEntryAddress: 0x1000\nProgramEndAddress: "
-        "0x1100\nFaultModel: \"CorruptRegDef\"\nInjectionRangeInfo:\n  - { Name: "
+        "0x1100\nFaultModel: \"CorruptRegDef\"\nInjectionRangeInfo:\n  - { "
+        "Name: "
         "\"a_function\", StartTime: 1, EndTime: 2, StartAddress: 0x832a, "
         "EndAddress: 0x8340}\nCampaign:\n  - { Id: 0, Time: 1000, Address: "
         "0x832a, Instruction: 0xe9d63401, Width: 32, Disassembly: \"LDRD "

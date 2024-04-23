@@ -136,18 +136,18 @@ TEST(V7MCPUInfo, getCycles) {
         // clang-format off
         /* 0: */ {565, IE_EXECUTED, 0x0081f2, THUMB, 16, 0x02100, "MOVS r1,#0", {},
                    {
-                      RegisterAccess("r1", 0, RegisterAccess::Type::Write),
-                      RegisterAccess("cpsr", 0x61000000, RegisterAccess::Type::Write),
+                      RegisterAccess("r1", 0, RegisterAccess::Type::WRITE),
+                      RegisterAccess("cpsr", 0x61000000, RegisterAccess::Type::WRITE),
                    }},
         /* 1: */ {566, IE_EXECUTED, 0x0081f4, THUMB, 16, 0x0d000, "BEQ {pc}+4", {}, {}},
         /* 2: */ {566, IE_CCFAIL, 0x0081f4, THUMB, 16, 0x0d000, "BEQ {pc}+4", {}, {}},
         /* 3: */ {567, IE_EXECUTED, 0x0a05e, THUMB, 32,  0xeb0000d2, "ADD r0,r0,r2,LSR #3", {},
                    {
-                      RegisterAccess("r0", 15, RegisterAccess::Type::Write),
+                      RegisterAccess("r0", 15, RegisterAccess::Type::WRITE),
                    }},
         /* 4: */ {567, IE_EXECUTED, 0x0a060, THUMB, 32,  0xeb0000d2, "ADD r0,r0,r2,LSR #3", {},
                    {
-                     RegisterAccess("r0", 15, RegisterAccess::Type::Write),
+                     RegisterAccess("r0", 15, RegisterAccess::Type::WRITE),
                    }},
         // clang-format on
     }};
@@ -232,14 +232,15 @@ TEST(V7MCPUInfo, registers) {
 template <typename AInfo, ISet mode, unsigned width> struct TRB {
   public:
     TRB(uint32_t opc, const char *dis)
-        : Inst(0, IE_EXECUTED, 1, mode, width, opc, dis, {}, {}),
-          Kind(InstrInfo::NO_KIND), AM() {}
+        : inst(0, IE_EXECUTED, 1, mode, width, opc, dis, {}, {}),
+          kind(InstrInfo::NO_KIND), addresingMode() {}
     TRB(uint32_t opc, const char *dis, InstrInfo::InstructionKind K)
-        : Inst(0, IE_EXECUTED, 1, mode, width, opc, dis, {}, {}), Kind(K), AM() {}
+        : inst(0, IE_EXECUTED, 1, mode, width, opc, dis, {}, {}), kind(K),
+          addresingMode() {}
     TRB(uint32_t opc, const char *dis, InstrInfo::InstructionKind K,
         AddressingMode::OffsetFormat Offset, AddressingMode::BaseUpdate Update)
-        : Inst(0, IE_EXECUTED, 1, mode, width, opc, dis, {}, {}), Kind(K),
-          AM(Offset, Update) {
+        : inst(0, IE_EXECUTED, 1, mode, width, opc, dis, {}, {}), kind(K),
+          addresingMode(Offset, Update) {
         assert((K == InstrInfo::LOAD || K == InstrInfo::STORE) &&
                "AddressingMode is only available for loads and stores");
     }
@@ -252,54 +253,53 @@ template <typename AInfo, ISet mode, unsigned width> struct TRB {
           const vector<typename AInfo::Register> &expectedInputRegs,
           const vector<typename AInfo::Register> &expectedImplicitInputRegs)
         const {
-        const InstrInfo II = AInfo::instrInfo(Inst);
+        const InstrInfo II = AInfo::instrInfo(inst);
 
         // Check register read by this instruction.
         const vector<typename AInfo::Register> inputRegs(
             AInfo::registersReadByInstr(II, false, false));
-        if (!check_registers(expectedInputRegs, inputRegs))
-            return report_reg_error(testNum, "input", expectedInputRegs,
-                                    inputRegs);
+        if (!checkRegisters(expectedInputRegs, inputRegs))
+            return reportRegError(testNum, "input", expectedInputRegs,
+                                  inputRegs);
 
         const vector<typename AInfo::Register> implicitInputRegs(
             AInfo::registersReadByInstr(II, true, false));
-        if (!check_registers(expectedImplicitInputRegs, implicitInputRegs))
-            return report_reg_error(testNum, "implicit input",
-                                    expectedImplicitInputRegs,
-                                    implicitInputRegs);
+        if (!checkRegisters(expectedImplicitInputRegs, implicitInputRegs))
+            return reportRegError(testNum, "implicit input",
+                                  expectedImplicitInputRegs, implicitInputRegs);
 
         // Check instruction attributes.
-        switch (Kind) {
+        switch (kind) {
         case InstrInfo::NO_KIND:
             if (!II.hasNoKind())
-                return report_error(testNum,
-                                    "no attribute check although this "
-                                    "instruction has some attributes set");
+                return reportError(testNum,
+                                   "no attribute check although this "
+                                   "instruction has some attributes set");
             break;
         case InstrInfo::LOAD:
             if (!II.isLoad())
-                return report_error(testNum,
-                                    "expecting the 'Load' attribute to be set "
-                                    "on this instruction");
+                return reportError(testNum,
+                                   "expecting the 'Load' attribute to be set "
+                                   "on this instruction");
             break;
         case InstrInfo::STORE:
             if (!II.isStore())
-                return report_error(testNum,
-                                    "expecting the 'Store' attribute to be set "
-                                    "on this instruction");
+                return reportError(testNum,
+                                   "expecting the 'Store' attribute to be set "
+                                   "on this instruction");
             break;
         case InstrInfo::BRANCH:
             if (!II.isBranch())
-                return report_error(
-                    testNum, "expecting the 'Branch' attribute to be set "
-                             "on this instruction");
+                return reportError(testNum,
+                                   "expecting the 'Branch' attribute to be set "
+                                   "on this instruction");
             break;
 
         case InstrInfo::CALL:
             if (!II.isCall())
-                return report_error(testNum,
-                                    "expecting the 'Call' attribute to be set "
-                                    "on this instruction");
+                return reportError(testNum,
+                                   "expecting the 'Call' attribute to be set "
+                                   "on this instruction");
             break;
         }
 
@@ -307,21 +307,21 @@ template <typename AInfo, ISet mode, unsigned width> struct TRB {
         if (II.isMemoryAccess()) {
             const AddressingMode iam = II.getAddressingMode();
             if (!iam.isValid())
-                return report_error(
+                return reportError(
                     testNum, "memory access with invalid addressing mode");
-            if (iam != AM)
-                return report_error(
-                    testNum, "unexpected memory access addressing mode");
+            if (iam != addresingMode)
+                return reportError(testNum,
+                                   "unexpected memory access addressing mode");
         } else if (II.hasValidAddressingMode())
-            return report_error(testNum,
-                                "instruction is not a memory access "
-                                "instruction, but has a valid addressing mode");
+            return reportError(testNum,
+                               "instruction is not a memory access "
+                               "instruction, but has a valid addressing mode");
 
         return AssertionSuccess();
     }
 
-    bool check_registers(const vector<typename AInfo::Register> &expected,
-                         const vector<typename AInfo::Register> &actual) const {
+    bool checkRegisters(const vector<typename AInfo::Register> &expected,
+                        const vector<typename AInfo::Register> &actual) const {
 
         if (actual.size() != expected.size())
             return false;
@@ -340,26 +340,26 @@ template <typename AInfo, ISet mode, unsigned width> struct TRB {
             AR << ' ' << AInfo::name(r);
         AR << '\n';
     }
-    AssertionResult report_error(size_t testNum, const char *msg) const {
+    AssertionResult reportError(size_t testNum, const char *msg) const {
         return AssertionFailure()
                << "test #" << testNum << " with instruction '"
-               << Inst.disassembly << "': " << msg;
+               << inst.disassembly << "': " << msg;
     }
     AssertionResult
-    report_reg_error(size_t testNum, const char *regKind,
-                     const vector<typename AInfo::Register> &expected,
-                     const vector<typename AInfo::Register> &actual) const {
+    reportRegError(size_t testNum, const char *regKind,
+                   const vector<typename AInfo::Register> &expected,
+                   const vector<typename AInfo::Register> &actual) const {
         AssertionResult AR = AssertionFailure();
-        AR << "test #" << testNum << " with instruction '" << Inst.disassembly
+        AR << "test #" << testNum << " with instruction '" << inst.disassembly
            << "', " << regKind << " registers don't match:\n";
         dump(AR, "Expected:", expected);
         dump(AR, "Actual:", actual);
         return AR;
     }
 
-    ReferenceInstruction Inst;
-    InstrInfo::InstructionKind Kind;
-    AddressingMode AM;
+    ReferenceInstruction inst;
+    InstrInfo::InstructionKind kind;
+    AddressingMode addresingMode;
 };
 
 template <typename TRBTy, typename RegisterTy> struct TestInput {
@@ -403,26 +403,21 @@ template <typename TRBTy, typename RegisterTy> struct TestInput {
 TEST(V7MCPUInfo, T16InstrInfo) {
 
     // ===== Shift (immediate), add, substract, move and compare.
-    const array<
-        TestInput<TRB<V7MInfo, THUMB, 16>, V7MInfo::Register>, 11>
+    const array<TestInput<TRB<V7MInfo, THUMB, 16>, V7MInfo::Register>, 11>
         T16_SASMCInstructions = {{
             {{0x07da, "lsls     r2,r3,#31"}, {V7MInfo::Register::R3}},
             {{0x0923, "lsrs     r3,r4,#4"}, {V7MInfo::Register::R4}},
             {{0x1098, "asrs     r0,r3,#2"}, {V7MInfo::Register::R3}},
             {{0x18ca, "adds     r2,r1,r3"},
-             {V7MInfo::Register::R1,
-              V7MInfo::Register::R3}},
+             {V7MInfo::Register::R1, V7MInfo::Register::R3}},
             {{0x1bad, "subs     r5,r5,r6"},
-             {V7MInfo::Register::R5,
-              V7MInfo::Register::R6}},
+             {V7MInfo::Register::R5, V7MInfo::Register::R6}},
             {{0x1c6b, "adds     r3,r5,#1"}, {V7MInfo::Register::R5}},
             {{0x3d01, "subs     r5,#1"}, {V7MInfo::Register::R5}},
             {{0x210a, "movs     r1,#0xa"}, {}},
             {{0x2d06, "cmp      r5,#6"}, {V7MInfo::Register::R5}},
-            {{0x30f0, "adds     r0,r0,#0xf0"},
-             {V7MInfo::Register::R0}},
-            {{0x3a40, "subs     r2,r2,#0x40"},
-             {V7MInfo::Register::R2}},
+            {{0x30f0, "adds     r0,r0,#0xf0"}, {V7MInfo::Register::R0}},
+            {{0x3a40, "subs     r2,r2,#0x40"}, {V7MInfo::Register::R2}},
         }};
 
     RUN_TRB_TESTS(T16_SASMCInstructions);
@@ -476,8 +471,7 @@ TEST(V7MCPUInfo, T16InstrInfo) {
             {{0x469b, "mov      r11,r3"}, {V7MInfo::Register::R3}},
             {{0x4750, "bx       r10", InstrInfo::BRANCH},
              {V7MInfo::Register::R10}},
-            {{0x47c8, "blx      r9", InstrInfo::CALL},
-             {V7MInfo::Register::R9}},
+            {{0x47c8, "blx      r9", InstrInfo::CALL}, {V7MInfo::Register::R9}},
         }};
 
     RUN_TRB_TESTS(T16_SpecialAndBranchInstructions);
@@ -968,7 +962,8 @@ TEST(V7MCPUInfo, T32InstrInfo) {
     const array<TestInput<TRB<V7MInfo, THUMB, 32>, V7MInfo::Register>, 19>
         T32_BranchMiscInstructions = {{
             {{0xf6bdae6e, "bge.w      #-8996", InstrInfo::BRANCH},
-             {}, {V7MInfo::Register::PC}},
+             {},
+             {V7MInfo::Register::PC}},
             {{0xf38b8400, "msr        apsr_g, r11"}, {V7MInfo::Register::R11}},
             {{0xf3af8000, "nop.w"}, {}},
             {{0xf3af8001, "yield.w"}, {}},
@@ -986,9 +981,11 @@ TEST(V7MCPUInfo, T32InstrInfo) {
             {{0xf3ef8a00, "mrs        r10,apsr_g"}, {}},
             {{0xf7f0a07b, "udf.w      #123"}, {}},
             {{0xf004b850, "b.w        #16544", InstrInfo::BRANCH},
-             {}, {V7MInfo::Register::PC}},
+             {},
+             {V7MInfo::Register::PC}},
             {{0xf002f966, "bl         #8908", InstrInfo::CALL},
-             {}, {V7MInfo::Register::PC}},
+             {},
+             {V7MInfo::Register::PC}},
         }};
 
     RUN_TRB_TESTS(T32_BranchMiscInstructions);
@@ -1487,6 +1484,5 @@ TEST(V8MCPUInfo, getCycles) {
 
 TEST(V8ACPUInfo, registers) {
     unique_ptr<V8AInfo> CPU(new V8AInfo);
-    EXPECT_EQ(CPU->numRegisters(),
-              unsigned(V8AInfo::Register::NUM_REGISTERS));
+    EXPECT_EQ(CPU->numRegisters(), unsigned(V8AInfo::Register::NUM_REGISTERS));
 }

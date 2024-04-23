@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: <text>Copyright 2022 Arm Limited and/or its
+ * SPDX-FileCopyrightText: <text>Copyright 2022,2024 Arm Limited and/or its
  * affiliates <open-source-office@arm.com></text>
  * SPDX-License-Identifier: Apache-2.0
  *
@@ -55,37 +55,37 @@ class StopWatchBase {
 class StopWatch : public StopWatchBase {
 
   public:
-    StopWatch() : StopWatchBase(), StartTime(), StopTime(), Running(false) {}
+    StopWatch() : StopWatchBase(), startTime(), stopTime(), running(false) {}
 
     /// Start the stopwatch, recording the start time and return the time point
     /// which was captured.
     StopWatchBase::TimePoint start() {
-        Running = true;
-        StartTime = now();
-        return StartTime;
+        running = true;
+        startTime = now();
+        return startTime;
     }
 
     /// Stop the stopwatch, and record the stop time and return it..
     StopWatchBase::TimePoint stop() {
-        Running = false;
-        StopTime = now();
-        return StopTime;
+        running = false;
+        stopTime = now();
+        return stopTime;
     }
 
     /// Is this StopWatch running ?
-    bool running() const { return Running; }
+    bool isRunning() const { return running; }
 
     /// Get the elapsed time since the StopWatch was started if it is still
     /// running, or return the stop tile - start time that was captured.
     double elapsed() const {
-        return Running ? StopWatchBase::elapsed(now(), StartTime)
-                       : StopWatchBase::elapsed(StopTime, StartTime);
+        return running ? StopWatchBase::elapsed(now(), startTime)
+                       : StopWatchBase::elapsed(stopTime, startTime);
     }
 
   private:
-    StopWatchBase::TimePoint StartTime;
-    StopWatchBase::TimePoint StopTime;
-    bool Running;
+    StopWatchBase::TimePoint startTime;
+    StopWatchBase::TimePoint stopTime;
+    bool running;
 };
 
 /// AutoStopWatch implements a stopwatch that will start automatically when
@@ -94,16 +94,16 @@ class AutoStopWatch : public StopWatchBase {
 
   public:
     AutoStopWatch(std::ostream &OS, const std::string &Name)
-        : StopWatchBase(), OS(OS), StartTime(now()), Name(Name) {}
+        : StopWatchBase(), os(OS), startTime(now()), name(Name) {}
 
     ~AutoStopWatch() {
-        double d = StopWatchBase::elapsed(now(), StartTime);
-        OS << "AutoStopWatch(" << Name << ") : " << d << units() << std::endl;
+        double d = StopWatchBase::elapsed(now(), startTime);
+        os << "AutoStopWatch(" << name << ") : " << d << units() << std::endl;
     }
 
   private:
-    std::ostream &OS;
-    const StopWatchBase::TimePoint StartTime;
-    const std::string Name;
+    std::ostream &os;
+    const StopWatchBase::TimePoint startTime;
+    const std::string name;
 };
 } // namespace PAF

@@ -29,10 +29,10 @@
 
 using namespace testing;
 
-using std::cout;
 using std::cerr;
-using std::streambuf;
+using std::cout;
 using std::ostringstream;
+using std::streambuf;
 using std::string;
 
 class CoutCerrRedirect {
@@ -58,7 +58,7 @@ class CoutCerrRedirect {
 
 TEST(Error, warn) {
     CoutCerrRedirect capture;
-    warn("this is a warning");
+    WARN("this is a warning");
     EXPECT_EQ(capture.out.str().size(), 0);
     const string err = capture.err.str().substr(0, 70);
     EXPECT_EQ(err, "Warning: this is a warning in virtual void "
@@ -67,7 +67,7 @@ TEST(Error, warn) {
 
 TEST(Error, error) {
     CoutCerrRedirect capture;
-    error("this is an error");
+    ERROR("this is an error");
     EXPECT_EQ(capture.out.str().size(), 0);
     const string err = capture.err.str().substr(0, 68);
     EXPECT_EQ(err, "Error: this is an error in virtual void "
@@ -75,7 +75,8 @@ TEST(Error, error) {
 }
 
 TEST(Error, die) {
-    EXPECT_DEATH({ die("this is a fatal error"); },
-                 "Fatal: this is a fatal error in virtual void "
-                 "Error_die_Test::TestBody().*");
+    EXPECT_DEATH(
+        { DIE("this is a fatal error"); },
+        "Fatal: this is a fatal error in virtual void "
+        "Error_die_Test::TestBody().*");
 }

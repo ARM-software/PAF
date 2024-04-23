@@ -1,6 +1,6 @@
 /*
- * SPDX-FileCopyrightText: <text>Copyright 2021,2022,2023,2024 Arm Limited and/or its
- * affiliates <open-source-office@arm.com></text>
+ * SPDX-FileCopyrightText: <text>Copyright 2021-2024 Arm Limited
+ * and/or its affiliates <open-source-office@arm.com></text>
  * SPDX-License-Identifier: Apache-2.0
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -119,25 +119,25 @@ template <typename Ty, size_t rows, size_t cols> class WelshChecker {
     WelshChecker(const NPArray<Ty> &a, const NPArray<Ty> &b,
                  std::initializer_list<Ty> tvaluesOddEven,
                  std::initializer_list<Ty> tvalues2)
-        : Ma(a), Mb(b), tvaluesOddEven(tvaluesOddEven), tvalues2(tvalues2) {}
+        : mA(a), mB(b), tvaluesOddEven(tvaluesOddEven), tvalues2(tvalues2) {}
 
     // Check Welsh's t_test on a single column, with an odd/even classifier.
     void check(size_t i) const {
-        vector<Classification> c(Ma.rows());
-        for (size_t i = 0; i < Ma.rows(); i++)
+        vector<Classification> c(mA.rows());
+        for (size_t i = 0; i < mA.rows(); i++)
             c[i] =
                 i % 2 == 0 ? Classification::GROUP_0 : Classification::GROUP_1;
-        double t = t_test(i, Ma, c);
+        double t = t_test(i, mA, c);
         EXPECT_NEAR(t, tvaluesOddEven[i], EPSILON);
     }
 
     // Check Welsh's t_test on a range of columns, with an odd/even classifier.
     void check(size_t b, size_t e) const {
-        vector<Classification> c(Ma.rows());
-        for (size_t tnum = 0; tnum < Ma.rows(); tnum++)
+        vector<Classification> c(mA.rows());
+        for (size_t tnum = 0; tnum < mA.rows(); tnum++)
             c[tnum] = tnum % 2 == 0 ? Classification::GROUP_0
                                     : Classification::GROUP_1;
-        const NPArray<double> t = t_test(b, e, Ma, c);
+        const NPArray<double> t = t_test(b, e, mA, c);
         EXPECT_EQ(t.size(), e - b);
         for (size_t i = b; i < e; i++)
             EXPECT_NEAR(t(0, i - b), tvaluesOddEven[i], EPSILON);
@@ -145,21 +145,21 @@ template <typename Ty, size_t rows, size_t cols> class WelshChecker {
 
     // Check Welsh's t_test on a single column, with 2 groups.
     void check2(size_t i) const {
-        double t = t_test(i, Ma, Mb);
+        double t = t_test(i, mA, mB);
         EXPECT_NEAR(t, tvalues2[i], EPSILON);
     }
 
     // Check Welsh's t_test on a range of columns, with 2 groups.
     void check2(size_t b, size_t e) const {
-        const NPArray<double> t = t_test(b, e, Ma, Mb);
+        const NPArray<double> t = t_test(b, e, mA, mB);
         EXPECT_EQ(t.size(), e - b);
         for (size_t i = b; i < e; i++)
             EXPECT_NEAR(t(0, i - b), tvalues2[i], EPSILON);
     }
 
   private:
-    const NPArray<Ty> &Ma;
-    const NPArray<Ty> &Mb;
+    const NPArray<Ty> &mA;
+    const NPArray<Ty> &mB;
     const std::vector<Ty> tvaluesOddEven;
     const std::vector<Ty> tvalues2;
 };
@@ -381,7 +381,7 @@ template <typename Ty, size_t rows, size_t cols> class PerfectChecker {
                    const NPArray<Ty> &c,
                    std::initializer_list<Ty> tvaluesEvenOdd,
                    std::initializer_list<Ty> tvalues)
-        : Ma(a), Mb(b), Mc(c), tvaluesEvenOdd(tvaluesEvenOdd),
+        : mA(a), mB(b), mC(c), tvaluesEvenOdd(tvaluesEvenOdd),
           tvalues(tvalues) {
         // Some sanity checks.
         assert(tvaluesEvenOdd.size() == cols &&
@@ -400,13 +400,13 @@ template <typename Ty, size_t rows, size_t cols> class PerfectChecker {
         for (size_t t = 0; t < rows; t++)
             classifier[t] =
                 t % 2 == 0 ? Classification::GROUP_0 : Classification::GROUP_1;
-        const NPArray<double> t = perfect_t_test(b, e, Ma, classifier);
+        const NPArray<double> t = perfect_t_test(b, e, mA, classifier);
         EXPECT_EQ(t.size(), e - b);
         for (size_t i = b; i < e; i++)
             EXPECT_NEAR(t(0, i - b), tvaluesEvenOdd[i], EPSILON);
 
         ostringstream os;
-        perfect_t_test(b, e, Ma, classifier, &os);
+        perfect_t_test(b, e, mA, classifier, &os);
         EXPECT_EQ(os.str(), stats);
     }
 
@@ -416,20 +416,20 @@ template <typename Ty, size_t rows, size_t cols> class PerfectChecker {
         assert(b < cols && "Out of range begin");
         assert(e <= cols && "Out of range end");
 
-        const NPArray<double> t = perfect_t_test(b, e, Mb, Mc);
+        const NPArray<double> t = perfect_t_test(b, e, mB, mC);
         EXPECT_EQ(t.size(), e - b);
         for (size_t i = b; i < e; i++)
             EXPECT_NEAR(t(0, i - b), tvalues[i], EPSILON);
 
         ostringstream os;
-        perfect_t_test(b, e, Mb, Mc, &os);
+        perfect_t_test(b, e, mB, mC, &os);
         EXPECT_EQ(os.str(), stats);
     }
 
   private:
-    const NPArray<Ty> &Ma;
-    const NPArray<Ty> &Mb;
-    const NPArray<Ty> &Mc;
+    const NPArray<Ty> &mA;
+    const NPArray<Ty> &mB;
+    const NPArray<Ty> &mC;
     const std::vector<Ty> tvaluesEvenOdd;
     const std::vector<Ty> tvalues;
 };
@@ -565,20 +565,20 @@ template <typename Ty, size_t rows, size_t cols> class PearsonChecker {
   public:
     PearsonChecker(const NPArray<Ty> &a, const NPArray<unsigned> &iv,
                    std::initializer_list<Ty> coeffs)
-        : Ma(a), Miv(iv), coeffs(coeffs) {}
+        : mA(a), mIV(iv), coeffs(coeffs) {}
 
     // Check Pearson correlation on a range of columns.
     void check(size_t b, size_t e) const {
-        const NPArray<double> iv = convert<double>(Miv);
-        const NPArray<double> p = correl(b, e, Ma, iv);
+        const NPArray<double> iv = convert<double>(mIV);
+        const NPArray<double> p = correl(b, e, mA, iv);
         EXPECT_EQ(p.size(), e - b);
         for (size_t i = b; i < e; i++)
             EXPECT_NEAR(p(0, i - b), coeffs[i], EPSILON);
     }
 
   private:
-    const NPArray<Ty> &Ma;
-    const NPArray<unsigned> &Miv;
+    const NPArray<Ty> &mA;
+    const NPArray<unsigned> &mIV;
     const std::vector<Ty> coeffs;
 };
 } // namespace

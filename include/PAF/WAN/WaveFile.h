@@ -39,7 +39,7 @@ class WaveFile {
     WaveFile() = delete;
     WaveFile(const WaveFile &) = delete;
     WaveFile(const std::string &filename, FileFormat Fmt)
-        : FileName(filename), FileFmt(Fmt) {}
+        : fileName(filename), fileFmt(Fmt) {}
 
     virtual ~WaveFile();
 
@@ -47,10 +47,10 @@ class WaveFile {
     static FileFormat getFileFormat(const std::string &filename);
 
     // Get this WaveFile format.
-    FileFormat getFileFormat() const { return FileFmt; }
+    FileFormat getFileFormat() const { return fileFmt; }
 
     // Get this WaveFile filename.
-    const std::string &getFileName() const { return FileName; }
+    const std::string &getFileName() const { return fileName; }
 
     static std::unique_ptr<WaveFile> get(const std::string &filename);
 
@@ -68,8 +68,8 @@ class WaveFile {
 
   protected:
     // The file name this waves are coming from.
-    std::string FileName = "";
-    FileFormat FileFmt;
+    std::string fileName = "";
+    FileFormat fileFmt;
 };
 
 } // namespace WAN

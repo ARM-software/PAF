@@ -1,6 +1,6 @@
 /*
- * SPDX-FileCopyrightText: <text>Copyright 2021,2022,2023,2024 Arm Limited and/or its
- * affiliates <open-source-office@arm.com></text>
+ * SPDX-FileCopyrightText: <text>Copyright 2021-2024 Arm Limited
+ * and/or its affiliates <open-source-office@arm.com></text>
  * SPDX-License-Identifier: Apache-2.0
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -146,14 +146,14 @@ TEST(Expr, Truncate) {
 }
 
 TEST(AES, SBox) {
-    unique_ptr<Expr> op(new AES_SBox(new Constant(ValueType::UINT8, 16)));
+    unique_ptr<Expr> op(new AESSBox(new Constant(ValueType::UINT8, 16)));
     EXPECT_EQ(op->getType(), ValueType::UINT8);
     EXPECT_EQ(op->eval().getValue(), 0xca);
     EXPECT_EQ(op->repr(), "AES_SBOX(16_u8)");
 }
 
 TEST(AES, ISBox) {
-    unique_ptr<Expr> op(new AES_ISBox(new Constant(ValueType::UINT8, 253)));
+    unique_ptr<Expr> op(new AESISBox(new Constant(ValueType::UINT8, 253)));
     EXPECT_EQ(op->getType(), ValueType::UINT8);
     EXPECT_EQ(op->eval().getValue(), 0x21);
     EXPECT_EQ(op->repr(), "AES_ISBOX(253_u8)");

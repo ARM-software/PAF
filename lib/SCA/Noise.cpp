@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: <text>Copyright 2021,2022 Arm Limited and/or its
+ * SPDX-FileCopyrightText: <text>Copyright 2021,2022,2024 Arm Limited and/or its
  * affiliates <open-source-office@arm.com></text>
  * SPDX-License-Identifier: Apache-2.0
  *
@@ -44,33 +44,33 @@ class NullNoise : public ConstantNoiseSource {
 
 class RandomNoiseSource : public NoiseSource {
   public:
-    RandomNoiseSource() : NoiseSource(), RD(), MT(RD()) {}
+    RandomNoiseSource() : NoiseSource(), rndDevice(), twister(rndDevice()) {}
 
   protected:
-    std::random_device RD;
-    std::mt19937 MT;
+    std::random_device rndDevice;
+    std::mt19937 twister;
 };
 
 class UniformNoise : public RandomNoiseSource {
   public:
     UniformNoise(double NoiseLevel)
-        : RandomNoiseSource(), NoiseDist(-NoiseLevel / 2.0, NoiseLevel / 2.0) {}
+        : RandomNoiseSource(), noiseDist(-NoiseLevel / 2.0, NoiseLevel / 2.0) {}
 
-    virtual double get() override { return NoiseDist(MT); }
+    virtual double get() override { return noiseDist(twister); }
 
   private:
-    std::uniform_real_distribution<double> NoiseDist;
+    std::uniform_real_distribution<double> noiseDist;
 };
 
 class NormalNoise : public RandomNoiseSource {
   public:
     NormalNoise(double NoiseLevel)
-        : RandomNoiseSource(), NoiseDist(0.0, NoiseLevel / 2.0) {}
+        : RandomNoiseSource(), noiseDist(0.0, NoiseLevel / 2.0) {}
 
-    virtual double get() override { return NoiseDist(MT); }
+    virtual double get() override { return noiseDist(twister); }
 
   private:
-    std::normal_distribution<double> NoiseDist;
+    std::normal_distribution<double> noiseDist;
 };
 
 std::unique_ptr<NoiseSource> NoiseSource::getSource(Type noiseTy,

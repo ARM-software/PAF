@@ -31,7 +31,7 @@ namespace SCA {
 namespace Expr {
 
 /// An integer type specifier: u8, u16, u32, u64.
-bool ParserBase::parse_type_specifier(ValueType::Type &VT) {
+bool ParserBase::parseTypeSpecifier(ValueType::Type &VT) {
     if (!expect('u'))
         return false;
     size_t s;
@@ -58,7 +58,7 @@ bool ParserBase::parse_type_specifier(ValueType::Type &VT) {
 
 /// A literal is expressed in its decimal form, postfixed with an '_' and a
 /// type specifier, e.g. 123_u16.
-Constant *ParserBase::parse_literal() {
+Constant *ParserBase::parseLiteral() {
     size_t val;
     ValueType::Type VT;
     if (!LWParser::parse(val))
@@ -66,7 +66,7 @@ Constant *ParserBase::parse_literal() {
     if (count() >= 3) {
         if (!expect('_'))
             return nullptr;
-        if (!parse_type_specifier(VT))
+        if (!parseTypeSpecifier(VT))
             return nullptr;
         return new Constant(VT, val);
     }

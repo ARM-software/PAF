@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: <text>Copyright 2021,2022 Arm Limited and/or its
+ * SPDX-FileCopyrightText: <text>Copyright 2021,2022,2024 Arm Limited and/or its
  * affiliates <open-source-office@arm.com></text>
  * SPDX-License-Identifier: Apache-2.0
  *
@@ -114,11 +114,11 @@ class Classifier {
 
     struct RegCmp : public Cmp {
         enum class CC { EQ, NE, GT, GE, LT, LE };
-        std::string RegName;
-        uint64_t RegValue;
-        CC CmpOp;
+        std::string regName;
+        uint64_t regValue;
+        CC cmpOp;
         RegCmp(const std::string &RegName, CC CmpOp, uint64_t RegValue)
-            : Cmp(), RegName(RegName), RegValue(RegValue), CmpOp(CmpOp) {}
+            : Cmp(), regName(RegName), regValue(RegValue), cmpOp(CmpOp) {}
         RegCmp() = delete;
         RegCmp(const RegCmp &) = default;
         RegCmp &operator=(const RegCmp &) = default;
@@ -127,12 +127,12 @@ class Classifier {
     };
 
     struct MemCmp : public Cmp {
-        std::string SymbolName;
-        uint64_t Address;
-        std::vector<uint8_t> Data;
+        std::string symbolName;
+        uint64_t address;
+        std::vector<uint8_t> data;
         MemCmp(const std::string &SymbolName, uint64_t Address,
                const std::vector<uint8_t> &Data)
-            : Cmp(), SymbolName(SymbolName), Address(Address), Data(Data) {}
+            : Cmp(), symbolName(SymbolName), address(Address), data(Data) {}
         MemCmp() = delete;
         MemCmp(const MemCmp &) = default;
         MemCmp &operator=(const MemCmp &) = default;
@@ -141,25 +141,25 @@ class Classifier {
     };
 
     struct ClassificationExpr {
-        enum class Kind { NoEffect, Success, Caught, Crash, Undecided };
-        ClassificationExpr(Kind K) : Checkers(), ExprKind(K) {}
+        enum class Kind { NO_EFFECT, SUCCESS, CAUGHT, CRASH, UNDECIDED };
+        ClassificationExpr(Kind K) : checkers(), exprKind(K) {}
         ~ClassificationExpr() {
-            for (auto &c : Checkers)
+            for (auto &c : checkers)
                 delete c;
         }
-        std::vector<Cmp *> Checkers;
-        Kind ExprKind;
+        std::vector<Cmp *> checkers;
+        Kind exprKind;
         void dump(std::ostream &os) const;
     };
 
   public:
     /// Kind describes the ClassificationLocation.
-    enum class Kind { CallSite, Entry, Return, ResumeSite };
+    enum class Kind { CALL_SITE, ENTRY, RETURN, RESUME_SITE };
 
     /// Construct a Classifier for symbol with <tt>ClassificationLocation</tt>
     /// K.
     Classifier(const std::string &symbol, Kind K)
-        : AddressSet(false), Address(0), SymbolName(symbol), LocKind(K) {}
+        : addressSet(false), address(0), symbolName(symbol), locKind(K) {}
     /// Copy construct a Classifier.
     Classifier(const Classifier &) = default;
     /// Move construct a Classifier.
@@ -171,70 +171,70 @@ class Classifier {
     Classifier &operator=(Classifier &&) = default;
 
     /// Get the ClassificationLocation.
-    Kind getKind() const { return LocKind; }
+    Kind getKind() const { return locKind; }
 
     /// Get the symbol name for this ClassificationLocation.
-    const std::string &getSymbolName() const { return SymbolName; }
+    const std::string &getSymbolName() const { return symbolName; }
 
     /// Does this Classifier have already an address set ?
-    bool hasAddress() const { return AddressSet; }
+    bool hasAddress() const { return addressSet; }
 
     /// Set the address for this Classifier.
     Classifier &setAddress(uint64_t addr) {
-        AddressSet = true;
-        Address = addr;
+        addressSet = true;
+        address = addr;
         return *this;
     }
 
     /// Add a <tt>NoEffect</tt> classification.
     ClassificationExpr &addNoEffectClassification() {
-        ClassificationExpressions.emplace_back(
-            ClassificationExpr::Kind::NoEffect);
-        return ClassificationExpressions.back();
+        classificationExpressions.emplace_back(
+            ClassificationExpr::Kind::NO_EFFECT);
+        return classificationExpressions.back();
     }
     /// Add a <tt>Success</tt> classification.
     ClassificationExpr &addSuccessClassification() {
-        ClassificationExpressions.emplace_back(
-            ClassificationExpr::Kind::Success);
-        return ClassificationExpressions.back();
+        classificationExpressions.emplace_back(
+            ClassificationExpr::Kind::SUCCESS);
+        return classificationExpressions.back();
     }
     /// Add a <tt>Undecided</tt> classification.
     ClassificationExpr &addUndecidedClassification() {
-        ClassificationExpressions.emplace_back(
-            ClassificationExpr::Kind::Undecided);
-        return ClassificationExpressions.back();
+        classificationExpressions.emplace_back(
+            ClassificationExpr::Kind::UNDECIDED);
+        return classificationExpressions.back();
     }
     /// Add a <tt>Caught</tt> classification.
     ClassificationExpr &addCaughtClassification() {
-        ClassificationExpressions.emplace_back(
-            ClassificationExpr::Kind::Caught);
-        return ClassificationExpressions.back();
+        classificationExpressions.emplace_back(
+            ClassificationExpr::Kind::CAUGHT);
+        return classificationExpressions.back();
     }
     /// Add a <tt>Crash</tt> classification.
     ClassificationExpr &addCrashClassification() {
-        ClassificationExpressions.emplace_back(ClassificationExpr::Kind::Crash);
-        return ClassificationExpressions.back();
+        classificationExpressions.emplace_back(ClassificationExpr::Kind::CRASH);
+        return classificationExpressions.back();
     }
 
     /// Query if our sequence of <tt>ClassificationExpressions</tt> is empty.
-    bool empty() const { return ClassificationExpressions.empty(); }
+    bool empty() const { return classificationExpressions.empty(); }
 
     /// Dump this Classifier to os.
     void dump(std::ostream &os) const;
 
   private:
-    std::vector<ClassificationExpr> ClassificationExpressions;
-    bool AddressSet;
-    uint64_t Address; // The PC address at which to ask the Oracle.
-    std::string SymbolName;
-    Kind LocKind;
+    std::vector<ClassificationExpr> classificationExpressions;
+    bool addressSet;
+    uint64_t address; // The PC address at which to ask the Oracle.
+    std::string symbolName;
+    Kind locKind;
 };
 
 /// This class implements the oracle functionality.
 class Oracle {
   public:
     /// Default (empty) Oracle constructor.
-    Oracle() : Classifiers() {}
+    Oracle() : classifiers() {}
     /// Copy constructor.
     Oracle(const Oracle &) = default;
     /// Move constructor.
@@ -249,32 +249,32 @@ class Oracle {
     bool parse(const std::string &spec);
 
     /// Does this Oracle have any <tt>classifier</tt> ?
-    bool empty() const { return Classifiers.empty(); }
+    bool empty() const { return classifiers.empty(); }
     /// How many <tt>classifiers</tt> does this Oracle have ?
-    unsigned size() const { return Classifiers.size(); }
+    unsigned size() const { return classifiers.size(); }
 
     /// Get an iterator to the first <tt>Classifier</tt>.
-    std::vector<Classifier>::iterator begin() { return Classifiers.begin(); }
+    std::vector<Classifier>::iterator begin() { return classifiers.begin(); }
     /// Get a past-the-end iterator to this Oracle's <tt>Classifiers</tt>.
-    std::vector<Classifier>::iterator end() { return Classifiers.end(); }
+    std::vector<Classifier>::iterator end() { return classifiers.end(); }
     /// Get an iterator to the first <tt>Classifier</tt>.
     std::vector<Classifier>::const_iterator begin() const {
-        return Classifiers.begin();
+        return classifiers.begin();
     }
     /// Get a past-the-end iterator to this Oracle's <tt>Classifier</tt>.
     std::vector<Classifier>::const_iterator end() const {
-        return Classifiers.end();
+        return classifiers.end();
     }
 
     /// Get this Oracle i-th <tt>Classifier</tt>.
-    Classifier &operator[](unsigned i) { return Classifiers[i]; }
+    Classifier &operator[](unsigned i) { return classifiers[i]; }
     /// Get this Oracle i-th <tt>Classifier</tt>.
-    const Classifier &operator[](unsigned i) const { return Classifiers[i]; }
+    const Classifier &operator[](unsigned i) const { return classifiers[i]; }
 
   private:
     bool addClassifier(const std::string &spec);
 
-    std::vector<Classifier> Classifiers;
+    std::vector<Classifier> classifiers;
 };
 
 } // namespace FI

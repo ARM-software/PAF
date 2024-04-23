@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: <text>Copyright 2023 Arm Limited and/or its
+ * SPDX-FileCopyrightText: <text>Copyright 2023,2024 Arm Limited and/or its
  * affiliates <open-source-office@arm.com></text>
  * SPDX-License-Identifier: Apache-2.0
  *
@@ -36,7 +36,7 @@ class LWParser {
     /// Advance position while white spaces \p ws can be skipped.
     ///
     /// \invariant The internal buffer is not modified.
-    void skip_ws(char ws = ' ') noexcept {
+    void skipWS(char ws = ' ') noexcept {
         while (!end() && buf[pos] == ws)
             pos++;
     }
@@ -101,8 +101,8 @@ class LWParser {
     /// result string \p subexpr.
     ///
     /// \invariant The internal buffer is not modified.
-    bool get_parenthesized_subexpr(std::string &subexpr, char opening,
-                                   char closing) noexcept;
+    bool getParenthesizedSubExpr(std::string &subexpr, char opening,
+                                 char closing) noexcept;
 
     /// Get the cursor position in the buffer.
     size_t position() const noexcept { return pos; }
@@ -117,7 +117,8 @@ class LWParser {
     /// Have we reached the end of the buffer ?
     bool end() const noexcept { return pos >= buf.size(); }
 
-    /// Get the remaining count of characters left to parse in the internal buffer.
+    /// Get the remaining count of characters left to parse in the internal
+    /// buffer.
     size_t count() const noexcept {
         if (end())
             return 0;
@@ -136,5 +137,5 @@ class LWParser {
     size_t pos;
 };
 
-}
-}
+} // namespace SCA
+} // namespace PAF

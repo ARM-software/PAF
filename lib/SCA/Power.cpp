@@ -50,9 +50,9 @@ class PowerModelBase {
         MemAccessPower() {}
         MemAccessPower(const MemAccessPower &) = default;
         MemAccessPower(double Address, double Data)
-            : Data(Data), Address(Address) {}
-        double Data = 0.0;
-        double Address = 0.0;
+            : data(Data), address(Address) {}
+        double data = 0.0;
+        double address = 0.0;
     };
 
     PowerModelBase() = delete;
@@ -60,45 +60,45 @@ class PowerModelBase {
 
     PowerModelBase(PAF::SCA::PowerDumper &Dumper, const PAF::ArchInfo &CPU,
                    PAF::SCA::PowerAnalysisConfig &Config)
-        : Dumper(Dumper), CPU(CPU), Config(Config), Memory(), ORegisters(),
-          IRegisters(0.0), PC(0.0), PSR(0.0), Instr(0.0), Cycles(1) {}
+        : dumper(Dumper), cpu(CPU), config(Config), memory(), outputRegs(),
+          inputRegs(0.0), pc(0.0), psr(0.0), instr(0.0), cycles(1) {}
 
     /// How many cycles were used by the last added instruction.
-    unsigned cycles() {
-        Cycles = 1;
-        unsigned mcycles = std::max(ORegisters.size(), Memory.size());
+    unsigned getCyclesFromLastInstr() {
+        cycles = 1;
+        unsigned mcycles = std::max(outputRegs.size(), memory.size());
         if (mcycles > 1)
-            Cycles += mcycles - 1;
-        return Cycles;
+            cycles += mcycles - 1;
+        return cycles;
     }
 
     virtual void add(const PAF::ReferenceInstruction &I) = 0;
 
     void dump(const PAF::ReferenceInstruction *I = nullptr) const {
-        for (unsigned i = 0; i < Cycles; i++) {
-            double POReg = i < ORegisters.size() ? ORegisters[i] : 0.0;
-            double PIReg = IRegisters;
-            double PAddr = i < Memory.size() ? Memory[i].Address : 0.0;
-            double PData = i < Memory.size() ? Memory[i].Data : 0.0;
-            double PPC = PC;
-            double PPSR = PSR;
-            double PInstr = Instr;
+        for (unsigned i = 0; i < cycles; i++) {
+            double POReg = i < outputRegs.size() ? outputRegs[i] : 0.0;
+            double PIReg = inputRegs;
+            double PAddr = i < memory.size() ? memory[i].address : 0.0;
+            double PData = i < memory.size() ? memory[i].data : 0.0;
+            double PPC = pc;
+            double PPSR = psr;
+            double PInstr = instr;
 
-            if (Config.addNoise()) {
-                if (Config.withInstructionsOutputs()) {
-                    POReg += Config.getNoise();
-                    PPSR += Config.getNoise();
+            if (config.addNoise()) {
+                if (config.withInstructionsOutputs()) {
+                    POReg += config.getNoise();
+                    PPSR += config.getNoise();
                 }
-                if (Config.withInstructionsInputs())
-                    PIReg += Config.getNoise();
-                if (Config.withMemAddress())
-                    PAddr += Config.getNoise();
-                if (Config.withMemData())
-                    PData += Config.getNoise();
-                if (Config.withPC())
-                    PPC += Config.getNoise();
-                if (Config.withOpcode())
-                    PInstr += Config.getNoise();
+                if (config.withInstructionsInputs())
+                    PIReg += config.getNoise();
+                if (config.withMemAddress())
+                    PAddr += config.getNoise();
+                if (config.withMemData())
+                    PData += config.getNoise();
+                if (config.withPC())
+                    PPC += config.getNoise();
+                if (config.withOpcode())
+                    PInstr += config.getNoise();
             }
 
             // Scaling factors, very finger in the air values.
@@ -114,23 +114,23 @@ class PowerModelBase {
                            F_ORegisters * POReg + F_IRegisters * PIReg +
                            F_Address * PAddr + F_Data * PData;
 
-            Dumper.dump(total, PC, Instr, POReg + PPSR, PIReg, PAddr, PData,
+            dumper.dump(total, pc, instr, POReg + PPSR, PIReg, PAddr, PData,
                         i == 0 ? I : nullptr);
         }
     }
 
   protected:
-    PAF::SCA::PowerDumper &Dumper;
-    const PAF::ArchInfo &CPU;
-    PAF::SCA::PowerAnalysisConfig &Config;
+    PAF::SCA::PowerDumper &dumper;
+    const PAF::ArchInfo &cpu;
+    PAF::SCA::PowerAnalysisConfig &config;
 
-    vector<MemAccessPower> Memory;
-    vector<double> ORegisters;
-    double IRegisters;
-    double PC;
-    double PSR;
-    double Instr;
-    unsigned Cycles;
+    vector<MemAccessPower> memory;
+    vector<double> outputRegs;
+    double inputRegs;
+    double pc;
+    double psr;
+    double instr;
+    unsigned cycles;
 };
 
 class HammingWeightPM : public PowerModelBase {
@@ -153,52 +153,52 @@ class HammingWeightPM : public PowerModelBase {
     HammingWeightPM() = delete;
     HammingWeightPM(PAF::SCA::PowerDumper &Dumper, const PAF::ArchInfo &CPU,
                     PAF::SCA::PowerAnalysisConfig &Config)
-        : PowerModelBase(Dumper, CPU, Config), HWPC(Config.withPC()),
-          HWInstr(Config.withOpcode()), HWMemAddr(Config.withMemAddress()),
-          HWMemData(Config.withMemData()),
-          HWPSR(Config.withInstructionsOutputs()),
-          HWIReg(Config.withInstructionsInputs()),
-          HWOReg(Config.withInstructionsOutputs()) {}
+        : PowerModelBase(Dumper, CPU, Config), hwPC(Config.withPC()),
+          hwInstr(Config.withOpcode()), hwMemAddr(Config.withMemAddress()),
+          hwMemData(Config.withMemData()),
+          hwPSR(Config.withInstructionsOutputs()),
+          hwInputReg(Config.withInstructionsInputs()),
+          hwOutputReg(Config.withInstructionsOutputs()) {}
 
     void add(const PAF::ReferenceInstruction &I) override {
-        PC = HWPC(I.pc);
-        Instr = HWInstr(I.instruction);
+        pc = hwPC(I.pc);
+        instr = hwInstr(I.instruction);
 
-        Memory.clear();
+        memory.clear();
         // Memory access related power consumption estimation.
         for (const PAF::MemoryAccess &MA : I.memaccess)
-            Memory.emplace_back(HWMemAddr(MA.addr), HWMemData(MA.value));
+            memory.emplace_back(hwMemAddr(MA.addr), hwMemData(MA.value));
 
-        PSR = 0.0;
-        IRegisters = 0.0;
-        ORegisters.clear();
+        psr = 0.0;
+        inputRegs = 0.0;
+        outputRegs.clear();
         // Register accesses estimated power consumption
-        if (Config.withInstructionsInputs() || Config.withInstructionsOutputs())
+        if (config.withInstructionsInputs() || config.withInstructionsOutputs())
             for (const PAF::RegisterAccess &RA : I.regaccess) {
                 switch (RA.access) {
                 // Output registers.
-                case PAF::RegisterAccess::Type::Write:
-                    if (CPU.isStatusRegister(RA.name))
-                        PSR = HWPSR(RA.value);
+                case PAF::RegisterAccess::Type::WRITE:
+                    if (cpu.isStatusRegister(RA.name))
+                        psr = hwPSR(RA.value);
                     else
-                        ORegisters.push_back(HWOReg(RA.value));
+                        outputRegs.push_back(hwOutputReg(RA.value));
                     break;
                 // Input registers.
-                case PAF::RegisterAccess::Type::Read:
-                    IRegisters += HWIReg(RA.value);
+                case PAF::RegisterAccess::Type::READ:
+                    inputRegs += hwInputReg(RA.value);
                     break;
                 }
             }
     }
 
   private:
-    HammingWeight<Addr> HWPC;
-    HammingWeight<uint32_t> HWInstr;
-    HammingWeight<Addr> HWMemAddr;
-    HammingWeight<unsigned long long> HWMemData;
-    HammingWeight<uint32_t> HWPSR;
-    HammingWeight<uint32_t> HWIReg;
-    HammingWeight<uint32_t> HWOReg;
+    HammingWeight<Addr> hwPC;
+    HammingWeight<uint32_t> hwInstr;
+    HammingWeight<Addr> hwMemAddr;
+    HammingWeight<unsigned long long> hwMemData;
+    HammingWeight<uint32_t> hwPSR;
+    HammingWeight<uint32_t> hwInputReg;
+    HammingWeight<uint32_t> hwOutputReg;
 };
 
 template <class Ty> double HD(Ty val, Ty previous, bool enable = true) {
@@ -209,16 +209,16 @@ class HammingDistancePM : public PowerModelBase {
 
     template <class Ty> class Reg {
       public:
-        Reg() : previous_val(Ty()), enable(true) {}
-        Reg(bool enable) : previous_val(Ty()), enable(enable) {}
+        Reg() : previousValue(Ty()), enable(true) {}
+        Reg(bool enable) : previousValue(Ty()), enable(enable) {}
         double operator()(Ty v) {
-            double p = HD<Ty>(v, previous_val, enable);
-            previous_val = v;
+            double p = HD<Ty>(v, previousValue, enable);
+            previousValue = v;
             return p;
         }
 
       private:
-        Ty previous_val;
+        Ty previousValue;
         bool enable;
     };
 
@@ -261,60 +261,60 @@ class HammingDistancePM : public PowerModelBase {
                       PAF::SCA::PowerAnalysisConfig &Config,
                       const PAF::SCA::PowerTrace::OracleBase &O,
                       vector<uint64_t> &&regs)
-        : PowerModelBase(Dumper, CPU, Config), Oracle(O), HDPC(Config.withPC()),
-          HDInstr(Config.withOpcode()),
-          Regs(Config.withInstructionsOutputs(), std::move(regs)),
+        : PowerModelBase(Dumper, CPU, Config), oracle(O), hdPC(Config.withPC()),
+          hdInstr(Config.withOpcode()),
+          regs(Config.withInstructionsOutputs(), std::move(regs)),
           lastLoad(nullptr), lastStore(nullptr), lastAccess(nullptr) {}
 
     void add(const PAF::ReferenceInstruction &I) override {
-        PC = HDPC(I.pc);
-        Instr = HDInstr(I.instruction);
+        pc = hdPC(I.pc);
+        instr = hdInstr(I.instruction);
 
         // Memory access related power consumption estimation.
-        Memory.clear();
+        memory.clear();
         for (unsigned i = 0; i < I.memaccess.size(); i++) {
             double AddrPwr = 0.0;
             double DataPwr = 0.0;
-            if ((Config.withMemAddress() || Config.withMemData()) &&
-                (Config.withMemoryAccessTransitions() ||
-                 Config.withMemoryUpdateTransitions())) {
+            if ((config.withMemAddress() || config.withMemData()) &&
+                (config.withMemoryAccessTransitions() ||
+                 config.withMemoryUpdateTransitions())) {
                 const PAF::MemoryAccess &MA = I.memaccess[i];
                 switch (MA.access) {
-                case PAF::MemoryAccess::Type::Read:
+                case PAF::MemoryAccess::Type::READ:
                     // Address bus transitions modelling.
-                    if (Config.withMemAddress()) {
-                        if (Config.withLoadToLoadTransitions())
+                    if (config.withMemAddress()) {
+                        if (config.withLoadToLoadTransitions())
                             AddrPwr += Bus::addr(MA, lastLoad);
-                        if (Config.withLastMemoryAccessTransitions())
+                        if (config.withLastMemoryAccessTransitions())
                             AddrPwr += Bus::addr(MA, lastAccess);
                     }
                     // Data bus transitions modelling.
-                    if (Config.withMemData()) {
-                        if (Config.withLoadToLoadTransitions())
+                    if (config.withMemData()) {
+                        if (config.withLoadToLoadTransitions())
                             DataPwr += Bus::value(MA, lastLoad);
-                        if (Config.withLastMemoryAccessTransitions())
+                        if (config.withLastMemoryAccessTransitions())
                             DataPwr += Bus::value(MA, lastAccess);
                     }
                     break;
-                case PAF::MemoryAccess::Type::Write:
+                case PAF::MemoryAccess::Type::WRITE:
                     // Address bus transitions modelling.
-                    if (Config.withMemAddress()) {
-                        if (Config.withStoreToStoreTransitions())
+                    if (config.withMemAddress()) {
+                        if (config.withStoreToStoreTransitions())
                             AddrPwr += Bus::addr(MA, lastStore);
-                        if (Config.withLastMemoryAccessTransitions())
+                        if (config.withLastMemoryAccessTransitions())
                             AddrPwr += Bus::addr(MA, lastAccess);
                     }
                     // Data bus transitions modelling.
-                    if (Config.withMemData()) {
-                        if (Config.withStoreToStoreTransitions())
+                    if (config.withMemData()) {
+                        if (config.withStoreToStoreTransitions())
                             DataPwr += Bus::value(MA, lastStore);
-                        if (Config.withLastMemoryAccessTransitions())
+                        if (config.withLastMemoryAccessTransitions())
                             DataPwr += Bus::value(MA, lastAccess);
                     }
                     // Memory point update.
-                    if (Config.withMemoryUpdateTransitions()) {
+                    if (config.withMemoryUpdateTransitions()) {
                         DataPwr += HD<typeof(PAF::MemoryAccess::value)>(
-                            MA.value, Oracle.getMemoryState(MA.addr, MA.size,
+                            MA.value, oracle.getMemoryState(MA.addr, MA.size,
                                                             I.time - 1));
                     }
                     break;
@@ -322,42 +322,42 @@ class HammingDistancePM : public PowerModelBase {
                 // Remember our last memory accesses.
                 lastAccess = &MA;
                 switch (MA.access) {
-                case PAF::Access::Type::Read:
+                case PAF::Access::Type::READ:
                     lastLoad = &MA;
                     break;
-                case PAF::Access::Type::Write:
+                case PAF::Access::Type::WRITE:
                     lastStore = &MA;
                     break;
                 }
             }
-            Memory.emplace_back(AddrPwr, DataPwr);
+            memory.emplace_back(AddrPwr, DataPwr);
         }
 
-        PSR = 0.0;
-        ORegisters.clear();
+        psr = 0.0;
+        outputRegs.clear();
         // Register accesses estimated power consumption
         for (const PAF::RegisterAccess &RA : I.regaccess) {
             switch (RA.access) {
             // Output registers.
-            case PAF::RegisterAccess::Type::Write:
-                if (CPU.isStatusRegister(RA.name))
-                    PSR = Regs(CPU.registerId(RA.name), RA.value);
+            case PAF::RegisterAccess::Type::WRITE:
+                if (cpu.isStatusRegister(RA.name))
+                    psr = regs(cpu.registerId(RA.name), RA.value);
                 else
-                    ORegisters.push_back(
-                        Regs(CPU.registerId(RA.name), RA.value));
+                    outputRegs.push_back(
+                        regs(cpu.registerId(RA.name), RA.value));
                 break;
             // Ignore input registers.
-            case PAF::RegisterAccess::Type::Read:
+            case PAF::RegisterAccess::Type::READ:
                 break;
             }
         }
     }
 
   private:
-    const PAF::SCA::PowerTrace::OracleBase &Oracle;
-    Reg<Addr> HDPC;
-    Reg<uint32_t> HDInstr;
-    RegBank Regs;
+    const PAF::SCA::PowerTrace::OracleBase &oracle;
+    Reg<Addr> hdPC;
+    Reg<uint32_t> hdInstr;
+    RegBank regs;
     const PAF::MemoryAccess *lastLoad;
     const PAF::MemoryAccess *lastStore;
     const PAF::MemoryAccess *lastAccess;
@@ -366,240 +366,237 @@ class HammingDistancePM : public PowerModelBase {
 } // namespace
 
 namespace PAF {
-    namespace SCA {
+namespace SCA {
 
-    TimingInfo::~TimingInfo() {}
+TimingInfo::~TimingInfo() {}
 
-    void TimingInfo::save_to_file(const string &filename) const {
-        if (filename.empty() || pc_cycle.empty())
-            return;
+void TimingInfo::saveToFile(const string &filename) const {
+    if (filename.empty() || pcCycle.empty())
+        return;
 
-        std::ofstream os(filename.c_str(), std::ofstream::out);
-        save(os);
+    std::ofstream os(filename.c_str(), std::ofstream::out);
+    save(os);
+}
+
+void YAMLTimingInfo::save(ostream &os) const {
+    os << "timing:\n";
+    os << "  min: " << cmin << '\n';
+    // This is technically wrong, but it allows to fill that field with a
+    // value.
+    os << "  ave: " << (cmin + cmax) / 2 << '\n';
+    os << "  max: " << cmax << '\n';
+    os << "  cycles: [";
+    const char *sep = " ";
+    for (const auto &p : pcCycle) {
+        os << sep << "[ 0x" << std::hex << p.first << std::dec << ", "
+           << p.second << " ]";
+        sep = ", ";
+    }
+    os << " ]\n";
+}
+
+CSVPowerDumper::CSVPowerDumper(const string &filename, bool detailed_output)
+    : PowerDumper(), FileStreamDumper(filename), sep(","),
+      detailedOutput(detailed_output) {
+    *this << std::fixed << std::setprecision(2);
+}
+
+CSVPowerDumper::CSVPowerDumper(ostream &s, bool detailed_output)
+    : PowerDumper(), FileStreamDumper(s), sep(","),
+      detailedOutput(detailed_output) {
+    *this << std::fixed << std::setprecision(2);
+}
+
+// Insert an empty line when changing to a new trace.
+void CSVPowerDumper::nextTrace() { *this << '\n'; }
+
+void CSVPowerDumper::preDump() {
+    const char *s = "";
+    for (const auto &field :
+         {"Total", "PC", "Instr", "ORegs", "IRegs", "Addr", "Data"}) {
+        *this << s << '"' << field << '"';
+        s = sep;
     }
 
-    void YAMLTimingInfo::save(ostream &os) const {
-        os << "timing:\n";
-        os << "  min: " << cmin << '\n';
-        // This is technically wrong, but it allows to fill that field with a
-        // value.
-        os << "  ave: " << (cmin + cmax) / 2 << '\n';
-        os << "  max: " << cmax << '\n';
-        os << "  cycles: [";
-        const char *sep = " ";
-        for (const auto &p : pc_cycle) {
-            os << sep << "[ 0x" << std::hex << p.first << std::dec << ", "
-               << p.second << " ]";
-            sep = ", ";
+    if (detailedOutput)
+        for (const auto &field : {"Time", "PC", "Instr", "Exe", "Asm",
+                                  "Memory accesses", "Register accesses"})
+            *this << sep << '"' << field << '"';
+
+    *this << '\n';
+}
+
+void CSVPowerDumper::dump(double total, double pc, double instr, double oreg,
+                          double ireg, double addr, double data,
+                          const PAF::ReferenceInstruction *I) {
+
+    *this << total;
+    *this << sep << pc;
+    *this << sep << instr;
+    *this << sep << oreg;
+    *this << sep << ireg;
+    *this << sep << addr;
+    *this << sep << data;
+
+    if (I != nullptr && detailedOutput) {
+        *this << sep << I->time;
+        *this << sep << "0x" << std::hex << I->pc << std::dec;
+        *this << sep << "0x" << std::hex << I->instruction << std::dec;
+        *this << sep << '"' << (I->executed() ? 'X' : '-') << '"';
+        *this << sep << '"' << I->disassembly << '"';
+
+        const char *space = "";
+        *this << sep << '"';
+        for (const PAF::MemoryAccess &M : I->memaccess) {
+            *this << space;
+            space = " ";
+            M.dump(*os);
         }
-        os << " ]\n";
-    }
+        *this << '"';
 
-    CSVPowerDumper::CSVPowerDumper(const string &filename, bool detailed_output)
-        : PowerDumper(), FileStreamDumper(filename), sep(","),
-          detailed_output(detailed_output) {
-        *this << std::fixed << std::setprecision(2);
-    }
-
-    CSVPowerDumper::CSVPowerDumper(ostream &s, bool detailed_output)
-        : PowerDumper(), FileStreamDumper(s), sep(","),
-          detailed_output(detailed_output) {
-        *this << std::fixed << std::setprecision(2);
-    }
-
-    // Insert an empty line when changing to a new trace.
-    void CSVPowerDumper::next_trace() { *this << '\n'; }
-
-    void CSVPowerDumper::predump() {
-        const char *s = "";
-        for (const auto &field :
-             {"Total", "PC", "Instr", "ORegs", "IRegs", "Addr", "Data"}) {
-            *this << s << '"' << field << '"';
-            s = sep;
+        space = "";
+        *this << sep << '"';
+        for (const PAF::RegisterAccess &R : I->regaccess) {
+            *this << space;
+            space = " ";
+            R.dump(*os);
         }
-
-        if (detailed_output)
-            for (const auto &field : {"Time", "PC", "Instr", "Exe", "Asm",
-                                      "Memory accesses", "Register accesses"})
-                *this << sep << '"' << field << '"';
-
-        *this << '\n';
+        *this << '"';
     }
 
-    void CSVPowerDumper::dump(double total, double pc, double instr,
-                              double oreg, double ireg, double addr,
-                              double data, const PAF::ReferenceInstruction *I) {
+    *this << '\n';
+}
 
-        *this << total;
-        *this << sep << pc;
-        *this << sep << instr;
-        *this << sep << oreg;
-        *this << sep << ireg;
-        *this << sep << addr;
-        *this << sep << data;
+PowerAnalysisConfig::~PowerAnalysisConfig() {}
 
-        if (I != nullptr && detailed_output) {
-            *this << sep << I->time;
-            *this << sep << "0x" << std::hex << I->pc << std::dec;
-            *this << sep << "0x" << std::hex << I->instruction << std::dec;
-            *this << sep << '"' << (I->executed() ? 'X' : '-') << '"';
-            *this << sep << '"' << I->disassembly << '"';
+void PowerTrace::analyze(const OracleBase &Oracle) {
 
-            const char *space = "";
-            *this << sep << '"';
-            for (const PAF::MemoryAccess &M : I->memaccess) {
-                *this << space;
-                space = " ";
-                M.dump(*os);
-            }
-            *this << '"';
+    if (instructions.empty())
+        return;
 
-            space = "";
-            *this << sep << '"';
-            for (const PAF::RegisterAccess &R : I->regaccess) {
-                *this << space;
-                space = " ";
-                R.dump(*os);
-            }
-            *this << '"';
-        }
-
-        *this << '\n';
+    unique_ptr<PowerModelBase> pwr;
+    switch (config.getPowerModel()) {
+    case PowerAnalysisConfig::HAMMING_WEIGHT:
+        pwr.reset(new HammingWeightPM(powerDumper, *cpu, config));
+        break;
+    case PowerAnalysisConfig::HAMMING_DISTANCE:
+        pwr.reset(new HammingDistancePM(
+            powerDumper, *cpu, config, Oracle,
+            Oracle.getRegBankState(instructions[0].time - 1)));
+        break;
     }
 
-    PowerAnalysisConfig::~PowerAnalysisConfig() {}
+    powerDumper.preDump();
+    if (regBankDumper.enabled())
+        regBankDumper.preDump();
+    if (memAccessDumper.enabled())
+        memAccessDumper.preDump();
+    if (instrDumper.enabled())
+        instrDumper.preDump();
 
-    void PowerTrace::analyze(const OracleBase &Oracle) {
+    for (unsigned i = 0; i < instructions.size(); i++) {
+        const PAF::ReferenceInstruction &I = instructions[i];
+        pwr->add(I);
+        unsigned cycles = pwr->getCyclesFromLastInstr();
+        timing.add(I.pc, cycles);
+        pwr->dump(&I);
+        const auto regBank = Oracle.getRegBankState(I.time);
+        if (regBankDumper.enabled())
+            regBankDumper.dump(regBank);
+        if (memAccessDumper.enabled())
+            memAccessDumper.dump(I.pc, I.memaccess);
+        if (instrDumper.enabled())
+            instrDumper.dump(I, regBank);
 
-        if (Instructions.empty())
-            return;
-
-        unique_ptr<PowerModelBase> pwr;
-        switch (Config.getPowerModel()) {
-        case PowerAnalysisConfig::HAMMING_WEIGHT:
-            pwr.reset(new HammingWeightPM(PwrDumper, *CPU, Config));
-            break;
-        case PowerAnalysisConfig::HAMMING_DISTANCE:
-            pwr.reset(new HammingDistancePM(
-                PwrDumper, *CPU, Config, Oracle,
-                Oracle.getRegBankState(Instructions[0].time - 1)));
-            break;
-        }
-
-        PwrDumper.predump();
-        if (RbDumper.enabled())
-            RbDumper.predump();
-        if (MADumper.enabled())
-            MADumper.predump();
-        if (IDumper.enabled())
-            IDumper.predump();
-
-        for (unsigned i = 0; i < Instructions.size(); i++) {
-            const PAF::ReferenceInstruction &I = Instructions[i];
-            pwr->add(I);
-            unsigned cycles = pwr->cycles();
-            Timing.add(I.pc, cycles);
-            pwr->dump(&I);
-            const auto regBank = Oracle.getRegBankState(I.time);
-            if (RbDumper.enabled())
-                RbDumper.dump(regBank);
-            if (MADumper.enabled())
-                MADumper.dump(I.pc, I.memaccess);
-            if (IDumper.enabled())
-                IDumper.dump(I, regBank);
-
-            // Insert dummy cycles when needed if we are not at the end of the
-            // sequence.
-            if (i < Instructions.size() - 1) {
-                if (CPU->isBranch(I)) {
-                    unsigned bcycles = CPU->getCycles(I, &Instructions[i + 1]);
-                    if (bcycles > cycles) {
-                        Timing.incr(bcycles - cycles);
-                        for (unsigned i = 0; i < bcycles - cycles; i++)
-                            pwr->dump();
-                    }
+        // Insert dummy cycles when needed if we are not at the end of the
+        // sequence.
+        if (i < instructions.size() - 1) {
+            if (cpu->isBranch(I)) {
+                unsigned bcycles = cpu->getCycles(I, &instructions[i + 1]);
+                if (bcycles > cycles) {
+                    timing.incr(bcycles - cycles);
+                    for (unsigned i = 0; i < bcycles - cycles; i++)
+                        pwr->dump();
                 }
             }
         }
-
-        PwrDumper.postdump();
-        if (RbDumper.enabled())
-            RbDumper.postdump();
-        if (MADumper.enabled())
-            MADumper.postdump();
-        if (IDumper.enabled())
-            IDumper.postdump();
     }
 
-    PowerTrace PowerAnalyzer::getPowerTrace(PowerDumper &PwrDumper,
-                                            TimingInfo &Timing,
-                                            RegBankDumper &RbDumper,
-                                            MemoryAccessesDumper &MADumper,
-                                            InstrDumper &IDumper,
-                                            PowerAnalysisConfig &Config,
-                                            const ArchInfo *CPU,
-                                            const PAF::ExecutionRange &ER) {
+    powerDumper.postDump();
+    if (regBankDumper.enabled())
+        regBankDumper.postDump();
+    if (memAccessDumper.enabled())
+        memAccessDumper.postDump();
+    if (instrDumper.enabled())
+        instrDumper.postDump();
+}
 
-        struct PTCont {
-            PAF::MTAnalyzer &MTA;
-            PowerTrace &PT;
-            const PowerAnalysisConfig &Config;
-            const ArchInfo &CPU;
+PowerTrace PowerAnalyzer::getPowerTrace(
+    PowerDumper &PwrDumper, TimingInfo &Timing, RegBankDumper &RbDumper,
+    MemoryAccessesDumper &MADumper, InstrDumper &IDumper,
+    PowerAnalysisConfig &Config, const ArchInfo *CPU,
+    const PAF::ExecutionRange &ER) {
 
-            PTCont(PAF::MTAnalyzer &MTA, PowerTrace &PT,
-                   const PowerAnalysisConfig &Config)
-                : MTA(MTA), PT(PT), Config(Config), CPU(*PT.getArchInfo()) {}
+    struct PTCont {
+        PAF::MTAnalyzer &analyzer;
+        PowerTrace &trace;
+        const PowerAnalysisConfig &config;
+        const ArchInfo &cpu;
 
-            void operator()(PAF::ReferenceInstruction &I) {
-                if (Config.withInstructionsInputs()) {
-                    const InstrInfo II = CPU.getInstrInfo(I);
-                    for (const auto &r :
-                         II.getUniqueInputRegisters(/* Implicit: */ false)) {
-                        const char *name = CPU.registerName(r);
-                        uint32_t value =
-                            MTA.getRegisterValueAtTime(name, I.time - 1);
-                        I.add(RegisterAccess(name, value,
-                                             RegisterAccess::Type::Read));
-                    }
+        PTCont(PAF::MTAnalyzer &MTA, PowerTrace &PT,
+               const PowerAnalysisConfig &Config)
+            : analyzer(MTA), trace(PT), config(Config), cpu(*PT.getArchInfo()) {
+        }
+
+        void operator()(PAF::ReferenceInstruction &I) {
+            if (config.withInstructionsInputs()) {
+                const InstrInfo II = cpu.getInstrInfo(I);
+                for (const auto &r :
+                     II.getUniqueInputRegisters(/* Implicit: */ false)) {
+                    const char *name = cpu.registerName(r);
+                    uint32_t value =
+                        analyzer.getRegisterValueAtTime(name, I.time - 1);
+                    I.add(RegisterAccess(name, value,
+                                         RegisterAccess::Type::READ));
                 }
-
-                /* FastModel simulate some of the dual load or store accesses as
-                 * single 64-bit accesses: break those accesses in 2 x 32-bit
-                 * accesses. */
-                if (I.iset == ISet::THUMB && I.width == 32) {
-                    bool index = ((I.instruction >> 24) & 0x01) == 1;
-                    bool wback = ((I.instruction >> 21) & 0x01) == 1;
-                    if ((I.instruction >> 25) == 0x74 &&
-                        ((I.instruction >> 22) & 0x01) == 1 &&
-                        ((index && !wback) || wback)) {
-                        if (I.memaccess.size() == 1) {
-                            MemoryAccess MA = I.memaccess[0];
-                            assert(MA.size == 8 && "Expecting an 8-byte memory "
-                                                   "access for LDRD or STRD");
-                            I.memaccess.clear();
-                            I.memaccess.emplace_back(
-                                4, MA.addr, MA.value & 0x0FFFFFFFF, MA.access);
-                            I.memaccess.emplace_back(
-                                4, MA.addr + 4,
-                                MA.value >> (8 * 4) & 0x0FFFFFFFF, MA.access);
-                        }
-                    }
-                }
-
-                PT.add(I);
             }
-        };
 
-        PowerTrace PT(PwrDumper, Timing, RbDumper, MADumper, IDumper, Config,
-                      CPU);
-        PTCont PTC(*this, PT, Config);
-        PAF::FromTraceBuilder<PAF::ReferenceInstruction,
-                              PAF::ReferenceInstructionBuilder, PTCont>
-            FTB(*this);
-        FTB.build(ER, PTC);
+            /* FastModel simulate some of the dual load or store accesses as
+             * single 64-bit accesses: break those accesses in 2 x 32-bit
+             * accesses. */
+            if (I.iset == ISet::THUMB && I.width == 32) {
+                bool index = ((I.instruction >> 24) & 0x01) == 1;
+                bool wback = ((I.instruction >> 21) & 0x01) == 1;
+                if ((I.instruction >> 25) == 0x74 &&
+                    ((I.instruction >> 22) & 0x01) == 1 &&
+                    ((index && !wback) || wback)) {
+                    if (I.memaccess.size() == 1) {
+                        MemoryAccess MA = I.memaccess[0];
+                        assert(MA.size == 8 && "Expecting an 8-byte memory "
+                                               "access for LDRD or STRD");
+                        I.memaccess.clear();
+                        I.memaccess.emplace_back(
+                            4, MA.addr, MA.value & 0x0FFFFFFFF, MA.access);
+                        I.memaccess.emplace_back(
+                            4, MA.addr + 4, MA.value >> (8 * 4) & 0x0FFFFFFFF,
+                            MA.access);
+                    }
+                }
+            }
 
-        return PT;
-    }
+            trace.add(I);
+        }
+    };
 
-    } // namespace SCA
+    PowerTrace PT(PwrDumper, Timing, RbDumper, MADumper, IDumper, Config, CPU);
+    PTCont PTC(*this, PT, Config);
+    PAF::FromTraceBuilder<PAF::ReferenceInstruction,
+                          PAF::ReferenceInstructionBuilder, PTCont>
+        FTB(*this);
+    FTB.build(ER, PTC);
+
+    return PT;
+}
+
+} // namespace SCA
 } // namespace PAF

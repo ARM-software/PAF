@@ -67,7 +67,7 @@ TEST(VCDWaveFile, getAllChangesTimes) {
 }
 
 // Create the test fixture for VCDWrite.
-TestWithTempFile(VCDWaveFileF, "test-VCDWrite.vcd.XXXXXX");
+TEST_WITH_TEMP_FILE(VCDWaveFileF, "test-VCDWrite.vcd.XXXXXX");
 TEST_F(VCDWaveFileF, Write) {
     VCDWaveFile F(getTemporaryFilename());
     Waveform W("input", 0, 1000, -3);

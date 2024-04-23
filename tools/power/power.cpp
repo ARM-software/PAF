@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: <text>Copyright 2021,2022,2023 Arm Limited and/or its
+ * SPDX-FileCopyrightText: <text>Copyright 2021-2024 Arm Limited and/or its
  * affiliates <open-source-office@arm.com></text>
  * SPDX-License-Identifier: Apache-2.0
  *
@@ -59,17 +59,17 @@ unique_ptr<Reporter> reporter = make_cli_reporter();
 
 class AnalysisRangeSpecifier {
   public:
-    enum Kind { NotSet, Function, FunctionMarkers };
+    enum Kind { NOT_SET, FUNCTION, FUNCTION_MARKERS };
 
-    AnalysisRangeSpecifier() : kind(NotSet), function(), markers() {}
+    AnalysisRangeSpecifier() : kind(NOT_SET), function(), markers() {}
 
     void setFunction(const string &f) {
-        kind = Function;
+        kind = FUNCTION;
         function = f;
     }
 
     void setMarkers(const string &startf, const string &endf) {
-        kind = FunctionMarkers;
+        kind = FUNCTION_MARKERS;
         markers = make_pair(startf, endf);
     }
 
@@ -186,9 +186,10 @@ int main(int argc, char **argv) {
                     PASelect.push_back(
                         PowerAnalysisConfig::WITH_MEMORY_UPDATE_TRANSITIONS);
                 });
-    ap.optval({"--register-trace"}, "FILENAME",
-              "Dump a trace of the register bank content in numpy format to FILENAME",
-              [&](const string &s) { RegBankTraceFilename = s; });
+    ap.optval(
+        {"--register-trace"}, "FILENAME",
+        "Dump a trace of the register bank content in numpy format to FILENAME",
+        [&](const string &s) { RegBankTraceFilename = s; });
     ap.optval({"--memory-accesses-trace"}, "FILENAME",
               "Dump a trace of memory accesses in yaml format to FILENAME",
               [&](const string &s) { MemoryAccessesTraceFilename = s; });
@@ -291,15 +292,15 @@ int main(int argc, char **argv) {
 
         vector<PAF::ExecutionRange> ERS;
         switch (ARS.getKind()) {
-        case AnalysisRangeSpecifier::Function:
+        case AnalysisRangeSpecifier::FUNCTION:
             ERS = PA.getInstances(ARS.getFunctionName());
             break;
-        case AnalysisRangeSpecifier::FunctionMarkers: {
+        case AnalysisRangeSpecifier::FUNCTION_MARKERS: {
             auto markers = ARS.getMarkers();
             ERS = PA.getBetweenFunctionMarkers(markers.first, markers.second);
             break;
         }
-        case AnalysisRangeSpecifier::NotSet:
+        case AnalysisRangeSpecifier::NOT_SET:
             reporter->errx(EXIT_FAILURE,
                            "Analysis range not specified, use one of "
                            "--function or --between-functions");
@@ -318,9 +319,9 @@ int main(int argc, char **argv) {
 
         for (const PAF::ExecutionRange &er : ERS) {
             if (tu.is_verbose()) {
-                cout << " - Building power trace from " << er.Start.time
-                     << " to " << er.End.time;
-                if (ARS.getKind() == AnalysisRangeSpecifier::Function)
+                cout << " - Building power trace from " << er.begin.time
+                     << " to " << er.end.time;
+                if (ARS.getKind() == AnalysisRangeSpecifier::FUNCTION)
                     cout << " (" << ARS.getFunctionName() << ')';
                 cout << '\n';
             }
@@ -328,16 +329,16 @@ int main(int argc, char **argv) {
                 PA.getPowerTrace(*PwrDumper, Timing, *RbDumper, *MADumper,
                                  *IDumper, PAConfig, CPU.get(), er);
             PTrace.analyze(*Oracle.get());
-            PwrDumper->next_trace();
-            RbDumper->next_trace();
-            MADumper->next_trace();
-            IDumper->next_trace();
-            Timing.next_trace();
+            PwrDumper->nextTrace();
+            RbDumper->nextTrace();
+            MADumper->nextTrace();
+            IDumper->nextTrace();
+            Timing.nextTrace();
         }
     }
 
     if (!TimingFilename.empty())
-        Timing.save_to_file(TimingFilename);
+        Timing.saveToFile(TimingFilename);
 
     return EXIT_SUCCESS;
 }

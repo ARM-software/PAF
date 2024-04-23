@@ -24,10 +24,6 @@
 #include "PAF/WAN/WaveFile.h"
 #include "PAF/WAN/Waveform.h"
 
-#ifdef HAS_GTKWAVE_FST
-#include "fstapi.h"
-#endif
-
 #include <string>
 #include <vector>
 

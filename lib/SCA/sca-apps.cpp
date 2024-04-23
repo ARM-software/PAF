@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: <text>Copyright 2021,2022,2023,2024 Arm Limited
+ * SPDX-FileCopyrightText: <text>Copyright 2021-2024 Arm Limited
  * and/or its affiliates <open-source-office@arm.com></text>
  * SPDX-License-Identifier: Apache-2.0
  *
@@ -46,23 +46,23 @@ SCAApp::SCAApp(const char *appname, int argc, char *argv[])
     : Argparse(appname, argc, argv) {
     optnoval({"-v", "--verbose"},
              "increase verbosity level (can be specified multiple times).",
-             [this]() { verbosity_level += 1; });
+             [this]() { verbosityLevel += 1; });
 
     // Output related options.
     optnoval({"-a", "--append"},
              "append to FILE (instead of overwriting, only available for terse "
              "and python output formats).",
-             [this]() { append_to_output = true; });
+             [this]() { appendToOutput = true; });
     optval({"-o", "--output"}, "FILE",
            "write output to FILE (instead of stdout).",
-           [this](const string &s) { output_file = s; });
+           [this](const string &s) { outputFile = s; });
     optnoval({"-p", "--python"},
              "emit results in a format suitable for importing in python.",
-             [this]() { output_format = OutputBase::OUTPUT_PYTHON; });
+             [this]() { outputFormat = OutputBase::OUTPUT_PYTHON; });
     optnoval({"-g", "--gnuplot"}, "emit results in gnuplot compatible format.",
-             [this]() { output_format = OutputBase::OUTPUT_GNUPLOT; });
+             [this]() { outputFormat = OutputBase::OUTPUT_GNUPLOT; });
     optnoval({"--numpy"}, "emit results in numpy format.",
-             [this]() { output_format = OutputBase::OUTPUT_NUMPY; });
+             [this]() { outputFormat = OutputBase::OUTPUT_NUMPY; });
     optnoval({"--perfect"}, "assume perfect inputs (i.e. no noise).",
              [this]() { perfect = true; });
     optval({"--decimate"}, "PERIOD%OFFSET",
@@ -89,33 +89,33 @@ SCAApp::SCAApp(const char *appname, int argc, char *argv[])
     // Select samples to start / end with as well as the number of traces to
     // process.
     optval({"-f", "--from"}, "S", "start computation at sample S (default: 0).",
-           [this](const string &s) { start_sample = stoull(s, nullptr, 0); });
+           [this](const string &s) { startSample = stoull(s, nullptr, 0); });
     optval({"-n", "--numsamples"}, "N",
            "restrict computation to N samples (default: all).",
-           [this](const string &s) { nb_samples = stoull(s, nullptr, 0); });
+           [this](const string &s) { nbSamples = stoull(s, nullptr, 0); });
 }
 
 void SCAApp::setup() {
     parse();
     // Ensure append_to_output has the correct value regarding the ouput format.
-    switch (output_format) {
+    switch (outputFormat) {
     case OutputBase::OUTPUT_GNUPLOT: /* fall-thru */
     case OutputBase::OUTPUT_NUMPY:
-        append_to_output = false;
+        appendToOutput = false;
         break;
     case OutputBase::OUTPUT_TERSE: /* fall-thru */
     case OutputBase::OUTPUT_PYTHON:
         /* Leave the user setting as is*/
         break;
     }
-    if (nb_samples == 0)
-        nb_samples = std::numeric_limits<size_t>::max() - start_sample;
-    out.reset(OutputBase::create(output_type(), output_filename(), append()));
+    if (nbSamples == 0)
+        nbSamples = std::numeric_limits<size_t>::max() - startSample;
+    out.reset(OutputBase::create(outputType(), outputFilename(), append()));
 }
 
 OutputBase::OutputBase(const std::string &filename, bool append, bool binary)
-    : using_file(filename.size() != 0), out(nullptr) {
-    if (using_file) {
+    : usingFile(filename.size() != 0), out(nullptr) {
+    if (usingFile) {
         auto openmode = ofstream::out;
         if (append)
             openmode |= ofstream::app;
@@ -136,7 +136,7 @@ void OutputBase::flush() {
 
 void OutputBase::close() {
     flush();
-    if (using_file && out) {
+    if (usingFile && out) {
         delete out;
         out = nullptr;
     }

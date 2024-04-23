@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: <text>Copyright 2021,2022 Arm Limited and/or its
+ * SPDX-FileCopyrightText: <text>Copyright 2021,2022,2024 Arm Limited and/or its
  * affiliates <open-source-office@arm.com></text>
  * SPDX-License-Identifier: Apache-2.0
  *
@@ -56,10 +56,10 @@ template <typename Ty> class Interval {
     /// Default constructor.
     ///
     /// Begin and End are initialized with the default value for Ty.
-    Interval() : Begin(Ty()), End(Ty()) {}
+    Interval() : lowEnd(Ty()), highEnd(Ty()) {}
     /// Construct an Interval from a begin (B) and an end (E).
-    constexpr Interval(const Ty &B, const Ty &E) : Begin(B), End(E) {
-        assert(Traits::value(Begin) <= Traits::value(End) &&
+    constexpr Interval(const Ty &B, const Ty &E) : lowEnd(B), highEnd(E) {
+        assert(Traits::value(lowEnd) <= Traits::value(highEnd) &&
                "Interval end should be higher or equal to begin.");
     }
     /// Copy construct an Interval.
@@ -69,36 +69,40 @@ template <typename Ty> class Interval {
     Interval &operator=(const Interval &) = default;
 
     /// Get the Interval Begin.
-    const Ty &begin_value() const { return Begin; }
+    const Ty &beginValue() const { return lowEnd; }
     /// Get the Interval End.
-    const Ty &end_value() const { return End; }
+    const Ty &endValue() const { return highEnd; }
 
     /// Get the Interval Begin value.
-    typename Traits::ValueTy begin() const { return Traits::value(Begin); }
+    typename Traits::ValueTy begin() const { return Traits::value(lowEnd); }
     /// Get the Interval End value.
-    typename Traits::ValueTy end() const { return Traits::value(End); }
+    typename Traits::ValueTy end() const { return Traits::value(highEnd); }
 
     /// Get this Interval size, defined as <tt>End - Begin</tt>.
-    size_t size() const { return Traits::value(End) - Traits::value(Begin); }
+    size_t size() const {
+        return Traits::value(highEnd) - Traits::value(lowEnd);
+    }
     /// Is this Interval empty, i.e. <tt>End == Begin</tt>.
-    bool empty() const { return Traits::value(End) == Traits::value(Begin); }
+    bool empty() const {
+        return Traits::value(highEnd) == Traits::value(lowEnd);
+    }
 
     /// Are this Interval and rhs equal ?
     bool operator==(const Interval &rhs) const {
-        return Traits::value(Begin) == Traits::value(rhs.Begin) &&
-               Traits::value(End) == Traits::value(rhs.End);
+        return Traits::value(lowEnd) == Traits::value(rhs.lowEnd) &&
+               Traits::value(highEnd) == Traits::value(rhs.highEnd);
     }
 
     /// Are this Interval and rhs different ?
     bool operator!=(const Interval &rhs) const {
-        return Traits::value(Begin) != Traits::value(rhs.Begin) ||
-               Traits::value(End) != Traits::value(rhs.End);
+        return Traits::value(lowEnd) != Traits::value(rhs.lowEnd) ||
+               Traits::value(highEnd) != Traits::value(rhs.highEnd);
     }
 
     /// Do this Interval and I intersect ?
     bool intersect(const Interval &I) const {
-        return !(Traits::value(I.Begin) > Traits::value(End) ||
-                 Traits::value(Begin) > Traits::value(I.End));
+        return !(Traits::value(I.lowEnd) > Traits::value(highEnd) ||
+                 Traits::value(lowEnd) > Traits::value(I.highEnd));
     }
 
     /// Merge I into this Interval.
@@ -107,10 +111,10 @@ template <typename Ty> class Interval {
     /// I must intersect with this Interval.
     Interval &merge(const Interval &I) {
         assert(intersect(I) && "Can not merge non overlapping intervals");
-        if (Traits::value(I.Begin) < Traits::value(Begin))
-            Begin = I.Begin;
-        if (Traits::value(I.End) > Traits::value(End))
-            End = I.End;
+        if (Traits::value(I.lowEnd) < Traits::value(lowEnd))
+            lowEnd = I.lowEnd;
+        if (Traits::value(I.highEnd) > Traits::value(highEnd))
+            highEnd = I.highEnd;
         return *this;
     }
 
@@ -120,8 +124,8 @@ template <typename Ty> class Interval {
     }
 
   private:
-    Ty Begin;
-    Ty End;
+    Ty lowEnd;
+    Ty highEnd;
 };
 
 /// Are Interval I1 and I2 disjoint, i.e. they have a null intersection ?

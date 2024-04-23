@@ -38,11 +38,11 @@ static string accessFstHeader(fstream &fst, const std::string &fileName,
                               std::size_t offset, std::size_t size) {
     const size_t fstSize = fst.seekg(0, ios_base::end).tellg();
     if (offset + size > fstSize)
-        die("Input file '", fileName, "' is too small");
+        DIE("Input file '", fileName, "' is too small");
 
     // Capture the current string value.
     fst.seekg(offset, ios_base::beg);
-    vector<char> buf(size+1);
+    vector<char> buf(size + 1);
     fst.get(buf.data(), size);
     buf.back() = 0;
 
@@ -56,12 +56,12 @@ static string accessFstHeader(fstream &fst, const std::string &fileName,
 
 int main(int argc, char *argv[]) {
     if (argc < 2)
-        die("Missing a file name argument");
+        DIE("Missing a file name argument");
 
     for (int fn = 1; fn < argc; fn++) {
         fstream fst(argv[fn], ios_base::out | ios_base::in);
         if (!fst)
-            die("Can not open '", argv[fn], "'");
+            DIE("Can not open '", argv[fn], "'");
 
         constexpr size_t SIM_VERSION_OFFSET = 74;
         constexpr size_t SIM_VERSION_SIZE = 128;

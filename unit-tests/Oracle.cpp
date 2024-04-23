@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: <text>Copyright 2021,2022,2023 Arm Limited and/or its
+ * SPDX-FileCopyrightText: <text>Copyright 2021-2024 Arm Limited and/or its
  * affiliates <open-source-office@arm.com></text>
  * SPDX-License-Identifier: Apache-2.0
  *
@@ -82,7 +82,7 @@ TEST(Oracle, classification) {
     EXPECT_TRUE(O.parse("@(fun){success}"));
     EXPECT_EQ(O.size(), 1);
     EXPECT_EQ(O[0].getSymbolName(), "fun");
-    EXPECT_EQ(O[0].getKind(), Classifier::Kind::Entry);
+    EXPECT_EQ(O[0].getKind(), Classifier::Kind::ENTRY);
     EXPECT_FALSE(O[0].empty());
     ostringstream sstr;
     O[0].dump(sstr);
@@ -93,7 +93,7 @@ TEST(Oracle, classification) {
     EXPECT_TRUE(O.parse("return(fun){caught}"));
     EXPECT_EQ(O.size(), 1);
     EXPECT_EQ(O[0].getSymbolName(), "fun");
-    EXPECT_EQ(O[0].getKind(), Classifier::Kind::Return);
+    EXPECT_EQ(O[0].getKind(), Classifier::Kind::RETURN);
     EXPECT_FALSE(O[0].empty());
     EXPECT_FALSE(O[0].hasAddress());
     O[0].setAddress(0x1234);
@@ -107,7 +107,7 @@ TEST(Oracle, classification) {
     EXPECT_TRUE(O.parse("callsite(abc){noeffect}"));
     EXPECT_EQ(O.size(), 1);
     O[0].setAddress(0x1234);
-    EXPECT_EQ(O[0].getKind(), Classifier::Kind::CallSite);
+    EXPECT_EQ(O[0].getKind(), Classifier::Kind::CALL_SITE);
     EXPECT_FALSE(O[0].empty());
     sstr.str("");
     O[0].dump(sstr);
@@ -118,7 +118,7 @@ TEST(Oracle, classification) {
     EXPECT_TRUE(O.parse("resumesite(def){crash}"));
     EXPECT_EQ(O.size(), 1);
     O[0].setAddress(0x1234);
-    EXPECT_EQ(O[0].getKind(), Classifier::Kind::ResumeSite);
+    EXPECT_EQ(O[0].getKind(), Classifier::Kind::RESUME_SITE);
     EXPECT_FALSE(O[0].empty());
     sstr.str("");
     O[0].dump(sstr);
@@ -164,5 +164,5 @@ TEST(Oracle, const) {
 
     O.parse("@(foo){success}");
     EXPECT_NE(O2.begin(), O2.end());
-    EXPECT_EQ(O2[0].getKind(), Classifier::Kind::Entry);
+    EXPECT_EQ(O2[0].getKind(), Classifier::Kind::ENTRY);
 }

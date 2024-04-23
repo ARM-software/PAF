@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: <text>Copyright 2021,2022 Arm Limited and/or its
+ * SPDX-FileCopyrightText: <text>Copyright 2021,2022,2024 Arm Limited and/or its
  * affiliates <open-source-office@arm.com></text>
  * SPDX-License-Identifier: Apache-2.0
  *
@@ -33,7 +33,9 @@ using namespace PAF::SCA;
 
 namespace {
 
-template <class DestTy> struct Convert { DestTy operator()(const string &v); };
+template <class DestTy> struct Convert {
+    DestTy operator()(const string &v);
+};
 template <> struct Convert<uint8_t> {
     uint8_t operator()(const string &v) { return stoul(v); }
 };

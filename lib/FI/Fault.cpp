@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: <text>Copyright 2021,2022 Arm Limited and/or its
+ * SPDX-FileCopyrightText: <text>Copyright 2021,2022,2024 Arm Limited and/or its
  * affiliates <open-source-office@arm.com></text>
  * SPDX-License-Identifier: Apache-2.0
  *
@@ -31,41 +31,41 @@ using std::ostream;
 using std::string;
 
 void InjectionRangeInfo::dump(ostream &os) const {
-    os << "{ Name: \"" << Name << '"';
-    os << ", StartTime: " << StartTime;
-    os << ", EndTime: " << EndTime;
-    os << ", StartAddress: 0x" << hex << StartAddress;
-    os << ", EndAddress: 0x" << EndAddress;
+    os << "{ Name: \"" << name << '"';
+    os << ", StartTime: " << startTime;
+    os << ", EndTime: " << endTime;
+    os << ", StartAddress: 0x" << hex << startAddress;
+    os << ", EndAddress: 0x" << endAddress;
     os << dec << '}';
 }
 
 void BreakPoint::dump(ostream &os) const {
     os << "Breakpoint: {";
-    os << " Address: 0x" << hex << Address << dec;
-    os << ", Count: " << Count;
+    os << " Address: 0x" << hex << address << dec;
+    os << ", Count: " << count;
     os << "}";
 }
 
 FaultModelBase::~FaultModelBase() {}
 
 void FaultModelBase::dump(ostream &os) const {
-    os << "Id: " << Id;
-    os << ", Time: " << Time;
-    os << ", Address: 0x" << hex << Address;
-    os << ", Instruction: 0x" << Instruction << dec;
-    os << ", Width: " << Width;
+    os << "Id: " << id;
+    os << ", Time: " << time;
+    os << ", Address: 0x" << hex << address;
+    os << ", Instruction: 0x" << instruction << dec;
+    os << ", Width: " << width;
     if (hasBreakpoint()) {
         os << ", ";
-        BPInfo->dump(os);
+        bpInfo->dump(os);
     }
-    os << ", Disassembly: \"" << Disassembly << '"';
+    os << ", Disassembly: \"" << disassembly << '"';
 }
 
 void InstructionSkip::dump(ostream &os) const {
     os << "{ ";
     this->FaultModelBase::dump(os);
-    os << ", Executed: " << (Executed ? "true" : "false");
-    os << ", FaultedInstr: 0x" << hex << FaultedInstr << dec;
+    os << ", Executed: " << (executed ? "true" : "false");
+    os << ", FaultedInstr: 0x" << hex << faultedInstr << dec;
     os << "}";
 }
 
@@ -74,33 +74,33 @@ InstructionSkip::~InstructionSkip() {}
 void CorruptRegDef::dump(ostream &os) const {
     os << "{ ";
     this->FaultModelBase::dump(os);
-    os << ", FaultedReg: \"" << FaultedReg << '"';
+    os << ", FaultedReg: \"" << faultedReg << '"';
     os << "}";
 }
 
 CorruptRegDef::~CorruptRegDef() {}
 
 void InjectionCampaign::dump(ostream &os) const {
-    os << "Image: \"" << Image << "\"\n";
-    os << "ReferenceTrace: \"" << ReferenceTrace << "\"\n";
-    os << "MaxTraceTime: " << MaxTraceTime << '\n';
-    os << "ProgramEntryAddress: 0x" << hex << ProgramEntryAddress << dec
+    os << "Image: \"" << image << "\"\n";
+    os << "ReferenceTrace: \"" << referenceTrace << "\"\n";
+    os << "MaxTraceTime: " << maxTraceTime << '\n';
+    os << "ProgramEntryAddress: 0x" << hex << programEntryAddress << dec
        << '\n';
-    os << "ProgramEndAddress: 0x" << hex << ProgramEndAddress << dec << '\n';
+    os << "ProgramEndAddress: 0x" << hex << programEndAddress << dec << '\n';
     os << "FaultModel: \"";
     dumpFaultModel(os);
     os << "\"\n";
-    if (InjectionRangeInformation.size() != 0) {
+    if (injectionRangeInformation.size() != 0) {
         os << "InjectionRangeInfo:\n";
-        for (const auto &fi : InjectionRangeInformation) {
+        for (const auto &fi : injectionRangeInformation) {
             os << "  - ";
             fi.dump(os);
             os << '\n';
         }
     }
-    if (TheOracle.size() != 0) {
+    if (theOracle.size() != 0) {
         os << "Oracle:\n";
-        for (const Classifier &C : TheOracle)
+        for (const Classifier &C : theOracle)
             C.dump(os);
     }
     os << "Campaign:\n";
@@ -114,7 +114,7 @@ void InjectionCampaign::dumpToFile(const string &filename) const {
 }
 
 void InjectionCampaign::dumpCampaign(std::ostream &os) const {
-    for (const auto &F : Faults) {
+    for (const auto &F : faults) {
         os << "  - ";
         F->dump(os);
         os << '\n';
@@ -122,8 +122,8 @@ void InjectionCampaign::dumpCampaign(std::ostream &os) const {
 }
 
 void InjectionCampaign::dumpFaultModel(std::ostream &os) const {
-    if (Faults.size() > 0)
-        os << Faults[0]->getFaultModelName();
+    if (faults.size() > 0)
+        os << faults[0]->getFaultModelName();
     else
         os << "unknown";
 }

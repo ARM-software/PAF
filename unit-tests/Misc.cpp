@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: <text>Copyright 2022,2023 Arm Limited and/or its
+ * SPDX-FileCopyrightText: <text>Copyright 2022-2024 Arm Limited and/or its
  * affiliates <open-source-office@arm.com></text>
  * SPDX-License-Identifier: Apache-2.0
  *
@@ -20,8 +20,8 @@
 
 #include "PAF/utils/Misc.h"
 
-#include <vector>
 #include <string>
+#include <vector>
 
 #include "gtest/gtest.h"
 

@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: <text>Copyright 2021,2022,2023 Arm Limited and/or its
+ * SPDX-FileCopyrightText: <text>Copyright 2021-2024 Arm Limited and/or its
  * affiliates <open-source-office@arm.com></text>
  * SPDX-License-Identifier: Apache-2.0
  *
@@ -49,7 +49,7 @@ bool parse_header(const string &header, string &descr, bool &fortran_order,
 
         // 3 fields are expected (in random order).
         while (true) {
-            H.skip_ws();
+            H.skipWS();
 
             // We reach the end of the record.
             if (H.expect('}'))
@@ -62,7 +62,7 @@ bool parse_header(const string &header, string &descr, bool &fortran_order,
                 return false;
             }
 
-            H.skip_ws();
+            H.skipWS();
 
             if (!H.expect(':')) {
                 if (errstr)
@@ -70,7 +70,7 @@ bool parse_header(const string &header, string &descr, bool &fortran_order,
                 return false;
             }
 
-            H.skip_ws();
+            H.skipWS();
 
             if (field == "descr") {
                 if (!H.parse(descr, '\'')) {
@@ -95,7 +95,7 @@ bool parse_header(const string &header, string &descr, bool &fortran_order,
                     return false;
                 }
                 while (true) {
-                    H.skip_ws();
+                    H.skipWS();
                     if (H.expect(')'))
                         break;
                     size_t dim;
@@ -105,7 +105,7 @@ bool parse_header(const string &header, string &descr, bool &fortran_order,
                         return false;
                     }
                     shape.push_back(dim);
-                    H.skip_ws();
+                    H.skipWS();
                     if (H.peek() != ')' && !H.expect(',')) {
                         if (errstr)
                             *errstr =
@@ -120,7 +120,7 @@ bool parse_header(const string &header, string &descr, bool &fortran_order,
                 return false;
             }
 
-            H.skip_ws();
+            H.skipWS();
 
             // There might be yet another member.
             if (H.peek() != '}' && !H.expect(',')) {
@@ -154,7 +154,7 @@ char native_endianness() {
     return w.c[0] == 1 ? '>' : '<';
 }
 
-const array<char,6> NPY_MAGIC = {'\x93', 'N', 'U', 'M', 'P', 'Y'};
+const array<char, 6> NPY_MAGIC = {'\x93', 'N', 'U', 'M', 'P', 'Y'};
 
 /// Get the shape description for saving into a numpy file.
 string shape(size_t rows, size_t cols) {
@@ -181,10 +181,10 @@ template <> const char *NPArrayBase::getEltTyDescr<int64_t>() { return "i8"; }
 template <> const char *NPArrayBase::getEltTyDescr<float>() { return "f4"; }
 template <> const char *NPArrayBase::getEltTyDescr<double>() { return "f8"; }
 
-bool NPArrayBase::get_information(ifstream &ifs, unsigned &major,
-                                  unsigned &minor, string &descr,
-                                  bool &fortran_order, vector<size_t> &shape,
-                                  size_t &data_size, const char **errstr) {
+bool NPArrayBase::getInformation(ifstream &ifs, unsigned &major,
+                                 unsigned &minor, string &descr,
+                                 bool &fortran_order, vector<size_t> &shape,
+                                 size_t &data_size, const char **errstr) {
     if (!ifs.good()) {
         if (errstr)
             *errstr = "bad stream";
@@ -252,17 +252,17 @@ bool NPArrayBase::get_information(ifstream &ifs, unsigned &major,
     return true;
 }
 
-bool NPArrayBase::get_information(ifstream &ifs, size_t &num_rows,
-                                  size_t &num_columns, string &elt_ty,
-                                  size_t &elt_size, const char **errstr) {
+bool NPArrayBase::getInformation(ifstream &ifs, size_t &num_rows,
+                                 size_t &num_columns, string &elt_ty,
+                                 size_t &elt_size, const char **errstr) {
     unsigned major, minor;
     bool fortran_order;
     vector<size_t> shape;
     size_t data_size;
     string descr;
 
-    if (!NPArrayBase::get_information(ifs, major, minor, descr, fortran_order,
-                                      shape, data_size, errstr))
+    if (!NPArrayBase::getInformation(ifs, major, minor, descr, fortran_order,
+                                     shape, data_size, errstr))
         return false;
 
     // Perform some validation that we can actually manage this specific npy
@@ -368,7 +368,7 @@ bool NPArrayBase::save(ofstream &os, const string &descr) const {
     os.write(header.c_str(), header.size());
 
     // And now write our data blob;
-    os.write(data.get(), size() * element_size());
+    os.write(data.get(), size() * elementSize());
 
     return true;
 }
@@ -394,8 +394,8 @@ bool NPArrayBase::save(const string &filename, const string &descr) const {
 NPArrayBase::NPArrayBase(const std::vector<std::string> &filenames, Axis axis,
                          const char *expectedEltTy, size_t num_rows,
                          size_t num_columns, unsigned elt_size)
-    : data(new char[num_rows * num_columns * elt_size]), num_rows(num_rows),
-      num_columns(num_columns), elt_size(elt_size), errstr(nullptr) {
+    : data(new char[num_rows * num_columns * elt_size]), numRows(num_rows),
+      numColumns(num_columns), eltSize(elt_size), errstr(nullptr) {
     if (filenames.empty())
         return;
 
@@ -421,7 +421,8 @@ NPArrayBase::NPArrayBase(const std::vector<std::string> &filenames, Axis axis,
     }
 }
 
-NPArrayBase::NPArrayBase(const string &filename, const char *expectedEltTy, size_t maxNumRows)
+NPArrayBase::NPArrayBase(const string &filename, const char *expectedEltTy,
+                         size_t maxNumRows)
     : NPArrayBase() {
     ifstream ifs(filename, ifstream::binary);
     if (!ifs) {
@@ -434,8 +435,8 @@ NPArrayBase::NPArrayBase(const string &filename, const char *expectedEltTy, size
     string l_elt_ty;
     size_t l_elt_size;
 
-    if (!get_information(ifs, l_num_rows, l_num_columns, l_elt_ty, l_elt_size,
-                         &errstr))
+    if (!getInformation(ifs, l_num_rows, l_num_columns, l_elt_ty, l_elt_size,
+                        &errstr))
         return;
 
     // Some sanity checks.
@@ -448,9 +449,9 @@ NPArrayBase::NPArrayBase(const string &filename, const char *expectedEltTy, size
     size_t num_bytes = l_num_rows * l_num_columns * l_elt_size;
     data.reset(new char[num_bytes]);
     ifs.read(data.get(), num_bytes);
-    num_rows = l_num_rows;
-    num_columns = l_num_columns;
-    elt_size = l_elt_size;
+    numRows = l_num_rows;
+    numColumns = l_num_columns;
+    eltSize = l_elt_size;
 }
 
 NPArrayBase::NPArrayBase(NPArrayBase &dest, size_t &index,
@@ -468,12 +469,12 @@ NPArrayBase::NPArrayBase(NPArrayBase &dest, size_t &index,
     string l_elt_ty;
     size_t l_elt_size;
 
-    if (!get_information(ifs, l_num_rows, l_num_columns, l_elt_ty, l_elt_size,
-                         &errstr))
+    if (!getInformation(ifs, l_num_rows, l_num_columns, l_elt_ty, l_elt_size,
+                        &errstr))
         return;
 
     // Some sanity checks.
-    if (l_elt_ty != expectedEltTy || l_elt_size != dest.element_size()) {
+    if (l_elt_ty != expectedEltTy || l_elt_size != dest.elementSize()) {
         errstr = "Unexpected element type";
         return;
     }
@@ -490,9 +491,9 @@ NPArrayBase::NPArrayBase(NPArrayBase &dest, size_t &index,
             errstr = "Row overflow";
             return;
         }
-        offset = index * dest.cols() * dest.element_size();
+        offset = index * dest.cols() * dest.elementSize();
         ifs.read(&matrix[offset],
-                 l_num_rows * l_num_columns * dest.element_size());
+                 l_num_rows * l_num_columns * dest.elementSize());
         index += l_num_rows;
         break;
     case ROW:
@@ -505,9 +506,9 @@ NPArrayBase::NPArrayBase(NPArrayBase &dest, size_t &index,
             return;
         }
         for (size_t r = 0; r < l_num_rows; r++) {
-            offset = r * dest.cols() * dest.element_size() +
-                     index * dest.element_size();
-            ifs.read(&matrix[offset], l_num_columns * dest.element_size());
+            offset = r * dest.cols() * dest.elementSize() +
+                     index * dest.elementSize();
+            ifs.read(&matrix[offset], l_num_columns * dest.elementSize());
         }
         index += l_num_columns;
         return;
@@ -515,81 +516,80 @@ NPArrayBase::NPArrayBase(NPArrayBase &dest, size_t &index,
 
     // At this point, we have validated all we could, so finish the NPArray
     // creation.
-    num_rows = l_num_rows;
-    num_columns = l_num_columns;
-    elt_size = l_elt_size;
-    data = unique_ptr<char[]>(new char[num_rows * num_columns * elt_size]);
-    ifs.read(data.get(), num_rows * num_columns * elt_size);
+    numRows = l_num_rows;
+    numColumns = l_num_columns;
+    eltSize = l_elt_size;
+    data = unique_ptr<char[]>(new char[numRows * numColumns * eltSize]);
+    ifs.read(data.get(), numRows * numColumns * eltSize);
 }
 
-NPArrayBase &NPArrayBase::insert_rows(size_t row, size_t rows) {
-    assert(row <= num_rows && "Out of range row insertion");
+NPArrayBase &NPArrayBase::insertRows(size_t row, size_t rows) {
+    assert(row <= numRows && "Out of range row insertion");
     unique_ptr<char[]> new_data(
-        new char[(num_rows + rows) * num_columns * elt_size]);
+        new char[(numRows + rows) * numColumns * eltSize]);
     if (row == 0) {
-        memcpy(&new_data[rows * num_columns * elt_size], data.get(),
-               num_rows * num_columns * elt_size);
-    } else if (row == num_rows) {
-        memcpy(new_data.get(), data.get(), num_rows * num_columns * elt_size);
+        memcpy(&new_data[rows * numColumns * eltSize], data.get(),
+               numRows * numColumns * eltSize);
+    } else if (row == numRows) {
+        memcpy(new_data.get(), data.get(), numRows * numColumns * eltSize);
     } else {
-        memcpy(new_data.get(), data.get(), row * num_columns * elt_size);
-        memcpy(&new_data[(row + rows) * num_columns * elt_size],
-               &data[row * num_columns * elt_size],
-               (num_rows - row) * num_columns * elt_size);
+        memcpy(new_data.get(), data.get(), row * numColumns * eltSize);
+        memcpy(&new_data[(row + rows) * numColumns * eltSize],
+               &data[row * numColumns * eltSize],
+               (numRows - row) * numColumns * eltSize);
     }
     data = std::move(new_data);
-    num_rows += rows;
+    numRows += rows;
     return *this;
 }
 
-NPArrayBase &NPArrayBase::insert_columns(size_t col, size_t cols) {
-    assert(col <= num_columns && "Out of range column insertion");
+NPArrayBase &NPArrayBase::insertColumns(size_t col, size_t cols) {
+    assert(col <= numColumns && "Out of range column insertion");
     unique_ptr<char[]> new_data(
-        new char[num_rows * (num_columns + cols) * elt_size]);
+        new char[numRows * (numColumns + cols) * eltSize]);
     if (col == 0) {
-        for (size_t row = 0; row < num_rows; row++)
-            memcpy(&new_data[(row * (num_columns + cols) + cols) * elt_size],
-                   &data[row * num_columns * elt_size], num_columns * elt_size);
-    } else if (col == num_columns) {
-        for (size_t row = 0; row < num_rows; row++)
-            memcpy(&new_data[row * (num_columns + cols) * elt_size],
-                   &data[row * num_columns * elt_size], num_columns * elt_size);
+        for (size_t row = 0; row < numRows; row++)
+            memcpy(&new_data[(row * (numColumns + cols) + cols) * eltSize],
+                   &data[row * numColumns * eltSize], numColumns * eltSize);
+    } else if (col == numColumns) {
+        for (size_t row = 0; row < numRows; row++)
+            memcpy(&new_data[row * (numColumns + cols) * eltSize],
+                   &data[row * numColumns * eltSize], numColumns * eltSize);
     } else {
-        for (size_t row = 0; row < num_rows; row++) {
-            memcpy(&new_data[row * (num_columns + cols) * elt_size],
-                   &data[row * num_columns * elt_size], col * elt_size);
+        for (size_t row = 0; row < numRows; row++) {
+            memcpy(&new_data[row * (numColumns + cols) * eltSize],
+                   &data[row * numColumns * eltSize], col * eltSize);
             memcpy(
-                &new_data[(row * (num_columns + cols) + col + cols) * elt_size],
-                &data[(row * num_columns + col) * elt_size],
-                (num_columns - col) * elt_size);
+                &new_data[(row * (numColumns + cols) + col + cols) * eltSize],
+                &data[(row * numColumns + col) * eltSize],
+                (numColumns - col) * eltSize);
         }
     }
     data = std::move(new_data);
-    num_columns += cols;
+    numColumns += cols;
     return *this;
 }
 
 NPArrayBase &NPArrayBase::extend(const NPArrayBase &other, Axis axis) {
-    assert(element_size() == other.element_size() &&
+    assert(elementSize() == other.elementSize() &&
            "element size difference in extend");
     if (axis == COLUMN) {
         assert(cols() == other.cols() &&
                "Column dimensions must match for extend");
         size_t num_rows_prev = rows();
-        insert_rows(rows(), other.rows());
-        memcpy(&data[num_rows_prev * num_columns * elt_size], other.data.get(),
-               other.size() * elt_size);
+        insertRows(rows(), other.rows());
+        memcpy(&data[num_rows_prev * numColumns * eltSize], other.data.get(),
+               other.size() * eltSize);
         return *this;
     }
 
     // Extend along the Row axis.
     assert(rows() == other.rows() && "Row dimensions must match for extend");
     size_t num_columns_prev = cols();
-    insert_columns(cols(), other.cols());
+    insertColumns(cols(), other.cols());
     for (size_t i = 0; i < other.rows(); i++)
-        memcpy(&data[(i * cols() + num_columns_prev) * elt_size],
-               &other.data[i * other.cols() * elt_size],
-               other.cols() * elt_size);
+        memcpy(&data[(i * cols() + num_columns_prev) * eltSize],
+               &other.data[i * other.cols() * eltSize], other.cols() * eltSize);
     return *this;
 }
 

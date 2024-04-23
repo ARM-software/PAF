@@ -74,20 +74,20 @@ int main(int argc, char *argv[]) {
         for (const auto &t : traces_path)
             cout << " " << t;
         cout << '\n';
-        if (app.decimation_period() != 1 || app.decimation_offset() != 0)
-            cout << "Decimation: " << app.decimation_period() << '%'
-                 << app.decimation_offset() << '\n';
-        if (app.output_filename().size() != 0) {
+        if (app.decimationPeriod() != 1 || app.decimationOffset() != 0)
+            cout << "Decimation: " << app.decimationPeriod() << '%'
+                 << app.decimationOffset() << '\n';
+        if (app.outputFilename().size() != 0) {
             if (app.append())
-                cout << "Appending output to '" << app.output_filename()
+                cout << "Appending output to '" << app.outputFilename()
                      << "'\n";
             else
-                cout << "Saving output to '" << app.output_filename() << "'\n";
+                cout << "Saving output to '" << app.outputFilename() << "'\n";
         }
     }
 
     size_t nbtraces = std::numeric_limits<size_t>::max();
-    size_t sample_to_stop_at = app.sample_end();
+    size_t sample_to_stop_at = app.sampleEnd();
     vector<NPArray<double>> traces;
     for (const auto &trace_path : traces_path) {
         NPArray<double> t(trace_path);
@@ -109,9 +109,9 @@ int main(int argc, char *argv[]) {
     }
 
     if (app.verbose()) {
-        const size_t nbsamples = sample_to_stop_at - app.sample_start();
+        const size_t nbsamples = sample_to_stop_at - app.sampleStart();
         cout << "Will process " << nbsamples
-             << " samples per traces, starting at sample " << app.sample_start()
+             << " samples per traces, starting at sample " << app.sampleStart()
              << "\n";
     }
 
@@ -119,11 +119,11 @@ int main(int argc, char *argv[]) {
     NPArray<double> results;
     switch (grouping) {
     case GROUP_BY_NPY:
-        results = app.is_perfect()
-                      ? perfect_t_test(app.sample_start(), sample_to_stop_at,
+        results = app.isPerfect()
+                      ? perfect_t_test(app.sampleStart(), sample_to_stop_at,
                                        traces[0], traces[1],
                                        app.verbose() ? &cout : nullptr)
-                      : t_test(app.sample_start(), sample_to_stop_at, traces[0],
+                      : t_test(app.sampleStart(), sample_to_stop_at, traces[0],
                                traces[1]);
         break;
     case GROUP_INTERLEAVED: {
@@ -131,11 +131,11 @@ int main(int argc, char *argv[]) {
         for (size_t i = 0; i < nbtraces; i++)
             classifier[i] =
                 i % 2 == 0 ? Classification::GROUP_0 : Classification::GROUP_1;
-        results = app.is_perfect()
-                      ? perfect_t_test(app.sample_start(), sample_to_stop_at,
+        results = app.isPerfect()
+                      ? perfect_t_test(app.sampleStart(), sample_to_stop_at,
                                        traces[0], classifier,
                                        app.verbose() ? &cout : nullptr)
-                      : t_test(app.sample_start(), sample_to_stop_at, traces[0],
+                      : t_test(app.sampleStart(), sample_to_stop_at, traces[0],
                                classifier);
     } break;
     }

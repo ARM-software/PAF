@@ -81,12 +81,12 @@ class SignalDiff {
     struct Difference {
         Difference(const string &fullScopeName, const string &signalName,
                    const MySignalDesc &SD1, const MySignalDesc &SD2)
-            : fullScopeName(fullScopeName), signalName(signalName), SD1(SD1),
-              SD2(SD2) {}
+            : fullScopeName(fullScopeName), signalName(signalName),
+              sigDesc1(SD1), sigDesc2(SD2) {}
         string fullScopeName;
         string signalName;
-        const MySignalDesc &SD1;
-        const MySignalDesc &SD2;
+        const MySignalDesc &sigDesc1;
+        const MySignalDesc &sigDesc2;
 
         string getFullSignalName() const {
             return fullScopeName + '/' + signalName;
@@ -96,7 +96,7 @@ class SignalDiff {
   public:
     SignalDiff(const DiffDataCollector &DDC1, const DiffDataCollector &DDC2,
                ostream &os, bool stopAtFirstDifference = false)
-        : DDC1(DDC1), DDC2(DDC2), uncomparable(false), differences() {
+        : ddC1(DDC1), ddC2(DDC2), uncomparable(false), differences() {
 
         const Waveform *W1 = DDC1.getWaveform();
         const Waveform *W2 = DDC2.getWaveform();
@@ -182,26 +182,26 @@ class SignalDiff {
 
         for (const Difference &Diff : differences) {
 
-            os << Diff.getFullSignalName() << ' ' << Diff.SD1.getKind()
+            os << Diff.getFullSignalName() << ' ' << Diff.sigDesc1.getKind()
                << " difference\n";
 
             if (Verbose) {
-                const Waveform *W1 = DDC1.getWaveform();
-                const Waveform *W2 = DDC2.getWaveform();
+                const Waveform *W1 = ddC1.getWaveform();
+                const Waveform *W2 = ddC2.getWaveform();
                 assert(W1 && "W1 Waveform pointer should not be null");
                 assert(W2 && "W2 Waveform pointer should not be null");
-                const Signal &S1 = (*W1)[Diff.SD1.getIdx()];
-                const Signal &S2 = (*W2)[Diff.SD2.getIdx()];
+                const Signal &S1 = (*W1)[Diff.sigDesc1.getIdx()];
+                const Signal &S2 = (*W2)[Diff.sigDesc2.getIdx()];
                 for (auto sit1 = S1.begin(), sit2 = S2.begin();
                      sit1 != S1.end() && sit2 != S2.end(); sit1++, sit2++) {
                     if (*sit1 != *sit2) {
-                        if ((*sit1).Time == (*sit2).Time)
-                            os << " - " << (*sit1).Time << '\t' << (*sit1).Value
-                               << " <> " << (*sit2).Value << '\n';
+                        if ((*sit1).time == (*sit2).time)
+                            os << " - " << (*sit1).time << '\t' << (*sit1).value
+                               << " <> " << (*sit2).value << '\n';
                         else
-                            os << " - " << (*sit1).Time << '\t' << (*sit1).Value
-                               << " <> " << (*sit2).Time << '\t'
-                               << (*sit2).Value << '\n';
+                            os << " - " << (*sit1).time << '\t' << (*sit1).value
+                               << " <> " << (*sit2).time << '\t'
+                               << (*sit2).value << '\n';
                     }
                 }
                 os << '\n';
@@ -214,23 +214,23 @@ class SignalDiff {
         if (uncomparable || differences.empty())
             return;
 
-        const Waveform *W1 = DDC1.getWaveform();
-        const Waveform *W2 = DDC2.getWaveform();
+        const Waveform *W1 = ddC1.getWaveform();
+        const Waveform *W2 = ddC2.getWaveform();
         assert(W1 && "W1 Waveform pointer should not be null");
         assert(W2 && "W2 Waveform pointer should not be null");
 
         // Collect the time of differences.
         multimap<TimeTy, size_t> ToD;
         for (unsigned i = 0; i < differences.size(); i++) {
-            const Signal &S1 = (*W1)[differences[i].SD1.getIdx()];
-            const Signal &S2 = (*W2)[differences[i].SD2.getIdx()];
+            const Signal &S1 = (*W1)[differences[i].sigDesc1.getIdx()];
+            const Signal &S2 = (*W2)[differences[i].sigDesc2.getIdx()];
 
             for (auto sit1 = S1.begin(), sit2 = S2.begin();
                  sit1 != S1.end() && sit2 != S2.end(); sit1++, sit2++)
                 if (*sit1 != *sit2) {
-                    ToD.emplace((*sit1).Time, i);
-                    if ((*sit1).Time != (*sit2).Time)
-                        ToD.emplace((*sit2).Time, i);
+                    ToD.emplace((*sit1).time, i);
+                    if ((*sit1).time != (*sit2).time)
+                        ToD.emplace((*sit2).time, i);
                 }
         }
 
@@ -242,13 +242,13 @@ class SignalDiff {
             if (Verbose) {
                 while (it != in) {
                     unsigned i = it->second;
-                    const Signal &S1 = (*W1)[differences[i].SD1.getIdx()];
-                    const Signal &S2 = (*W2)[differences[i].SD2.getIdx()];
+                    const Signal &S1 = (*W1)[differences[i].sigDesc1.getIdx()];
+                    const Signal &S2 = (*W2)[differences[i].sigDesc2.getIdx()];
                     os << " - ";
                     os << S1.getValueAtTime(time);
                     os << " <> ";
                     os << S2.getValueAtTime(time);
-                    os << ' ' << differences[i].SD1.getKind();
+                    os << ' ' << differences[i].sigDesc1.getKind();
                     os << ' ' << differences[i].getFullSignalName() << '\n';
                     it++;
                 }
@@ -262,8 +262,8 @@ class SignalDiff {
         if (uncomparable || differences.empty())
             return;
 
-        const Waveform *W1 = DDC1.getWaveform();
-        const Waveform *W2 = DDC2.getWaveform();
+        const Waveform *W1 = ddC1.getWaveform();
+        const Waveform *W2 = ddC2.getWaveform();
         assert(W1 && "W1 Waveform pointer should not be null");
         assert(W2 && "W2 Waveform pointer should not be null");
 
@@ -276,10 +276,10 @@ class SignalDiff {
         // found.
         set<TimeTy> Times;
         for (const Difference &Diff : differences) {
-            for (const auto &ci : (*W1)[Diff.SD1.getIdx()])
-                Times.insert(ci.Time);
-            for (const auto &ci : (*W2)[Diff.SD2.getIdx()])
-                Times.insert(ci.Time);
+            for (const auto &ci : (*W1)[Diff.sigDesc1.getIdx()])
+                Times.insert(ci.time);
+            for (const auto &ci : (*W2)[Diff.sigDesc2.getIdx()])
+                Times.insert(ci.time);
         }
         W.addTimes(Times.begin(), Times.end());
 
@@ -290,18 +290,18 @@ class SignalDiff {
             const string FullSignalName = Diff.getFullSignalName();
 
             // Copy first Signal into W.
-            const Signal &S1 = (*W1)[Diff.SD1.getIdx()];
+            const Signal &S1 = (*W1)[Diff.sigDesc1.getIdx()];
             SignalIdxTy SIdx1 = W.addSignal(
                 RootScope, postfix(FullSignalName, "-A"), S1.getNumBits(),
-                Diff.SD1.getKind(), /* alias: */ false);
+                Diff.sigDesc1.getKind(), /* alias: */ false);
             for (const auto &ci : S1)
                 W.addValueChange(SIdx1, ci);
 
             // Copy second signal into W.
-            const Signal &S2 = (*W2)[Diff.SD2.getIdx()];
+            const Signal &S2 = (*W2)[Diff.sigDesc2.getIdx()];
             SignalIdxTy SIdx2 = W.addSignal(
                 RootScope, postfix(FullSignalName, "-B"), S2.getNumBits(),
-                Diff.SD2.getKind(), /* alias: */ false);
+                Diff.sigDesc2.getKind(), /* alias: */ false);
             for (const auto &ci : S2)
                 W.addValueChange(SIdx2, ci);
 
@@ -313,7 +313,7 @@ class SignalDiff {
                  sit1 != S1.end() && sit2 != S2.end(); sit1++, sit2++) {
                 const char *emit = *sit1 != *sit2 ? "1" : "0";
                 if (emit != lastEmitted) {
-                    W.addValueChange(SDiffIdx, (*sit1).Time, emit);
+                    W.addValueChange(SDiffIdx, (*sit1).time, emit);
                     lastEmitted = emit;
                 }
             }
@@ -323,8 +323,8 @@ class SignalDiff {
     }
 
   private:
-    const DiffDataCollector &DDC1;
-    const DiffDataCollector &DDC2;
+    const DiffDataCollector &ddC1;
+    const DiffDataCollector &ddC2;
     bool uncomparable;
     vector<Difference> differences;
 };
@@ -380,9 +380,9 @@ int main(int argc, char *argv[]) {
 
     ap.parse([&]() {
         if (inputFiles.size() != 2)
-            die("expected exactly 2 file names");
+            DIE("expected exactly 2 file names");
         if (visitOptions.isAllSkipped())
-            die("Registers, Wires and Integers are all skipped: there "
+            DIE("Registers, Wires and Integers are all skipped: there "
                 "will be nothing to process");
     });
 

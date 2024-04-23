@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: <text>Copyright 2021,2022,2023 Arm Limited and/or its
+ * SPDX-FileCopyrightText: <text>Copyright 2021-2024 Arm Limited and/or its
  * affiliates <open-source-office@arm.com></text>
  * SPDX-License-Identifier: Apache-2.0
  *
@@ -44,43 +44,43 @@ namespace SCA {
 class TimingInfo {
   public:
     /// Construct an empty TimingInfo object.
-    TimingInfo() : pc_cycle(), cmin(-1), cmax(0), cur_cycle(0), first(true) {}
+    TimingInfo() : pcCycle(), cmin(-1), cmax(0), currentCycle(0), first(true) {}
     virtual ~TimingInfo();
 
     /// Save this TimingInfo to file filename.
-    void save_to_file(const std::string &filename) const;
+    void saveToFile(const std::string &filename) const;
     /// Save this TimingInfo to stream os.
     virtual void save(std::ostream &os) const = 0;
 
     /// Add some dummy cycles.
-    void incr(unsigned c) { cur_cycle += c; }
+    void incr(unsigned c) { currentCycle += c; }
 
     /// Move to next instruction.
     void add(Addr pc, unsigned c) {
         if (first)
-            pc_cycle.emplace_back(pc, cur_cycle);
-        cur_cycle += c;
+            pcCycle.emplace_back(pc, currentCycle);
+        currentCycle += c;
     }
 
     /// Prepare state for next trace.
     ///
     /// To be used when moving from one trace to another. Statistics are
     /// computed and the first trace is the one that is kept for logging.
-    void next_trace() {
-        cmin = std::min(cmin, cur_cycle);
-        cmax = std::max(cmax, cur_cycle);
+    void nextTrace() {
+        cmin = std::min(cmin, currentCycle);
+        cmax = std::max(cmax, currentCycle);
         first = false;
-        cur_cycle = 0;
+        currentCycle = 0;
     }
 
   protected:
     /// The sequence of (pc, cycle_count).
-    std::vector<std::pair<Addr, unsigned>> pc_cycle;
+    std::vector<std::pair<Addr, unsigned>> pcCycle;
     size_t cmin; ///< Minimum number of cycles.
     size_t cmax; ///< Maximum number of cycles.
 
   private:
-    size_t cur_cycle;
+    size_t currentCycle;
     bool first;
 };
 
@@ -123,10 +123,10 @@ class CSVPowerDumper : public PowerDumper, public FileStreamDumper {
     CSVPowerDumper(std::ostream &os, bool detailed_output);
 
     /// Update state when switching to next trace.
-    void next_trace() override;
+    void nextTrace() override;
 
     /// Called at the beginning of a trace.
-    void predump() override;
+    void preDump() override;
 
     /// Called for each sample in the trace.
     void dump(double total, double pc, double instr, double oreg, double ireg,
@@ -134,8 +134,8 @@ class CSVPowerDumper : public PowerDumper, public FileStreamDumper {
               const PAF::ReferenceInstruction *I) override;
 
   private:
-    const char *sep;            ///< CVS column separator.
-    const bool detailed_output; ///< Use a detailed output format.
+    const char *sep;           ///< CVS column separator.
+    const bool detailedOutput; ///< Use a detailed output format.
 };
 
 /// NPYPowerDumper is a PowerDumper specialization for writing the power trace
@@ -145,27 +145,27 @@ class NPYPowerDumper : public PowerDumper, public FilenameDumper {
     /// Construct a power trace that will be dumped in NPY format to file
     /// filename.
     NPYPowerDumper(const std::string &filename, size_t num_traces)
-        : FilenameDumper(filename), NpyA(num_traces) {}
+        : FilenameDumper(filename), npyA(num_traces) {}
 
     /// Construct a power trace that will be dumped in NPY format to stream
     /// os.
     NPYPowerDumper(std::ostream &os, size_t num_traces);
 
     /// Update state when switching to next trace.
-    void next_trace() override { NpyA.next(); }
+    void nextTrace() override { npyA.next(); }
 
     /// Called for each sample in the trace.
     void dump(double total, double pc, double instr, double oreg, double ireg,
               double addr, double data,
               const PAF::ReferenceInstruction *I) override {
-        NpyA.append(total);
+        npyA.append(total);
     }
 
     /// Destruct this NPYPowerDumper.
-    virtual ~NPYPowerDumper() override { NpyA.save(filename); };
+    virtual ~NPYPowerDumper() override { npyA.save(filename); };
 
   private:
-    NPAdapter<double> NpyA;
+    NPAdapter<double> npyA;
 };
 
 /// The PowerAnalysisConfig class is used to configure a power analysis run. It
@@ -214,19 +214,19 @@ class PowerAnalysisConfig {
     /// Default constructor, consider all power sources.
     PowerAnalysisConfig()
         : noiseSource(NoiseSource::getSource(NoiseSource::ZERO, 0.)),
-          config(WITH_ALL), PwrModel(HAMMING_WEIGHT), noise(true) {}
+          config(WITH_ALL), powerModel(HAMMING_WEIGHT), noise(true) {}
     /// Constructor for a specified power model (and all sources).
     PowerAnalysisConfig(PowerModel PwrModel)
         : noiseSource(NoiseSource::getSource(NoiseSource::ZERO, 0.)),
-          config(WITH_ALL), PwrModel(PwrModel), noise(true) {}
+          config(WITH_ALL), powerModel(PwrModel), noise(true) {}
     /// Constructor for the case with a single power source.
     PowerAnalysisConfig(Selection s, PowerModel PwrModel)
         : noiseSource(NoiseSource::getSource(NoiseSource::ZERO, 0.)), config(s),
-          PwrModel(PwrModel), noise(true) {}
+          powerModel(PwrModel), noise(true) {}
     /// Constructor with a custom NoiseSource and a single power source.
     PowerAnalysisConfig(std::unique_ptr<NoiseSource> &&ns, Selection s,
                         PowerModel PwrModel)
-        : noiseSource(std::move(ns)), config(s), PwrModel(PwrModel),
+        : noiseSource(std::move(ns)), config(s), powerModel(PwrModel),
           noise(true) {}
     /// Default move constructor.
     PowerAnalysisConfig(PowerAnalysisConfig &&) = default;
@@ -302,15 +302,15 @@ class PowerAnalysisConfig {
 
     /// Set power model to use.
     PowerAnalysisConfig &set(PowerModel m) {
-        PwrModel = m;
+        powerModel = m;
         return *this;
     }
     /// Get the power model to use.
-    PowerModel getPowerModel() const { return PwrModel; }
+    PowerModel getPowerModel() const { return powerModel; }
     /// Will the power analysis use the Hamming weight model ?
-    bool isHammingWeight() const { return PwrModel == HAMMING_WEIGHT; }
+    bool isHammingWeight() const { return powerModel == HAMMING_WEIGHT; }
     /// Will the power analysis use the Hamming distance model ?
-    bool isHammingDistance() const { return PwrModel == HAMMING_DISTANCE; }
+    bool isHammingDistance() const { return powerModel == HAMMING_DISTANCE; }
 
     /// Should noise be added to the synthetic power trace.
     bool addNoise() const { return noise; }
@@ -330,7 +330,7 @@ class PowerAnalysisConfig {
   private:
     std::unique_ptr<NoiseSource> noiseSource;
     unsigned config;
-    PowerModel PwrModel;
+    PowerModel powerModel;
     bool noise;
 };
 
@@ -359,24 +359,24 @@ class PowerTrace {
     class MTAOracle : public OracleBase {
       public:
         MTAOracle(const PAF::MTAnalyzer &MTA, const PAF::ArchInfo *CPU)
-            : OracleBase(), MTA(MTA), CPU(CPU) {}
+            : OracleBase(), analyzer(MTA), cpu(CPU) {}
         std::vector<uint64_t> getRegBankState(Time t) const override {
-            const unsigned NR = CPU->numRegisters();
+            const unsigned NR = cpu->numRegisters();
             std::vector<uint64_t> regbankInitialState(NR);
             for (unsigned r = 0; r < NR; r++)
                 regbankInitialState[r] =
-                    MTA.getRegisterValueAtTime(CPU->registerName(r), t);
+                    analyzer.getRegisterValueAtTime(cpu->registerName(r), t);
             return regbankInitialState;
         }
         uint64_t getMemoryState(Addr address, size_t size,
                                 Time t) const override {
             std::vector<uint8_t> mem =
-                MTA.getMemoryValueAtTime(address, size, t);
+                analyzer.getMemoryValueAtTime(address, size, t);
 
             uint64_t v = 0;
             for (size_t b = 0; b < size; b++) {
                 v <<= 1;
-                if (MTA.index.isBigEndian())
+                if (analyzer.index.isBigEndian())
                     v |= mem[b];
                 else
                     v |= mem[size - 1 - b];
@@ -385,8 +385,8 @@ class PowerTrace {
         }
 
       private:
-        const PAF::MTAnalyzer &MTA;
-        const PAF::ArchInfo *CPU;
+        const PAF::MTAnalyzer &analyzer;
+        const PAF::ArchInfo *cpu;
     };
 
     /// Construct a PowerTrace.
@@ -394,38 +394,39 @@ class PowerTrace {
                RegBankDumper &RbDumper, MemoryAccessesDumper &MADumper,
                InstrDumper &IDumper, PowerAnalysisConfig &Config,
                const PAF::ArchInfo *CPU)
-        : PwrDumper(PwrDumper), RbDumper(RbDumper), MADumper(MADumper),
-          IDumper(IDumper), Timing(Timing), Config(Config), Instructions(),
-          CPU(CPU) {}
+        : powerDumper(PwrDumper), regBankDumper(RbDumper),
+          memAccessDumper(MADumper), instrDumper(IDumper), timing(Timing),
+          config(Config), instructions(), cpu(CPU) {}
 
     /// Move construct a PowerTrace.
     PowerTrace(PowerTrace &&PT)
-        : PwrDumper(PT.PwrDumper), RbDumper(PT.RbDumper), MADumper(PT.MADumper),
-          IDumper(PT.IDumper), Timing(PT.Timing), Config(PT.Config),
-          Instructions(std::move(PT.Instructions)), CPU(PT.CPU) {}
+        : powerDumper(PT.powerDumper), regBankDumper(PT.regBankDumper),
+          memAccessDumper(PT.memAccessDumper), instrDumper(PT.instrDumper),
+          timing(PT.timing), config(PT.config),
+          instructions(std::move(PT.instructions)), cpu(PT.cpu) {}
 
     /// Move assign a PowerTrace.
     PowerTrace &operator=(PowerTrace &&PT) {
-        PwrDumper = PT.PwrDumper;
-        RbDumper = PT.RbDumper;
-        MADumper = PT.MADumper;
-        IDumper = PT.IDumper;
-        Timing = PT.Timing;
-        Config = std::move(PT.Config);
-        Instructions = std::move(PT.Instructions);
-        CPU = PT.CPU;
+        powerDumper = PT.powerDumper;
+        regBankDumper = PT.regBankDumper;
+        memAccessDumper = PT.memAccessDumper;
+        instrDumper = PT.instrDumper;
+        timing = PT.timing;
+        config = std::move(PT.config);
+        instructions = std::move(PT.instructions);
+        cpu = PT.cpu;
         return *this;
     }
 
     /// Add a new instruction to the trace.
-    void add(const PAF::ReferenceInstruction &I) { Instructions.push_back(I); }
+    void add(const PAF::ReferenceInstruction &I) { instructions.push_back(I); }
 
     /// Get this power trace size in number of instructions.
-    size_t size() const { return Instructions.size(); }
+    size_t size() const { return instructions.size(); }
 
     /// Get the i-th instruction in this trace.
     const PAF::ReferenceInstruction &operator[](size_t i) const {
-        return Instructions[i];
+        return instructions[i];
     }
 
     /// Perform the analysis on the ExecutionRange, dispatching power
@@ -434,17 +435,17 @@ class PowerTrace {
     void analyze(const OracleBase &Oracle);
 
     /// Get this PowerTrace ArchInfo.
-    const PAF::ArchInfo *getArchInfo() const { return CPU; }
+    const PAF::ArchInfo *getArchInfo() const { return cpu; }
 
   private:
-    PowerDumper &PwrDumper;
-    RegBankDumper &RbDumper;
-    MemoryAccessesDumper &MADumper;
-    InstrDumper &IDumper;
-    TimingInfo &Timing;
-    PowerAnalysisConfig &Config;
-    std::vector<PAF::ReferenceInstruction> Instructions;
-    const PAF::ArchInfo *CPU;
+    PowerDumper &powerDumper;
+    RegBankDumper &regBankDumper;
+    MemoryAccessesDumper &memAccessDumper;
+    InstrDumper &instrDumper;
+    TimingInfo &timing;
+    PowerAnalysisConfig &config;
+    std::vector<PAF::ReferenceInstruction> instructions;
+    const PAF::ArchInfo *cpu;
 };
 
 /// The PowerAnalyzer class is used to create a PowerTrace.
@@ -460,8 +461,8 @@ class PowerAnalyzer : public PAF::MTAnalyzer {
     PowerTrace getPowerTrace(PowerDumper &PwrDumper, TimingInfo &Timing,
                              RegBankDumper &RbDumper,
                              MemoryAccessesDumper &MADumper,
-                             InstrDumper &IDumper,
-                             PowerAnalysisConfig &Config, const ArchInfo *CPU,
+                             InstrDumper &IDumper, PowerAnalysisConfig &Config,
+                             const ArchInfo *CPU,
                              const PAF::ExecutionRange &ER);
 };
 

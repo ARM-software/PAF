@@ -37,55 +37,55 @@ using ChangeBoundsTy = Signal::ChangeBoundsTy;
 
 TEST(Logic, Basics) {
 
-    const Logic::Ty L0 = Logic::Ty::Logic0;
-    const Logic::Ty L1 = Logic::Ty::Logic1;
-    const Logic::Ty Z = Logic::Ty::HighZ;
-    const Logic::Ty X = Logic::Ty::Unknown;
+    const Logic::Ty L0 = Logic::Ty::LOGIC_0;
+    const Logic::Ty L1 = Logic::Ty::LOGIC_1;
+    const Logic::Ty Z = Logic::Ty::HIGH_Z;
+    const Logic::Ty X = Logic::Ty::UNKNOWN;
 
     // Encoding check.
     EXPECT_EQ(Logic::encoding(), 2);
 
     // Equality
-    EXPECT_TRUE(L0 == Logic::Ty::Logic0);
-    EXPECT_FALSE(L0 == Logic::Ty::Logic1);
-    EXPECT_FALSE(L0 == Logic::Ty::HighZ);
-    EXPECT_FALSE(L0 == Logic::Ty::Unknown);
+    EXPECT_TRUE(L0 == Logic::Ty::LOGIC_0);
+    EXPECT_FALSE(L0 == Logic::Ty::LOGIC_1);
+    EXPECT_FALSE(L0 == Logic::Ty::HIGH_Z);
+    EXPECT_FALSE(L0 == Logic::Ty::UNKNOWN);
 
-    EXPECT_FALSE(L1 == Logic::Ty::Logic0);
-    EXPECT_TRUE(L1 == Logic::Ty::Logic1);
-    EXPECT_FALSE(L1 == Logic::Ty::HighZ);
-    EXPECT_FALSE(L1 == Logic::Ty::Unknown);
+    EXPECT_FALSE(L1 == Logic::Ty::LOGIC_0);
+    EXPECT_TRUE(L1 == Logic::Ty::LOGIC_1);
+    EXPECT_FALSE(L1 == Logic::Ty::HIGH_Z);
+    EXPECT_FALSE(L1 == Logic::Ty::UNKNOWN);
 
-    EXPECT_FALSE(Z == Logic::Ty::Logic0);
-    EXPECT_FALSE(Z == Logic::Ty::Logic1);
-    EXPECT_TRUE(Z == Logic::Ty::HighZ);
-    EXPECT_FALSE(Z == Logic::Ty::Unknown);
+    EXPECT_FALSE(Z == Logic::Ty::LOGIC_0);
+    EXPECT_FALSE(Z == Logic::Ty::LOGIC_1);
+    EXPECT_TRUE(Z == Logic::Ty::HIGH_Z);
+    EXPECT_FALSE(Z == Logic::Ty::UNKNOWN);
 
-    EXPECT_FALSE(X == Logic::Ty::Logic0);
-    EXPECT_FALSE(X == Logic::Ty::Logic1);
-    EXPECT_FALSE(X == Logic::Ty::HighZ);
-    EXPECT_TRUE(X == Logic::Ty::Unknown);
+    EXPECT_FALSE(X == Logic::Ty::LOGIC_0);
+    EXPECT_FALSE(X == Logic::Ty::LOGIC_1);
+    EXPECT_FALSE(X == Logic::Ty::HIGH_Z);
+    EXPECT_TRUE(X == Logic::Ty::UNKNOWN);
 
     // Inequality
-    EXPECT_FALSE(L0 != Logic::Ty::Logic0);
-    EXPECT_TRUE(L0 != Logic::Ty::Logic1);
-    EXPECT_TRUE(L0 != Logic::Ty::HighZ);
-    EXPECT_TRUE(L0 != Logic::Ty::Unknown);
+    EXPECT_FALSE(L0 != Logic::Ty::LOGIC_0);
+    EXPECT_TRUE(L0 != Logic::Ty::LOGIC_1);
+    EXPECT_TRUE(L0 != Logic::Ty::HIGH_Z);
+    EXPECT_TRUE(L0 != Logic::Ty::UNKNOWN);
 
-    EXPECT_TRUE(L1 != Logic::Ty::Logic0);
-    EXPECT_FALSE(L1 != Logic::Ty::Logic1);
-    EXPECT_TRUE(L1 != Logic::Ty::HighZ);
-    EXPECT_TRUE(L1 != Logic::Ty::Unknown);
+    EXPECT_TRUE(L1 != Logic::Ty::LOGIC_0);
+    EXPECT_FALSE(L1 != Logic::Ty::LOGIC_1);
+    EXPECT_TRUE(L1 != Logic::Ty::HIGH_Z);
+    EXPECT_TRUE(L1 != Logic::Ty::UNKNOWN);
 
-    EXPECT_TRUE(Z != Logic::Ty::Logic0);
-    EXPECT_TRUE(Z != Logic::Ty::Logic1);
-    EXPECT_FALSE(Z != Logic::Ty::HighZ);
-    EXPECT_TRUE(Z != Logic::Ty::Unknown);
+    EXPECT_TRUE(Z != Logic::Ty::LOGIC_0);
+    EXPECT_TRUE(Z != Logic::Ty::LOGIC_1);
+    EXPECT_FALSE(Z != Logic::Ty::HIGH_Z);
+    EXPECT_TRUE(Z != Logic::Ty::UNKNOWN);
 
-    EXPECT_TRUE(X != Logic::Ty::Logic0);
-    EXPECT_TRUE(X != Logic::Ty::Logic1);
-    EXPECT_TRUE(X != Logic::Ty::HighZ);
-    EXPECT_FALSE(X != Logic::Ty::Unknown);
+    EXPECT_TRUE(X != Logic::Ty::LOGIC_0);
+    EXPECT_TRUE(X != Logic::Ty::LOGIC_1);
+    EXPECT_TRUE(X != Logic::Ty::HIGH_Z);
+    EXPECT_FALSE(X != Logic::Ty::UNKNOWN);
 
     // isLogic
     EXPECT_TRUE(Logic::isLogic(L0));
@@ -108,143 +108,143 @@ TEST(Logic, Basics) {
 
 TEST(Logic, ConversionBool) {
     // From boolean conversions.
-    EXPECT_EQ(Logic::fromBool(true), Logic::Ty::Logic1);
-    EXPECT_EQ(Logic::fromBool(false), Logic::Ty::Logic0);
-    EXPECT_NE(Logic::fromBool(false), Logic::Ty::HighZ);
-    EXPECT_NE(Logic::fromBool(false), Logic::Ty::Unknown);
-    EXPECT_NE(Logic::fromBool(true), Logic::Ty::HighZ);
-    EXPECT_NE(Logic::fromBool(true), Logic::Ty::Unknown);
+    EXPECT_EQ(Logic::fromBool(true), Logic::Ty::LOGIC_1);
+    EXPECT_EQ(Logic::fromBool(false), Logic::Ty::LOGIC_0);
+    EXPECT_NE(Logic::fromBool(false), Logic::Ty::HIGH_Z);
+    EXPECT_NE(Logic::fromBool(false), Logic::Ty::UNKNOWN);
+    EXPECT_NE(Logic::fromBool(true), Logic::Ty::HIGH_Z);
+    EXPECT_NE(Logic::fromBool(true), Logic::Ty::UNKNOWN);
 
     // To boolean conversions.
-    EXPECT_FALSE(Logic::getAsBool(Logic::Ty::Logic0));
-    EXPECT_TRUE(Logic::getAsBool(Logic::Ty::Logic1));
-    EXPECT_FALSE(Logic::getAsBool(Logic::Ty::HighZ));
-    EXPECT_FALSE(Logic::getAsBool(Logic::Ty::Unknown));
+    EXPECT_FALSE(Logic::getAsBool(Logic::Ty::LOGIC_0));
+    EXPECT_TRUE(Logic::getAsBool(Logic::Ty::LOGIC_1));
+    EXPECT_FALSE(Logic::getAsBool(Logic::Ty::HIGH_Z));
+    EXPECT_FALSE(Logic::getAsBool(Logic::Ty::UNKNOWN));
 }
 
 TEST(Logic, ConversionChar) {
     // From char conversions.
-    EXPECT_EQ(Logic::fromChar('1'), Logic::Ty::Logic1);
-    EXPECT_EQ(Logic::fromChar('0'), Logic::Ty::Logic0);
-    EXPECT_EQ(Logic::fromChar('z'), Logic::Ty::HighZ);
-    EXPECT_EQ(Logic::fromChar('Z'), Logic::Ty::HighZ);
-    EXPECT_EQ(Logic::fromChar('x'), Logic::Ty::Unknown);
-    EXPECT_EQ(Logic::fromChar('X'), Logic::Ty::Unknown);
+    EXPECT_EQ(Logic::fromChar('1'), Logic::Ty::LOGIC_1);
+    EXPECT_EQ(Logic::fromChar('0'), Logic::Ty::LOGIC_0);
+    EXPECT_EQ(Logic::fromChar('z'), Logic::Ty::HIGH_Z);
+    EXPECT_EQ(Logic::fromChar('Z'), Logic::Ty::HIGH_Z);
+    EXPECT_EQ(Logic::fromChar('x'), Logic::Ty::UNKNOWN);
+    EXPECT_EQ(Logic::fromChar('X'), Logic::Ty::UNKNOWN);
 
     // To char conversions.
-    EXPECT_EQ(Logic::getAsChar(Logic::Ty::Logic1), '1');
-    EXPECT_EQ(Logic::getAsChar(Logic::Ty::Logic0), '0');
-    EXPECT_EQ(Logic::getAsChar(Logic::Ty::HighZ), 'Z');
-    EXPECT_EQ(Logic::getAsChar(Logic::Ty::Unknown), 'X');
+    EXPECT_EQ(Logic::getAsChar(Logic::Ty::LOGIC_1), '1');
+    EXPECT_EQ(Logic::getAsChar(Logic::Ty::LOGIC_0), '0');
+    EXPECT_EQ(Logic::getAsChar(Logic::Ty::HIGH_Z), 'Z');
+    EXPECT_EQ(Logic::getAsChar(Logic::Ty::UNKNOWN), 'X');
 }
 
 TEST(Logic, NOT) {
-    EXPECT_EQ(Logic::NOT(Logic::Ty::Logic0), Logic::Ty::Logic1);
-    EXPECT_EQ(Logic::NOT(Logic::Ty::Logic1), Logic::Ty::Logic0);
-    EXPECT_EQ(Logic::NOT(Logic::Ty::HighZ), Logic::Ty::Unknown);
-    EXPECT_EQ(Logic::NOT(Logic::Ty::Unknown), Logic::Ty::Unknown);
+    EXPECT_EQ(Logic::NOT(Logic::Ty::LOGIC_0), Logic::Ty::LOGIC_1);
+    EXPECT_EQ(Logic::NOT(Logic::Ty::LOGIC_1), Logic::Ty::LOGIC_0);
+    EXPECT_EQ(Logic::NOT(Logic::Ty::HIGH_Z), Logic::Ty::UNKNOWN);
+    EXPECT_EQ(Logic::NOT(Logic::Ty::UNKNOWN), Logic::Ty::UNKNOWN);
 }
 
 TEST(Logic, AND) {
-    EXPECT_EQ(Logic::AND(Logic::Ty::Logic0, Logic::Ty::Logic0),
-              Logic::Ty::Logic0);
-    EXPECT_EQ(Logic::AND(Logic::Ty::Logic0, Logic::Ty::Logic1),
-              Logic::Ty::Logic0);
-    EXPECT_EQ(Logic::AND(Logic::Ty::Logic1, Logic::Ty::Logic0),
-              Logic::Ty::Logic0);
-    EXPECT_EQ(Logic::AND(Logic::Ty::Logic1, Logic::Ty::Logic1),
-              Logic::Ty::Logic1);
+    EXPECT_EQ(Logic::AND(Logic::Ty::LOGIC_0, Logic::Ty::LOGIC_0),
+              Logic::Ty::LOGIC_0);
+    EXPECT_EQ(Logic::AND(Logic::Ty::LOGIC_0, Logic::Ty::LOGIC_1),
+              Logic::Ty::LOGIC_0);
+    EXPECT_EQ(Logic::AND(Logic::Ty::LOGIC_1, Logic::Ty::LOGIC_0),
+              Logic::Ty::LOGIC_0);
+    EXPECT_EQ(Logic::AND(Logic::Ty::LOGIC_1, Logic::Ty::LOGIC_1),
+              Logic::Ty::LOGIC_1);
 
-    EXPECT_EQ(Logic::AND(Logic::Ty::Logic0, Logic::Ty::HighZ),
-              Logic::Ty::Unknown);
-    EXPECT_EQ(Logic::AND(Logic::Ty::Logic1, Logic::Ty::HighZ),
-              Logic::Ty::Unknown);
-    EXPECT_EQ(Logic::AND(Logic::Ty::Logic0, Logic::Ty::Unknown),
-              Logic::Ty::Unknown);
-    EXPECT_EQ(Logic::AND(Logic::Ty::Logic1, Logic::Ty::Unknown),
-              Logic::Ty::Unknown);
-    EXPECT_EQ(Logic::AND(Logic::Ty::Unknown, Logic::Ty::HighZ),
-              Logic::Ty::Unknown);
-    EXPECT_EQ(Logic::AND(Logic::Ty::Unknown, Logic::Ty::Unknown),
-              Logic::Ty::Unknown);
-    EXPECT_EQ(Logic::AND(Logic::Ty::HighZ, Logic::Ty::HighZ),
-              Logic::Ty::Unknown);
-    EXPECT_EQ(Logic::AND(Logic::Ty::HighZ, Logic::Ty::Logic0),
-              Logic::Ty::Unknown);
-    EXPECT_EQ(Logic::AND(Logic::Ty::HighZ, Logic::Ty::Logic1),
-              Logic::Ty::Unknown);
-    EXPECT_EQ(Logic::AND(Logic::Ty::Unknown, Logic::Ty::Logic0),
-              Logic::Ty::Unknown);
-    EXPECT_EQ(Logic::AND(Logic::Ty::Unknown, Logic::Ty::Logic1),
-              Logic::Ty::Unknown);
+    EXPECT_EQ(Logic::AND(Logic::Ty::LOGIC_0, Logic::Ty::HIGH_Z),
+              Logic::Ty::UNKNOWN);
+    EXPECT_EQ(Logic::AND(Logic::Ty::LOGIC_1, Logic::Ty::HIGH_Z),
+              Logic::Ty::UNKNOWN);
+    EXPECT_EQ(Logic::AND(Logic::Ty::LOGIC_0, Logic::Ty::UNKNOWN),
+              Logic::Ty::UNKNOWN);
+    EXPECT_EQ(Logic::AND(Logic::Ty::LOGIC_1, Logic::Ty::UNKNOWN),
+              Logic::Ty::UNKNOWN);
+    EXPECT_EQ(Logic::AND(Logic::Ty::UNKNOWN, Logic::Ty::HIGH_Z),
+              Logic::Ty::UNKNOWN);
+    EXPECT_EQ(Logic::AND(Logic::Ty::UNKNOWN, Logic::Ty::UNKNOWN),
+              Logic::Ty::UNKNOWN);
+    EXPECT_EQ(Logic::AND(Logic::Ty::HIGH_Z, Logic::Ty::HIGH_Z),
+              Logic::Ty::UNKNOWN);
+    EXPECT_EQ(Logic::AND(Logic::Ty::HIGH_Z, Logic::Ty::LOGIC_0),
+              Logic::Ty::UNKNOWN);
+    EXPECT_EQ(Logic::AND(Logic::Ty::HIGH_Z, Logic::Ty::LOGIC_1),
+              Logic::Ty::UNKNOWN);
+    EXPECT_EQ(Logic::AND(Logic::Ty::UNKNOWN, Logic::Ty::LOGIC_0),
+              Logic::Ty::UNKNOWN);
+    EXPECT_EQ(Logic::AND(Logic::Ty::UNKNOWN, Logic::Ty::LOGIC_1),
+              Logic::Ty::UNKNOWN);
 }
 
 TEST(Logic, OR) {
-    EXPECT_EQ(Logic::OR(Logic::Ty::Logic0, Logic::Ty::Logic0),
-              Logic::Ty::Logic0);
-    EXPECT_EQ(Logic::OR(Logic::Ty::Logic0, Logic::Ty::Logic1),
-              Logic::Ty::Logic1);
-    EXPECT_EQ(Logic::OR(Logic::Ty::Logic1, Logic::Ty::Logic0),
-              Logic::Ty::Logic1);
-    EXPECT_EQ(Logic::OR(Logic::Ty::Logic1, Logic::Ty::Logic1),
-              Logic::Ty::Logic1);
+    EXPECT_EQ(Logic::OR(Logic::Ty::LOGIC_0, Logic::Ty::LOGIC_0),
+              Logic::Ty::LOGIC_0);
+    EXPECT_EQ(Logic::OR(Logic::Ty::LOGIC_0, Logic::Ty::LOGIC_1),
+              Logic::Ty::LOGIC_1);
+    EXPECT_EQ(Logic::OR(Logic::Ty::LOGIC_1, Logic::Ty::LOGIC_0),
+              Logic::Ty::LOGIC_1);
+    EXPECT_EQ(Logic::OR(Logic::Ty::LOGIC_1, Logic::Ty::LOGIC_1),
+              Logic::Ty::LOGIC_1);
 
-    EXPECT_EQ(Logic::OR(Logic::Ty::Logic0, Logic::Ty::HighZ),
-              Logic::Ty::Unknown);
-    EXPECT_EQ(Logic::OR(Logic::Ty::Logic1, Logic::Ty::HighZ),
-              Logic::Ty::Unknown);
-    EXPECT_EQ(Logic::OR(Logic::Ty::Logic0, Logic::Ty::Unknown),
-              Logic::Ty::Unknown);
-    EXPECT_EQ(Logic::OR(Logic::Ty::Logic1, Logic::Ty::Unknown),
-              Logic::Ty::Unknown);
-    EXPECT_EQ(Logic::OR(Logic::Ty::Unknown, Logic::Ty::HighZ),
-              Logic::Ty::Unknown);
-    EXPECT_EQ(Logic::OR(Logic::Ty::Unknown, Logic::Ty::Unknown),
-              Logic::Ty::Unknown);
-    EXPECT_EQ(Logic::OR(Logic::Ty::HighZ, Logic::Ty::HighZ),
-              Logic::Ty::Unknown);
-    EXPECT_EQ(Logic::OR(Logic::Ty::HighZ, Logic::Ty::Logic0),
-              Logic::Ty::Unknown);
-    EXPECT_EQ(Logic::OR(Logic::Ty::HighZ, Logic::Ty::Logic1),
-              Logic::Ty::Unknown);
-    EXPECT_EQ(Logic::OR(Logic::Ty::Unknown, Logic::Ty::Logic0),
-              Logic::Ty::Unknown);
-    EXPECT_EQ(Logic::OR(Logic::Ty::Unknown, Logic::Ty::Logic1),
-              Logic::Ty::Unknown);
+    EXPECT_EQ(Logic::OR(Logic::Ty::LOGIC_0, Logic::Ty::HIGH_Z),
+              Logic::Ty::UNKNOWN);
+    EXPECT_EQ(Logic::OR(Logic::Ty::LOGIC_1, Logic::Ty::HIGH_Z),
+              Logic::Ty::UNKNOWN);
+    EXPECT_EQ(Logic::OR(Logic::Ty::LOGIC_0, Logic::Ty::UNKNOWN),
+              Logic::Ty::UNKNOWN);
+    EXPECT_EQ(Logic::OR(Logic::Ty::LOGIC_1, Logic::Ty::UNKNOWN),
+              Logic::Ty::UNKNOWN);
+    EXPECT_EQ(Logic::OR(Logic::Ty::UNKNOWN, Logic::Ty::HIGH_Z),
+              Logic::Ty::UNKNOWN);
+    EXPECT_EQ(Logic::OR(Logic::Ty::UNKNOWN, Logic::Ty::UNKNOWN),
+              Logic::Ty::UNKNOWN);
+    EXPECT_EQ(Logic::OR(Logic::Ty::HIGH_Z, Logic::Ty::HIGH_Z),
+              Logic::Ty::UNKNOWN);
+    EXPECT_EQ(Logic::OR(Logic::Ty::HIGH_Z, Logic::Ty::LOGIC_0),
+              Logic::Ty::UNKNOWN);
+    EXPECT_EQ(Logic::OR(Logic::Ty::HIGH_Z, Logic::Ty::LOGIC_1),
+              Logic::Ty::UNKNOWN);
+    EXPECT_EQ(Logic::OR(Logic::Ty::UNKNOWN, Logic::Ty::LOGIC_0),
+              Logic::Ty::UNKNOWN);
+    EXPECT_EQ(Logic::OR(Logic::Ty::UNKNOWN, Logic::Ty::LOGIC_1),
+              Logic::Ty::UNKNOWN);
 }
 
 TEST(Logic, XOR) {
-    EXPECT_EQ(Logic::XOR(Logic::Ty::Logic0, Logic::Ty::Logic0),
-              Logic::Ty::Logic0);
-    EXPECT_EQ(Logic::XOR(Logic::Ty::Logic0, Logic::Ty::Logic1),
-              Logic::Ty::Logic1);
-    EXPECT_EQ(Logic::XOR(Logic::Ty::Logic1, Logic::Ty::Logic0),
-              Logic::Ty::Logic1);
-    EXPECT_EQ(Logic::XOR(Logic::Ty::Logic1, Logic::Ty::Logic1),
-              Logic::Ty::Logic0);
+    EXPECT_EQ(Logic::XOR(Logic::Ty::LOGIC_0, Logic::Ty::LOGIC_0),
+              Logic::Ty::LOGIC_0);
+    EXPECT_EQ(Logic::XOR(Logic::Ty::LOGIC_0, Logic::Ty::LOGIC_1),
+              Logic::Ty::LOGIC_1);
+    EXPECT_EQ(Logic::XOR(Logic::Ty::LOGIC_1, Logic::Ty::LOGIC_0),
+              Logic::Ty::LOGIC_1);
+    EXPECT_EQ(Logic::XOR(Logic::Ty::LOGIC_1, Logic::Ty::LOGIC_1),
+              Logic::Ty::LOGIC_0);
 
-    EXPECT_EQ(Logic::XOR(Logic::Ty::Logic0, Logic::Ty::HighZ),
-              Logic::Ty::Unknown);
-    EXPECT_EQ(Logic::XOR(Logic::Ty::Logic1, Logic::Ty::HighZ),
-              Logic::Ty::Unknown);
-    EXPECT_EQ(Logic::XOR(Logic::Ty::Logic0, Logic::Ty::Unknown),
-              Logic::Ty::Unknown);
-    EXPECT_EQ(Logic::XOR(Logic::Ty::Logic1, Logic::Ty::Unknown),
-              Logic::Ty::Unknown);
-    EXPECT_EQ(Logic::XOR(Logic::Ty::Unknown, Logic::Ty::HighZ),
-              Logic::Ty::Unknown);
-    EXPECT_EQ(Logic::XOR(Logic::Ty::Unknown, Logic::Ty::Unknown),
-              Logic::Ty::Unknown);
-    EXPECT_EQ(Logic::XOR(Logic::Ty::HighZ, Logic::Ty::HighZ),
-              Logic::Ty::Unknown);
-    EXPECT_EQ(Logic::XOR(Logic::Ty::HighZ, Logic::Ty::Logic0),
-              Logic::Ty::Unknown);
-    EXPECT_EQ(Logic::XOR(Logic::Ty::HighZ, Logic::Ty::Logic1),
-              Logic::Ty::Unknown);
-    EXPECT_EQ(Logic::XOR(Logic::Ty::Unknown, Logic::Ty::Logic0),
-              Logic::Ty::Unknown);
-    EXPECT_EQ(Logic::XOR(Logic::Ty::Unknown, Logic::Ty::Logic1),
-              Logic::Ty::Unknown);
+    EXPECT_EQ(Logic::XOR(Logic::Ty::LOGIC_0, Logic::Ty::HIGH_Z),
+              Logic::Ty::UNKNOWN);
+    EXPECT_EQ(Logic::XOR(Logic::Ty::LOGIC_1, Logic::Ty::HIGH_Z),
+              Logic::Ty::UNKNOWN);
+    EXPECT_EQ(Logic::XOR(Logic::Ty::LOGIC_0, Logic::Ty::UNKNOWN),
+              Logic::Ty::UNKNOWN);
+    EXPECT_EQ(Logic::XOR(Logic::Ty::LOGIC_1, Logic::Ty::UNKNOWN),
+              Logic::Ty::UNKNOWN);
+    EXPECT_EQ(Logic::XOR(Logic::Ty::UNKNOWN, Logic::Ty::HIGH_Z),
+              Logic::Ty::UNKNOWN);
+    EXPECT_EQ(Logic::XOR(Logic::Ty::UNKNOWN, Logic::Ty::UNKNOWN),
+              Logic::Ty::UNKNOWN);
+    EXPECT_EQ(Logic::XOR(Logic::Ty::HIGH_Z, Logic::Ty::HIGH_Z),
+              Logic::Ty::UNKNOWN);
+    EXPECT_EQ(Logic::XOR(Logic::Ty::HIGH_Z, Logic::Ty::LOGIC_0),
+              Logic::Ty::UNKNOWN);
+    EXPECT_EQ(Logic::XOR(Logic::Ty::HIGH_Z, Logic::Ty::LOGIC_1),
+              Logic::Ty::UNKNOWN);
+    EXPECT_EQ(Logic::XOR(Logic::Ty::UNKNOWN, Logic::Ty::LOGIC_0),
+              Logic::Ty::UNKNOWN);
+    EXPECT_EQ(Logic::XOR(Logic::Ty::UNKNOWN, Logic::Ty::LOGIC_1),
+              Logic::Ty::UNKNOWN);
 }
 
 TEST(ValueTy, Basics) {
@@ -295,144 +295,144 @@ TEST(ValueTy, Basics) {
     EXPECT_TRUE(S5_X.isBus());
 
     // operator==
-    EXPECT_TRUE(S1_0 == ValueTy(Logic::Ty::Logic0));
+    EXPECT_TRUE(S1_0 == ValueTy(Logic::Ty::LOGIC_0));
 
-    EXPECT_FALSE(S1_0 == ValueTy(Logic::Ty::Logic1));
-    EXPECT_FALSE(S1_0 == ValueTy(Logic::Ty::HighZ));
-    EXPECT_FALSE(S1_0 == ValueTy(Logic::Ty::Unknown));
+    EXPECT_FALSE(S1_0 == ValueTy(Logic::Ty::LOGIC_1));
+    EXPECT_FALSE(S1_0 == ValueTy(Logic::Ty::HIGH_Z));
+    EXPECT_FALSE(S1_0 == ValueTy(Logic::Ty::UNKNOWN));
 
-    EXPECT_FALSE(S1_1 == ValueTy(Logic::Ty::Logic0));
-    EXPECT_TRUE(S1_1 == ValueTy(Logic::Ty::Logic1));
-    EXPECT_FALSE(S1_1 == ValueTy(Logic::Ty::HighZ));
-    EXPECT_FALSE(S1_1 == ValueTy(Logic::Ty::Unknown));
+    EXPECT_FALSE(S1_1 == ValueTy(Logic::Ty::LOGIC_0));
+    EXPECT_TRUE(S1_1 == ValueTy(Logic::Ty::LOGIC_1));
+    EXPECT_FALSE(S1_1 == ValueTy(Logic::Ty::HIGH_Z));
+    EXPECT_FALSE(S1_1 == ValueTy(Logic::Ty::UNKNOWN));
 
-    EXPECT_FALSE(S1_Z == ValueTy(Logic::Ty::Logic0));
-    EXPECT_FALSE(S1_Z == ValueTy(Logic::Ty::Logic1));
-    EXPECT_TRUE(S1_Z == ValueTy(Logic::Ty::HighZ));
-    EXPECT_FALSE(S1_Z == ValueTy(Logic::Ty::Unknown));
+    EXPECT_FALSE(S1_Z == ValueTy(Logic::Ty::LOGIC_0));
+    EXPECT_FALSE(S1_Z == ValueTy(Logic::Ty::LOGIC_1));
+    EXPECT_TRUE(S1_Z == ValueTy(Logic::Ty::HIGH_Z));
+    EXPECT_FALSE(S1_Z == ValueTy(Logic::Ty::UNKNOWN));
 
-    EXPECT_FALSE(S1_X == ValueTy(Logic::Ty::Logic0));
-    EXPECT_FALSE(S1_X == ValueTy(Logic::Ty::Logic1));
-    EXPECT_FALSE(S1_X == ValueTy(Logic::Ty::HighZ));
-    EXPECT_TRUE(S1_X == ValueTy(Logic::Ty::Unknown));
+    EXPECT_FALSE(S1_X == ValueTy(Logic::Ty::LOGIC_0));
+    EXPECT_FALSE(S1_X == ValueTy(Logic::Ty::LOGIC_1));
+    EXPECT_FALSE(S1_X == ValueTy(Logic::Ty::HIGH_Z));
+    EXPECT_TRUE(S1_X == ValueTy(Logic::Ty::UNKNOWN));
 
-    EXPECT_FALSE(S8 == ValueTy(8, Logic::Ty::Logic0));
-    EXPECT_FALSE(S8 == ValueTy(8, Logic::Ty::Logic1));
-    EXPECT_FALSE(S8 == ValueTy(8, Logic::Ty::HighZ));
-    EXPECT_TRUE(S8 == ValueTy(8, Logic::Ty::Unknown));
+    EXPECT_FALSE(S8 == ValueTy(8, Logic::Ty::LOGIC_0));
+    EXPECT_FALSE(S8 == ValueTy(8, Logic::Ty::LOGIC_1));
+    EXPECT_FALSE(S8 == ValueTy(8, Logic::Ty::HIGH_Z));
+    EXPECT_TRUE(S8 == ValueTy(8, Logic::Ty::UNKNOWN));
 
-    EXPECT_TRUE(S9_0 == ValueTy(9, Logic::Ty::Logic0));
-    EXPECT_FALSE(S9_0 == ValueTy(9, Logic::Ty::Logic1));
-    EXPECT_FALSE(S9_0 == ValueTy(9, Logic::Ty::HighZ));
-    EXPECT_FALSE(S9_0 == ValueTy(9, Logic::Ty::Unknown));
+    EXPECT_TRUE(S9_0 == ValueTy(9, Logic::Ty::LOGIC_0));
+    EXPECT_FALSE(S9_0 == ValueTy(9, Logic::Ty::LOGIC_1));
+    EXPECT_FALSE(S9_0 == ValueTy(9, Logic::Ty::HIGH_Z));
+    EXPECT_FALSE(S9_0 == ValueTy(9, Logic::Ty::UNKNOWN));
 
-    EXPECT_FALSE(S7_1 == ValueTy(7, Logic::Ty::Logic0));
-    EXPECT_TRUE(S7_1 == ValueTy(7, Logic::Ty::Logic1));
-    EXPECT_FALSE(S7_1 == ValueTy(7, Logic::Ty::HighZ));
-    EXPECT_FALSE(S7_1 == ValueTy(7, Logic::Ty::Unknown));
+    EXPECT_FALSE(S7_1 == ValueTy(7, Logic::Ty::LOGIC_0));
+    EXPECT_TRUE(S7_1 == ValueTy(7, Logic::Ty::LOGIC_1));
+    EXPECT_FALSE(S7_1 == ValueTy(7, Logic::Ty::HIGH_Z));
+    EXPECT_FALSE(S7_1 == ValueTy(7, Logic::Ty::UNKNOWN));
 
-    EXPECT_FALSE(S6_Z == ValueTy(6, Logic::Ty::Logic0));
-    EXPECT_FALSE(S6_Z == ValueTy(6, Logic::Ty::Logic1));
-    EXPECT_TRUE(S6_Z == ValueTy(6, Logic::Ty::HighZ));
-    EXPECT_FALSE(S6_Z == ValueTy(6, Logic::Ty::Unknown));
+    EXPECT_FALSE(S6_Z == ValueTy(6, Logic::Ty::LOGIC_0));
+    EXPECT_FALSE(S6_Z == ValueTy(6, Logic::Ty::LOGIC_1));
+    EXPECT_TRUE(S6_Z == ValueTy(6, Logic::Ty::HIGH_Z));
+    EXPECT_FALSE(S6_Z == ValueTy(6, Logic::Ty::UNKNOWN));
 
-    EXPECT_FALSE(S5_X == ValueTy(5, Logic::Ty::Logic0));
-    EXPECT_FALSE(S5_X == ValueTy(5, Logic::Ty::Logic1));
-    EXPECT_FALSE(S5_X == ValueTy(5, Logic::Ty::HighZ));
-    EXPECT_TRUE(S5_X == ValueTy(5, Logic::Ty::Unknown));
+    EXPECT_FALSE(S5_X == ValueTy(5, Logic::Ty::LOGIC_0));
+    EXPECT_FALSE(S5_X == ValueTy(5, Logic::Ty::LOGIC_1));
+    EXPECT_FALSE(S5_X == ValueTy(5, Logic::Ty::HIGH_Z));
+    EXPECT_TRUE(S5_X == ValueTy(5, Logic::Ty::UNKNOWN));
 
     // operator!=
-    EXPECT_FALSE(S1_0 != ValueTy(Logic::Ty::Logic0));
-    EXPECT_TRUE(S1_0 != ValueTy(Logic::Ty::Logic1));
-    EXPECT_TRUE(S1_0 != ValueTy(Logic::Ty::HighZ));
-    EXPECT_TRUE(S1_0 != ValueTy(Logic::Ty::Unknown));
+    EXPECT_FALSE(S1_0 != ValueTy(Logic::Ty::LOGIC_0));
+    EXPECT_TRUE(S1_0 != ValueTy(Logic::Ty::LOGIC_1));
+    EXPECT_TRUE(S1_0 != ValueTy(Logic::Ty::HIGH_Z));
+    EXPECT_TRUE(S1_0 != ValueTy(Logic::Ty::UNKNOWN));
 
-    EXPECT_TRUE(S1_1 != ValueTy(Logic::Ty::Logic0));
-    EXPECT_FALSE(S1_1 != ValueTy(Logic::Ty::Logic1));
-    EXPECT_TRUE(S1_1 != ValueTy(Logic::Ty::HighZ));
-    EXPECT_TRUE(S1_1 != ValueTy(Logic::Ty::Unknown));
+    EXPECT_TRUE(S1_1 != ValueTy(Logic::Ty::LOGIC_0));
+    EXPECT_FALSE(S1_1 != ValueTy(Logic::Ty::LOGIC_1));
+    EXPECT_TRUE(S1_1 != ValueTy(Logic::Ty::HIGH_Z));
+    EXPECT_TRUE(S1_1 != ValueTy(Logic::Ty::UNKNOWN));
 
-    EXPECT_TRUE(S1_Z != ValueTy(Logic::Ty::Logic0));
-    EXPECT_TRUE(S1_Z != ValueTy(Logic::Ty::Logic1));
-    EXPECT_FALSE(S1_Z != ValueTy(Logic::Ty::HighZ));
-    EXPECT_TRUE(S1_Z != ValueTy(Logic::Ty::Unknown));
+    EXPECT_TRUE(S1_Z != ValueTy(Logic::Ty::LOGIC_0));
+    EXPECT_TRUE(S1_Z != ValueTy(Logic::Ty::LOGIC_1));
+    EXPECT_FALSE(S1_Z != ValueTy(Logic::Ty::HIGH_Z));
+    EXPECT_TRUE(S1_Z != ValueTy(Logic::Ty::UNKNOWN));
 
-    EXPECT_TRUE(S1_X != ValueTy(Logic::Ty::Logic0));
-    EXPECT_TRUE(S1_X != ValueTy(Logic::Ty::Logic1));
-    EXPECT_TRUE(S1_X != ValueTy(Logic::Ty::HighZ));
-    EXPECT_FALSE(S1_X != ValueTy(Logic::Ty::Unknown));
+    EXPECT_TRUE(S1_X != ValueTy(Logic::Ty::LOGIC_0));
+    EXPECT_TRUE(S1_X != ValueTy(Logic::Ty::LOGIC_1));
+    EXPECT_TRUE(S1_X != ValueTy(Logic::Ty::HIGH_Z));
+    EXPECT_FALSE(S1_X != ValueTy(Logic::Ty::UNKNOWN));
 
-    EXPECT_TRUE(S8 != ValueTy(8, Logic::Ty::Logic0));
-    EXPECT_TRUE(S8 != ValueTy(8, Logic::Ty::Logic1));
-    EXPECT_TRUE(S8 != ValueTy(8, Logic::Ty::HighZ));
-    EXPECT_FALSE(S8 != ValueTy(8, Logic::Ty::Unknown));
+    EXPECT_TRUE(S8 != ValueTy(8, Logic::Ty::LOGIC_0));
+    EXPECT_TRUE(S8 != ValueTy(8, Logic::Ty::LOGIC_1));
+    EXPECT_TRUE(S8 != ValueTy(8, Logic::Ty::HIGH_Z));
+    EXPECT_FALSE(S8 != ValueTy(8, Logic::Ty::UNKNOWN));
 
-    EXPECT_FALSE(S9_0 != ValueTy(9, Logic::Ty::Logic0));
-    EXPECT_TRUE(S9_0 != ValueTy(9, Logic::Ty::Logic1));
-    EXPECT_TRUE(S9_0 != ValueTy(9, Logic::Ty::HighZ));
-    EXPECT_TRUE(S9_0 != ValueTy(9, Logic::Ty::Unknown));
+    EXPECT_FALSE(S9_0 != ValueTy(9, Logic::Ty::LOGIC_0));
+    EXPECT_TRUE(S9_0 != ValueTy(9, Logic::Ty::LOGIC_1));
+    EXPECT_TRUE(S9_0 != ValueTy(9, Logic::Ty::HIGH_Z));
+    EXPECT_TRUE(S9_0 != ValueTy(9, Logic::Ty::UNKNOWN));
 
-    EXPECT_TRUE(S7_1 != ValueTy(7, Logic::Ty::Logic0));
-    EXPECT_FALSE(S7_1 != ValueTy(7, Logic::Ty::Logic1));
-    EXPECT_TRUE(S7_1 != ValueTy(7, Logic::Ty::HighZ));
-    EXPECT_TRUE(S7_1 != ValueTy(7, Logic::Ty::Unknown));
+    EXPECT_TRUE(S7_1 != ValueTy(7, Logic::Ty::LOGIC_0));
+    EXPECT_FALSE(S7_1 != ValueTy(7, Logic::Ty::LOGIC_1));
+    EXPECT_TRUE(S7_1 != ValueTy(7, Logic::Ty::HIGH_Z));
+    EXPECT_TRUE(S7_1 != ValueTy(7, Logic::Ty::UNKNOWN));
 
-    EXPECT_TRUE(S6_Z != ValueTy(6, Logic::Ty::Logic0));
-    EXPECT_TRUE(S6_Z != ValueTy(6, Logic::Ty::Logic1));
-    EXPECT_FALSE(S6_Z != ValueTy(6, Logic::Ty::HighZ));
-    EXPECT_TRUE(S6_Z != ValueTy(6, Logic::Ty::Unknown));
+    EXPECT_TRUE(S6_Z != ValueTy(6, Logic::Ty::LOGIC_0));
+    EXPECT_TRUE(S6_Z != ValueTy(6, Logic::Ty::LOGIC_1));
+    EXPECT_FALSE(S6_Z != ValueTy(6, Logic::Ty::HIGH_Z));
+    EXPECT_TRUE(S6_Z != ValueTy(6, Logic::Ty::UNKNOWN));
 
-    EXPECT_TRUE(S5_X != ValueTy(5, Logic::Ty::Logic0));
-    EXPECT_TRUE(S5_X != ValueTy(5, Logic::Ty::Logic1));
-    EXPECT_TRUE(S5_X != ValueTy(5, Logic::Ty::HighZ));
-    EXPECT_FALSE(S5_X != ValueTy(5, Logic::Ty::Unknown));
+    EXPECT_TRUE(S5_X != ValueTy(5, Logic::Ty::LOGIC_0));
+    EXPECT_TRUE(S5_X != ValueTy(5, Logic::Ty::LOGIC_1));
+    EXPECT_TRUE(S5_X != ValueTy(5, Logic::Ty::HIGH_Z));
+    EXPECT_FALSE(S5_X != ValueTy(5, Logic::Ty::UNKNOWN));
 }
 
 TEST(ValueTy, InitialValue) {
-    EXPECT_EQ(ValueTy(), ValueTy(Logic::Ty::Unknown));
+    EXPECT_EQ(ValueTy(), ValueTy(Logic::Ty::UNKNOWN));
     EXPECT_EQ(ValueTy().size(), 1);
     EXPECT_TRUE(ValueTy().isWire());
     EXPECT_FALSE(ValueTy().isBus());
 
-    EXPECT_EQ(ValueTy(Logic::Ty::Logic0), ValueTy::Logic0());
-    EXPECT_EQ(ValueTy(Logic::Ty::Logic0).size(), 1);
-    EXPECT_TRUE(ValueTy(Logic::Ty::Logic0).isWire());
-    EXPECT_FALSE(ValueTy(Logic::Ty::Logic0).isBus());
+    EXPECT_EQ(ValueTy(Logic::Ty::LOGIC_0), ValueTy::logic0());
+    EXPECT_EQ(ValueTy(Logic::Ty::LOGIC_0).size(), 1);
+    EXPECT_TRUE(ValueTy(Logic::Ty::LOGIC_0).isWire());
+    EXPECT_FALSE(ValueTy(Logic::Ty::LOGIC_0).isBus());
 
-    EXPECT_EQ(ValueTy(4, Logic::Ty::Logic0), ValueTy::Logic0(4));
-    EXPECT_EQ(ValueTy(4, Logic::Ty::Logic0).size(), 4);
-    EXPECT_FALSE(ValueTy(4, Logic::Ty::Logic0).isWire());
-    EXPECT_TRUE(ValueTy(4, Logic::Ty::Logic0).isBus());
+    EXPECT_EQ(ValueTy(4, Logic::Ty::LOGIC_0), ValueTy::logic0(4));
+    EXPECT_EQ(ValueTy(4, Logic::Ty::LOGIC_0).size(), 4);
+    EXPECT_FALSE(ValueTy(4, Logic::Ty::LOGIC_0).isWire());
+    EXPECT_TRUE(ValueTy(4, Logic::Ty::LOGIC_0).isBus());
 
-    EXPECT_EQ(ValueTy(Logic::Ty::Logic1), ValueTy::Logic1());
-    EXPECT_EQ(ValueTy(Logic::Ty::Logic1).size(), 1);
-    EXPECT_TRUE(ValueTy(Logic::Ty::Logic1).isWire());
-    EXPECT_FALSE(ValueTy(Logic::Ty::Logic1).isBus());
+    EXPECT_EQ(ValueTy(Logic::Ty::LOGIC_1), ValueTy::logic1());
+    EXPECT_EQ(ValueTy(Logic::Ty::LOGIC_1).size(), 1);
+    EXPECT_TRUE(ValueTy(Logic::Ty::LOGIC_1).isWire());
+    EXPECT_FALSE(ValueTy(Logic::Ty::LOGIC_1).isBus());
 
-    EXPECT_EQ(ValueTy(4, Logic::Ty::Logic1), ValueTy::Logic1(4));
-    EXPECT_EQ(ValueTy(4, Logic::Ty::Logic1).size(), 4);
-    EXPECT_FALSE(ValueTy(4, Logic::Ty::Logic1).isWire());
-    EXPECT_TRUE(ValueTy(4, Logic::Ty::Logic1).isBus());
+    EXPECT_EQ(ValueTy(4, Logic::Ty::LOGIC_1), ValueTy::logic1(4));
+    EXPECT_EQ(ValueTy(4, Logic::Ty::LOGIC_1).size(), 4);
+    EXPECT_FALSE(ValueTy(4, Logic::Ty::LOGIC_1).isWire());
+    EXPECT_TRUE(ValueTy(4, Logic::Ty::LOGIC_1).isBus());
 
-    EXPECT_EQ(ValueTy(Logic::Ty::HighZ), ValueTy::HighZ());
-    EXPECT_EQ(ValueTy(Logic::Ty::HighZ).size(), 1);
-    EXPECT_TRUE(ValueTy(Logic::Ty::HighZ).isWire());
-    EXPECT_FALSE(ValueTy(Logic::Ty::HighZ).isBus());
+    EXPECT_EQ(ValueTy(Logic::Ty::HIGH_Z), ValueTy::highZ());
+    EXPECT_EQ(ValueTy(Logic::Ty::HIGH_Z).size(), 1);
+    EXPECT_TRUE(ValueTy(Logic::Ty::HIGH_Z).isWire());
+    EXPECT_FALSE(ValueTy(Logic::Ty::HIGH_Z).isBus());
 
-    EXPECT_EQ(ValueTy(4, Logic::Ty::HighZ), ValueTy::HighZ(4));
-    EXPECT_EQ(ValueTy(4, Logic::Ty::HighZ).size(), 4);
-    EXPECT_FALSE(ValueTy(4, Logic::Ty::HighZ).isWire());
-    EXPECT_TRUE(ValueTy(4, Logic::Ty::HighZ).isBus());
+    EXPECT_EQ(ValueTy(4, Logic::Ty::HIGH_Z), ValueTy::highZ(4));
+    EXPECT_EQ(ValueTy(4, Logic::Ty::HIGH_Z).size(), 4);
+    EXPECT_FALSE(ValueTy(4, Logic::Ty::HIGH_Z).isWire());
+    EXPECT_TRUE(ValueTy(4, Logic::Ty::HIGH_Z).isBus());
 
-    EXPECT_EQ(ValueTy(Logic::Ty::Unknown), ValueTy::Unknown());
-    EXPECT_EQ(ValueTy(Logic::Ty::Unknown).size(), 1);
-    EXPECT_TRUE(ValueTy(Logic::Ty::Unknown).isWire());
-    EXPECT_FALSE(ValueTy(Logic::Ty::Unknown).isBus());
+    EXPECT_EQ(ValueTy(Logic::Ty::UNKNOWN), ValueTy::unknown());
+    EXPECT_EQ(ValueTy(Logic::Ty::UNKNOWN).size(), 1);
+    EXPECT_TRUE(ValueTy(Logic::Ty::UNKNOWN).isWire());
+    EXPECT_FALSE(ValueTy(Logic::Ty::UNKNOWN).isBus());
 
-    EXPECT_EQ(ValueTy(4, Logic::Ty::Unknown), ValueTy::Unknown(4));
-    EXPECT_EQ(ValueTy(4, Logic::Ty::Unknown).size(), 4);
-    EXPECT_FALSE(ValueTy(4, Logic::Ty::Unknown).isWire());
-    EXPECT_TRUE(ValueTy(4, Logic::Ty::Unknown).isBus());
+    EXPECT_EQ(ValueTy(4, Logic::Ty::UNKNOWN), ValueTy::unknown(4));
+    EXPECT_EQ(ValueTy(4, Logic::Ty::UNKNOWN).size(), 4);
+    EXPECT_FALSE(ValueTy(4, Logic::Ty::UNKNOWN).isWire());
+    EXPECT_TRUE(ValueTy(4, Logic::Ty::UNKNOWN).isBus());
 }
 
 TEST(ValueTy, InputOutput) {
@@ -571,10 +571,10 @@ TEST(ValueTy, UnaryXOR) {
 }
 
 TEST(ValueTy, coutOnes) {
-    EXPECT_EQ(ValueTy(Logic::Ty::Logic0).countOnes(), 0);
-    EXPECT_EQ(ValueTy(Logic::Ty::Logic1).countOnes(), 1);
-    EXPECT_EQ(ValueTy(Logic::Ty::HighZ).countOnes(), 0);
-    EXPECT_EQ(ValueTy(Logic::Ty::Unknown).countOnes(), 0);
+    EXPECT_EQ(ValueTy(Logic::Ty::LOGIC_0).countOnes(), 0);
+    EXPECT_EQ(ValueTy(Logic::Ty::LOGIC_1).countOnes(), 1);
+    EXPECT_EQ(ValueTy(Logic::Ty::HIGH_Z).countOnes(), 0);
+    EXPECT_EQ(ValueTy(Logic::Ty::UNKNOWN).countOnes(), 0);
 
     EXPECT_EQ(ValueTy("0000").countOnes(), 0);
     EXPECT_EQ(ValueTy("XZ").countOnes(), 0);
@@ -686,11 +686,11 @@ TEST(Signal, BasicOps) {
 
     // getChange()
     Signal::ChangeTy C = Bob.getChange(0);
-    EXPECT_EQ(C.Time, 10);
-    EXPECT_EQ(C.Value, ValueTy("01111000"));
+    EXPECT_EQ(C.time, 10);
+    EXPECT_EQ(C.value, ValueTy("01111000"));
     C = Bob.getChange(1);
-    EXPECT_EQ(C.Time, 20);
-    EXPECT_EQ(C.Value, ValueTy("10000111"));
+    EXPECT_EQ(C.time, 20);
+    EXPECT_EQ(C.value, ValueTy("10000111"));
 
     // getChangeTimeLow*()
     EXPECT_EQ(Bob.getChangeTimeLowIdx(5), Bob.getNumChanges());
@@ -767,8 +767,8 @@ TEST(Signal, AppendBit) {
         EXPECT_EQ(Sut1.getTimeChange(i), TestValues[i].time);
         EXPECT_EQ(string(Sut1.getValueChange(i)), TestValues[i].value);
         const ChangeTy C = Sut1.getChange(i);
-        EXPECT_EQ(C.Time, TestValues[i].time);
-        EXPECT_EQ(C.Value, ValueTy(TestValues[i].value));
+        EXPECT_EQ(C.time, TestValues[i].time);
+        EXPECT_EQ(C.value, ValueTy(TestValues[i].value));
     }
 
     // Test append --- const char * version
@@ -785,8 +785,8 @@ TEST(Signal, AppendBit) {
         EXPECT_EQ(Sut2.getTimeChange(i), TestValues[i].time);
         EXPECT_EQ(string(Sut2.getValueChange(i)), TestValues[i].value);
         const ChangeTy C = Sut2.getChange(i);
-        EXPECT_EQ(C.Time, TestValues[i].time);
-        EXPECT_EQ(C.Value, ValueTy(TestValues[i].value));
+        EXPECT_EQ(C.time, TestValues[i].time);
+        EXPECT_EQ(C.value, ValueTy(TestValues[i].value));
     }
 }
 
@@ -869,8 +869,8 @@ TEST(Signal, AppendBus) {
         EXPECT_EQ(Sut1.getTimeChange(i), TestValues[i].time);
         EXPECT_EQ(string(Sut1.getValueChange(i)), TestValues[i].value);
         const ChangeTy C = Sut1.getChange(i);
-        EXPECT_EQ(C.Time, TestValues[i].time);
-        EXPECT_EQ(C.Value, ValueTy(TestValues[i].value));
+        EXPECT_EQ(C.time, TestValues[i].time);
+        EXPECT_EQ(C.value, ValueTy(TestValues[i].value));
     }
 
     // Test append --- const char * version
@@ -887,8 +887,8 @@ TEST(Signal, AppendBus) {
         EXPECT_EQ(Sut2.getTimeChange(i), TestValues[i].time);
         EXPECT_EQ(string(Sut2.getValueChange(i)), TestValues[i].value);
         const ChangeTy C = Sut2.getChange(i);
-        EXPECT_EQ(C.Time, TestValues[i].time);
-        EXPECT_EQ(C.Value, ValueTy(TestValues[i].value));
+        EXPECT_EQ(C.time, TestValues[i].time);
+        EXPECT_EQ(C.value, ValueTy(TestValues[i].value));
     }
 }
 
@@ -974,17 +974,17 @@ TEST(Signal, Iterators) {
 
     // begin, end, operator*, operator!=
     unsigned t = 0;
-    for (Signal::iterator it = Clk.begin(), ie = Clk.end(); it != ie; it++) {
-        EXPECT_EQ((*it).Time, 5 * t);
-        EXPECT_EQ((*it).Value, ValueTy(t % 2 == 0 ? "0" : "1"));
+    for (Signal::Iterator it = Clk.begin(), ie = Clk.end(); it != ie; it++) {
+        EXPECT_EQ((*it).time, 5 * t);
+        EXPECT_EQ((*it).value, ValueTy(t % 2 == 0 ? "0" : "1"));
         t++;
     }
     EXPECT_EQ(t, 10);
 
     t = 0;
     for (const auto &VC : Clk) {
-        EXPECT_EQ(VC.Time, 5 * t);
-        EXPECT_EQ(VC.Value, ValueTy(t % 2 == 0 ? "0" : "1"));
+        EXPECT_EQ(VC.time, 5 * t);
+        EXPECT_EQ(VC.value, ValueTy(t % 2 == 0 ? "0" : "1"));
         t++;
     }
     EXPECT_EQ(t, 10);
@@ -1003,7 +1003,7 @@ TEST(Signal, Iterators) {
         t++;
     }
 
-    Signal::iterator it = Data.begin();
+    Signal::Iterator it = Data.begin();
     // operator[]
     EXPECT_EQ(it[4], ChangeTy(40, "00001000"));
 
@@ -1031,25 +1031,25 @@ TEST(Signal, Iterators) {
     EXPECT_EQ(*it, ChangeTy(20, "00000010"));
 
     // operator-- (pre-dec)
-    Signal::iterator predec = --it;
+    Signal::Iterator predec = --it;
     EXPECT_EQ(*it, ChangeTy(10, "00000001"));
     EXPECT_EQ(*predec, ChangeTy(10, "00000001"));
     EXPECT_EQ(predec - it, 0);
 
     // operator-- (post-dec)
-    Signal::iterator postdec = it--;
+    Signal::Iterator postdec = it--;
     EXPECT_EQ(*it, ChangeTy(0, "00000000"));
     EXPECT_EQ(*postdec, ChangeTy(10, "00000001"));
     EXPECT_EQ(postdec - it, 1);
 
     // operator++ (pre-inc)
-    Signal::iterator preinc = ++it;
+    Signal::Iterator preinc = ++it;
     EXPECT_EQ(*it, ChangeTy(10, "00000001"));
     EXPECT_EQ(*preinc, ChangeTy(10, "00000001"));
     EXPECT_EQ(preinc - it, 0);
 
     // operator++ (post-inc)
-    Signal::iterator postinc = it++;
+    Signal::Iterator postinc = it++;
     EXPECT_EQ(*it, ChangeTy(20, "00000010"));
     EXPECT_EQ(*postinc, ChangeTy(10, "00000001"));
     EXPECT_EQ(postinc - it, -1);

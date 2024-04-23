@@ -145,7 +145,7 @@ int main(int argc, char *argv[]) {
 
     ap.parse([&]() {
         if (inputFiles.empty())
-            die("expected at least one file name");
+            DIE("expected at least one file name");
     });
 
     for (const auto &filename : inputFiles) {
@@ -155,7 +155,7 @@ int main(int argc, char *argv[]) {
 
         switch (action) {
         case DUMP_INFO: {
-            W.dump_metadata(cout);
+            W.dumpMetadata(cout);
             MyInfoVisitor I(W);
             W.visit(I);
             I.dump(cout);

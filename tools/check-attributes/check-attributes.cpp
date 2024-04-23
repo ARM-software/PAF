@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: <text>Copyright 2021,2022,2023 Arm Limited and/or its
+ * SPDX-FileCopyrightText: <text>Copyright 2021-2024 Arm Limited and/or its
  * affiliates <open-source-office@arm.com></text>
  * SPDX-License-Identifier: Apache-2.0
  *
@@ -51,19 +51,19 @@ class AttributeChecker : public MTAnalyzer {
   public:
     AttributeChecker(const AttributeChecker &) = delete;
     AttributeChecker(const TracePair &trace, const std::string &image_filename)
-        : MTAnalyzer(trace, image_filename), CPU(PAF::getCPU(index)) {}
+        : MTAnalyzer(trace, image_filename), cpu(PAF::getCPU(index)) {}
 
     void check(const ExecutionRange &ER) {
         struct ACCont {
-            MTAnalyzer &MTA;
-            ArchInfo &CPU;
+            MTAnalyzer &analyzer;
+            ArchInfo &cpu;
             unsigned errors = 0;
             unsigned instructions = 0;
 
-            ACCont(MTAnalyzer &MTA, ArchInfo &CPU) : MTA(MTA), CPU(CPU) {}
+            ACCont(MTAnalyzer &MTA, ArchInfo &CPU) : analyzer(MTA), cpu(CPU) {}
 
-            void report_error(const PAF::ReferenceInstruction &I,
-                              const char *msg) {
+            void reportError(const PAF::ReferenceInstruction &I,
+                             const char *msg) {
                 errors += 1;
                 cout << "At time " << I.time << ", instruction '"
                      << I.disassembly << "' (0x" << std::hex << I.instruction
@@ -72,49 +72,49 @@ class AttributeChecker : public MTAnalyzer {
 
             void operator()(PAF::ReferenceInstruction &I) {
                 instructions += 1;
-                const InstrInfo II = CPU.getInstrInfo(I);
+                const InstrInfo II = cpu.getInstrInfo(I);
                 // Check attributes here.
                 if (!I.memaccess.empty()) {
                     bool hasReadAccess = false;
                     bool hasWriteAccess = false;
                     for (const auto &ma : I.memaccess) {
-                        if (ma.access == PAF::Access::Type::Read)
+                        if (ma.access == PAF::Access::Type::READ)
                             hasReadAccess = true;
-                        if (ma.access == PAF::Access::Type::Write)
+                        if (ma.access == PAF::Access::Type::WRITE)
                             hasWriteAccess = true;
                     }
                     if (hasReadAccess && !II.isLoad())
-                        report_error(
+                        reportError(
                             I, "reads from memory but is not marked as 'Load'");
                     if (hasWriteAccess && !II.isStore())
-                        report_error(
+                        reportError(
                             I, "writes to memory but is not marked as 'Store'");
                     if ((hasReadAccess || hasWriteAccess) &&
                         !II.isMemoryAccess())
-                        report_error(I, "accesses memory but is not marked as "
-                                        "'MemoryAccess'");
+                        reportError(I, "accesses memory but is not marked as "
+                                       "'MemoryAccess'");
                     // TODO: check branches and calls
                 }
             }
         };
 
-        ACCont ACC(*this, *CPU.get());
+        ACCont ACC(*this, *cpu.get());
         PAF::FromTraceBuilder<PAF::ReferenceInstruction,
                               PAF::ReferenceInstructionBuilder, ACCont>
             FTB(*this);
         FTB.build(ER, ACC);
 
-        ErrorCnt += ACC.errors;
-        InstCnt += ACC.instructions;
+        errorCnt += ACC.errors;
+        instCnt += ACC.instructions;
     }
 
-    size_t errors() const { return ErrorCnt; }
-    size_t instructions() const { return InstCnt; }
+    size_t errors() const { return errorCnt; }
+    size_t instructions() const { return instCnt; }
 
   private:
-    unique_ptr<ArchInfo> CPU;
-    size_t ErrorCnt = 0;
-    size_t InstCnt = 0;
+    unique_ptr<ArchInfo> cpu;
+    size_t errorCnt = 0;
+    size_t instCnt = 0;
 };
 } // namespace
 
@@ -144,7 +144,9 @@ int main(int argc, char **argv) {
         SeqOrderPayload SOPEnd, SOPStart;
         unsigned line = 0;
         // Skip first lines which have an invalid PC.
-        while (AC.node_at_line(line + 1, &SOPStart) && SOPStart.pc == KNOWN_INVALID_PC) line++;
+        while (AC.node_at_line(line + 1, &SOPStart) &&
+               SOPStart.pc == KNOWN_INVALID_PC)
+            line++;
         AC.find_buffer_limit(true, &SOPEnd);
 
         Ranges.push_back(ExecutionRange(SOPStart, SOPEnd));

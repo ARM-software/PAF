@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: <text>Copyright 2021,2022,2023 Arm Limited and/or its
+ * SPDX-FileCopyrightText: <text>Copyright 2021-2024 Arm Limited and/or its
  * affiliates <open-source-office@arm.com></text>
  * SPDX-License-Identifier: Apache-2.0
  *
@@ -24,8 +24,8 @@
 #include <cassert>
 #include <string>
 
-using std::string;
 using std::array;
+using std::string;
 
 namespace PAF {
 namespace SCA {
@@ -40,8 +40,8 @@ UnaryOp::~UnaryOp() {}
 Not::~Not() {}
 Truncate::~Truncate() {}
 AESOp::~AESOp() {}
-AES_SBox::~AES_SBox() {}
-AES_ISBox::~AES_ISBox() {}
+AESSBox::~AESSBox() {}
+AESISBox::~AESISBox() {}
 BinaryOp::~BinaryOp() {}
 Xor::~Xor() {}
 Or::~Or() {}
@@ -51,7 +51,7 @@ Asr::~Asr() {}
 Lsr::~Lsr() {}
 
 string Constant::repr() const {
-    string s(Val.repr());
+    string s(val.repr());
     s += "_u";
     switch (getType()) {
     case ValueType::UINT8:
@@ -123,15 +123,15 @@ const array<uint8_t, 256> AES_isbox = {
     0x55, 0x21, 0x0c, 0x7d};
 } // namespace
 
-Value AES_SBox::eval() const {
-    Value::ConcreteType idx = Op->eval().getValue();
+Value AESSBox::eval() const {
+    Value::ConcreteType idx = op->eval().getValue();
     assert(idx >= 0 && idx < AES_sbox.size() &&
            "unexpected AES SBox index value");
     return Value(AES_sbox[idx], getType());
 }
 
-Value AES_ISBox::eval() const {
-    Value::ConcreteType idx = Op->eval().getValue();
+Value AESISBox::eval() const {
+    Value::ConcreteType idx = op->eval().getValue();
     assert(idx >= 0 && idx < AES_isbox.size() &&
            "unexpected AES ISBox index value");
     return Value(AES_isbox[idx], getType());
@@ -140,18 +140,18 @@ Value AES_ISBox::eval() const {
 Value Lsl::eval() const {
     assert(getType() != ValueType::UNDEF &&
            "UNDEF is not support in shift operation");
-    Value::ConcreteType shAmount = RHS->eval().getValue();
+    Value::ConcreteType shAmount = rhs->eval().getValue();
     assert(shAmount <= ValueType::getNumBits(getType()) &&
            "Can not shift by more than bits in the data type");
     assert(shAmount >= 0 && "Shift amount must be positive");
-    return Value(LHS->eval().getValue() << shAmount, LHS->getType());
+    return Value(lhs->eval().getValue() << shAmount, lhs->getType());
 }
 
 Value Lsr::eval() const {
     assert(getType() != ValueType::UNDEF &&
            "UNDEF is not support in shift operation");
-    Value::ConcreteType val = LHS->eval().getValue();
-    Value::ConcreteType shAmount = RHS->eval().getValue();
+    Value::ConcreteType val = lhs->eval().getValue();
+    Value::ConcreteType shAmount = rhs->eval().getValue();
     assert(shAmount <= ValueType::getNumBits(getType()) &&
            "Can not shift by more than bits in the data type");
     assert(shAmount >= 0 && "Shift amount must be positive");
@@ -168,8 +168,8 @@ Value Lsr::eval() const {
 Value Asr::eval() const {
     assert(getType() != ValueType::UNDEF &&
            "UNDEF is not support in shift operation");
-    Value::ConcreteType val = LHS->eval().getValue();
-    Value::ConcreteType shAmount = RHS->eval().getValue();
+    Value::ConcreteType val = lhs->eval().getValue();
+    Value::ConcreteType shAmount = rhs->eval().getValue();
     assert(shAmount <= ValueType::getNumBits(getType()) &&
            "Can not shift by more than bits in the data type");
     assert(shAmount >= 0 && "Shift amount must be positive");

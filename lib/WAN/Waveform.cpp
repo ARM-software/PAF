@@ -92,7 +92,7 @@ signed char Waveform::getTimeScale(std::string &ts) const {
     return timeScale;
 }
 
-void Waveform::dump_metadata(std::ostream &os) const {
+void Waveform::dumpMetadata(std::ostream &os) const {
     os << "Input file: " << fileName << '\n';
     os << "Start time: " << startTime << '\n';
     os << "End time: " << endTime << '\n';
@@ -119,8 +119,8 @@ void WaveformStatistics::visitSignal(const std::string &fullScopeName,
         return;
     }
 
-    assert(W && "Waveform pointer must not be null");
-    const Signal &S = (*W)[idx];
+    assert(w && "Waveform pointer must not be null");
+    const Signal &S = (*w)[idx];
     numSignals += 1;
     numChanges += S.getNumChanges();
     timingsMemSize += S.getNumChanges() * sizeof(WAN::TimeIdxTy);
@@ -131,9 +131,8 @@ void WaveformStatistics::visitSignal(const std::string &fullScopeName,
 void WaveformStatistics::dump(std::ostream &out) const {
     const size_t OneMB = 1024 * 1024;
 
-    assert(W && "Waveform pointer must not be null");
-    out << "Statistics "
-        << "for " << W->getFileName() << ":\n";
+    assert(w && "Waveform pointer must not be null");
+    out << "Statistics " << "for " << w->getFileName() << ":\n";
     out << " - number of Signals: " << numSignals << '\n';
     out << " - number of aliases: " << numAliases << '\n';
     out << " - number of changes: " << numChanges << '\n';

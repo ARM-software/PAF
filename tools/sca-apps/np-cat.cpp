@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: <text>Copyright 2023 Arm Limited and/or its
+ * SPDX-FileCopyrightText: <text>Copyright 2023,2024 Arm Limited and/or its
  * affiliates <open-source-office@arm.com></text>
  * SPDX-License-Identifier: Apache-2.0
  *
@@ -126,8 +126,8 @@ int main(int argc, char *argv[]) {
     string elt_ty;
     size_t elt_size;
     const char *l_errstr;
-    if (!NPArrayBase::get_information(ifs, num_rows, num_cols, elt_ty, elt_size,
-                                      &l_errstr))
+    if (!NPArrayBase::getInformation(ifs, num_rows, num_cols, elt_ty, elt_size,
+                                     &l_errstr))
         reporter->errx(EXIT_FAILURE,
                        "Error retrieving information for file '%s'",
                        input_filenames[0].c_str());

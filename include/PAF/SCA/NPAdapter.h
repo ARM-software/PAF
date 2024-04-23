@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: <text>Copyright 2023 Arm Limited and/or its
+ * SPDX-FileCopyrightText: <text>Copyright 2023,2024 Arm Limited and/or its
  * affiliates <open-source-office@arm.com></text>
  * SPDX-License-Identifier: Apache-2.0
  *
@@ -32,31 +32,29 @@ namespace SCA {
 template <class DataTy> class NPAdapter {
   public:
     /// Construct an NPYAdapter with num_rows rows.
-    NPAdapter(size_t num_rows)
-        : current_row(0), max_row_length(0), w(num_rows) {}
+    NPAdapter(size_t num_rows) : currentRow(0), maxRowLength(0), w(num_rows) {}
 
     /// Move to next row.
     void next() {
-        max_row_length = std::max(max_row_length, w[current_row].size());
-        current_row += 1;
-        if (current_row == w.size())
+        maxRowLength = std::max(maxRowLength, w[currentRow].size());
+        currentRow += 1;
+        if (currentRow == w.size())
             w.emplace_back(std::vector<DataTy>());
-        w[current_row].reserve(max_row_length);
+        w[currentRow].reserve(maxRowLength);
     }
 
     /// Append values to the current row.
     void append(const std::vector<DataTy> &values) {
-        if (current_row >= w.size())
+        if (currentRow >= w.size())
             return;
-        w[current_row].insert(w[current_row].end(), values.begin(),
-                              values.end());
+        w[currentRow].insert(w[currentRow].end(), values.begin(), values.end());
     }
 
     /// Append value to the current row.
     void append(DataTy value) {
-        if (current_row >= w.size())
+        if (currentRow >= w.size())
             return;
-        w[current_row].push_back(value);
+        w[currentRow].push_back(value);
     }
 
     /// Save this into filename in the NPY format.
@@ -68,19 +66,18 @@ template <class DataTy> class NPAdapter {
 
         if (w[num_traces - 1].empty())
             num_traces -= 1;
-        std::unique_ptr<DataTy[]> matrix(
-            new DataTy[num_traces * max_row_length]);
+        std::unique_ptr<DataTy[]> matrix(new DataTy[num_traces * maxRowLength]);
         PAF::SCA::NPArray<DataTy> npy(std::move(matrix), num_traces,
-                                      max_row_length);
+                                      maxRowLength);
         for (size_t row = 0; row < num_traces; row++)
-            for (size_t col = 0; col < max_row_length; col++)
+            for (size_t col = 0; col < maxRowLength; col++)
                 npy(row, col) = col < w[row].size() ? w[row][col] : 0.0;
         npy.save(filename);
     }
 
   private:
-    size_t current_row;
-    size_t max_row_length;
+    size_t currentRow;
+    size_t maxRowLength;
     std::vector<std::vector<DataTy>> w;
 };
 

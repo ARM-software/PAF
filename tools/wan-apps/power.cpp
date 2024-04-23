@@ -49,7 +49,7 @@ class RunInfo {
         Segment(size_t start, size_t end) : start(start), end(end) {}
     };
 
-    RunInfo(const string &filename = "") : segments(), filename(filename) {
+    RunInfo(const string &filename = "") : segments(), fileName(filename) {
         if (filename.size() == 0)
             return;
 
@@ -66,15 +66,15 @@ class RunInfo {
                 size_t begin = stoul(line.substr(0, comma));
                 size_t end = stoul(line.substr(comma + 1));
                 if (begin >= end)
-                    die("Expecting begin < end at line ", lineNum, " in file '",
+                    DIE("Expecting begin < end at line ", lineNum, " in file '",
                         filename, "'");
                 if (begin <= previous_end)
-                    die("Expecting a monotonous increase in segments at line ",
+                    DIE("Expecting a monotonous increase in segments at line ",
                         lineNum, " in file '", filename, "'");
                 previous_end = end;
                 segments.emplace_back(begin, end);
             } else
-                die("Missing an expected ',' at line ", lineNum, " in file '",
+                DIE("Missing an expected ',' at line ", lineNum, " in file '",
                     filename, "'");
             lineNum += 1;
         }
@@ -87,7 +87,7 @@ class RunInfo {
     }
 
     void dump(ostream &os) const {
-        os << "Cycle info (" << filename << "):\n";
+        os << "Cycle info (" << fileName << "):\n";
         for (const auto &ci : segments)
             os << " - " << ci.start << " - " << ci.end << '\n';
     }
@@ -116,7 +116,7 @@ class RunInfo {
             if (segments[s].start <= time && time < segments[s].end)
                 return s;
 
-        die("time is not part of segment");
+        DIE("time is not part of segment");
     }
 
     size_t getDuration() const {
@@ -137,7 +137,7 @@ class RunInfo {
 
   private:
     vector<Segment> segments;
-    const string filename;
+    string fileName;
 };
 
 std::random_device RD;
@@ -149,13 +149,13 @@ enum HammingTy { HAMMING_WEIGHT, HAMMING_DISTANCE };
 struct HammingVisitor : public Waveform::Visitor {
 
     HammingVisitor(const Waveform::Visitor::Options &options)
-        : Waveform::Visitor(nullptr, options), PowerTmp(), Power() {}
+        : Waveform::Visitor(nullptr, options), powerTmp(), power() {}
 
     HammingVisitor &setWaveform(const Waveform *wf, const RunInfo *ri) {
-        W = wf;
-        RI = ri;
+        w = wf;
+        runInfo = ri;
         // Reset all figures that have been collected so far.
-        for (auto &p : PowerTmp)
+        for (auto &p : powerTmp)
             p.second = 0.0;
         return *this;
     }
@@ -164,11 +164,11 @@ struct HammingVisitor : public Waveform::Visitor {
     void leaveScope() override {}
 
     void reduce() {
-        const size_t N = Power.size() == 0 ? 0 : Power.begin()->second.size();
-        const size_t R = RI->size();
+        const size_t N = power.size() == 0 ? 0 : power.begin()->second.size();
+        const size_t R = runInfo->size();
 
         // Resize all known records.
-        for (auto &p : Power)
+        for (auto &p : power)
             p.second.resize(N + R, 0.0);
 
         // Add samples in segments to the newly added records. We exploit the
@@ -177,17 +177,17 @@ struct HammingVisitor : public Waveform::Visitor {
         bool inSegment = false;
         size_t start, end, segment;
 
-        for (const auto &p : PowerTmp) {
+        for (const auto &p : powerTmp) {
             TimeTy Time = p.first;
             double Val = p.second;
             if (inSegment == false) {
                 // Are entering a new segment ?
-                auto r = RI->getSegment(Time);
+                auto r = runInfo->getSegment(Time);
                 if (r.first) {
                     start = r.second.start;
                     end = r.second.end;
                     inSegment = true;
-                    segment = RI->getSegmentNum(Time);
+                    segment = runInfo->getSegmentNum(Time);
                 }
             } else {
                 // Are we leaving a segment ?
@@ -196,14 +196,14 @@ struct HammingVisitor : public Waveform::Visitor {
             }
 
             if (inSegment) {
-                auto it = Power.find(Time - start);
-                if (it == Power.end()) {
+                auto it = power.find(Time - start);
+                if (it == power.end()) {
                     // For some reason, we've never seen this time sample.
                     // Create a record filled with zero, and insert our sample.
-                    auto it2 = Power.insert(
+                    auto it2 = power.insert(
                         make_pair(Time - start, vector<double>(N + R, 0.0)));
                     if (!it2.second)
-                        die("Error creating a vector at time ", Time);
+                        DIE("Error creating a vector at time ", Time);
                     it2.first->second[N + segment] = Val;
                 } else {
                     it->second[N + segment] = Val;
@@ -213,27 +213,27 @@ struct HammingVisitor : public Waveform::Visitor {
     }
 
     void collect(TimeTy Time, double Val) {
-        auto it = PowerTmp.find(Time);
-        if (it != PowerTmp.end())
+        auto it = powerTmp.find(Time);
+        if (it != powerTmp.end())
             it->second += Val;
         else
-            PowerTmp.emplace(Time, Val);
+            powerTmp.emplace(Time, Val);
     }
 
     // Check our invariant: all records should have the same number of samples.
     void check() const {
         size_t N = 0;
-        for (const auto &H : Power) {
+        for (const auto &H : power) {
             if (N == 0)
                 N = H.second.size();
             else if (N != H.second.size())
-                die("Inconsistent number of samples at time ", H.first, " : ",
+                DIE("Inconsistent number of samples at time ", H.first, " : ",
                     N, " <> ", H.second.size());
         }
     }
 
     void addNoise() {
-        for (auto &H : Power)
+        for (auto &H : power)
             for (auto &p : H.second)
                 p += PowerNoiseDist(MT);
     }
@@ -249,13 +249,13 @@ struct HammingVisitor : public Waveform::Visitor {
         } else {
             ofs = new ofstream(Filename);
             if (!*ofs)
-                die("Error opening output file ", Filename);
+                DIE("Error opening output file ", Filename);
             os = ofs;
         }
 
         size_t c = 0;
         size_t i = 0;
-        for (const auto &H : Power) {
+        for (const auto &H : power) {
             if (i % period == offset) {
                 *os << c;
                 for (const auto &p : H.second)
@@ -272,9 +272,9 @@ struct HammingVisitor : public Waveform::Visitor {
         }
     }
 
-    const RunInfo *RI = nullptr;
-    map<TimeTy, double> PowerTmp;
-    map<TimeTy, vector<double>> Power;
+    const RunInfo *runInfo = nullptr;
+    map<TimeTy, double> powerTmp;
+    map<TimeTy, vector<double>> power;
 };
 
 struct HammingWeight : public HammingVisitor {
@@ -285,9 +285,9 @@ struct HammingWeight : public HammingVisitor {
     void visitSignal(const string &FullScopeName,
                      const Waveform::SignalDesc &SD) override {
         const SignalIdxTy idx = SD.getIdx();
-        for (const Signal::ChangeTy &Change : (*W)[idx]) {
-            const TimeTy &Time = Change.Time;
-            double Val = Change.Value.countOnes();
+        for (const Signal::ChangeTy &Change : (*w)[idx]) {
+            const TimeTy &Time = Change.time;
+            double Val = Change.value.countOnes();
             collect(Time, Val);
         }
     }
@@ -301,7 +301,7 @@ struct HammingDistance : public HammingVisitor {
     void visitSignal(const string &FullScopeName,
                      const Waveform::SignalDesc &SD) override {
         const SignalIdxTy idx = SD.getIdx();
-        const Signal &S = (*W)[idx];
+        const Signal &S = (*w)[idx];
         size_t NumChanges = S.getNumChanges();
 
         if (NumChanges < 1)
@@ -311,10 +311,10 @@ struct HammingDistance : public HammingVisitor {
 
         for (size_t i = 0; i < NumChanges; i++) {
             Signal::ChangeTy Change = S.getChange(i);
-            ValueTy Xor = Change.Value ^ PreviousValue;
+            ValueTy Xor = Change.value ^ PreviousValue;
             double Val = Xor.countOnes();
-            collect(Change.Time, Val);
-            PreviousValue = Change.Value;
+            collect(Change.time, Val);
+            PreviousValue = Change.value;
         }
     }
 };
@@ -322,21 +322,21 @@ struct HammingDistance : public HammingVisitor {
 class Inputs {
   public:
     struct Input {
-        string InputFile;
-        string CycleInfo;
+        string inputFile;
+        string cycleInfo;
         Input(const string &InputFile, const string &CycleInfo)
-            : InputFile(InputFile), CycleInfo(CycleInfo) {}
-        Input(const string &InputFile) : InputFile(InputFile), CycleInfo("") {}
+            : inputFile(InputFile), cycleInfo(CycleInfo) {}
+        Input(const string &InputFile) : inputFile(InputFile), cycleInfo("") {}
 
-        bool hasCycleInfo() const { return CycleInfo.size(); }
+        bool hasCycleInfo() const { return cycleInfo.size(); }
     };
 
-    Inputs() : In() {}
+    Inputs() : in() {}
 
-    bool empty() const { return In.empty(); }
+    bool empty() const { return in.empty(); }
 
-    vector<Input>::const_iterator begin() const { return In.begin(); }
-    vector<Input>::const_iterator end() const { return In.end(); }
+    vector<Input>::const_iterator begin() const { return in.begin(); }
+    vector<Input>::const_iterator end() const { return in.end(); }
 
     void parse(const string &s) {
         size_t comma = s.find_first_of(',');
@@ -348,19 +348,19 @@ class Inputs {
 
     void dump(ostream &os) const {
         os << "Inputs:\n";
-        for (const auto &I : In) {
-            os << " - " << I.InputFile;
+        for (const auto &I : in) {
+            os << " - " << I.inputFile;
             if (I.hasCycleInfo())
-                os << " (" << I.CycleInfo << ")";
+                os << " (" << I.cycleInfo << ")";
             os << '\n';
         }
     }
 
   private:
-    vector<Input> In;
+    vector<Input> in;
 
     Inputs &add(const string &fst, const string &info = "") {
-        In.emplace_back(fst, info);
+        in.emplace_back(fst, info);
         return *this;
     }
 };
@@ -408,14 +408,14 @@ int main(int argc, char *argv[]) {
               [&](const string &s) {
                   size_t pos = s.find('%');
                   if (pos == string::npos)
-                      die("'%' separator not found in decimation specifier");
+                      DIE("'%' separator not found in decimation specifier");
                   Period = stoul(s);
                   Offset = stoul(s.substr(pos + 1));
                   if (Period == 0)
-                      die("Bogus decimation specification, PERIOD "
+                      DIE("Bogus decimation specification, PERIOD "
                           "must be strictly higher than 0");
                   if (Offset >= Period)
-                      die("Bogus decimation specification, OFFSET "
+                      DIE("Bogus decimation specification, OFFSET "
                           "must be strictly lower than PERIOD");
               });
     ap.optval(
@@ -430,9 +430,9 @@ int main(int argc, char *argv[]) {
 
     ap.parse([&]() {
         if (In.empty())
-            die("No input file name");
+            DIE("No input file name");
         if (VisitOptions.isAllSkipped())
-            die("Registers, Wires and Integers are all skipped: there "
+            DIE("Registers, Wires and Integers are all skipped: there "
                 "will be nothing to process");
     });
 
@@ -452,11 +452,11 @@ int main(int argc, char *argv[]) {
     size_t Duration = 0;
     size_t NumSignals = 0;
     for (const auto &I : In) {
-        Waveform WIn = WaveFile::get(I.InputFile)->read();
-        RunInfo CI(I.CycleInfo);
+        Waveform WIn = WaveFile::get(I.inputFile)->read();
+        RunInfo CI(I.cycleInfo);
 
         if (Verbose) {
-            cout << "Processing " << I.InputFile << '\n';
+            cout << "Processing " << I.inputFile << '\n';
             CI.dump(cout);
         }
 
@@ -473,17 +473,17 @@ int main(int argc, char *argv[]) {
         }
         if (CI.empty()) {
             if (Duration != WIn.getEndTime() - WIn.getStartTime())
-                die("Simulation duration in ", I.InputFile,
+                DIE("Simulation duration in ", I.inputFile,
                     " is inconsistent with the previous files");
         } else if (!CI.checkDuration(Duration))
-            die("Inconsistent segment simulation duration in ", I.InputFile);
+            DIE("Inconsistent segment simulation duration in ", I.inputFile);
 
         if (NumSignals == 0) {
             NumSignals = WIn.getNumSignals();
             if (Verbose)
                 cout << "Signals to analyze: " << WIn.getNumSignals() << '\n';
         } else if (NumSignals != WIn.getNumSignals())
-            die("Number of signals in ", I.InputFile,
+            DIE("Number of signals in ", I.inputFile,
                 " is inconsistent with the previous files");
 
         // Now the real work !

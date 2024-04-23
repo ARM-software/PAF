@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: <text>Copyright 2021,2022,2023 Arm Limited and/or its
+ * SPDX-FileCopyrightText: <text>Copyright 2021-2024 Arm Limited and/or its
  * affiliates <open-source-office@arm.com></text>
  * SPDX-License-Identifier: Apache-2.0
  *
@@ -39,7 +39,7 @@ class TestWithTemporaryFiles : public ::testing::Test {
     void cleanup(bool c) { remove = c; }
 
     /// Get the number of available files.
-    unsigned getNumFiles() const { return tmpFileNames.size()-1; }
+    unsigned getNumFiles() const { return tmpFileNames.size() - 1; }
 
     /// Get temporary file \p i name.
     const std::string &getTemporaryFilename(unsigned i = 0) const {
@@ -71,13 +71,13 @@ class TestWithTemporaryFiles : public ::testing::Test {
     bool remove;
 };
 
-#define TestWithTempFile(FIXTURENAME, TEMPLATE)                                \
+#define TEST_WITH_TEMP_FILE(FIXTURENAME, TEMPLATE)                             \
     class FIXTURENAME : public TestWithTemporaryFiles {                        \
       public:                                                                  \
         FIXTURENAME() : TestWithTemporaryFiles(TEMPLATE, 1) {}                 \
     }
 
-#define TestWithTempFiles(FIXTURENAME, TEMPLATE, NUM)                          \
+#define TEST_WITH_TEMP_FILES(FIXTURENAME, TEMPLATE, NUM)                       \
     class FIXTURENAME : public TestWithTemporaryFiles {                        \
       public:                                                                  \
         FIXTURENAME() : TestWithTemporaryFiles(TEMPLATE, NUM) {}               \

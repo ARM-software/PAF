@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: <text>Copyright 2021,2022 Arm Limited and/or its
+ * SPDX-FileCopyrightText: <text>Copyright 2021,2022,2024 Arm Limited and/or its
  * affiliates <open-source-office@arm.com></text>
  * SPDX-License-Identifier: Apache-2.0
  *
@@ -47,30 +47,31 @@ struct AddressingMode {
         AMU_UNINDEXED
     };
 
-    AddressingMode() : Offset(AMF_NO_ACCESS), Update(AMU_OFFSET) {}
+    AddressingMode() : offset(AMF_NO_ACCESS), update(AMU_OFFSET) {}
     AddressingMode(OffsetFormat Offset, BaseUpdate Update)
-        : Offset(Offset), Update(Update) {}
+        : offset(Offset), update(Update) {}
 
-    bool isValid() const { return Offset != AMF_NO_ACCESS; }
+    bool isValid() const { return offset != AMF_NO_ACCESS; }
 
     bool operator==(const AddressingMode &Other) const {
-        return Offset == Other.Offset && Update == Other.Update;
+        return offset == Other.offset && update == Other.update;
     }
     bool operator!=(const AddressingMode &Other) const {
-        return Offset != Other.Offset || Update != Other.Update;
+        return offset != Other.offset || update != Other.update;
     }
 
-    OffsetFormat Offset;
-    BaseUpdate Update;
+    OffsetFormat offset;
+    BaseUpdate update;
 };
 
 /// The InstrInfo class collects a decoded instructions' attributes.
 class InstrInfo {
   public:
-    enum InstructionKind {NO_KIND, LOAD, STORE, BRANCH, CALL};
+    enum InstructionKind { NO_KIND, LOAD, STORE, BRANCH, CALL };
 
-    InstrInfo() : InputRegisters(), Kind(InstructionKind::NO_KIND), AM() {
-        InputRegisters.reserve(4);
+    InstrInfo()
+        : inputRegisters(), kind(InstructionKind::NO_KIND), addressingMode() {
+        inputRegisters.reserve(4);
     }
     InstrInfo(const InstrInfo &) = default;
     InstrInfo(InstrInfo &&) = default;
@@ -79,32 +80,32 @@ class InstrInfo {
     InstrInfo &operator=(InstrInfo &&) = default;
 
     /// Has this instruction no kind ?
-    bool hasNoKind() const { return Kind == InstructionKind::NO_KIND; }
+    bool hasNoKind() const { return kind == InstructionKind::NO_KIND; }
     /// Is this instruction a load instruction ?
-    bool isLoad() const { return Kind == InstructionKind::LOAD; }
+    bool isLoad() const { return kind == InstructionKind::LOAD; }
     /// Is this instruction a store instruction ?
-    bool isStore() const { return Kind == InstructionKind::STORE; }
+    bool isStore() const { return kind == InstructionKind::STORE; }
     /// Is this instruction a memory access instruction, i.e a load or a store ?
     bool isMemoryAccess() const { return isLoad() || isStore(); }
     /// Is this instruction a branch instruction ?
-    bool isBranch() const { return Kind == InstructionKind::BRANCH; }
+    bool isBranch() const { return kind == InstructionKind::BRANCH; }
     /// Is this instruction a call instruction ?
-    bool isCall() const { return Kind == InstructionKind::CALL; }
+    bool isCall() const { return kind == InstructionKind::CALL; }
     /// Get this instruction's Kind directly.
-    InstructionKind getKind() const { return Kind; }
+    InstructionKind getKind() const { return kind; }
 
     /// Set this instruction as a load instruction.
     InstrInfo &setLoad(AddressingMode::OffsetFormat Offset,
                        AddressingMode::BaseUpdate Update) {
-        Kind = InstructionKind::LOAD;
-        AM = AddressingMode(Offset, Update);
+        kind = InstructionKind::LOAD;
+        addressingMode = AddressingMode(Offset, Update);
         return *this;
     }
     /// Set this instruction as a store instruction.
     InstrInfo &setStore(AddressingMode::OffsetFormat Offset,
                         AddressingMode::BaseUpdate Update) {
-        Kind = InstructionKind::STORE;
-        AM = AddressingMode(Offset, Update);
+        kind = InstructionKind::STORE;
+        addressingMode = AddressingMode(Offset, Update);
         return *this;
     }
     /// Set this instruction as a load instruction (no base register update
@@ -119,18 +120,18 @@ class InstrInfo {
     }
     /// Set this instruction as a branch instruction.
     InstrInfo &setBranch() {
-        Kind = InstructionKind::BRANCH;
+        kind = InstructionKind::BRANCH;
         return *this;
     }
     /// Set this instruction as a branch instruction.
     InstrInfo &setCall() {
-        Kind = InstructionKind::CALL;
+        kind = InstructionKind::CALL;
         return *this;
     }
 
     /// Add an input register to this instruction.
     InstrInfo &addInputRegister(unsigned r1) {
-        InputRegisters.push_back(r1);
+        inputRegisters.push_back(r1);
         return *this;
     }
     /// Add multiple input registers to this instruction.
@@ -141,13 +142,13 @@ class InstrInfo {
 
     /// Add an implicit input register to this instruction.
     InstrInfo &addImplicitInputRegister(unsigned r) {
-        ImplicitInputRegisters.push_back(r);
+        implicitInputRegisters.push_back(r);
         return *this;
     }
 
     /// Get the raw list of registers read by this instruction, in asm order.
     const std::vector<unsigned> &getInputRegisters(bool implicit) const {
-        return implicit ? ImplicitInputRegisters : InputRegisters;
+        return implicit ? implicitInputRegisters : inputRegisters;
     }
 
     /// Get a list of unique registers read by this instruction. Order is
@@ -157,24 +158,23 @@ class InstrInfo {
     /// Get this instruction addressing mode.
     /// Note: this is only valid for instructions that accesses memory.
     const AddressingMode &getAddressingMode() const {
-        assert(
-            isMemoryAccess() &&
-            "Only instructions that access memory have a valid addressing mode");
-        return AM;
+        assert(isMemoryAccess() && "Only instructions that access memory have "
+                                   "a valid addressing mode");
+        return addressingMode;
     }
 
     /// Does this instruction have a valid addressing mode ?
-    bool hasValidAddressingMode() const { return AM.isValid(); }
+    bool hasValidAddressingMode() const { return addressingMode.isValid(); }
 
   private:
     /// The raw list of registers read.
-    std::vector<unsigned> InputRegisters;
+    std::vector<unsigned> inputRegisters;
     /// The raw list of implicit registers read.
-    std::vector<unsigned> ImplicitInputRegisters;
+    std::vector<unsigned> implicitInputRegisters;
     /// This instruction kind: load, store, branch, call, ...
-    InstructionKind Kind;
+    InstructionKind kind;
     /// The addressing mode used by this load / store instruction.
-    AddressingMode AM;
+    AddressingMode addressingMode;
 };
 
 /// The ArchInfo class is the base class to describe architecture related

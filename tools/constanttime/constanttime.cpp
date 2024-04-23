@@ -67,43 +67,43 @@ class TraceComparator {
     TraceComparator(const ReferenceTrace &Ref,
                     bool IgnoreConditionalExecutionDifferences,
                     bool IgnoreMemoryAccessDifferences)
-        : Ref(Ref), Instr(0), Errors(0),
-          IgnoreConditionalExecutionDifferences(
+        : ref(Ref), instr(0), errors(0),
+          ignoreConditionalExecutionDifferences(
               IgnoreConditionalExecutionDifferences),
-          IgnoreMemoryAccessDifferences(IgnoreMemoryAccessDifferences),
-          ControlFlowDivergence(false) {}
+          ignoreMemoryAccessDifferences(IgnoreMemoryAccessDifferences),
+          controlFlowDivergence(false) {}
 
     void operator()(const PAF::ReferenceInstruction &I) {
-        if (Instr >= Ref.size()) {
-            Errors++;
+        if (instr >= ref.size()) {
+            errors++;
             return;
         }
 
-        if (!ControlFlowDivergence && !cmpRI(Ref[Instr], I)) {
-            Errors++;
-            dumpDiff(cout, Ref[Instr], I);
+        if (!controlFlowDivergence && !cmpRI(ref[instr], I)) {
+            errors++;
+            dumpDiff(cout, ref[instr], I);
         }
-        Instr++;
+        instr++;
     }
 
-    bool hasErrors() const { return Errors != 0; }
+    bool hasErrors() const { return errors != 0; }
 
   private:
-    const ReferenceTrace &Ref;
-    unsigned Instr;  // The current instruction
-    unsigned Errors; // Error count
-    const bool IgnoreConditionalExecutionDifferences;
-    const bool IgnoreMemoryAccessDifferences;
-    bool ControlFlowDivergence;
+    const ReferenceTrace &ref;
+    unsigned instr;  // The current instruction
+    unsigned errors; // Error count
+    const bool ignoreConditionalExecutionDifferences;
+    const bool ignoreMemoryAccessDifferences;
+    bool controlFlowDivergence;
 
     bool cmpRI(const PAF::ReferenceInstruction &I,
                const PAF::ReferenceInstruction &O) {
         if (I.pc == O.pc && I.iset == O.iset && I.width == O.width &&
             I.instruction == O.instruction) {
-            if (!IgnoreConditionalExecutionDifferences)
+            if (!ignoreConditionalExecutionDifferences)
                 if (I.effect != O.effect)
                     return false;
-            if (!IgnoreMemoryAccessDifferences) {
+            if (!ignoreMemoryAccessDifferences) {
                 if (I.memaccess.size() != O.memaccess.size())
                     return false;
                 for (unsigned i = 0; i < I.memaccess.size(); i++)
@@ -112,7 +112,7 @@ class TraceComparator {
             }
             return true;
         }
-        ControlFlowDivergence = true;
+        controlFlowDivergence = true;
         return false;
     }
 
@@ -136,9 +136,9 @@ class CTAnalyzer : public PAF::MTAnalyzer {
                bool IgnoreConditionalExecutionDifferences,
                bool IgnoreMemoryAccessDifferences)
         : MTAnalyzer(trace, image_filename),
-          IgnoreConditionalExecutionDifferences(
+          ignoreConditionalExecutionDifferences(
               IgnoreConditionalExecutionDifferences),
-          IgnoreMemoryAccessDifferences(IgnoreMemoryAccessDifferences) {}
+          ignoreMemoryAccessDifferences(IgnoreMemoryAccessDifferences) {}
 
     ReferenceTrace getReferenceTrace(const PAF::ExecutionRange &ER) {
         ReferenceTrace RT;
@@ -151,8 +151,8 @@ class CTAnalyzer : public PAF::MTAnalyzer {
 
     bool check(const ReferenceTrace &Ref, const PAF::ExecutionRange &ER) {
 
-        TraceComparator TraceCmp(Ref, IgnoreConditionalExecutionDifferences,
-                                 IgnoreMemoryAccessDifferences);
+        TraceComparator TraceCmp(Ref, ignoreConditionalExecutionDifferences,
+                                 ignoreMemoryAccessDifferences);
         PAF::FromTraceBuilder<PAF::ReferenceInstruction,
                               PAF::ReferenceInstructionBuilder, TraceComparator>
             FTB(*this);
@@ -162,8 +162,8 @@ class CTAnalyzer : public PAF::MTAnalyzer {
     }
 
   private:
-    const bool IgnoreConditionalExecutionDifferences;
-    const bool IgnoreMemoryAccessDifferences;
+    const bool ignoreConditionalExecutionDifferences;
+    const bool ignoreMemoryAccessDifferences;
 };
 
 } // namespace
@@ -217,12 +217,12 @@ int main(int argc, char **argv) {
             if (RefTrace.size() == 0) {
                 RefTrace = CTA.getReferenceTrace(ER);
                 cout << " - Building reference trace from " << FunctionName
-                     << " instance at time : " << ER.Start.time << " to "
-                     << ER.End.time << '\n';
+                     << " instance at time : " << ER.begin.time << " to "
+                     << ER.end.time << '\n';
                 RefTrace.dump(cout);
             } else {
                 cout << " - Comparing reference to instance at time : "
-                     << ER.Start.time << " to " << ER.End.time << '\n';
+                     << ER.begin.time << " to " << ER.end.time << '\n';
                 CTA.check(RefTrace, ER);
             }
         }

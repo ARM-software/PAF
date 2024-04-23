@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: <text>Copyright 2023 Arm Limited and/or its
+ * SPDX-FileCopyrightText: <text>Copyright 2023,2024 Arm Limited and/or its
  * affiliates <open-source-office@arm.com></text>
  * SPDX-License-Identifier: Apache-2.0
  *
@@ -42,13 +42,13 @@ class Dumper {
     Dumper &operator=(const Dumper &) = default;
 
     /// Update state when switching to next trace.
-    virtual void next_trace() {}
+    virtual void nextTrace() {}
 
     /// Called at the beginning of a trace.
-    virtual void predump() {}
+    virtual void preDump() {}
 
     /// Called at the end of a trace.
-    virtual void postdump() {}
+    virtual void postDump() {}
 
     /// Destruct this Dumper.
     virtual ~Dumper() {}
@@ -117,16 +117,17 @@ class YAMLDumper : public FileStreamDumper {
         : FileStreamDumper(filename), header(header), sep("  - ") {}
 
     /// Construct a FileStreamDumper associated with stream \a os.
-    YAMLDumper(std::ostream &os, const char *header) : FileStreamDumper(os), header(header), sep("  - ") {}
+    YAMLDumper(std::ostream &os, const char *header)
+        : FileStreamDumper(os), header(header), sep("  - ") {}
 
   protected:
     /// Reset the trace separator.
-    void next_trace() { sep = "  - "; }
+    void nextTrace() { sep = "  - "; }
 
     /// Get the trace separator. This allows Lazily emitting the trace
     /// separator, so that the yaml file does not end
     // with an empty array element.
-    const char *get_trace_separator() {
+    const char *getTraceSeparator() {
         const char *tmp = sep;
         if (sep)
             sep = nullptr;
@@ -134,7 +135,7 @@ class YAMLDumper : public FileStreamDumper {
     }
 
     /// Get the YAML header to emit.
-    const char *get_header() const { return header; }
+    const char *getHeader() const { return header; }
 
   private:
     /// YAML header to use.
@@ -156,7 +157,8 @@ class RegBankDumper : public Dumper {
     virtual ~RegBankDumper() {}
 };
 
-/// NPYRegBankDumper is used to dump a trace of the register bank content as a numpy array.
+/// NPYRegBankDumper is used to dump a trace of the register bank content as a
+/// numpy array.
 class NPYRegBankDumper : public RegBankDumper, public FilenameDumper {
   public:
     /// Construct an NPYRegBankDumper, assuming \a num_traces will be dumped.
@@ -164,26 +166,26 @@ class NPYRegBankDumper : public RegBankDumper, public FilenameDumper {
     /// be destroyed.
     NPYRegBankDumper(const std::string &filename, size_t num_traces)
         : RegBankDumper(!filename.empty()), FilenameDumper(filename),
-          NpyA(num_traces) {}
+          npyA(num_traces) {}
 
     /// Update state when switching to next trace.
-    void next_trace() override {
+    void nextTrace() override {
         if (enabled())
-            NpyA.next();
+            npyA.next();
     }
 
     /// Dump the register bank content.
-    void dump(const std::vector<uint64_t> &regs) override { NpyA.append(regs); }
+    void dump(const std::vector<uint64_t> &regs) override { npyA.append(regs); }
 
     /// Destruct this NPYRegBankDumper, saving the NPY file along the way.
     virtual ~NPYRegBankDumper() {
         if (enabled())
-            NpyA.save(filename);
+            npyA.save(filename);
     }
 
   private:
     /// Our numpy adapter to the register bank trace.
-    NPAdapter<uint64_t> NpyA;
+    NPAdapter<uint64_t> npyA;
 };
 
 /// MemoryAccessesDumper is used to dump a trace of memory accesses.
@@ -209,8 +211,8 @@ class FileMemoryAccessesDumper : public MemoryAccessesDumper,
     FileMemoryAccessesDumper(const std::string &filename)
         : MemoryAccessesDumper(!filename.empty()), FileStreamDumper(filename) {}
 
-    /// Construct a FileMemoryAccessesDumper that will dump its content to stream
-    /// \a os.
+    /// Construct a FileMemoryAccessesDumper that will dump its content to
+    /// stream \a os.
     FileMemoryAccessesDumper(std::ostream &os, bool enable = true)
         : MemoryAccessesDumper(enable), FileStreamDumper(os) {}
 };
@@ -224,12 +226,12 @@ class YAMLMemoryAccessesDumper : public MemoryAccessesDumper,
     /// \a filename in YAML format.
     YAMLMemoryAccessesDumper(const std::string &filename);
 
-    /// Construct a FileMemoryAccessesDumper that will dump its content to stream
-    /// \a os in YAML format.
+    /// Construct a FileMemoryAccessesDumper that will dump its content to
+    /// stream \a os in YAML format.
     YAMLMemoryAccessesDumper(std::ostream &os, bool enable = true);
 
     /// Update state when switching to next trace.
-    void next_trace() override { this->YAMLDumper::next_trace(); };
+    void nextTrace() override { this->YAMLDumper::nextTrace(); };
 
     /// Dump memory accesses performed by instruction at pc.
     void dump(uint64_t PC, const std::vector<MemoryAccess> &MA) override;
@@ -263,7 +265,7 @@ class InstrDumper : public Dumper {
 
     /// Dump this instruction.
     virtual void dumpImpl(const ReferenceInstruction &I,
-                      const std::vector<uint64_t> *regs) = 0;
+                          const std::vector<uint64_t> *regs) = 0;
 };
 
 /// The YAMLInstrDumper class will dump a trace of instructions to a
@@ -281,7 +283,7 @@ class YAMLInstrDumper : public InstrDumper, public YAMLDumper {
                     bool dumpMemAccess = false, bool dumpRegBank = false);
 
     /// Update state when switching to next trace.
-    void next_trace() override { this->YAMLDumper::next_trace(); };
+    void nextTrace() override { this->YAMLDumper::nextTrace(); };
 
   private:
     /// Dump memory accesses performed by instruction at pc.

@@ -54,62 +54,62 @@ namespace {
 class VCDParserBase {
   public:
     VCDParserBase(const string &Filename)
-        : Filename(Filename), IS(Filename.c_str()) {
+        : filename(Filename), is(Filename.c_str()) {
         if (!good())
-            die("Invalid VCD stream");
+            DIE("Invalid VCD stream");
     }
 
-    bool eof() const { return IS.eof(); }
-    bool good() const { return IS.good(); }
-    bool eol() const { return Offset == currentLine.size(); }
+    bool eof() const { return is.eof(); }
+    bool good() const { return is.good(); }
+    bool eol() const { return offset == currentLine.size(); }
 
-    bool report_error(const string &s) const {
-        cerr << "Parse error in file " << Filename << " at line " << lineNumber
+    bool reportError(const string &s) const {
+        cerr << "Parse error in file " << filename << " at line " << lineNumber
              << " : " << s << '\n';
         return false;
     }
 
     bool readline() {
         // std::cout << __PRETTY_FUNCTION__ << '\n';
-        if (IS.eof())
+        if (is.eof())
             return false;
 
         currentLine.clear();
 
         string tmp;
         while (1) {
-            getline(IS, tmp);
+            getline(is, tmp);
             currentLine.append(tmp);
-            if (IS.good())
+            if (is.good())
                 break;
-            if (IS.eof())
+            if (is.eof())
                 return false;
-            if (IS.fail()) {
-                IS.clear();
+            if (is.fail()) {
+                is.clear();
                 continue;
             }
         }
 
         lineNumber += 1;
-        Offset = 0;
-        skip_ws();
+        offset = 0;
+        skipWS();
         return true;
     }
 
-    void skip_ws() {
+    void skipWS() {
         // std::cout << __PRETTY_FUNCTION__ << '\n';
-        while (Offset < currentLine.size() &&
-               (currentLine[Offset] == ' ' || currentLine[Offset] == '\t'))
-            Offset += 1;
+        while (offset < currentLine.size() &&
+               (currentLine[offset] == ' ' || currentLine[offset] == '\t'))
+            offset += 1;
     }
 
     bool expect(char c) {
         // std::cout << __PRETTY_FUNCTION__ << '\n';
-        if (Offset > currentLine.size())
+        if (offset > currentLine.size())
             return false;
 
-        if (currentLine[Offset] == c) {
-            Offset += 1;
+        if (currentLine[offset] == c) {
+            offset += 1;
             return true;
         }
 
@@ -118,12 +118,12 @@ class VCDParserBase {
 
     bool expect(const string &s) {
         // std::cout << __PRETTY_FUNCTION__ << '\n';
-        if (Offset + s.size() > currentLine.size())
+        if (offset + s.size() > currentLine.size())
             return false;
 
-        if (currentLine.compare(Offset, s.size(), s) == 0) {
-            Offset += s.size();
-            skip_ws();
+        if (currentLine.compare(offset, s.size(), s) == 0) {
+            offset += s.size();
+            skipWS();
             return true;
         }
 
@@ -131,36 +131,36 @@ class VCDParserBase {
     }
 
     // Get all non whitespace characters.
-    bool get_word(string &kw) {
+    bool getWord(string &kw) {
         // std::cout << __PRETTY_FUNCTION__ << '\n';
-        size_t pos = currentLine.find_first_of(" \t", Offset);
+        size_t pos = currentLine.find_first_of(" \t", offset);
         if (pos == string::npos) {
-            kw = currentLine.substr(Offset);
-            Offset += kw.size();
+            kw = currentLine.substr(offset);
+            offset += kw.size();
             return true;
         }
 
-        kw = currentLine.substr(Offset, pos - Offset);
-        Offset = pos;
-        skip_ws();
+        kw = currentLine.substr(offset, pos - offset);
+        offset = pos;
+        skipWS();
         return true;
     }
 
-    bool get_int(size_t &i) {
-        string tmp = currentLine.substr(Offset);
+    bool getInt(size_t &i) {
+        string tmp = currentLine.substr(offset);
         size_t intChars = 0;
         try {
             i = std::stoll(tmp, &intChars, 10);
         } catch (const std::invalid_argument &ia) {
-            return report_error(string("invalid argument in std::stoll (") +
-                                currentLine + ")");
+            return reportError(string("invalid argument in std::stoll (") +
+                               currentLine + ")");
         } catch (const std::out_of_range &oor) {
-            return report_error(
+            return reportError(
                 string("out of range conversion in std::stoll (") +
                 currentLine + ")");
         }
-        Offset += intChars;
-        skip_ws();
+        offset += intChars;
+        skipWS();
         return true;
     }
 
@@ -179,17 +179,17 @@ class VCDParserBase {
         else if (unit == "fs")
             ts -= 15;
         else
-            return report_error("unexpected timescale unit '" + unit + "'");
+            return reportError("unexpected timescale unit '" + unit + "'");
         return true;
     }
 
   protected:
     string currentLine;
-    size_t Offset = 0; // Offset in current line.
+    size_t offset = 0; // Offset in current line.
 
   private:
-    const string &Filename;
-    ifstream IS;
+    const string &filename;
+    ifstream is;
     size_t lineNumber = 1;
 };
 
@@ -204,19 +204,19 @@ class VCDParserQuick : public VCDParserBase {
             readline();
             if (expect("$timescale")) {
                 readline();
-                skip_ws();
+                skipWS();
                 size_t factor;
-                if (!(ok = get_int(factor))) {
-                    report_error("could not get timescale factor");
+                if (!(ok = getInt(factor))) {
+                    reportError("could not get timescale factor");
                     break;
                 }
                 string unit;
-                if (!(ok = get_word(unit))) {
-                    report_error("could not get timescale unit");
+                if (!(ok = getWord(unit))) {
+                    reportError("could not get timescale unit");
                     break;
                 }
                 if (!(ok = timescale(TS, factor, unit))) {
-                    report_error("error computing timescale");
+                    reportError("error computing timescale");
                     break;
                 }
                 // Get the end of the timescale section
@@ -232,8 +232,8 @@ class VCDParserQuick : public VCDParserBase {
         while (readline()) {
             if (expect('#')) {
                 size_t time;
-                if (!(ok = get_int(time))) {
-                    report_error("error reading time");
+                if (!(ok = getInt(time))) {
+                    reportError("error reading time");
                     break;
                 }
                 AllTimes.push_back(time);
@@ -273,7 +273,7 @@ class VCDParserFull : public VCDParserBase {
 
   public:
     VCDParserFull(Waveform &W, const string &Filename)
-        : VCDParserBase(Filename), W(W) {}
+        : VCDParserBase(Filename), w(W) {}
 
     bool parse() {
         vector<Waveform::Scope *> scopeStack;
@@ -283,58 +283,58 @@ class VCDParserFull : public VCDParserBase {
         bool in_vcd_header = true;
         while (in_vcd_header) {
             if (eof())
-                return report_error("premature end of VCD file");
+                return reportError("premature end of VCD file");
             KW kw;
             readline();
-            if (get_keyword(kw)) {
+            if (getKeyword(kw)) {
                 switch (kw) {
                 case KW::UNKNOWN: {
-                    return report_error("not a keyword");
+                    return reportError("not a keyword");
                 }
                 case KW::DATE: {
                     string date;
-                    if (!get_content("date", date))
-                        return report_error(
+                    if (!getContent("date", date))
+                        return reportError(
                             "unable to parse date header content");
-                    W.setDate(date);
+                    w.setDate(date);
                     break;
                 }
                 case KW::COMMENT: {
                     string comment;
-                    if (!get_content("comment", comment))
-                        return report_error(
+                    if (!getContent("comment", comment))
+                        return reportError(
                             "unable to parse comment header content");
-                    W.setComment(comment);
+                    w.setComment(comment);
                     break;
                 }
                 case KW::VERSION: {
                     string version;
-                    if (!get_content("version", version))
-                        return report_error(
+                    if (!getContent("version", version))
+                        return reportError(
                             "unable to parse version header content");
-                    W.setVersion(version);
+                    w.setVersion(version);
                     break;
                 }
                 case KW::TIMESCALE: {
                     signed char ts;
-                    if (!get_timescale(ts))
-                        return report_error(
+                    if (!getTimescale(ts))
+                        return reportError(
                             "unable to parse timescale header content");
-                    W.setTimeScale(ts);
+                    w.setTimeScale(ts);
                     break;
                 }
                 case KW::SCOPE: {
                     SK scopeKind;
                     string instance;
-                    if (!get_new_scope(scopeKind, instance))
-                        return report_error("unable to parse new scope");
+                    if (!getNewScope(scopeKind, instance))
+                        return reportError("unable to parse new scope");
 
                     string ScopeName(instance);
                     string fullScopeName;
                     Waveform::Scope *currentScope;
                     if (scopeStack.empty()) {
                         fullScopeName = instance;
-                        currentScope = W.getRootScope();
+                        currentScope = w.getRootScope();
                     } else {
                         fullScopeName = scopeStack.back()->getFullScopeName() +
                                         '.' + instance;
@@ -369,7 +369,7 @@ class VCDParserFull : public VCDParserBase {
                 }
                 case KW::UPSCOPE: {
                     if (!expect(KW::END))
-                        return report_error(
+                        return reportError(
                             "expecting $end when parsing $upscope");
                     scopeStack.pop_back();
                     break;
@@ -379,8 +379,8 @@ class VCDParserFull : public VCDParserBase {
                     size_t bits;
                     string id;
                     string name;
-                    if (!get_var(vk, bits, id, name))
-                        return report_error("unable to parse var");
+                    if (!getVar(vk, bits, id, name))
+                        return reportError("unable to parse var");
 
                     const auto r = sigIds.find(id);
                     if (r == sigIds.end()) {
@@ -388,15 +388,15 @@ class VCDParserFull : public VCDParserBase {
                         SignalIdxTy idx;
                         switch (vk) {
                         case VK::WIRE:
-                            idx = W.addWire(*scopeStack.back(), std::move(name),
+                            idx = w.addWire(*scopeStack.back(), std::move(name),
                                             bits);
                             break;
                         case VK::INTEGER:
-                            idx = W.addInteger(*scopeStack.back(),
+                            idx = w.addInteger(*scopeStack.back(),
                                                std::move(name), bits);
                             break;
                         case VK::REG:
-                            idx = W.addRegister(*scopeStack.back(),
+                            idx = w.addRegister(*scopeStack.back(),
                                                 std::move(name), bits);
                             break;
                         }
@@ -406,15 +406,15 @@ class VCDParserFull : public VCDParserBase {
                         SignalIdxTy idx = r->second;
                         switch (vk) {
                         case VK::WIRE:
-                            W.addWire(*scopeStack.back(), std::move(name), bits,
+                            w.addWire(*scopeStack.back(), std::move(name), bits,
                                       idx);
                             break;
                         case VK::INTEGER:
-                            W.addInteger(*scopeStack.back(), std::move(name),
+                            w.addInteger(*scopeStack.back(), std::move(name),
                                          bits, idx);
                             break;
                         case VK::REG:
-                            W.addRegister(*scopeStack.back(), std::move(name),
+                            w.addRegister(*scopeStack.back(), std::move(name),
                                           bits, idx);
                             break;
                         }
@@ -423,20 +423,20 @@ class VCDParserFull : public VCDParserBase {
                 }
                 case KW::ENDDEFINITIONS: {
                     if (!expect(KW::END))
-                        return report_error(
+                        return reportError(
                             "expecting $end when parsing $enddefinitions");
                     in_vcd_header = false;
                     break;
                 }
                 case KW::END:
-                    return report_error(
+                    return reportError(
                         "syntax error, end keyword not expect here");
                 case KW::DUMPALL:
                 case KW::DUMPOFF:
                 case KW::DUMPON:
                 case KW::DUMPVARS:
-                    return report_error("syntax error, dump section not "
-                                        "supposed to occur here");
+                    return reportError("syntax error, dump section not "
+                                       "supposed to occur here");
                 }
             }
         }
@@ -451,22 +451,22 @@ class VCDParserFull : public VCDParserBase {
             NOT_A_DUMP_SECTION
         } section = NOT_A_DUMP_SECTION;
         while (readline()) {
-            if (currentLine[Offset] == '#') {
-                Offset += 1;
-                if (!get_int(current_time))
-                    return report_error("error reading current time");
-            } else if (currentLine[Offset] == '$') {
+            if (currentLine[offset] == '#') {
+                offset += 1;
+                if (!getInt(current_time))
+                    return reportError("error reading current time");
+            } else if (currentLine[offset] == '$') {
                 if (section == NOT_A_DUMP_SECTION) {
                     KW kw;
-                    if (!get_keyword(kw))
-                        return report_error("error getting keyword");
+                    if (!getKeyword(kw))
+                        return reportError("error getting keyword");
                     switch (kw) {
                     default:
-                        return report_error("unexpected keyword in vcd body");
+                        return reportError("unexpected keyword in vcd body");
                     case KW::COMMENT: {
                         string drop;
-                        if (!get_content("comment", drop))
-                            return report_error(
+                        if (!getContent("comment", drop))
+                            return reportError(
                                 "unable to parse comment in VCD body");
                         break;
                     }
@@ -483,64 +483,62 @@ class VCDParserFull : public VCDParserBase {
                         section = IN_DUMPVARS;
                         // As we are in the value initialization section,
                         // set simulation start time.
-                        W.setStartTime(current_time);
+                        w.setStartTime(current_time);
                         break;
                     }
                 } else {
                     if (!expect(KW::END))
-                        return report_error(
+                        return reportError(
                             "expecting end keyword to dump section");
                     section = NOT_A_DUMP_SECTION;
                 }
             } else {
                 string sigId;
                 string sigValue;
-                if (currentLine[Offset] == 'b') {
-                    Offset += 1;
-                    if (!get_word(sigValue))
-                        return report_error("error reading bus value");
+                if (currentLine[offset] == 'b') {
+                    offset += 1;
+                    if (!getWord(sigValue))
+                        return reportError("error reading bus value");
                 } else {
-                    sigValue = currentLine[Offset];
-                    Offset += 1;
-                    skip_ws();
+                    sigValue = currentLine[offset];
+                    offset += 1;
+                    skipWS();
                 }
-                sigId = currentLine.substr(Offset);
+                sigId = currentLine.substr(offset);
                 const auto r = sigIds.find(sigId);
                 if (r == sigIds.end())
-                    return report_error("unknown signal referenced");
-                W.addValueChange(r->second, current_time, sigValue);
+                    return reportError("unknown signal referenced");
+                w.addValueChange(r->second, current_time, sigValue);
             }
         }
 
         // Set simulation end time.
-        W.setEndTime(current_time);
+        w.setEndTime(current_time);
 
         return true;
     }
 
   private:
-    Waveform &W;
+    Waveform &w;
 
     bool expect(KW kw) {
-        // std::cout << __PRETTY_FUNCTION__ << '\n';
-        size_t Offset_back = Offset;
+        size_t Offset_back = offset;
         KW kw1;
-        if (!get_keyword(kw1))
-            return report_error("a keyword expected");
+        if (!getKeyword(kw1))
+            return reportError("a keyword expected");
 
         if (kw != kw1) {
-            Offset = Offset_back;
-            return report_error("not the expected keyword");
+            offset = Offset_back;
+            return reportError("not the expected keyword");
         }
 
         return true;
     }
 
-    bool get_new_scope(SK &scopeKind, string &instance) {
-        // std::cout << __PRETTY_FUNCTION__ << '\n';
+    bool getNewScope(SK &scopeKind, string &instance) {
         string scopeKindStr;
-        if (!get_word(scopeKindStr))
-            return report_error("error getting scopeKind in new scope");
+        if (!getWord(scopeKindStr))
+            return reportError("error getting scopeKind in new scope");
         if (scopeKindStr == "module")
             scopeKind = SK::MODULE;
         else if (scopeKindStr == "task")
@@ -550,22 +548,21 @@ class VCDParserFull : public VCDParserBase {
         else if (scopeKindStr == "block")
             scopeKind = SK::BLOCK;
         else
-            return report_error("unexpected scope kind '" + scopeKindStr + "'");
+            return reportError("unexpected scope kind '" + scopeKindStr + "'");
 
-        if (!get_word(instance))
-            return report_error("error getting instance name in new scope");
+        if (!getWord(instance))
+            return reportError("error getting instance name in new scope");
         if (!expect(KW::END))
-            return report_error("$end keyword expected in new scope");
+            return reportError("$end keyword expected in new scope");
 
         return true;
     }
 
-    bool get_var(VK &vk, size_t &bits, string &id, string &name) {
-        // std::cout << __PRETTY_FUNCTION__ << '\n';
+    bool getVar(VK &vk, size_t &bits, string &id, string &name) {
         string varTy;
         string bus;
-        if (!get_word(varTy))
-            return report_error("error getting var type");
+        if (!getWord(varTy))
+            return reportError("error getting var type");
         if (varTy == "wire")
             vk = VK::WIRE;
         else if (varTy == "reg")
@@ -573,36 +570,35 @@ class VCDParserFull : public VCDParserBase {
         else if (varTy == "integer")
             vk = VK::INTEGER;
         else
-            return report_error("unknown var kind '" + varTy + "'");
+            return reportError("unknown var kind '" + varTy + "'");
 
-        if (!get_int(bits))
-            return report_error("error getting var size");
-        if (!get_word(id))
-            return report_error("error getting var id");
-        if (!get_word(name))
-            return report_error("error getting var name");
-        if ((bits > 1 && vk != VK::INTEGER) || currentLine[Offset] == '[') {
-            if (!get_word(bus))
-                return report_error("error getting var bus");
+        if (!getInt(bits))
+            return reportError("error getting var size");
+        if (!getWord(id))
+            return reportError("error getting var id");
+        if (!getWord(name))
+            return reportError("error getting var name");
+        if ((bits > 1 && vk != VK::INTEGER) || currentLine[offset] == '[') {
+            if (!getWord(bus))
+                return reportError("error getting var bus");
             name += " ";
             name += bus;
         }
         if (!expect(KW::END))
-            return report_error("$end keyword expected in new var");
+            return reportError("$end keyword expected in new var");
 
         return true;
     }
 
     // A keyword is a word prefixed with the '$' symbol: $end, $scope, ...
-    bool get_keyword(KW &kw) {
-        // std::cout << __PRETTY_FUNCTION__ << '\n';
+    bool getKeyword(KW &kw) {
         kw = KW::UNKNOWN;
         if (!VCDParserBase::expect('$'))
-            return report_error("expected keyword start '$' not found");
+            return reportError("expected keyword start '$' not found");
 
         string w;
-        if (!get_word(w))
-            return report_error("can not read keyword");
+        if (!getWord(w))
+            return reportError("can not read keyword");
 
         if (w == "end")
             kw = KW::END;
@@ -635,46 +631,46 @@ class VCDParserFull : public VCDParserBase {
         return kw != KW::UNKNOWN;
     }
 
-    bool get_content(const string &field, string &data) {
+    bool getContent(const string &field, string &data) {
         if (eol()) {
             // Content is spread on separate line(s).
             do {
                 if (!readline())
-                    return report_error(string("could not get ") + field +
-                                        " line");
-                if (Offset == 0 && currentLine.size() == 4 &&
+                    return reportError(string("could not get ") + field +
+                                       " line");
+                if (offset == 0 && currentLine.size() == 4 &&
                     currentLine[0] == '$' && currentLine[1] == 'e' &&
                     currentLine[2] == 'n' && currentLine[3] == 'd')
                     return true;
-                data += currentLine.substr(Offset);
+                data += currentLine.substr(offset);
             } while (true);
         } else {
             const size_t LS = currentLine.size();
             if (currentLine[LS - 4] == '$' && currentLine[LS - 3] == 'e' &&
                 currentLine[LS - 2] == 'n' && currentLine[LS - 1] == 'd') {
-                data = currentLine.substr(Offset, LS - 5 - Offset);
+                data = currentLine.substr(offset, LS - 5 - offset);
                 return true;
             } else
-                return report_error(string("could not get $end in ") + field +
-                                    " single line");
+                return reportError(string("could not get $end in ") + field +
+                                   " single line");
         }
     }
 
-    bool get_timescale(signed char &ts) {
+    bool getTimescale(signed char &ts) {
         if (!readline())
-            return report_error("could not get timescale line");
+            return reportError("could not get timescale line");
         size_t factor;
-        if (!get_int(factor))
-            return report_error("could not get timescale factor");
+        if (!getInt(factor))
+            return reportError("could not get timescale factor");
         string unit;
-        if (!get_word(unit))
-            return report_error("could not get timescale unit");
+        if (!getWord(unit))
+            return reportError("could not get timescale unit");
         if (!timescale(ts, factor, unit))
-            return report_error("error reading timescale");
+            return reportError("error reading timescale");
         if (!readline())
-            return report_error("could not get the last timescale line");
+            return reportError("could not get the last timescale line");
         if (!expect(KW::END))
-            return report_error("timescale section has no $end keyword");
+            return reportError("timescale section has no $end keyword");
         return true;
     }
 };
@@ -682,14 +678,14 @@ class VCDParserFull : public VCDParserBase {
 } // namespace
 
 vector<TimeTy> VCDWaveFile::getAllChangesTimes() {
-    return VCDParserQuick(FileName).parse();
+    return VCDParserQuick(fileName).parse();
 }
 
 bool VCDWaveFile::read(Waveform &W) {
-    VCDParserFull P(W, FileName);
+    VCDParserFull P(W, fileName);
 
     if (!P.parse())
-        die("Error parsing input VCD file '", FileName, "'");
+        DIE("Error parsing input VCD file '", fileName, "'");
 
     W.setStartTime();
     W.setEndTime();
@@ -698,18 +694,18 @@ bool VCDWaveFile::read(Waveform &W) {
 }
 
 Waveform VCDWaveFile::read() {
-    Waveform W(FileName, 0, 0, 0);
+    Waveform W(fileName, 0, 0, 0);
     if (!VCDWaveFile::read(W))
-        die("error reading '%s", FileName.c_str());
+        DIE("error reading '%s", fileName.c_str());
     return W;
 }
 
 namespace {
 struct VCDHierDumper : public Waveform::Visitor {
-    ostream &O;
+    ostream &o;
     unordered_map<SignalIdxTy, const string> sigMap;
     size_t index = 0;
-    const size_t PRINTABLE_RANGE = 127 - 33;
+    static constexpr size_t PRINTABLE_RANGE = 127 - 33;
     string id;
 
     const string getId(SignalIdxTy Idx) {
@@ -732,7 +728,7 @@ struct VCDHierDumper : public Waveform::Visitor {
     }
 
     VCDHierDumper(ostream &O, const Waveform &W)
-        : Waveform::Visitor(&W), O(O), sigMap(), id() {
+        : Waveform::Visitor(&W), o(O), sigMap(), id() {
         size_t n = W.getNumSignals();
         size_t num_chars = 0;
         while (n >= PRINTABLE_RANGE) {
@@ -743,46 +739,46 @@ struct VCDHierDumper : public Waveform::Visitor {
     }
 
     void enterScope(const Waveform::Scope &scope) override {
-        O << "$scope ";
+        o << "$scope ";
         switch (scope.getKind()) {
         case Waveform::Scope::Kind::MODULE:
-            O << "module ";
+            o << "module ";
             break;
         case Waveform::Scope::Kind::TASK:
-            O << "task ";
+            o << "task ";
             break;
         case Waveform::Scope::Kind::FUNCTION:
-            O << "function ";
+            o << "function ";
             break;
         case Waveform::Scope::Kind::BLOCK:
-            O << "block ";
+            o << "block ";
             break;
         }
-        O << scope.getScopeName();
-        O << " $end\n";
+        o << scope.getScopeName();
+        o << " $end\n";
     }
 
-    void leaveScope() override { O << "$upscope $end\n"; }
+    void leaveScope() override { o << "$upscope $end\n"; }
 
     void visitSignal(const string &FullScopeName,
                      const Waveform::SignalDesc &SD) override {
-        O << "$var ";
+        o << "$var ";
         switch (SD.getKind()) {
         case Waveform::SignalDesc::Kind::INTEGER:
-            O << "integer ";
+            o << "integer ";
             break;
         case Waveform::SignalDesc::Kind::WIRE:
-            O << "wire ";
+            o << "wire ";
             break;
         case Waveform::SignalDesc::Kind::REGISTER:
-            O << "reg ";
+            o << "reg ";
             break;
         }
         const SignalIdxTy idx = SD.getIdx();
-        O << (*W)[idx].getNumBits();
-        O << ' ' << getId(idx);
-        O << ' ' << SD.getName();
-        O << " $end\n";
+        o << (*w)[idx].getNumBits();
+        o << ' ' << getId(idx);
+        o << ' ' << SD.getName();
+        o << " $end\n";
     }
 };
 
@@ -795,7 +791,7 @@ string to_lower(const string &s) {
 } // namespace
 
 bool VCDWaveFile::write(const Waveform &W) {
-    std::ofstream F(FileName.c_str());
+    std::ofstream F(fileName.c_str());
 
     if (!F)
         return false;
@@ -826,12 +822,12 @@ bool VCDWaveFile::write(const Waveform &W) {
             for (size_t Idx = 0; Idx < W.getNumSignals(); Idx++) {
                 const auto &r = VHD.sigMap.find(Idx);
                 if (r == VHD.sigMap.end())
-                    die("VCD signal id not found");
+                    DIE("VCD signal id not found");
                 size_t ChangeIdx = ChangeIndexes[Idx];
                 if (W[Idx].getNumBits() == 1)
-                    F << to_lower(W[Idx].getChange(ChangeIdx).Value);
+                    F << to_lower(W[Idx].getChange(ChangeIdx).value);
                 else
-                    F << 'b' << to_lower(W[Idx].getChange(ChangeIdx).Value)
+                    F << 'b' << to_lower(W[Idx].getChange(ChangeIdx).value)
                       << ' ';
                 F << r->second << '\n';
                 ChangeIndexes[Idx] += 1;
@@ -843,14 +839,14 @@ bool VCDWaveFile::write(const Waveform &W) {
                 size_t ChangeIdx = ChangeIndexes[Idx];
                 if (ChangeIdx >= W[Idx].getNumChanges())
                     continue;
-                if (W[Idx].getChange(ChangeIdx).Time == currentTime) {
+                if (W[Idx].getChange(ChangeIdx).time == currentTime) {
                     const auto &r = VHD.sigMap.find(Idx);
                     if (r == VHD.sigMap.end())
-                        die("VCD signal id not found");
+                        DIE("VCD signal id not found");
                     if (W[Idx].getNumBits() == 1) {
-                        F << to_lower(W[Idx].getChange(ChangeIdx).Value);
+                        F << to_lower(W[Idx].getChange(ChangeIdx).value);
                     } else {
-                        F << 'b' << to_lower(W[Idx].getChange(ChangeIdx).Value)
+                        F << 'b' << to_lower(W[Idx].getChange(ChangeIdx).value)
                           << ' ';
                     }
                     F << r->second << '\n';
@@ -865,7 +861,7 @@ bool VCDWaveFile::write(const Waveform &W) {
             size_t ChangeIdx = ChangeIndexes[Idx];
             if (ChangeIdx >= W[Idx].getNumChanges())
                 continue;
-            uint64_t t = W[Idx].getChange(ChangeIdx).Time;
+            uint64_t t = W[Idx].getChange(ChangeIdx).time;
             if (t < nextTime)
                 nextTime = t;
         }

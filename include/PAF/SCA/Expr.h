@@ -1,6 +1,6 @@
 /*
- * SPDX-FileCopyrightText: <text>Copyright 2021,2022,2023,2024 Arm Limited and/or its
- * affiliates <open-source-office@arm.com></text>
+ * SPDX-FileCopyrightText: <text>Copyright 2021,2022,2023,2024 Arm Limited
+ * and/or its affiliates <open-source-office@arm.com></text>
  * SPDX-License-Identifier: Apache-2.0
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -41,18 +41,18 @@ class ValueType {
     enum Type { UNDEF, UINT8, UINT16, UINT32, UINT64 };
 
     /// Construct a value of <tt>UNDEF</tt> type.
-    ValueType() : Ty(Type::UNDEF) {}
+    ValueType() : ty(Type::UNDEF) {}
     /// Construct a ValueType of type Ty.
-    explicit ValueType(Type Ty) : Ty(Ty) {}
+    explicit ValueType(Type Ty) : ty(Ty) {}
 
     /// Assigns a Type to this ValueType.
     ValueType &operator=(Type T) {
-        Ty = T;
+        ty = T;
         return *this;
     }
 
     /// Get the type represented by this ValueType.
-    Type getType() const { return Ty; }
+    Type getType() const { return ty; }
 
     /// Get he number of bits in type Ty.
     static size_t getNumBits(Type Ty) {
@@ -71,11 +71,11 @@ class ValueType {
     }
 
     /// Get the number of bits in this type.
-    size_t getNumBits() const { return getNumBits(Ty); }
+    size_t getNumBits() const { return getNumBits(ty); }
 
     /// Get a string representation of this ValueType.
     std::string repr() const {
-        switch (Ty) {
+        switch (ty) {
         case ValueType::UNDEF:
             return std::string("UNDEF");
         case ValueType::UINT8:
@@ -90,7 +90,7 @@ class ValueType {
     }
 
   private:
-    Type Ty;
+    Type ty;
 };
 
 /// The Value class models a value.
@@ -100,18 +100,18 @@ class Value {
     typedef uint64_t ConcreteType;
 
     /// Construct a default Value.
-    Value() : Val(ConcreteType()) {}
+    Value() : val(ConcreteType()) {}
     /// Construct a Value from a specific value v.
-    explicit Value(ConcreteType v) : Val(v) {}
+    explicit Value(ConcreteType v) : val(v) {}
     /// Construct a Value of type Ty from value v.
-    Value(ConcreteType v, ValueType::Type Ty) : Val(v) {
+    Value(ConcreteType v, ValueType::Type Ty) : val(v) {
         switch (Ty) {
         case ValueType::UNDEF:
             reporter->errx(EXIT_FAILURE, "Undefined type");
         case ValueType::UINT8:  // Fall-thru
         case ValueType::UINT16: // Fall-thru
         case ValueType::UINT32:
-            Val &= (1ULL << ValueType::getNumBits(Ty)) - 1;
+            val &= (1ULL << ValueType::getNumBits(Ty)) - 1;
             break;
         case ValueType::UINT64:
             break;
@@ -123,13 +123,13 @@ class Value {
     virtual ~Value();
 
     /// Get the actual value.
-    ConcreteType getValue() const { return Val; }
+    ConcreteType getValue() const { return val; }
 
     /// Get a string representing this value.
-    std::string repr() const { return std::to_string(Val); }
+    std::string repr() const { return std::to_string(val); }
 
   private:
-    ConcreteType Val;
+    ConcreteType val;
 };
 
 /// The Expr class models expressions.
@@ -170,17 +170,17 @@ class Constant : public InputBase {
   public:
     Constant() = delete;
     /// Construct Constant of type Ty from value Val.
-    Constant(ValueType::Type Ty, uint64_t Val) : InputBase(Ty), Val(Val) {}
+    Constant(ValueType::Type Ty, uint64_t Val) : InputBase(Ty), val(Val) {}
     virtual ~Constant();
 
     /// Evaluate this expression's value.
-    virtual Value eval() const override { return Value(Val); }
+    virtual Value eval() const override { return Value(val); }
 
     /// Get a string representation of this Constant.
     virtual std::string repr() const override;
 
   private:
-    const Value Val;
+    const Value val;
 };
 
 /// The Input class represents a variable input values of an expression.
@@ -188,34 +188,34 @@ class Input : public InputBase {
   public:
     Input() = delete;
     /// Construct an unamed Input of type Ty and value Val.
-    Input(ValueType::Type Ty, uint64_t Val) : InputBase(Ty), Name(), Val(Val) {}
+    Input(ValueType::Type Ty, uint64_t Val) : InputBase(Ty), name(), val(Val) {}
     /// Construct an Input named Name of type Ty and value Val.
     Input(const std::string &Name, ValueType::Type Ty, uint64_t Val)
-        : InputBase(Ty), Name(Name), Val(Val) {}
+        : InputBase(Ty), name(Name), val(Val) {}
     /// Construct an Input named Name of type Ty and value Val.
     Input(const char *Name, ValueType::Type Ty, uint64_t Val)
-        : InputBase(Ty), Name(Name), Val(Val) {}
+        : InputBase(Ty), name(Name), val(Val) {}
     virtual ~Input();
 
     /// Evaluate this expression's value.
-    virtual Value eval() const override { return Value(Val); }
+    virtual Value eval() const override { return Value(val); }
 
     /// Get a string representation of this Input.
     virtual std::string repr() const override {
-        if (Name.empty())
-            return Val.repr();
-        return Name + '(' + Val.repr() + ')';
+        if (name.empty())
+            return val.repr();
+        return name + '(' + val.repr() + ')';
     }
 
     /// Assign value newVal to this Input.
     Input &operator=(uint64_t newVal) {
-        Val = Value(newVal, getType());
+        val = Value(newVal, getType());
         return *this;
     }
 
   private:
-    std::string Name;
-    Value Val;
+    std::string name;
+    Value val;
 };
 
 /// Define NPArray traits for use in NPInput.
@@ -245,8 +245,8 @@ template <class DataTy> class NPInput : public InputBase {
     /// Construct an NPInput referring to named nprow[index].
     NPInput(typename NPArray<DataTy>::const_Row &nprow, size_t index,
             const std::string name)
-        : InputBase(NPInputTraits<NPArray<DataTy>>::getType()), Row(nprow),
-          Name(name), Index(index) {}
+        : InputBase(NPInputTraits<NPArray<DataTy>>::getType()), row(nprow),
+          name(name), index(index) {}
     /// Construct an NPInput referring to nprow[index], with optional name, C
     /// string version.
     NPInput(typename NPArray<DataTy>::const_Row &nprow, size_t index,
@@ -263,23 +263,23 @@ template <class DataTy> class NPInput : public InputBase {
 
     /// Get this NPInput's value from the associated NPArray.
     virtual PAF::SCA::Expr::Value eval() const override {
-        return PAF::SCA::Expr::Value(Row[Index],
+        return PAF::SCA::Expr::Value(row[index],
                                      NPInputTraits<NPArray<DataTy>>::getType());
     }
 
     /// Get a string representation of this NPInput.
     virtual std::string repr() const override {
-        std::string s = std::to_string(Row[Index]);
-        if (Name.empty())
+        std::string s = std::to_string(row[index]);
+        if (name.empty())
             return s;
-        return std::string("$") + Name + '[' + std::to_string(Index) + ']' +
+        return std::string("$") + name + '[' + std::to_string(index) + ']' +
                '(' + s + ')';
     }
 
   private:
-    typename NPArray<DataTy>::const_Row &Row; ///< Our NPArray row.
-    const std::string Name;                   ///< Our name.
-    const size_t Index; ///< Our index in the NPPArray row.
+    typename NPArray<DataTy>::const_Row &row; ///< Our NPArray row.
+    const std::string name;                   ///< Our name.
+    const size_t index; ///< Our index in the NPPArray row.
 };
 
 /// Common base class for Unary operators.
@@ -287,26 +287,26 @@ class UnaryOp : public Expr {
   public:
     UnaryOp() = delete;
     /// Construct a UnaryOp from the Op expression.
-    UnaryOp(Expr *Op, const std::string &str) : Op(Op), OpStr(str) {
+    UnaryOp(Expr *Op, const std::string &str) : op(Op), opStr(str) {
         assert(Op && "Invalid operand to UnaryOp");
-        assert(OpStr.size() >= 1 && "Invalid operator representation");
+        assert(opStr.size() >= 1 && "Invalid operator representation");
     }
     virtual ~UnaryOp();
 
     /// Get the type of this expression.
     virtual ValueType::Type getType() const override {
-        assert(Op && "Invalid UnaryOp");
-        return Op->getType();
+        assert(op && "Invalid UnaryOp");
+        return op->getType();
     }
 
     /// Get a string representation of the Unary operator.
     virtual std::string repr() const override {
-        return OpStr + '(' + Op->repr() + ')';
+        return opStr + '(' + op->repr() + ')';
     }
 
   protected:
-    std::unique_ptr<Expr> Op; ///< The UnaryOp operand.
-    std::string OpStr;        ///< The UnaryOp representation.
+    std::unique_ptr<Expr> op; ///< The UnaryOp operand.
+    std::string opStr;        ///< The UnaryOp representation.
 };
 
 /// Bitwise NOT operator implementation.
@@ -318,7 +318,7 @@ class Not : public UnaryOp {
 
     /// Evaluate this expression's value.
     virtual Value eval() const override {
-        return Value(~Op->eval().getValue(), Op->getType());
+        return Value(~op->eval().getValue(), op->getType());
     }
 };
 
@@ -328,25 +328,25 @@ class Truncate : public UnaryOp {
     Truncate(ValueType::Type Ty, Expr *Op)
         : UnaryOp(Op, std::string("TRUNC") +
                           std::to_string(ValueType::getNumBits(Ty))),
-          VT(Ty) {
-        assert(VT.getType() != ValueType::UNDEF &&
+          vt(Ty) {
+        assert(vt.getType() != ValueType::UNDEF &&
                "UNDEF is an invalid ValueType");
-        assert(VT.getNumBits() < ValueType::getNumBits(Op->getType()) &&
+        assert(vt.getNumBits() < ValueType::getNumBits(Op->getType()) &&
                "Truncation must be to a smaller type");
     }
     virtual ~Truncate();
 
     /// Evaluate this expression's value.
     virtual Value eval() const override {
-        return Value(Op->eval().getValue(), VT);
+        return Value(op->eval().getValue(), vt);
     }
 
     /// Get the type of this expression.
-    virtual ValueType::Type getType() const override { return VT.getType(); }
+    virtual ValueType::Type getType() const override { return vt.getType(); }
 
   private:
     /// The ValueType to truncate to.
-    ValueType VT;
+    ValueType vt;
 };
 
 /// Base class for AES specific operations.
@@ -365,20 +365,20 @@ class AESOp : public UnaryOp {
 };
 
 /// The AES SBox operator.
-class AES_SBox : public AESOp {
+class AESSBox : public AESOp {
   public:
-    AES_SBox(Expr *Op) : AESOp(Op, "AES_SBOX") {}
-    virtual ~AES_SBox();
+    AESSBox(Expr *Op) : AESOp(Op, "AES_SBOX") {}
+    virtual ~AESSBox();
 
     /// Evaluate this expression's value.
     virtual Value eval() const override;
 };
 
 /// The AES Inverted SBox operator.
-class AES_ISBox : public AESOp {
+class AESISBox : public AESOp {
   public:
-    AES_ISBox(Expr *Op) : AESOp(Op, "AES_ISBOX") {}
-    virtual ~AES_ISBox();
+    AESISBox(Expr *Op) : AESOp(Op, "AES_ISBOX") {}
+    virtual ~AESISBox();
 
     /// Evaluate this expression's value.
     virtual Value eval() const override;
@@ -393,7 +393,7 @@ class BinaryOp : public Expr {
     /// The RHS and LHS expressions must be of the same type; which will be the
     /// type of the constructed expression.
     BinaryOp(Expr *LHS, Expr *RHS, const std::string &str)
-        : LHS(LHS), RHS(RHS), OpStr(str) {
+        : lhs(LHS), rhs(RHS), opStr(str) {
         assert(LHS && "Invalid LHS operand to BinaryOp");
         assert(RHS && "Invalid RHS operand to BinaryOp");
         if (LHS->getType() != RHS->getType())
@@ -404,19 +404,19 @@ class BinaryOp : public Expr {
 
     /// Get the type of this expression.
     virtual ValueType::Type getType() const override {
-        assert(LHS && "Invalid BinaryOp LHS");
-        return LHS->getType();
+        assert(lhs && "Invalid BinaryOp LHS");
+        return lhs->getType();
     }
 
     /// Get a string representation of this expression.
     virtual std::string repr() const override {
-        return OpStr + "(" + LHS->repr() + "," + RHS->repr() + ")";
+        return opStr + "(" + lhs->repr() + "," + rhs->repr() + ")";
     }
 
   protected:
-    std::unique_ptr<Expr> LHS; ///< Left hand side sub-expression.
-    std::unique_ptr<Expr> RHS; ///< Right hand side sub-expression.
-    std::string OpStr;         ///< The operator representation.
+    std::unique_ptr<Expr> lhs; ///< Left hand side sub-expression.
+    std::unique_ptr<Expr> rhs; ///< Right hand side sub-expression.
+    std::string opStr;         ///< The operator representation.
 };
 
 /// Bitwise XOR operator implementation.
@@ -428,8 +428,8 @@ class Xor : public BinaryOp {
 
     /// Evaluate this expression's value.
     virtual Value eval() const override {
-        return Value(LHS->eval().getValue() ^ RHS->eval().getValue(),
-                     LHS->getType());
+        return Value(lhs->eval().getValue() ^ rhs->eval().getValue(),
+                     lhs->getType());
     }
 };
 
@@ -442,8 +442,8 @@ class Or : public BinaryOp {
 
     /// Evaluate this expression's value.
     virtual Value eval() const override {
-        return Value(LHS->eval().getValue() | RHS->eval().getValue(),
-                     LHS->getType());
+        return Value(lhs->eval().getValue() | rhs->eval().getValue(),
+                     lhs->getType());
     }
 };
 
@@ -489,8 +489,8 @@ class And : public BinaryOp {
 
     /// Evaluate this expression's value.
     virtual Value eval() const override {
-        return Value(LHS->eval().getValue() & RHS->eval().getValue(),
-                     LHS->getType());
+        return Value(lhs->eval().getValue() & rhs->eval().getValue(),
+                     lhs->getType());
     }
 };
 

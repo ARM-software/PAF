@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: <text>Copyright 2023 Arm Limited and/or its
+ * SPDX-FileCopyrightText: <text>Copyright 2023,2024 Arm Limited and/or its
  * affiliates <open-source-office@arm.com></text>
  * SPDX-License-Identifier: Apache-2.0
  *
@@ -77,29 +77,29 @@ TEST(LWParser, reset) {
 
 TEST(LWParser, skip_ws) {
     LWParser P1("t");
-    P1.skip_ws();
+    P1.skipWS();
     EXPECT_EQ(P1.position(), 0);
 
     // Default white space is ' '.
     LWParser P2(" t");
-    P2.skip_ws();
+    P2.skipWS();
     EXPECT_EQ(P2.position(), 1);
 
     // White space to skip can be specified.
     LWParser P3(" t");
-    P3.skip_ws(' ');
+    P3.skipWS(' ');
     EXPECT_EQ(P3.position(), 1);
     LWParser P4("\tt");
-    P4.skip_ws(' ');
+    P4.skipWS(' ');
     EXPECT_EQ(P4.position(), 0);
 
     LWParser P5(" ");
-    P5.skip_ws(' ');
+    P5.skipWS(' ');
     EXPECT_EQ(P5.position(), 1);
     EXPECT_TRUE(P5.end());
 
     LWParser P6("");
-    P6.skip_ws(' ');
+    P6.skipWS(' ');
     EXPECT_EQ(P6.position(), 0);
     EXPECT_TRUE(P6.end());
 }
@@ -129,7 +129,7 @@ TEST(LWParser, expect) {
     EXPECT_FALSE(P2.expect('('));
 }
 
-TEST(LWParser,consume) {
+TEST(LWParser, consume) {
     LWParser P("abcd");
 
     EXPECT_EQ(P.position(), 0);
@@ -213,7 +213,8 @@ TEST(LWParser, parse_unsigned) {
             : str(str), val(val), len(len) {}
     };
 
-#define T(v) {#v, v, sizeof(#v) - 1}
+#define T(v)                                                                   \
+    { #v, v, sizeof(#v) - 1 }
     array<TD, 8> tests{{
         // clang-format off
     T(0),
@@ -318,86 +319,86 @@ TEST(LWParser, parse_string) {
     EXPECT_EQ(P2.buffer(), "test");
 }
 
-TEST(LWParser, get_parenthesized_subexpr_not_a_parenthesized_expr) {
+TEST(LWParser, getParenthesizedSubExpr_not_a_parenthesized_expr) {
     string s = "preserved";
 
     LWParser P("abc");
-    EXPECT_FALSE(P.get_parenthesized_subexpr(s, '(', ')'));
+    EXPECT_FALSE(P.getParenthesizedSubExpr(s, '(', ')'));
     EXPECT_EQ(s, "preserved");
     EXPECT_EQ(P.position(), 0);
 }
 
-TEST(LWParser, get_parenthesized_subexpr_empty_buffer) {
+TEST(LWParser, getParenthesizedSubExpr_empty_buffer) {
     string s = "preserved";
 
     LWParser P("");
-    EXPECT_FALSE(P.get_parenthesized_subexpr(s, '[', ']'));
+    EXPECT_FALSE(P.getParenthesizedSubExpr(s, '[', ']'));
     EXPECT_EQ(s, "preserved");
     EXPECT_EQ(P.position(), 0);
-    EXPECT_FALSE(P.get_parenthesized_subexpr(s, '(', ')'));
+    EXPECT_FALSE(P.getParenthesizedSubExpr(s, '(', ')'));
     EXPECT_EQ(s, "preserved");
     EXPECT_EQ(P.position(), 0);
 }
 
-TEST(LWParser, get_parenthesized_subexpr_empty_subexpr) {
+TEST(LWParser, getParenthesizedSubExpr_empty_subexpr) {
     string s = "preserved";
 
     LWParser P1("()");
-    EXPECT_FALSE(P1.get_parenthesized_subexpr(s, '[', ']'));
+    EXPECT_FALSE(P1.getParenthesizedSubExpr(s, '[', ']'));
     EXPECT_EQ(s, "preserved");
     EXPECT_EQ(P1.position(), 0);
-    EXPECT_TRUE(P1.get_parenthesized_subexpr(s, '(', ')'));
+    EXPECT_TRUE(P1.getParenthesizedSubExpr(s, '(', ')'));
     EXPECT_EQ(s, "");
     EXPECT_EQ(P1.position(), 2);
     EXPECT_TRUE(P1.end());
 
     LWParser P2("(}too");
-    EXPECT_TRUE(P2.get_parenthesized_subexpr(s, '(', '}'));
+    EXPECT_TRUE(P2.getParenthesizedSubExpr(s, '(', '}'));
     EXPECT_EQ(s, "");
     EXPECT_EQ(P2.position(), 2);
     EXPECT_EQ(P2.buffer(), "too");
 }
 
-TEST(LWParser, get_parenthesized_subexpr_malformed) {
+TEST(LWParser, getParenthesizedSubExpr_malformed) {
     for (const auto &str : {")...", "(...", "(()", ")...", "(...", "(()..."}) {
         string s = "preserved";
-        EXPECT_FALSE(LWParser(str).get_parenthesized_subexpr(s, '(', ')'));
+        EXPECT_FALSE(LWParser(str).getParenthesizedSubExpr(s, '(', ')'));
         EXPECT_EQ(s, "preserved");
     }
 }
 
-TEST(LWParser, get_parenthesized_subexpr) {
+TEST(LWParser, getParenthesizedSubExpr) {
 
     struct T {
         const char *str;
         const char *subexpr;
         size_t position;
-        bool reached_end;
+        bool reachedEnd;
         const char *buffer;
         char opening;
         char closing;
         T(const char *str, const char *subexpr)
             : str(str), subexpr(subexpr), position(strlen(subexpr) + 2),
-              reached_end(true), buffer(nullptr), opening('('), closing(')') {}
+              reachedEnd(true), buffer(nullptr), opening('('), closing(')') {}
         T(const char *str, const char *subexpr, char opening, char closing)
             : str(str), subexpr(subexpr), position(strlen(subexpr) + 2),
-              reached_end(true), buffer(nullptr), opening(opening),
+              reachedEnd(true), buffer(nullptr), opening(opening),
               closing(closing) {}
         T(const char *str, const char *subexpr, const char *buffer)
             : str(str), subexpr(subexpr), position(strlen(subexpr) + 2),
-              reached_end(false), buffer(buffer), opening('('), closing(')') {}
+              reachedEnd(false), buffer(buffer), opening('('), closing(')') {}
         T(const char *str, const char *subexpr, const char *buffer,
           char opening, char closing)
             : str(str), subexpr(subexpr), position(strlen(subexpr) + 2),
-              reached_end(false), buffer(buffer), opening(opening),
+              reachedEnd(false), buffer(buffer), opening(opening),
               closing(closing) {}
         void check() const {
             string s = "preserved";
             LWParser P(str);
-            EXPECT_TRUE(P.get_parenthesized_subexpr(s, opening, closing));
+            EXPECT_TRUE(P.getParenthesizedSubExpr(s, opening, closing));
             EXPECT_EQ(s, subexpr);
             EXPECT_EQ(P.position(), position);
-            if (reached_end) {
+            if (reachedEnd) {
                 EXPECT_TRUE(P.end());
                 EXPECT_EQ(P.buffer(), "");
             } else {
@@ -407,9 +408,8 @@ TEST(LWParser, get_parenthesized_subexpr) {
         }
     };
 
-    for (const auto &t :
-         {
-            // clang-format off
+    for (const auto &t : {
+             // clang-format off
             T{"(123)", "123"},
             T{"((456))", "(456)"},
             T{"(toto)", "toto"},
@@ -426,8 +426,8 @@ TEST(LWParser, get_parenthesized_subexpr) {
             T{"+toto-<>", "toto", "<>", '+', '-'},
             T{"[[toto]]abc", "[toto]", "abc", '[', ']'},
             T{"(())s", "()", "s"},
-            T{"[[]]12", "[]", "12", '[', ']'},           
-            // clang-format on
+            T{"[[]]12", "[]", "12", '[', ']'},
+             // clang-format on
          })
         t.check();
 }
@@ -475,9 +475,8 @@ TEST(LWParser, parse_identifier) {
         }
     };
 
-    for (const auto &t :
-         {
-            // clang-format off
+    for (const auto &t : {
+             // clang-format off
             T{"toto", "toto"},
             T{"toto2", "toto2"},
             T{"to_to", "to_to"},
@@ -489,8 +488,7 @@ TEST(LWParser, parse_identifier) {
             T{"f[]", "f", "[]"},
             T{"f1$f2", "f1", "$f2"},
             T{"f1+f2", "f1", "+f2"}
-            // clang-format on
-          })
+             // clang-format on
+         })
         t.check();
 }
-

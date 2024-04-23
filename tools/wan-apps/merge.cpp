@@ -58,11 +58,11 @@ int main(int argc, char *argv[]) {
 
     ap.parse([&]() {
         if (InputFiles.empty())
-            die("No input file");
+            DIE("No input file");
         if (InputFiles.size() == 1 &&
             WaveFile::getFileFormat(SaveFileName) ==
                 WaveFile::getFileFormat(InputFiles[0]))
-            die("Nothing to do with this single output");
+            DIE("Nothing to do with this single output");
     });
 
     // Collect all changes times.
@@ -77,7 +77,7 @@ int main(int argc, char *argv[]) {
     WMain.addTimes(AllTimes.begin(), AllTimes.end());
     for (const auto &f : InputFiles) {
         if (!WaveFile::get(f)->read(WMain))
-            die("error reading '%s", f.c_str());
+            DIE("error reading '%s", f.c_str());
         if (Statistics) {
             unique_ptr<WaveformStatistics> Stats(new WaveformStatistics(WMain));
             WMain.visit(*Stats);
@@ -89,7 +89,7 @@ int main(int argc, char *argv[]) {
 
     // Save the merge.
     if (!WaveFile::get(SaveFileName)->write(WMain))
-        die("error saving waveform to '%s'", SaveFileName.c_str());
+        DIE("error saving waveform to '%s'", SaveFileName.c_str());
 
     return EXIT_SUCCESS;
 }

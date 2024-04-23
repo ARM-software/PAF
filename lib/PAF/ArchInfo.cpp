@@ -114,11 +114,12 @@ const char *V7MRegisterNames[unsigned(V7MInfo::Register::NUM_REGISTERS)] = {
                    I.disassembly.c_str(), I.instruction, function, file, line);
 }
 
-#define reportUnpredictable(I)                                                 \
+#define REPORT_UNPREDICTABLE(I)                                                \
     unpredictable(I, __PRETTY_FUNCTION__, __FILE__, __LINE__)
-#define reportDecodingError(I)                                                 \
+#define REPORT_DECODING_ERROR(I)                                               \
     decodingError(I, __PRETTY_FUNCTION__, __FILE__, __LINE__)
-#define reportUndefined(I) undefined(I, __PRETTY_FUNCTION__, __FILE__, __LINE__)
+#define REPORT_UNDEFINED(I)                                                    \
+    undefined(I, __PRETTY_FUNCTION__, __FILE__, __LINE__)
 
 template <typename Ty>
 constexpr typename std::underlying_type<Ty>::type to_underlying(Ty e) noexcept {
@@ -149,7 +150,7 @@ PAF::InstrInfo decodeT16Instr(const PAF::ReferenceInstruction &I) {
         if (/* CMP */ opc == 0x05 || /* ADD imm8 */ opc == 0x06 ||
             /* SUB imm8 */ opc == 0x07)
             return II.addInputRegister(bits<10, 8>(opcode));
-        reportDecodingError(I);
+        REPORT_DECODING_ERROR(I);
     }
 
     const uint32_t b15_10 = bits<15, 10>(opcode);
@@ -174,7 +175,7 @@ PAF::InstrInfo decodeT16Instr(const PAF::ReferenceInstruction &I) {
         if (/* ADD reg */ bits<3, 2>(op) == 0x00)
             return II.addInputRegister((bit<7>(opcode) << 3) | Rdn, Rm);
         if (op == 0x04)
-            reportUnpredictable(I);
+            REPORT_UNPREDICTABLE(I);
         if (/* CMP reg */ op == 0x05 || bits<3, 1>(op) == 0x03)
             return II.addInputRegister((bit<7>(opcode) << 3) | Rdn, Rm);
         if (/* MOV reg */ bits<3, 2>(op) == 0x02)
@@ -183,7 +184,7 @@ PAF::InstrInfo decodeT16Instr(const PAF::ReferenceInstruction &I) {
             return II.setBranch().addInputRegister(Rm);
         if (/* BLX */ bits<3, 1>(op) == 0x07)
             return II.setCall().addInputRegister(Rm);
-        reportDecodingError(I);
+        REPORT_DECODING_ERROR(I);
     }
 
     // ===== Load from Literal Pool
@@ -223,7 +224,7 @@ PAF::InstrInfo decodeT16Instr(const PAF::ReferenceInstruction &I) {
                 II.setLoad(AddressingMode::AMF_IMMEDIATE);
             return II.addInputRegister(to_underlying(V7MInfo::Register::MSP));
         }
-        reportDecodingError(I);
+        REPORT_DECODING_ERROR(I);
     }
 
     // ===== Generate PC-relative address
@@ -281,7 +282,7 @@ PAF::InstrInfo decodeT16Instr(const PAF::ReferenceInstruction &I) {
             return II;
         }
 
-        reportDecodingError(I);
+        REPORT_DECODING_ERROR(I);
     }
 
     // ===== Store multiple registers
@@ -321,7 +322,7 @@ PAF::InstrInfo decodeT16Instr(const PAF::ReferenceInstruction &I) {
         return II.setBranch().addImplicitInputRegister(
             to_underlying(V7MInfo::Register::PC));
 
-    reportDecodingError(I);
+    REPORT_DECODING_ERROR(I);
 }
 
 bool getAddressingMode(AddressingMode::OffsetFormat &OF,
@@ -385,7 +386,7 @@ PAF::InstrInfo decodeT32Instr(const PAF::ReferenceInstruction &I) {
                     if (U == 1)
                         BU = AddressingMode::AMU_UNINDEXED;
                     else
-                        reportDecodingError(I);
+                        REPORT_DECODING_ERROR(I);
                 }
             }
             if (bit<0>(cOp1) == 0x0)
@@ -407,7 +408,7 @@ PAF::InstrInfo decodeT32Instr(const PAF::ReferenceInstruction &I) {
             if (/* MRC, MRC2 */ bit<0>(cOp1) == 1 && cOp == 1)
                 return II;
         }
-        reportDecodingError(I);
+        REPORT_DECODING_ERROR(I);
     }
 
     if (op1 == 0x01) {
@@ -442,7 +443,7 @@ PAF::InstrInfo decodeT32Instr(const PAF::ReferenceInstruction &I) {
                                        W ? AddressingMode::AMU_POST_INDEXED
                                          : AddressingMode::AMU_OFFSET);
                 }
-                reportDecodingError(I);
+                REPORT_DECODING_ERROR(I);
             } else
             // ===== Load / Store dual or exclusive, table branch
             {
@@ -503,7 +504,7 @@ PAF::InstrInfo decodeT32Instr(const PAF::ReferenceInstruction &I) {
                                 to_underlying(V7MInfo::Register::PC));
                     }
                 }
-                reportDecodingError(I);
+                REPORT_DECODING_ERROR(I);
             }
         }
 
@@ -518,7 +519,7 @@ PAF::InstrInfo decodeT32Instr(const PAF::ReferenceInstruction &I) {
             switch (op) {
             case 0x00:
                 if (Rd == 0x0f && S == 0)
-                    reportUnpredictable(I);
+                    REPORT_UNPREDICTABLE(I);
                 /* TST, AND */
                 return II.addInputRegister(Rn, Rm);
             case 0x01: /* BIC */
@@ -535,7 +536,7 @@ PAF::InstrInfo decodeT32Instr(const PAF::ReferenceInstruction &I) {
                 return II.addInputRegister(Rm);
             case 0x04:
                 if (Rd == 0x0f && S == 0)
-                    reportUnpredictable(I);
+                    REPORT_UNPREDICTABLE(I);
                 /* EOR, TEQ */
                 return II.addInputRegister(Rn, Rm);
             case 0x06:
@@ -543,7 +544,7 @@ PAF::InstrInfo decodeT32Instr(const PAF::ReferenceInstruction &I) {
                 return II.addInputRegister(Rn, Rm);
             case 0x08:
                 if (Rd == 0x0f && S == 0)
-                    reportUnpredictable(I);
+                    REPORT_UNPREDICTABLE(I);
                 /* ADD, CMN */
                 return II.addInputRegister(Rn, Rm);
             case 0x0a: /* fall-thru intended */
@@ -553,18 +554,18 @@ PAF::InstrInfo decodeT32Instr(const PAF::ReferenceInstruction &I) {
                     to_underlying(V7MInfo::Register::CPSR));
             case 0x0d:
                 if (Rd == 0x0f && S == 0)
-                    reportUnpredictable(I);
+                    REPORT_UNPREDICTABLE(I);
                 /* SUB, CMP */
                 return II.addInputRegister(Rn, Rm);
             case 0x0e:
                 /* RSB */
                 return II.addInputRegister(Rn, Rm);
             default:
-                reportDecodingError(I);
+                REPORT_DECODING_ERROR(I);
             }
-            reportDecodingError(I);
+            REPORT_DECODING_ERROR(I);
         }
-        reportDecodingError(I);
+        REPORT_DECODING_ERROR(I);
     }
 
     if (op1 == 0x02) {
@@ -591,7 +592,7 @@ PAF::InstrInfo decodeT32Instr(const PAF::ReferenceInstruction &I) {
                         II.addInputRegister(Rn);
                     return II;
                 default:
-                    reportDecodingError(I);
+                    REPORT_DECODING_ERROR(I);
                 }
             } else {
                 // ===== Data processing (plain binary immediate)
@@ -625,7 +626,7 @@ PAF::InstrInfo decodeT32Instr(const PAF::ReferenceInstruction &I) {
                 case /* UBFX */ 0x1c:
                     return II.addInputRegister(Rn);
                 default:
-                    reportDecodingError(I);
+                    REPORT_DECODING_ERROR(I);
                 }
             }
         } else {
@@ -646,7 +647,7 @@ PAF::InstrInfo decodeT32Instr(const PAF::ReferenceInstruction &I) {
                     return II;
                 if (/* UDF */ bOp1 == 0x02 && bOp == 0x7f)
                     return II;
-                reportDecodingError(I);
+                REPORT_DECODING_ERROR(I);
             }
             if (/* B */ bit<2>(bOp1) == 0 && bit<0>(bOp1) == 1)
                 return II.setBranch().addImplicitInputRegister(
@@ -655,7 +656,7 @@ PAF::InstrInfo decodeT32Instr(const PAF::ReferenceInstruction &I) {
                 return II.setCall().addImplicitInputRegister(
                     to_underlying(V7MInfo::Register::PC));
         }
-        reportDecodingError(I);
+        REPORT_DECODING_ERROR(I);
     }
 
     if (op1 == 0x03) {
@@ -671,7 +672,7 @@ PAF::InstrInfo decodeT32Instr(const PAF::ReferenceInstruction &I) {
             AddressingMode::OffsetFormat OF;
             AddressingMode::BaseUpdate BU;
             if (!getAddressingMode(OF, BU, bit<23>(instr), b11, P, W))
-                reportDecodingError(I);
+                REPORT_DECODING_ERROR(I);
             II.setStore(OF, BU);
             if (/* long imm */ bit<23>(instr) == 1) {
                 if (/* STRB Imm12 */ sOp1 == 0x04)
@@ -694,7 +695,7 @@ PAF::InstrInfo decodeT32Instr(const PAF::ReferenceInstruction &I) {
                 if (/* STR Reg */ sOp1 == 0x02)
                     return II.addInputRegister(Rt, Rn, Rm);
             }
-            reportDecodingError(I);
+            REPORT_DECODING_ERROR(I);
         }
         // ===== Load byte, memory hints
         if (bits<6, 5>(op2) == 0x00 && bits<2, 0>(op2) == 0x01) {
@@ -719,7 +720,7 @@ PAF::InstrInfo decodeT32Instr(const PAF::ReferenceInstruction &I) {
                     const uint8_t P = bit<10>(instr);
                     const uint8_t W = bit<8>(instr);
                     if (!getAddressingMode(OF, BU, bit<23>(instr), b11, P, W))
-                        reportDecodingError(I);
+                        REPORT_DECODING_ERROR(I);
                     return II.setLoad(OF, BU).addInputRegister(Rn);
                 }
                 if (/* LDRBT */ lOp1 == 0x00 && bits<5, 2>(lOp2) == 0x0e &&
@@ -744,7 +745,7 @@ PAF::InstrInfo decodeT32Instr(const PAF::ReferenceInstruction &I) {
                     const uint8_t P = bit<10>(instr);
                     const uint8_t W = bit<8>(instr);
                     if (!getAddressingMode(OF, BU, bit<23>(instr), b11, P, W))
-                        reportDecodingError(I);
+                        REPORT_DECODING_ERROR(I);
                     return II.setLoad(OF, BU).addInputRegister(Rn);
                 }
                 if (/* LDRSBT */ lOp1 == 0x02 && bits<5, 2>(lOp2) == 0x0e &&
@@ -768,7 +769,7 @@ PAF::InstrInfo decodeT32Instr(const PAF::ReferenceInstruction &I) {
                     ((bit<5>(lOp2) == 1 && bit<2>(lOp2) == 1) ||
                      bits<5, 2>(lOp2) == 0x0c) &&
                     Rn != 0x0f)
-                    reportUnpredictable(I);
+                    REPORT_UNPREDICTABLE(I);
                 if (/* PLI imm & lit */ (bit<1>(lOp1) == 1 && Rn == 0x0f) ||
                     (lOp1 == 0x03 && Rn != 0x0f) ||
                     (lOp1 == 0x02 && bits<5, 2>(lOp2) == 0x0c && Rn != 0x0f))
@@ -779,9 +780,9 @@ PAF::InstrInfo decodeT32Instr(const PAF::ReferenceInstruction &I) {
                     ((bit<5>(lOp2) == 1 && bit<2>(lOp2) == 1) ||
                      bits<5, 2>(lOp2) == 0x0c) &&
                     Rn != 0x0f)
-                    reportUnpredictable(I);
+                    REPORT_UNPREDICTABLE(I);
             }
-            reportDecodingError(I);
+            REPORT_DECODING_ERROR(I);
         }
 
         // ===== Load halfword, memory hints
@@ -807,7 +808,7 @@ PAF::InstrInfo decodeT32Instr(const PAF::ReferenceInstruction &I) {
                     const uint8_t P = bit<10>(instr);
                     const uint8_t W = bit<8>(instr);
                     if (!getAddressingMode(OF, BU, bit<23>(instr), b11, P, W))
-                        reportDecodingError(I);
+                        REPORT_DECODING_ERROR(I);
                     return II.setLoad(OF, BU).addInputRegister(Rn);
                 }
                 if (/* LDRH reg */ lOp1 == 0x00 && lOp2 == 0x00 && Rn != 0x0f)
@@ -829,7 +830,7 @@ PAF::InstrInfo decodeT32Instr(const PAF::ReferenceInstruction &I) {
                     const uint8_t P = bit<10>(instr);
                     const uint8_t W = bit<8>(instr);
                     if (!getAddressingMode(OF, BU, bit<23>(instr), b11, P, W))
-                        reportDecodingError(I);
+                        REPORT_DECODING_ERROR(I);
                     return II.setLoad(OF, BU).addInputRegister(Rn);
                 }
                 if (/* LDRSH lit */ bit<1>(lOp1) == 1 && Rn == 0x0f)
@@ -856,7 +857,7 @@ PAF::InstrInfo decodeT32Instr(const PAF::ReferenceInstruction &I) {
                     ((bit<5>(lOp2) == 1 && bit<2>(lOp2) == 1) ||
                      bits<5, 2>(lOp2) == 0x0c) &&
                     Rn != 0x0f)
-                    reportUnpredictable(I);
+                    REPORT_UNPREDICTABLE(I);
                 if (/* Unallocated */ (bit<1>(lOp1) == 1 && Rn == 0x0f) ||
                     (lOp1 == 0x03 && Rn != 0x0f) ||
                     (lOp1 == 0x02 && bits<5, 2>(lOp2) == 0x0c && Rn != 0x0f))
@@ -868,9 +869,9 @@ PAF::InstrInfo decodeT32Instr(const PAF::ReferenceInstruction &I) {
                     ((bit<5>(lOp2) == 1 && bit<2>(lOp2) == 1) ||
                      bits<5, 2>(lOp2) == 0x0c) &&
                     Rn != 0x0f)
-                    reportUnpredictable(I);
+                    REPORT_UNPREDICTABLE(I);
             }
-            reportDecodingError(I);
+            REPORT_DECODING_ERROR(I);
         }
 
         // ===== Load word
@@ -890,7 +891,7 @@ PAF::InstrInfo decodeT32Instr(const PAF::ReferenceInstruction &I) {
                 const uint8_t P = bit<10>(instr);
                 const uint8_t W = bit<8>(instr);
                 if (!getAddressingMode(OF, BU, bit<23>(instr), b11, P, W))
-                    reportDecodingError(I);
+                    REPORT_DECODING_ERROR(I);
                 return II.setLoad(OF, BU).addInputRegister(Rn);
             }
             if (/* LDRT */ lOp1 == 0x00 && bits<5, 2>(lOp2) == 0x0e &&
@@ -903,17 +904,17 @@ PAF::InstrInfo decodeT32Instr(const PAF::ReferenceInstruction &I) {
             if (/* LDR lit */ bit<1>(lOp1) == 0 && Rn == 0x0f)
                 return II.setLoad(AddressingMode::AMF_IMMEDIATE)
                     .addInputRegister(to_underlying(V7MInfo::Register::PC));
-            reportDecodingError(I);
+            REPORT_DECODING_ERROR(I);
         }
 
         // ===== UNDEFINED
         if (bits<6, 5>(op2) == 0x00 && bits<2, 0>(op2) == 0x07)
-            reportUndefined(I);
+            REPORT_UNDEFINED(I);
 
         // ===== Data processing (register)
         if (bits<6, 4>(op2) == 0x02) {
             if (bits<15, 12>(instr) != 0x0f)
-                reportUndefined(I);
+                REPORT_UNDEFINED(I);
 
             const uint8_t lOp1 = bits<23, 20>(instr);
             const uint8_t lOp2 = bits<7, 4>(instr);
@@ -946,7 +947,7 @@ PAF::InstrInfo decodeT32Instr(const PAF::ReferenceInstruction &I) {
                 (bits<3, 2>(lOp2) == 0x00 || bits<3, 2>(lOp2) == 0x01)) {
                 // Parallel addition and substraction, signed / unsigned
                 if (bits<15, 12>(instr) != 0x0f)
-                    reportUndefined(I);
+                    REPORT_UNDEFINED(I);
                 switch (bits<1, 0>(lOp2)) {
                 case 0x00:
                     switch (bits<2, 0>(lOp1)) {
@@ -958,7 +959,7 @@ PAF::InstrInfo decodeT32Instr(const PAF::ReferenceInstruction &I) {
                     case /* SSUB8, USUB8 */ 0x04:
                         return II.addInputRegister(Rn, Rm);
                     default:
-                        reportDecodingError(I);
+                        REPORT_DECODING_ERROR(I);
                     }
                 case 0x01: // Saturating instructions
                     switch (bits<2, 0>(lOp1)) {
@@ -970,7 +971,7 @@ PAF::InstrInfo decodeT32Instr(const PAF::ReferenceInstruction &I) {
                     case /* QSUB8, UQSUB8 */ 0x04:
                         return II.addInputRegister(Rn, Rm);
                     default:
-                        reportDecodingError(I);
+                        REPORT_DECODING_ERROR(I);
                     }
                 case 0x02: // Halving instructions
                     switch (bits<2, 0>(lOp1)) {
@@ -982,10 +983,10 @@ PAF::InstrInfo decodeT32Instr(const PAF::ReferenceInstruction &I) {
                     case /* SHSUB8, UHSUB8 */ 0x04:
                         return II.addInputRegister(Rn, Rm);
                     default:
-                        reportDecodingError(I);
+                        REPORT_DECODING_ERROR(I);
                     }
                 default:
-                    reportDecodingError(I);
+                    REPORT_DECODING_ERROR(I);
                 }
             }
             if (bits<3, 2>(lOp1) == 0x02 && bits<3, 2>(lOp2) == 0x02) {
@@ -998,7 +999,7 @@ PAF::InstrInfo decodeT32Instr(const PAF::ReferenceInstruction &I) {
                     case /* QDSUB */ 0x03:
                         return II.addInputRegister(Rm, Rn);
                     default:
-                        reportDecodingError(I);
+                        REPORT_DECODING_ERROR(I);
                     }
                 case 0x01:
                     switch (bits<1, 0>(lOp2)) {
@@ -1007,10 +1008,10 @@ PAF::InstrInfo decodeT32Instr(const PAF::ReferenceInstruction &I) {
                     case /* RBIT */ 0x02:  // Fall-thru intended
                     case /* REVSH */ 0x03:
                         if (Rm != Rn)
-                            reportDecodingError(I);
+                            REPORT_DECODING_ERROR(I);
                         return II.addInputRegister(Rm);
                     default:
-                        reportDecodingError(I);
+                        REPORT_DECODING_ERROR(I);
                     }
                 case 0x02:
                     if (/* SEL */ bits<1, 0>(lOp2) == 0x00)
@@ -1023,16 +1024,16 @@ PAF::InstrInfo decodeT32Instr(const PAF::ReferenceInstruction &I) {
                         return II.addInputRegister(Rm);
                     break;
                 default:
-                    reportDecodingError(I);
+                    REPORT_DECODING_ERROR(I);
                 }
             }
-            reportDecodingError(I);
+            REPORT_DECODING_ERROR(I);
         }
 
         // ===== Multiply, multiply accumulate and absolute difference
         if (bits<6, 3>(op2) == 0x06) {
             if (bits<7, 6>(instr) != 0x00)
-                reportUndefined(I);
+                REPORT_UNDEFINED(I);
 
             const uint8_t lOp1 = bits<22, 20>(instr);
             const uint8_t lOp2 = bits<7, 4>(instr);
@@ -1104,9 +1105,9 @@ PAF::InstrInfo decodeT32Instr(const PAF::ReferenceInstruction &I) {
                 }
                 break;
             default:
-                reportDecodingError(I);
+                REPORT_DECODING_ERROR(I);
             }
-            reportDecodingError(I);
+            REPORT_DECODING_ERROR(I);
         }
 
         // ===== Long multiply, long multiply accumulate and divide
@@ -1136,14 +1137,14 @@ PAF::InstrInfo decodeT32Instr(const PAF::ReferenceInstruction &I) {
                 return II.addInputRegister(RdLo, RdHi, Rn, Rm);
         }
     }
-    reportDecodingError(I);
+    REPORT_DECODING_ERROR(I);
 }
 } // namespace
 
 namespace PAF {
 
 vector<unsigned> InstrInfo::getUniqueInputRegisters(bool implicit) const {
-    vector<unsigned> regs(implicit ? ImplicitInputRegisters : InputRegisters);
+    vector<unsigned> regs(implicit ? implicitInputRegisters : inputRegisters);
 
     std::sort(regs.begin(), regs.end());
     auto duplicates = std::unique(regs.begin(), regs.end());

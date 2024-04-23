@@ -61,9 +61,9 @@ using PAF::SCA::PowerDumper;
 using PAF::SCA::PowerTrace;
 using PAF::SCA::RegBankDumper;
 using PAF::SCA::TimingInfo;
-using PAF::SCA::YAMLTimingInfo;
 using PAF::SCA::YAMLInstrDumper;
 using PAF::SCA::YAMLMemoryAccessesDumper;
+using PAF::SCA::YAMLTimingInfo;
 
 class TestTimingInfo : public TimingInfo {
   public:
@@ -71,7 +71,7 @@ class TestTimingInfo : public TimingInfo {
     virtual void save(std::ostream &os) const override {}
     size_t minimum() const { return cmin; }
     size_t maximum() const { return cmax; }
-    const vector<pair<Addr, unsigned>> &locations() const { return pc_cycle; }
+    const vector<pair<Addr, unsigned>> &locations() const { return pcCycle; }
 };
 
 TEST(TimingInfo, Base) {
@@ -92,7 +92,7 @@ TEST(TimingInfo, Base) {
 
     // Switch to next trace: check statistics have been computed and that the
     // first trace is remembered.
-    TTI.next_trace();
+    TTI.nextTrace();
     EXPECT_EQ(TTI.minimum(), 11);
     EXPECT_EQ(TTI.maximum(), 11);
     EXPECT_EQ(TTI.locations().size(), 3);
@@ -104,7 +104,7 @@ TEST(TimingInfo, Base) {
     TTI.add(132, 1);
 
     // The first trace should be remembered, and statistics updated.
-    TTI.next_trace();
+    TTI.nextTrace();
     EXPECT_EQ(TTI.minimum(), 5);
     EXPECT_EQ(TTI.maximum(), 11);
     EXPECT_EQ(TTI.locations().size(), 3);
@@ -112,7 +112,7 @@ TEST(TimingInfo, Base) {
 }
 
 // Create the test fixture for YAMLTimingInfo.
-TestWithTempFile(YAMLTimingInfoF, "test-YAMLTimingInfo.yml.XXXXXX");
+TEST_WITH_TEMP_FILE(YAMLTimingInfoF, "test-YAMLTimingInfo.yml.XXXXXX");
 
 TEST_F(YAMLTimingInfoF, Base) {
     YAMLTimingInfo TI;
@@ -121,14 +121,14 @@ TEST_F(YAMLTimingInfoF, Base) {
     TI.add(124, 1);
     TI.add(125, 1);
     TI.incr(4);
-    TI.next_trace();
+    TI.nextTrace();
 
     std::ostringstream s;
     TI.save(s);
     EXPECT_EQ(s.str(), "timing:\n  min: 8\n  ave: 8\n  max: 8\n  cycles: [ [ "
                        "0x7b, 0 ], [ 0x7c, 2 ], [ 0x7d, 3 ] ]\n");
 
-    TI.save_to_file(getTemporaryFilename());
+    TI.saveToFile(getTemporaryFilename());
     EXPECT_TRUE(checkFileContent({
         // clang-format off
         "timing:",
@@ -137,11 +137,11 @@ TEST_F(YAMLTimingInfoF, Base) {
         "  max: 8",
         "  cycles: [ [ 0x7b, 0 ], [ 0x7c, 2 ], [ 0x7d, 3 ] ]"
         // clang-format on
-        }));
+    }));
 }
 
 // Create the test fixture for YAMLMemAccessesDumper.
-TestWithTempFile(YAMLMemAccessesF, "test-YAMLMemAccesses.yml.XXXXXX");
+TEST_WITH_TEMP_FILE(YAMLMemAccessesF, "test-YAMLMemAccesses.yml.XXXXXX");
 
 TEST_F(YAMLMemAccessesF, Base) {
     std::ostringstream s;
@@ -150,20 +150,20 @@ TEST_F(YAMLMemAccessesF, Base) {
     EXPECT_EQ(s.str(), "memaccess:\n");
 
     // Check the trace separator is not emitted until something is dumped.
-    MA1.next_trace();
+    MA1.nextTrace();
     EXPECT_EQ(s.str(), "memaccess:\n");
     MA1.dump(1234, {});
     EXPECT_EQ(s.str(), "memaccess:\n  - \n");
     MA1.dump(
         0x1234,
-        {{MemoryAccess(4, 0x00021f5c, 0x00000003, MemoryAccess::Type::Read),
-          MemoryAccess(4, 0x00021f60, 0x00021f64, MemoryAccess::Type::Read)}});
+        {{MemoryAccess(4, 0x00021f5c, 0x00000003, MemoryAccess::Type::READ),
+          MemoryAccess(4, 0x00021f60, 0x00021f64, MemoryAccess::Type::READ)}});
     EXPECT_EQ(s.str(), "memaccess:\n  - \n    - { pc: 0x1234, loads: "
                        "[[0x21f5c, 4, 0x3], [0x21f60, 4, 0x21f64]]}\n");
     MA1.dump(
         0x2345,
-        {{MemoryAccess(2, 0x000abcdc, 0x00005678, MemoryAccess::Type::Write),
-          MemoryAccess(2, 0x000abcde, 0x00001234, MemoryAccess::Type::Write)}});
+        {{MemoryAccess(2, 0x000abcdc, 0x00005678, MemoryAccess::Type::WRITE),
+          MemoryAccess(2, 0x000abcde, 0x00001234, MemoryAccess::Type::WRITE)}});
     EXPECT_EQ(s.str(),
               "memaccess:\n  - \n    - { pc: 0x1234, loads: [[0x21f5c, 4, "
               "0x3], [0x21f60, 4, 0x21f64]]}\n    - { pc: 0x2345, stores: "
@@ -174,13 +174,13 @@ TEST_F(YAMLMemAccessesF, Base) {
     MA2.dump(1234, {});
     MA2.dump(
         0x1234,
-        {{MemoryAccess(4, 0x00021f5c, 0x00000003, MemoryAccess::Type::Read),
-          MemoryAccess(2, 0x000abcde, 0x00001234, MemoryAccess::Type::Write)}});
-    MA2.next_trace();
+        {{MemoryAccess(4, 0x00021f5c, 0x00000003, MemoryAccess::Type::READ),
+          MemoryAccess(2, 0x000abcde, 0x00001234, MemoryAccess::Type::WRITE)}});
+    MA2.nextTrace();
     MA2.dump(
         0x2345,
-        {{MemoryAccess(2, 0x000abcdc, 0x00005678, MemoryAccess::Type::Write),
-          MemoryAccess(4, 0x00021f60, 0x00021f64, MemoryAccess::Type::Read)}});
+        {{MemoryAccess(2, 0x000abcdc, 0x00005678, MemoryAccess::Type::WRITE),
+          MemoryAccess(4, 0x00021f60, 0x00021f64, MemoryAccess::Type::READ)}});
     MA2.flush();
     EXPECT_TRUE(checkFileContent({
         // clang-format off
@@ -194,7 +194,7 @@ TEST_F(YAMLMemAccessesF, Base) {
 }
 
 // Create the test fixture for YAMLInstrDumper.
-TestWithTempFile(YAMLInstrDumperF, "test-YAMLInstrDumper.yml.XXXXXX");
+TEST_WITH_TEMP_FILE(YAMLInstrDumperF, "test-YAMLInstrDumper.yml.XXXXXX");
 
 TEST_F(YAMLInstrDumperF, Base) {
     const ReferenceInstruction I[2] = {
@@ -202,19 +202,19 @@ TEST_F(YAMLInstrDumperF, Base) {
         {
             28, IE_EXECUTED, 0x08326, ARM, 32, 0xf8db0800, "ldr.w      r0,[r11,#2048]",
             {
-                MemoryAccess(4, 0xf939b40, 0xdeadbeef, MemoryAccess::Type::Read)
+                MemoryAccess(4, 0xf939b40, 0xdeadbeef, MemoryAccess::Type::READ)
             },
             {
-                RegisterAccess("r0", 0xdeadbeef, RegisterAccess::Type::Write),
-                RegisterAccess("r11", 0xf939340, RegisterAccess::Type::Read)
+                RegisterAccess("r0", 0xdeadbeef, RegisterAccess::Type::WRITE),
+                RegisterAccess("r11", 0xf939340, RegisterAccess::Type::READ)
             }
         },
         {
             29, IE_EXECUTED, 0x0832a, THUMB, 16, 0x4408, "add      r0,r1",
             {},
             {
-                RegisterAccess("r0", 0xdeadbef4, RegisterAccess::Type::Write),
-                RegisterAccess("r1", 0x05, RegisterAccess::Type::Read)
+                RegisterAccess("r0", 0xdeadbef4, RegisterAccess::Type::WRITE),
+                RegisterAccess("r1", 0x05, RegisterAccess::Type::READ)
             }
         },
         // clang-format on
@@ -233,7 +233,7 @@ TEST_F(YAMLInstrDumperF, Base) {
     EXPECT_EQ(s.str(), "instr:\n");
 
     // Check the trace separator is not emitted until something is dumped.
-    ID1.next_trace();
+    ID1.nextTrace();
     EXPECT_EQ(s.str(), "instr:\n");
     ID1.dump(I[0]);
     EXPECT_EQ(s.str(),
@@ -250,7 +250,7 @@ TEST_F(YAMLInstrDumperF, Base) {
 
     ID2.dump(I[0]);
     ID2.dump(I[1]);
-    ID2.next_trace();
+    ID2.nextTrace();
     ID2.dump(I[0]);
     ID2.dump(I[1]);
     ID2.flush();
@@ -333,20 +333,20 @@ struct PowerFields {
     double ireg;
     double addr;
     double data;
-    const PAF::ReferenceInstruction *Inst;
+    const PAF::ReferenceInstruction *inst;
     PowerFields(double t, double p, double i, double oreg, double ireg,
                 double a, double d, const PAF::ReferenceInstruction *I)
         : total(t), pc(p), instr(i), oreg(oreg), ireg(ireg), addr(a), data(d),
-          Inst(I) {}
+          inst(I) {}
 
     // Compare the power fields (and ignore the Instruction it refers to)
     bool operator==(const PowerFields &Other) const {
         // 2 ReferenceInstructions are the same if they are either null or point
         // to similar content (restricted here to the pc and the opcode)
-        bool same_instr = Inst == nullptr && Other.Inst == nullptr;
-        if (Inst != nullptr && Other.Inst != nullptr)
-            same_instr = Inst->pc == Other.Inst->pc &&
-                         Inst->instruction == Other.Inst->instruction;
+        bool same_instr = inst == nullptr && Other.inst == nullptr;
+        if (inst != nullptr && Other.inst != nullptr)
+            same_instr = inst->pc == Other.inst->pc &&
+                         inst->instruction == Other.inst->instruction;
 
         return same_instr && total == Other.total && pc == Other.pc &&
                instr == Other.instr && oreg == Other.oreg &&
@@ -373,7 +373,7 @@ std::ostream &operator<<(std::ostream &os, const PowerFields &pf) {
     os << pf.ireg << ", ";
     os << pf.addr << ", ";
     os << pf.data << ", ";
-    os << (uintptr_t) pf.Inst << ")";
+    os << (uintptr_t)pf.inst << ")";
     return os;
 }
 
@@ -396,19 +396,19 @@ struct TestPowerDumper : public PowerDumper {
 class TestRegBankDumper : public RegBankDumper {
   public:
     TestRegBankDumper(bool enabled = false)
-        : RegBankDumper(enabled), regbank(), NR(0) {}
+        : RegBankDumper(enabled), regbank(), nr(0) {}
 
     void reset() {
-        NR = 0;
+        nr = 0;
         regbank.clear();
     }
 
-    void next_trace() override { regbank.push_back(vector<uint64_t>()); }
+    void nextTrace() override { regbank.push_back(vector<uint64_t>()); }
 
     void dump(const std::vector<uint64_t> &regs) override {
         if (regbank.empty()) {
-            NR = regs.size();
-            next_trace();
+            nr = regs.size();
+            nextTrace();
         }
         regbank.back().insert(regbank.back().end(), regs.begin(), regs.end());
     }
@@ -416,14 +416,14 @@ class TestRegBankDumper : public RegBankDumper {
     AssertionResult check(size_t trace, size_t idx,
                           const vector<uint64_t> &ref) const {
         if (trace >= regbank.size())
-            return report_error("trace index out of bound");
+            return reportError("trace index out of bound");
         if (idx >= regbank[trace].size())
-            return report_error("snapshot index out of bound");
-        if (ref.size() != NR)
-            return report_error("size discrepancy");
+            return reportError("snapshot index out of bound");
+        if (ref.size() != nr)
+            return reportError("size discrepancy");
         for (size_t i = 0; i < ref.size(); i++)
-            if (ref[i] != regbank[trace][idx * NR + i])
-                return report_error("regbank error", ref, regbank.back());
+            if (ref[i] != regbank[trace][idx * nr + i])
+                return reportError("regbank error", ref, regbank.back());
         return AssertionSuccess();
     }
 
@@ -435,12 +435,12 @@ class TestRegBankDumper : public RegBankDumper {
         AR << '\n';
     }
 
-    AssertionResult report_error(const char *msg) const {
+    AssertionResult reportError(const char *msg) const {
         return AssertionFailure() << msg;
     }
-    AssertionResult report_error(const char *msg,
-                                 const vector<uint64_t> &expected,
-                                 const vector<uint64_t> &actual) const {
+    AssertionResult reportError(const char *msg,
+                                const vector<uint64_t> &expected,
+                                const vector<uint64_t> &actual) const {
         AssertionResult AR = AssertionFailure();
         AR << msg << "\n";
         dump(AR, "Expected:", expected);
@@ -448,82 +448,82 @@ class TestRegBankDumper : public RegBankDumper {
         return AR;
     }
 
-    size_t num_snapshots() const {
-        return regbank.empty() ? 0 : regbank.back().size() / NR;
+    size_t numSnapshots() const {
+        return regbank.empty() ? 0 : regbank.back().size() / nr;
     }
-    size_t num_traces() const { return regbank.size(); }
+    size_t numTraces() const { return regbank.size(); }
 
     void dump() const {
-        std::cout << "NR: " << NR << '\n';
-        std::cout << "Num traces: " << num_traces() << '\n';
-        std::cout << "Num snapshots: " << num_snapshots() << '\n';
+        std::cout << "NR: " << nr << '\n';
+        std::cout << "Num traces: " << numTraces() << '\n';
+        std::cout << "Num snapshots: " << numSnapshots() << '\n';
     }
 
   private:
     vector<vector<uint64_t>> regbank;
-    size_t NR;
+    size_t nr;
 };
 
 // A mock for testing memory accesses traces.
 struct TestMemAccessesDumper : public MemoryAccessesDumper {
 
     TestMemAccessesDumper(bool enabled = false)
-        : MemoryAccessesDumper(enabled), last_accesses(), accesses_count(0) {}
+        : MemoryAccessesDumper(enabled), lastAccesses(), accessesCount(0) {}
 
     void dump(uint64_t pc, const vector<MemoryAccess> &MA) override {
         if (!MA.empty())
-            accesses_count += 1;
-        last_accesses = MA;
+            accessesCount += 1;
+        lastAccesses = MA;
     }
 
-    size_t last_accesses_size() const { return last_accesses.size(); }
-    size_t instr_with_accesses() const { return accesses_count; }
+    size_t lastAccessesSize() const { return lastAccesses.size(); }
+    size_t instrWithAccesses() const { return accessesCount; }
 
     void reset() {
-        accesses_count = 0;
-        last_accesses.clear();
+        accessesCount = 0;
+        lastAccesses.clear();
     }
 
     AssertionResult check(const vector<MemoryAccess> &MA) const {
-        if (MA.size() != last_accesses.size())
+        if (MA.size() != lastAccesses.size())
             return AssertionFailure() << "Memory accesses differ in size";
 
         for (size_t i = 0; i < MA.size(); i++)
-            if (MA[i] != last_accesses[i])
+            if (MA[i] != lastAccesses[i])
                 return AssertionFailure()
                        << "Memory accesses differ at index " << i;
 
         return AssertionSuccess();
     }
 
-    private:
-    vector<MemoryAccess> last_accesses;
-    size_t accesses_count;
+  private:
+    vector<MemoryAccess> lastAccesses;
+    size_t accessesCount;
 };
 
 // A mock for testing instruction dumps.
 struct TestInstrDumper : public InstrDumper {
     TestInstrDumper(bool enabled = false, bool dumpMemAccess = false,
                     bool dumpRegBank = false)
-        : InstrDumper(enabled, dumpMemAccess, dumpRegBank), instr_count(0) {}
+        : InstrDumper(enabled, dumpMemAccess, dumpRegBank), instrCount(0) {}
 
-    size_t num_instructions() const { return instr_count; }
+    size_t numInstructions() const { return instrCount; }
 
-    void reset() { instr_count = 0; }
+    void reset() { instrCount = 0; }
 
   private:
-    size_t instr_count;
+    size_t instrCount;
 
     void dumpImpl(const ReferenceInstruction &I,
                   const vector<uint64_t> *regs) override {
-        instr_count++;
+        instrCount++;
     }
 };
 
 class TestOracle : public PowerTrace::OracleBase {
   public:
     TestOracle(const ReferenceInstruction Inst[], size_t N)
-        : PowerTrace::OracleBase(), registers(), NR(0), DefaultValue(0) {
+        : PowerTrace::OracleBase(), registers(), nr(0), defaultValue(0) {
         // Gather how many registers we have in this instruction sequence.
         // And check time is strictly monotonically increasing.
         Time t;
@@ -532,11 +532,11 @@ class TestOracle : public PowerTrace::OracleBase {
                 assert(Inst[i].time > t && "Time must be strictly monotonic");
             t = Inst[i].time;
             for (const auto &RA : Inst[i].regaccess)
-                if (RA.access == PAF::RegisterAccess::Type::Write)
+                if (RA.access == PAF::RegisterAccess::Type::WRITE)
                     if (registers.count(RA.name) == 0)
                         registers[RA.name] = registers.size();
         }
-        NR = registers.size();
+        nr = registers.size();
 
         // Build the different register bank states.
         for (size_t i = 0; i < N; i++) {
@@ -544,11 +544,11 @@ class TestOracle : public PowerTrace::OracleBase {
             if (!regbank.empty()) {
                 regbank[Inst[i].time] = regbank.rbegin()->second;
             } else
-                regbank[Inst[i].time] = vector<uint64_t>(NR, DefaultValue);
+                regbank[Inst[i].time] = vector<uint64_t>(nr, defaultValue);
 
             // Add register updates to the snapshot
             for (const auto &RA : Inst[i].regaccess) {
-                if (RA.access == PAF::RegisterAccess::Type::Write) {
+                if (RA.access == PAF::RegisterAccess::Type::WRITE) {
                     assert(registers.count(RA.name) != 0 &&
                            "Unknown register name");
                     regbank.rbegin()->second[registers[RA.name]] = RA.value;
@@ -559,7 +559,7 @@ class TestOracle : public PowerTrace::OracleBase {
 
     std::vector<uint64_t> getRegBankState(Time t) const override {
         if (regbank.empty() || t < regbank.begin()->first)
-            return vector<uint64_t>(NR, DefaultValue);
+            return vector<uint64_t>(nr, defaultValue);
         const auto it = regbank.find(t);
         if (it == regbank.end())
             return regbank.rend()->second;
@@ -573,8 +573,8 @@ class TestOracle : public PowerTrace::OracleBase {
     }
 
     void dump() const {
-        std::cout << "DefaultValue: " << DefaultValue << '\n';
-        std::cout << "Nun regs: " << NR << '\n';
+        std::cout << "DefaultValue: " << defaultValue << '\n';
+        std::cout << "Nun regs: " << nr << '\n';
         std::cout << "Registers:";
         for (const auto &r : registers)
             std::cout << ' ' << r.first << '=' << r.second;
@@ -591,8 +591,8 @@ class TestOracle : public PowerTrace::OracleBase {
   private:
     map<string, unsigned> registers;
     map<Time, vector<uint64_t>> regbank;
-    size_t NR;
-    const uint64_t DefaultValue;
+    size_t nr;
+    const uint64_t defaultValue;
 };
 
 static const ReferenceInstruction Insts[] = {
@@ -601,35 +601,35 @@ static const ReferenceInstruction Insts[] = {
         27, IE_EXECUTED, 0x089bc, THUMB, 16, 0x02105, "MOVS r1,#5",
         {},
         {
-            RegisterAccess("r1", 5, RegisterAccess::Type::Write),
-            RegisterAccess("cpsr", 0x21000000, RegisterAccess::Type::Write),
+            RegisterAccess("r1", 5, RegisterAccess::Type::WRITE),
+            RegisterAccess("cpsr", 0x21000000, RegisterAccess::Type::WRITE),
         }
     },
     {
         28, IE_EXECUTED, 0x089be, THUMB, 16, 0x0460a, "MOV r2,r1",
         {},
         {
-            RegisterAccess("r1", 5, RegisterAccess::Type::Read),
-            RegisterAccess("r2", 5, RegisterAccess::Type::Write)
+            RegisterAccess("r1", 5, RegisterAccess::Type::READ),
+            RegisterAccess("r2", 5, RegisterAccess::Type::WRITE)
         }
     },
     {
         29, IE_EXECUTED, 0x08326, ARM, 32, 0xe9425504, "STRD r5,r1,[r2,#-0x10]",
         {
-            MemoryAccess(4, 0x00021afc, 5, MemoryAccess::Type::Write),
-            MemoryAccess(4, 0x00021b00, 5, MemoryAccess::Type::Write)
+            MemoryAccess(4, 0x00021afc, 5, MemoryAccess::Type::WRITE),
+            MemoryAccess(4, 0x00021b00, 5, MemoryAccess::Type::WRITE)
         },
         {}
     },
     {
         30, IE_EXECUTED, 0x0832a, ARM, 32, 0xe9d63401, "LDRD r3,r4,[r6,#4]",
         {
-            MemoryAccess(4, 0x00021f5c, 0x00000003, MemoryAccess::Type::Read),
-            MemoryAccess(4, 0x00021f60, 0x00021f64, MemoryAccess::Type::Read)
+            MemoryAccess(4, 0x00021f5c, 0x00000003, MemoryAccess::Type::READ),
+            MemoryAccess(4, 0x00021f60, 0x00021f64, MemoryAccess::Type::READ)
         },
         {
-            RegisterAccess("r3", 0x00000003, RegisterAccess::Type::Write),
-            RegisterAccess("r4", 0x00021f64, RegisterAccess::Type::Write)
+            RegisterAccess("r3", 0x00000003, RegisterAccess::Type::WRITE),
+            RegisterAccess("r4", 0x00021f64, RegisterAccess::Type::WRITE)
         }
     },
     // clang-format on
@@ -638,10 +638,10 @@ static const ReferenceInstruction Insts[] = {
 TEST(PowerDumper, base) {
     TestPowerDumper TPD;
 
-    TPD.predump();
+    TPD.preDump();
     TPD.dump(1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, &Insts[0]);
-    TPD.postdump();
-    TPD.next_trace();
+    TPD.postDump();
+    TPD.nextTrace();
 
     EXPECT_EQ(TPD.pwf.size(), 1);
     EXPECT_EQ(TPD.pwf[0],
@@ -651,7 +651,7 @@ TEST(PowerDumper, base) {
 TEST(CSVPowerDumper, base) {
     std::ostringstream s;
     CSVPowerDumper CPD1(s, false);
-    CPD1.predump();
+    CPD1.preDump();
     EXPECT_EQ(
         s.str(),
         "\"Total\",\"PC\",\"Instr\",\"ORegs\",\"IRegs\",\"Addr\",\"Data\"\n");
@@ -662,13 +662,13 @@ TEST(CSVPowerDumper, base) {
     CPD1.dump(2.0, 4.0, 6.0, 8.0, 10.0, 12.0, 14.0, &Insts[2]);
     EXPECT_EQ(s.str(), "2.00,4.00,6.00,8.00,10.00,12.00,14.00\n");
     s.str("");
-    CPD1.postdump();
-    CPD1.next_trace();
+    CPD1.postDump();
+    CPD1.nextTrace();
     EXPECT_EQ(s.str(), "\n");
 
     s.str("");
     CSVPowerDumper CPD2(s, true);
-    CPD2.predump();
+    CPD2.preDump();
     EXPECT_EQ(
         s.str(),
         "\"Total\",\"PC\",\"Instr\",\"ORegs\",\"IRegs\",\"Addr\",\"Data\","
@@ -687,33 +687,33 @@ TEST(CSVPowerDumper, base) {
               "\"X\",\"STRD r5,r1,[r2,#-0x10]\",\"W4(0x5)@0x21afc "
               "W4(0x5)@0x21b00\",\"\"\n");
     s.str("");
-    CPD2.postdump();
-    CPD2.next_trace();
+    CPD2.postDump();
+    CPD2.nextTrace();
     EXPECT_EQ(s.str(), "\n");
 }
 
 // Create the test fixture for NPYPowerDumper.
-TestWithTempFile(NPYPowerDumperF, "test-Power.npy.XXXXXX");
+TEST_WITH_TEMP_FILE(NPYPowerDumperF, "test-Power.npy.XXXXXX");
 
 TEST_F(NPYPowerDumperF, base) {
     {
         NPYPowerDumper NPD(getTemporaryFilename(), 2);
-        NPD.predump();
+        NPD.preDump();
         NPD.dump(1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, &Insts[0]);
-        NPD.postdump();
-        NPD.next_trace();
+        NPD.postDump();
+        NPD.nextTrace();
 
-        NPD.predump();
+        NPD.preDump();
         NPD.dump(2.0, 4.0, 6.0, 8.0, 10.0, 12.0, 14.0, &Insts[0]);
-        NPD.postdump();
-        NPD.next_trace();
+        NPD.postDump();
+        NPD.nextTrace();
     }
 
     NPArray<double> npy(getTemporaryFilename().c_str());
     EXPECT_TRUE(npy.error() == nullptr);
     EXPECT_EQ(npy.rows(), 2);
     EXPECT_EQ(npy.cols(), 1);
-    EXPECT_EQ(npy.element_size(), sizeof(double));
+    EXPECT_EQ(npy.elementSize(), sizeof(double));
     for (size_t col = 0; col < npy.cols(); col++)
         for (size_t row = 0; row < npy.rows(); row++)
             EXPECT_EQ(npy(row, col), double((row + 1) * (col + 1)));
@@ -722,45 +722,45 @@ TEST_F(NPYPowerDumperF, base) {
 TEST(RegBankDumper, base) {
     TestRegBankDumper TRBD(true);
 
-    TRBD.predump();
+    TRBD.preDump();
     TRBD.dump({0, 1, 2, 3});
-    TRBD.postdump();
-    TRBD.next_trace();
+    TRBD.postDump();
+    TRBD.nextTrace();
 
-    TRBD.predump();
+    TRBD.preDump();
     TRBD.dump({4, 5, 6, 7});
-    TRBD.postdump();
-    TRBD.next_trace();
+    TRBD.postDump();
+    TRBD.nextTrace();
 
-    EXPECT_EQ(TRBD.num_traces(), 3);
+    EXPECT_EQ(TRBD.numTraces(), 3);
     EXPECT_TRUE(TRBD.check(0, 0, {0, 1, 2, 3}));
     EXPECT_TRUE(TRBD.check(1, 0, {4, 5, 6, 7}));
 }
 
 // Create the test fixture for NPYRegBankDumper.
-TestWithTempFile(NPYRegBankDumperF, "test-RegBank.npy.XXXXXX");
+TEST_WITH_TEMP_FILE(NPYRegBankDumperF, "test-RegBank.npy.XXXXXX");
 
 TEST_F(NPYRegBankDumperF, base) {
     {
         NPYRegBankDumper NRBD(getTemporaryFilename(), 2);
-        NRBD.predump();
+        NRBD.preDump();
         NRBD.dump({0, 1, 2, 3, 4});
         NRBD.dump({5, 6, 7, 8, 9});
-        NRBD.postdump();
-        NRBD.next_trace();
+        NRBD.postDump();
+        NRBD.nextTrace();
 
-        NRBD.predump();
+        NRBD.preDump();
         NRBD.dump({10, 11, 12, 13, 14});
         NRBD.dump({15, 16, 17, 18, 19});
-        NRBD.postdump();
-        NRBD.next_trace();
+        NRBD.postDump();
+        NRBD.nextTrace();
     }
 
     NPArray<uint64_t> npy(getTemporaryFilename().c_str());
     EXPECT_TRUE(npy.error() == nullptr);
     EXPECT_EQ(npy.rows(), 2);
     EXPECT_EQ(npy.cols(), 10);
-    EXPECT_EQ(npy.element_size(), sizeof(uint64_t));
+    EXPECT_EQ(npy.elementSize(), sizeof(uint64_t));
     for (size_t row = 0; row < npy.rows(); row++)
         for (size_t col = 0; col < npy.cols(); col++)
             EXPECT_EQ(npy(row, col), row * npy.cols() + col);
@@ -944,7 +944,7 @@ TEST(PowerTrace, base) {
     TestTimingInfo TTI;
     PowerAnalysisConfig PAC;
     unique_ptr<ArchInfo> CPU(new PAF::V7MInfo());
-    TestOracle Oracle(Insts, sizeof(Insts)/sizeof(Insts[0]));
+    TestOracle Oracle(Insts, sizeof(Insts) / sizeof(Insts[0]));
 
     PowerTrace PT(TPD, TTI, TRBD, TMAD, TID, PAC, CPU.get());
     EXPECT_STREQ(PT.getArchInfo()->description(), "Arm V7M ISA");
@@ -954,12 +954,12 @@ TEST(PowerTrace, base) {
     PT.analyze(Oracle);
     EXPECT_EQ(TPD.pwf.size(), 1);
     EXPECT_EQ(TPD.pwf[0], PowerFields(17, 8, 4, 4, 0, 0, 0, &Insts[0]));
-    EXPECT_EQ(TRBD.num_traces(), 1);
-    EXPECT_EQ(TRBD.num_snapshots(), 1);
+    EXPECT_EQ(TRBD.numTraces(), 1);
+    EXPECT_EQ(TRBD.numSnapshots(), 1);
     EXPECT_TRUE(TRBD.check(0, 0, {5, 0x21000000, 0, 0, 0}));
-    EXPECT_EQ(TMAD.instr_with_accesses(), 0);
-    EXPECT_EQ(TMAD.last_accesses_size(), 0);
-    EXPECT_EQ(TID.num_instructions(), 1);
+    EXPECT_EQ(TMAD.instrWithAccesses(), 0);
+    EXPECT_EQ(TMAD.lastAccessesSize(), 0);
+    EXPECT_EQ(TID.numInstructions(), 1);
 
     TPD.reset();
     TRBD.reset();
@@ -973,13 +973,13 @@ TEST(PowerTrace, base) {
     EXPECT_EQ(TPD.pwf.size(), 2);
     EXPECT_EQ(TPD.pwf[0], PowerFields(17, 8, 4, 4, 0, 0, 0, &Insts[0]));
     EXPECT_EQ(TPD.pwf[1], PowerFields(22, 9, 5, 2, 2, 0, 0, &Insts[1]));
-    EXPECT_EQ(TRBD.num_traces(), 1);
-    EXPECT_EQ(TRBD.num_snapshots(), 2);
+    EXPECT_EQ(TRBD.numTraces(), 1);
+    EXPECT_EQ(TRBD.numSnapshots(), 2);
     EXPECT_TRUE(TRBD.check(0, 0, {5, 0x21000000, 0, 0, 0}));
     EXPECT_TRUE(TRBD.check(0, 1, {5, 0x21000000, 5, 0, 0}));
-    EXPECT_EQ(TMAD.instr_with_accesses(), 0);
-    EXPECT_EQ(TMAD.last_accesses_size(), 0);
-    EXPECT_EQ(TID.num_instructions(), 2);
+    EXPECT_EQ(TMAD.instrWithAccesses(), 0);
+    EXPECT_EQ(TMAD.lastAccessesSize(), 0);
+    EXPECT_EQ(TID.numInstructions(), 2);
 
     TPD.reset();
     TRBD.reset();
@@ -1001,15 +1001,15 @@ TEST(PowerTrace, base) {
     EXPECT_EQ(TPD.pwf[3], PowerFields(28, 6, 12, 0, 0, 5, 2, nullptr));
     EXPECT_EQ(TPD.pwf[4], PowerFields(40, 6, 14, 2, 0, 10, 2, &Insts[3]));
     EXPECT_EQ(TPD.pwf[5], PowerFields(65.6, 6, 14, 9, 0, 8, 9, nullptr));
-    EXPECT_EQ(TRBD.num_traces(), 1);
-    EXPECT_EQ(TRBD.num_snapshots(), 4);
+    EXPECT_EQ(TRBD.numTraces(), 1);
+    EXPECT_EQ(TRBD.numSnapshots(), 4);
     EXPECT_TRUE(TRBD.check(0, 0, {5, 0x21000000, 0, 0, 0}));
     EXPECT_TRUE(TRBD.check(0, 1, {5, 0x21000000, 5, 0, 0}));
     EXPECT_TRUE(TRBD.check(0, 2, {5, 0x21000000, 5, 0, 0}));
     EXPECT_TRUE(TRBD.check(0, 3, {5, 0x21000000, 5, 3, 139108}));
-    EXPECT_EQ(TMAD.instr_with_accesses(), 2);
-    EXPECT_EQ(TMAD.last_accesses_size(), 2);
-    EXPECT_EQ(TID.num_instructions(), 4);
+    EXPECT_EQ(TMAD.instrWithAccesses(), 2);
+    EXPECT_EQ(TMAD.lastAccessesSize(), 2);
+    EXPECT_EQ(TID.numInstructions(), 4);
 
     // Move construct.
     PowerTrace PT2(std::move(PT));
@@ -1066,7 +1066,7 @@ TEST(PowerTrace, withNoise) {
     TestTimingInfo TTI;
     PowerAnalysisConfigWithNoise PAC;
     unique_ptr<ArchInfo> CPU(new PAF::V7MInfo());
-    TestOracle Oracle(Insts, sizeof(Insts)/sizeof(Insts[0]));
+    TestOracle Oracle(Insts, sizeof(Insts) / sizeof(Insts[0]));
 
     PowerTrace PT(TPD, TTI, TRBD, TMAD, TID, PAC, CPU.get());
     PT.add(Insts[0]);
@@ -1075,11 +1075,11 @@ TEST(PowerTrace, withNoise) {
     PT.analyze(Oracle);
     EXPECT_EQ(TPD.pwf.size(), 2);
     EXPECT_GT(PowerFields::noise(TPD.pwf[1], TPD.pwf[0]), 0.0);
-    EXPECT_EQ(TRBD.num_traces(), 0);
-    EXPECT_EQ(TRBD.num_snapshots(), 0);
-    EXPECT_EQ(TMAD.instr_with_accesses(), 0);
-    EXPECT_EQ(TMAD.last_accesses_size(), 0);
-    EXPECT_EQ(TID.num_instructions(), 0);
+    EXPECT_EQ(TRBD.numTraces(), 0);
+    EXPECT_EQ(TRBD.numSnapshots(), 0);
+    EXPECT_EQ(TMAD.instrWithAccesses(), 0);
+    EXPECT_EQ(TMAD.lastAccessesSize(), 0);
+    EXPECT_EQ(TID.numInstructions(), 0);
 }
 
 TEST(PowerTrace, HammingWeightWithConfig) {
@@ -1091,7 +1091,7 @@ TEST(PowerTrace, HammingWeightWithConfig) {
     TestTimingInfo TTI;
     PowerAnalysisConfig PAC;
     unique_ptr<ArchInfo> CPU(new PAF::V7MInfo());
-    TestOracle Oracle(Insts, sizeof(Insts)/sizeof(Insts[0]));
+    TestOracle Oracle(Insts, sizeof(Insts) / sizeof(Insts[0]));
 
     PAC.clear().set(PowerAnalysisConfig::WITH_PC);
     PowerTrace PT1(TPD, TTI, TRBD, TMAD, TID, PAC, CPU.get());
@@ -1108,16 +1108,16 @@ TEST(PowerTrace, HammingWeightWithConfig) {
     EXPECT_EQ(TPD.pwf[3], PowerFields(6, 6, 0, 0, 0, 0, 0, nullptr));
     EXPECT_EQ(TPD.pwf[4], PowerFields(6, 6, 0, 0, 0, 0, 0, &Insts[3]));
     EXPECT_EQ(TPD.pwf[5], PowerFields(6, 6, 0, 0, 0, 0, 0, nullptr));
-    EXPECT_EQ(TRBD.num_traces(), 1);
-    EXPECT_EQ(TRBD.num_snapshots(), 4);
+    EXPECT_EQ(TRBD.numTraces(), 1);
+    EXPECT_EQ(TRBD.numSnapshots(), 4);
     EXPECT_TRUE(TRBD.check(0, 0, {5, 0x21000000, 0, 0, 0}));
     EXPECT_TRUE(TRBD.check(0, 1, {5, 0x21000000, 5, 0, 0}));
     EXPECT_TRUE(TRBD.check(0, 2, {5, 0x21000000, 5, 0, 0}));
     EXPECT_TRUE(TRBD.check(0, 3, {5, 0x21000000, 5, 3, 139108}));
-    EXPECT_EQ(TMAD.instr_with_accesses(), 2);
-    EXPECT_EQ(TMAD.last_accesses_size(), 2);
+    EXPECT_EQ(TMAD.instrWithAccesses(), 2);
+    EXPECT_EQ(TMAD.lastAccessesSize(), 2);
     EXPECT_TRUE(TMAD.check(Insts[3].memaccess));
-    EXPECT_EQ(TID.num_instructions(), 4);
+    EXPECT_EQ(TID.numInstructions(), 4);
 
     TPD.reset();
     TRBD.reset();
@@ -1227,64 +1227,64 @@ static const ReferenceInstruction Insts2[] = {
         27, IE_EXECUTED, 0x08324, THUMB, 16, 0x02105, "movs r1,#5",
         {},
         {
-            RegisterAccess("r1", 5, RegisterAccess::Type::Write),
-            RegisterAccess("cpsr", 0x21000000, RegisterAccess::Type::Write),
+            RegisterAccess("r1", 5, RegisterAccess::Type::WRITE),
+            RegisterAccess("cpsr", 0x21000000, RegisterAccess::Type::WRITE),
         }
     },
     {
         28, IE_EXECUTED, 0x08326, ARM, 32, 0xf8db0800, "ldr.w      r0,[r11,#2048]",
         {
-            MemoryAccess(4, 0xf939b40, 0xdeadbeef, MemoryAccess::Type::Read)
+            MemoryAccess(4, 0xf939b40, 0xdeadbeef, MemoryAccess::Type::READ)
         },
         {
-            RegisterAccess("r0", 0xdeadbeef, RegisterAccess::Type::Write),
-            RegisterAccess("r11", 0xf939340, RegisterAccess::Type::Read)
+            RegisterAccess("r0", 0xdeadbeef, RegisterAccess::Type::WRITE),
+            RegisterAccess("r11", 0xf939340, RegisterAccess::Type::READ)
         }
     },
     {
         29, IE_EXECUTED, 0x0832a, THUMB, 16, 0x4408, "add      r0,r1",
         {},
         {
-            RegisterAccess("r0", 0xdeadbef4, RegisterAccess::Type::Write),
-            RegisterAccess("r1", 0x05, RegisterAccess::Type::Read)
+            RegisterAccess("r0", 0xdeadbef4, RegisterAccess::Type::WRITE),
+            RegisterAccess("r1", 0x05, RegisterAccess::Type::READ)
         }
     },
     {
         30, IE_EXECUTED, 0x0832c, ARM, 32, 0xf8cb07fc, "str.w      r0,[r11,#2044]",
         {
-            MemoryAccess(4, 0xf939b3c, 0xdeadbef4, MemoryAccess::Type::Write)
+            MemoryAccess(4, 0xf939b3c, 0xdeadbef4, MemoryAccess::Type::WRITE)
         },
         {
-            RegisterAccess("r0", 0xdeadbef4, RegisterAccess::Type::Read),
-            RegisterAccess("r11", 0xf93933c, RegisterAccess::Type::Read)
+            RegisterAccess("r0", 0xdeadbef4, RegisterAccess::Type::READ),
+            RegisterAccess("r11", 0xf93933c, RegisterAccess::Type::READ)
         }
     },
     {
         31, IE_EXECUTED, 0x08330, ARM, 32, 0xf8db07fc, "ldr.w      r0,[r11,#2044]",
         {
-            MemoryAccess(4, 0xf939b3c, 0xdeadbef4, MemoryAccess::Type::Read)
+            MemoryAccess(4, 0xf939b3c, 0xdeadbef4, MemoryAccess::Type::READ)
         },
         {
-            RegisterAccess("r0", 0xdeadbef4, RegisterAccess::Type::Write),
-            RegisterAccess("r11", 0xf939340, RegisterAccess::Type::Read)
+            RegisterAccess("r0", 0xdeadbef4, RegisterAccess::Type::WRITE),
+            RegisterAccess("r11", 0xf939340, RegisterAccess::Type::READ)
         }
     },
     {
         32, IE_EXECUTED, 0x08332, THUMB, 16, 0x4408, "add      r0,r1",
         {},
         {
-            RegisterAccess("r0", 0xdeadbef9, RegisterAccess::Type::Write),
-            RegisterAccess("r1", 0x05, RegisterAccess::Type::Read)
+            RegisterAccess("r0", 0xdeadbef9, RegisterAccess::Type::WRITE),
+            RegisterAccess("r1", 0x05, RegisterAccess::Type::READ)
         }
     },
     {
         33, IE_EXECUTED, 0x08334, ARM, 32, 0xf8cb0800, "str.w      r0,[r11,#2048]",
         {
-            MemoryAccess(4, 0xf939b40, 0xdeadbef9, MemoryAccess::Type::Write)
+            MemoryAccess(4, 0xf939b40, 0xdeadbef9, MemoryAccess::Type::WRITE)
         },
         {
-            RegisterAccess("r0", 0xdeadbef9, RegisterAccess::Type::Read),
-            RegisterAccess("r11", 0xf93933c, RegisterAccess::Type::Read)
+            RegisterAccess("r0", 0xdeadbef9, RegisterAccess::Type::READ),
+            RegisterAccess("r11", 0xf93933c, RegisterAccess::Type::READ)
         }
     },
 };
@@ -1296,28 +1296,28 @@ TEST(PowerTrace, HammingDistanceWithConfig) {
     class InstsStateOracle : public PowerTrace::OracleBase {
       public:
         InstsStateOracle(std::initializer_list<uint64_t> il)
-            : RegBankInitialState(il) {}
+            : regBankInitialState(il) {}
         InstsStateOracle(size_t NR = 18, uint64_t v = 0)
-            : RegBankInitialState(NR, v) {}
+            : regBankInitialState(NR, v) {}
 
         virtual std::vector<uint64_t> getRegBankState(Time t) const override {
-            return RegBankInitialState;
+            return regBankInitialState;
         }
 
       private:
-        const vector<uint64_t> RegBankInitialState;
+        const vector<uint64_t> regBankInitialState;
     };
 
     // For use with Insts2 sequence.
     class Insts2StateOracle : public PowerTrace::OracleBase {
       public:
         Insts2StateOracle(std::initializer_list<uint64_t> il)
-            : RegBankInitialState(il) {}
+            : regBankInitialState(il) {}
         Insts2StateOracle(size_t NR = 18, uint64_t v = 0)
-            : RegBankInitialState(NR, v) {}
+            : regBankInitialState(NR, v) {}
 
         virtual std::vector<uint64_t> getRegBankState(Time t) const override {
-            return RegBankInitialState;
+            return regBankInitialState;
         }
 
         virtual uint64_t getMemoryState(Addr address, size_t size,
@@ -1330,7 +1330,7 @@ TEST(PowerTrace, HammingDistanceWithConfig) {
         }
 
       private:
-        const vector<uint64_t> RegBankInitialState;
+        const vector<uint64_t> regBankInitialState;
     };
 
     // Tests that only the source contributing to the power have non zero power.
@@ -1358,9 +1358,9 @@ TEST(PowerTrace, HammingDistanceWithConfig) {
     EXPECT_EQ(TPD.pwf[3], PowerFields(5, 5, 0, 0, 0, 0, 0, nullptr));
     EXPECT_EQ(TPD.pwf[4], PowerFields(2, 2, 0, 0, 0, 0, 0, &Insts[3]));
     EXPECT_EQ(TPD.pwf[5], PowerFields(2, 2, 0, 0, 0, 0, 0, nullptr));
-    EXPECT_EQ(TMAD.instr_with_accesses(), 0);
-    EXPECT_EQ(TMAD.last_accesses_size(), 0);
-    EXPECT_EQ(TID.num_instructions(), 0);
+    EXPECT_EQ(TMAD.instrWithAccesses(), 0);
+    EXPECT_EQ(TMAD.lastAccessesSize(), 0);
+    EXPECT_EQ(TID.numInstructions(), 0);
 
     TPD.reset();
     TRBD.reset();
@@ -1507,9 +1507,9 @@ TEST(PowerTrace, HammingDistanceWithConfig) {
     EXPECT_EQ(TPD.pwf[4], PowerFields(6, 0, 0, 0, 0, 5, 0, &Insts2[4]));
     EXPECT_EQ(TPD.pwf[5], PowerFields(0, 0, 0, 0, 0, 0, 0, &Insts2[5]));
     EXPECT_EQ(TPD.pwf[6], PowerFields(6, 0, 0, 0, 0, 5, 0, &Insts2[6]));
-    EXPECT_EQ(TMAD.instr_with_accesses(), 0);
-    EXPECT_EQ(TMAD.last_accesses_size(), 0);
-    EXPECT_EQ(TID.num_instructions(), 0);
+    EXPECT_EQ(TMAD.instrWithAccesses(), 0);
+    EXPECT_EQ(TMAD.lastAccessesSize(), 0);
+    EXPECT_EQ(TID.numInstructions(), 0);
 
     TPD.reset();
     TRBD.reset();
@@ -1587,9 +1587,9 @@ TEST(PowerTrace, withConfigAndNoise) {
     EXPECT_EQ(TPD.pwf[0].ireg, 0.0);
     EXPECT_EQ(TPD.pwf[0].oreg, 0.0);
     EXPECT_EQ(TPD.pwf[0].pc, 0.0);
-    EXPECT_EQ(TMAD.instr_with_accesses(), 0);
-    EXPECT_EQ(TMAD.last_accesses_size(), 0);
-    EXPECT_EQ(TID.num_instructions(), 0);
+    EXPECT_EQ(TMAD.instrWithAccesses(), 0);
+    EXPECT_EQ(TMAD.lastAccessesSize(), 0);
+    EXPECT_EQ(TID.numInstructions(), 0);
 
     PAC.clear().set(PowerAnalysisConfig::WITH_INSTRUCTIONS_OUTPUTS);
     PAC.setWithNoise();

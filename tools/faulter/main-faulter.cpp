@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: <text>Copyright 2021,2022,2023 Arm Limited and/or its
+ * SPDX-FileCopyrightText: <text>Copyright 2021-2024 Arm Limited and/or its
  * affiliates <open-source-office@arm.com></text>
  * SPDX-License-Identifier: Apache-2.0
  *
@@ -84,9 +84,9 @@ unsigned add_function_name(FunctionSpec &FS, const string &arg) {
 unsigned add_label_pair(InjectionRangeSpec &IRS, const string &arg) {
     size_t pos = 0;
     if ((pos = arg.find(',')) != string::npos) {
-        IRS.Kind = InjectionRangeSpec::LabelsPair;
-        IRS.start_label = arg.substr(0, pos);
-        IRS.end_label = arg.substr(pos + 1);
+        IRS.kind = InjectionRangeSpec::LABELS_PAIR;
+        IRS.startLabel = arg.substr(0, pos);
+        IRS.endLabel = arg.substr(pos + 1);
         return 1;
     }
 
@@ -94,7 +94,7 @@ unsigned add_label_pair(InjectionRangeSpec &IRS, const string &arg) {
 }
 
 unsigned add_window_labels(InjectionRangeSpec &IRS, const string &arg) {
-    IRS.Kind = InjectionRangeSpec::WLabels;
+    IRS.kind = InjectionRangeSpec::WLABELS;
     unsigned cnt = 0;
     size_t last = 0;
     size_t pos = 0;
@@ -146,7 +146,7 @@ std::unique_ptr<Reporter> reporter = make_cli_reporter();
 
 int main(int argc, char **argv) {
 
-    Faulter::FaultModel fault_model = Faulter::FaultModel::InstructionSkip;
+    Faulter::FaultModel fault_model = Faulter::FaultModel::INSTRUCTION_SKIP;
     string campaign_filename(""); // Use cout by default.
     InjectionRangeSpec IRS;
     string oracle_spec; // The oracle to use for classifying faults.
@@ -156,9 +156,9 @@ int main(int argc, char **argv) {
     tu.add_options(ap);
 
     ap.optnoval({"--instructionskip"}, "select InstructionSkip faultModel",
-                [&]() { fault_model = Faulter::FaultModel::InstructionSkip; });
+                [&]() { fault_model = Faulter::FaultModel::INSTRUCTION_SKIP; });
     ap.optnoval({"--corruptregdef"}, "select CorruptRegDef faultModel",
-                [&]() { fault_model = Faulter::FaultModel::CorruptRegDef; });
+                [&]() { fault_model = Faulter::FaultModel::CORRUPT_REG_DEF; });
     ap.optval({"--output"}, "CAMPAIGNFILE", "campaign file name",
               [&](const string &s) { campaign_filename = s; });
     ap.optval({"--oracle"}, "ORACLESPEC", "oracle specification",
@@ -167,7 +167,7 @@ int main(int argc, char **argv) {
         {"--window-labels"}, "WINDOW,LABEL[,LABEL+]",
         "a pair of labels that delimit the region where to inject faults.",
         [&](const string &s) {
-            if (IRS.Kind != InjectionRangeSpec::NotSet)
+            if (IRS.kind != InjectionRangeSpec::NOT_SET)
                 reporter->errx(
                     EXIT_FAILURE,
                     "--flat-functions, --window-labels, --labels-pair and "
@@ -178,7 +178,7 @@ int main(int argc, char **argv) {
         {"--labels-pair"}, "START_LABEL,END_LABEL",
         "a pair of labels that delimit the region where to inject faults.",
         [&](const string &s) {
-            if (IRS.Kind != InjectionRangeSpec::NotSet)
+            if (IRS.kind != InjectionRangeSpec::NOT_SET)
                 reporter->errx(
                     EXIT_FAILURE,
                     "--flat-functions, --window-labels, --labels-pair and "
@@ -190,65 +190,65 @@ int main(int argc, char **argv) {
         "a comma separated list of function names where to inject faults "
         "into (excluding their call-tree)",
         [&](const string &s) {
-            if (IRS.Kind != InjectionRangeSpec::NotSet)
+            if (IRS.kind != InjectionRangeSpec::NOT_SET)
                 reporter->errx(
                     EXIT_FAILURE,
                     "--flat-functions, --window-labels, --labels-pair "
                     "and --functions / --exclude-functions are exclusive");
-            add_function_name(IRS.included_flat, s);
-            IRS.Kind = InjectionRangeSpec::FlatFunctions;
+            add_function_name(IRS.includedFlat, s);
+            IRS.kind = InjectionRangeSpec::FLAT_FUNCTIONS;
         });
     ap.optval(
         {"--functions"}, "FUNCTION[,FUNCTION]+",
         "a comma separated list of function names where to inject faults "
         "into (including their call-tree)",
         [&](const string &s) {
-            if (IRS.Kind != InjectionRangeSpec::NotSet)
+            if (IRS.kind != InjectionRangeSpec::NOT_SET)
                 reporter->errx(
                     EXIT_FAILURE,
                     "--flat-functions, --window-labels, --labels-pair "
                     "and --functions / --exclude-functions are exclusive");
             add_function_name(IRS.included, s);
-            IRS.Kind = InjectionRangeSpec::Functions;
+            IRS.kind = InjectionRangeSpec::FUNCTIONS;
         });
     ap.optval(
         {"--exclude-functions"}, "FUNCTION[,FUNCTION]+",
         "a comma separated list of function names to skip for fault injection",
         [&](const string &s) {
-            if (IRS.Kind != InjectionRangeSpec::NotSet ||
-                IRS.Kind != InjectionRangeSpec::Functions)
+            if (IRS.kind != InjectionRangeSpec::NOT_SET ||
+                IRS.kind != InjectionRangeSpec::FUNCTIONS)
                 reporter->errx(
                     EXIT_FAILURE,
                     "--flat-functions, --window-labels, --labels-pair and "
                     "--functions / --exclude-functions are exclusive");
             add_function_name(IRS.excluded, s);
-            IRS.Kind = InjectionRangeSpec::Functions;
+            IRS.kind = InjectionRangeSpec::FUNCTIONS;
         });
 
     ap.parse();
     tu.setup();
 
     // Check arguments sanity.
-    if (IRS.Kind == InjectionRangeSpec::NotSet)
+    if (IRS.kind == InjectionRangeSpec::NOT_SET)
         reporter->errx(EXIT_FAILURE,
                        "Missing injection range specification (--functions or "
                        "--label-pair)");
 
-    if (IRS.Kind == InjectionRangeSpec::Functions && IRS.included.size() == 0)
+    if (IRS.kind == InjectionRangeSpec::FUNCTIONS && IRS.included.size() == 0)
         reporter->errx(EXIT_FAILURE, "Missing function specification");
 
-    if (IRS.Kind == InjectionRangeSpec::FlatFunctions &&
-        IRS.included_flat.size() == 0)
+    if (IRS.kind == InjectionRangeSpec::FLAT_FUNCTIONS &&
+        IRS.includedFlat.size() == 0)
         reporter->errx(EXIT_FAILURE, "Missing flat function specification");
 
-    if (IRS.Kind == InjectionRangeSpec::LabelsPair) {
-        if (IRS.start_label.size() == 0)
+    if (IRS.kind == InjectionRangeSpec::LABELS_PAIR) {
+        if (IRS.startLabel.size() == 0)
             reporter->errx(EXIT_FAILURE, "Missing start label");
-        if (IRS.end_label.size() == 0)
+        if (IRS.endLabel.size() == 0)
             reporter->errx(EXIT_FAILURE, "Missing end label");
     }
 
-    if (IRS.Kind == InjectionRangeSpec::WLabels) {
+    if (IRS.kind == InjectionRangeSpec::WLABELS) {
         if (IRS.window == 0)
             reporter->errx(EXIT_FAILURE, "Unexpected window of size 0");
         if (IRS.labels.empty())
@@ -257,8 +257,8 @@ int main(int argc, char **argv) {
 
     // Dump if verbose.
     if (tu.is_verbose()) {
-        switch (IRS.Kind) {
-        case InjectionRangeSpec::Functions:
+        switch (IRS.kind) {
+        case InjectionRangeSpec::FUNCTIONS:
             cout << "Inject faults into (" << IRS.included.size()
                  << ") functions:";
             dump(cout, IRS.included);
@@ -271,23 +271,23 @@ int main(int argc, char **argv) {
                 dump(cout, IRS.excluded);
             cout << '\n';
             break;
-        case InjectionRangeSpec::FlatFunctions:
-            cout << "Inject faults into (" << IRS.included_flat.size()
+        case InjectionRangeSpec::FLAT_FUNCTIONS:
+            cout << "Inject faults into (" << IRS.includedFlat.size()
                  << ") flat functions:";
-            dump(cout, IRS.included_flat);
+            dump(cout, IRS.includedFlat);
             cout << '\n';
             break;
-        case InjectionRangeSpec::LabelsPair:
-            cout << "Inject faults between labels '" << IRS.start_label
-                 << "' and '" << IRS.end_label << "'\n";
+        case InjectionRangeSpec::LABELS_PAIR:
+            cout << "Inject faults between labels '" << IRS.startLabel
+                 << "' and '" << IRS.endLabel << "'\n";
             break;
-        case InjectionRangeSpec::WLabels:
+        case InjectionRangeSpec::WLABELS:
             cout << "Inject faults with a +/- " << IRS.window
                  << " instruction window on labels: ";
             dump(cout, IRS.labels);
             cout << '\n';
             break;
-        case InjectionRangeSpec::NotSet:
+        case InjectionRangeSpec::NOT_SET:
             reporter->errx(EXIT_FAILURE,
                            "Should not have reached this point !");
         }

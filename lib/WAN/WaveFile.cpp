@@ -20,6 +20,7 @@
 
 #include "PAF/WAN/WaveFile.h"
 #include "PAF/WAN/VCDWaveFile.h"
+
 #ifdef HAS_GTKWAVE_FST
 #include "PAF/WAN/FSTWaveFile.h"
 #endif
@@ -66,9 +67,9 @@ unique_ptr<WaveFile> WaveFile::get(const string &filename) {
 }
 
 Waveform WaveFile::read() {
-    Waveform W(FileName, 0, 0, 0);
+    Waveform W(fileName, 0, 0, 0);
     if (!read(W))
-        die("error reading '%s", FileName.c_str());
+        DIE("error reading '%s", fileName.c_str());
     return W;
 }
 } // namespace WAN

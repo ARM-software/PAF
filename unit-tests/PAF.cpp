@@ -49,8 +49,8 @@ using PAF::RegisterAccess;
 
 TEST(PAF, ExecutionRange) {
     ExecutionRange ER(TarmacSite(1234, 0), TarmacSite(5678, 0));
-    EXPECT_EQ(ER.Start.addr, 1234);
-    EXPECT_EQ(ER.End.addr, 5678);
+    EXPECT_EQ(ER.begin.addr, 1234);
+    EXPECT_EQ(ER.end.addr, 5678);
 }
 
 TEST(PAF, trimSpacesAndComments) {
@@ -80,48 +80,48 @@ TEST(PAF, trimSpacesAndComments) {
 TEST(RegAccess, base) {
     // Move assign
     RegisterAccess d;
-    d = RegisterAccess("r0", 1234, Access::Type::Read);
+    d = RegisterAccess("r0", 1234, Access::Type::READ);
     EXPECT_EQ(d.name, "r0");
-    EXPECT_EQ(d.access, Access::Type::Read);
+    EXPECT_EQ(d.access, Access::Type::READ);
     EXPECT_EQ(d.value, 1234);
 
     // Move construct
     RegisterAccess d2(std::move(d));
     EXPECT_EQ(d2.name, "r0");
-    EXPECT_EQ(d2.access, Access::Type::Read);
+    EXPECT_EQ(d2.access, Access::Type::READ);
     EXPECT_EQ(d2.value, 1234);
 
     // Copy construct
     RegisterAccess d3(d2);
     EXPECT_EQ(d3.name, "r0");
-    EXPECT_EQ(d3.access, Access::Type::Read);
+    EXPECT_EQ(d3.access, Access::Type::READ);
     EXPECT_EQ(d3.value, 1234);
 
     // Copy assign
     RegisterAccess d4 = d2;
     EXPECT_EQ(d4.name, "r0");
-    EXPECT_EQ(d4.access, Access::Type::Read);
+    EXPECT_EQ(d4.access, Access::Type::READ);
     EXPECT_EQ(d4.value, 1234);
 
-    const RegisterAccess a1("r2", 0x1234, RegisterAccess::Type::Write);
+    const RegisterAccess a1("r2", 0x1234, RegisterAccess::Type::WRITE);
     EXPECT_EQ(a1.name, "r2");
     EXPECT_EQ(a1.value, 0x1234);
-    EXPECT_EQ(a1.access, RegisterAccess::Type::Write);
+    EXPECT_EQ(a1.access, RegisterAccess::Type::WRITE);
 
-    const RegisterAccess a2("r2", 0x1234, RegisterAccess::Type::Read);
+    const RegisterAccess a2("r2", 0x1234, RegisterAccess::Type::READ);
     EXPECT_EQ(a2.name, "r2");
     EXPECT_EQ(a2.value, 0x1234);
-    EXPECT_EQ(a2.access, RegisterAccess::Type::Read);
+    EXPECT_EQ(a2.access, RegisterAccess::Type::READ);
 
-    const RegisterAccess a3("r3", 0x1234, RegisterAccess::Type::Write);
+    const RegisterAccess a3("r3", 0x1234, RegisterAccess::Type::WRITE);
     EXPECT_EQ(a3.name, "r3");
     EXPECT_EQ(a3.value, 0x1234);
-    EXPECT_EQ(a3.access, RegisterAccess::Type::Write);
+    EXPECT_EQ(a3.access, RegisterAccess::Type::WRITE);
 
-    const RegisterAccess a4("r2", 0x1234, RegisterAccess::Type::Write);
+    const RegisterAccess a4("r2", 0x1234, RegisterAccess::Type::WRITE);
     EXPECT_EQ(a3.name, "r3");
     EXPECT_EQ(a3.value, 0x1234);
-    EXPECT_EQ(a3.access, RegisterAccess::Type::Write);
+    EXPECT_EQ(a3.access, RegisterAccess::Type::WRITE);
 
     // Equality / Inequality operators..
     EXPECT_TRUE(a1 == a1);  // Trivial !
@@ -152,42 +152,44 @@ TEST(RegAcces, parsing) {
             FromStreamBuilder<ReferenceInstruction, ReferenceInstructionBuilder,
                               RegAccessReceiver>
                 FSB(iss);
-                FSB.build(*this);
-            return RA[0];
+            FSB.build(*this);
+            return regAccesses[0];
         }
 
-        void operator()(const ReferenceInstruction &I) { RA = I.regaccess; }
+        void operator()(const ReferenceInstruction &I) {
+            regAccesses = I.regaccess;
+        }
 
       private:
-        vector<RegisterAccess> RA;
+        vector<RegisterAccess> regAccesses;
         istringstream iss;
     };
 
     RegisterAccess a1 = RegAccessReceiver("669 clk R r1 0000ba95").get();
     EXPECT_EQ(a1.name, "r1");
     EXPECT_EQ(a1.value, 0x0ba95);
-    EXPECT_EQ(a1.access, RegisterAccess::Type::Write);
+    EXPECT_EQ(a1.access, RegisterAccess::Type::WRITE);
 
     RegisterAccess a2 = RegAccessReceiver("670 clk R r2 00001234").get();
     EXPECT_EQ(a2.name, "r2");
     EXPECT_EQ(a2.value, 0x01234);
-    EXPECT_EQ(a2.access, RegisterAccess::Type::Write);
+    EXPECT_EQ(a2.access, RegisterAccess::Type::WRITE);
 
     RegisterAccess a3 = RegAccessReceiver("661 clk R cpsr 21000000").get();
     EXPECT_EQ(a3.name, "psr");
     EXPECT_EQ(a3.value, 0x21000000);
-    EXPECT_EQ(a3.access, RegisterAccess::Type::Write);
+    EXPECT_EQ(a3.access, RegisterAccess::Type::WRITE);
 }
 
 TEST(RegAccess, dump) {
     std::ostringstream os;
 
-    const RegisterAccess a1("r2", 0x1234, RegisterAccess::Type::Write);
+    const RegisterAccess a1("r2", 0x1234, RegisterAccess::Type::WRITE);
     a1.dump(os);
     EXPECT_EQ(os.str(), "W(0x1234)@r2");
 
     os.str("");
-    const RegisterAccess a2("r3", 0x1234, RegisterAccess::Type::Read);
+    const RegisterAccess a2("r3", 0x1234, RegisterAccess::Type::READ);
     a2.dump(os);
     EXPECT_EQ(os.str(), "R(0x1234)@r3");
 }
@@ -195,62 +197,62 @@ TEST(RegAccess, dump) {
 TEST(MemAccess, base) {
     // Move assign
     MemoryAccess d;
-    d = MemoryAccess(4, 0x1000, 1234, Access::Type::Write);
+    d = MemoryAccess(4, 0x1000, 1234, Access::Type::WRITE);
     EXPECT_EQ(d.addr, 0x1000);
-    EXPECT_EQ(d.access, Access::Type::Write);
+    EXPECT_EQ(d.access, Access::Type::WRITE);
     EXPECT_EQ(d.size, 4);
     EXPECT_EQ(d.value, 1234);
 
     // Move construct
     MemoryAccess d2(std::move(d));
     EXPECT_EQ(d2.addr, 0x1000);
-    EXPECT_EQ(d2.access, Access::Type::Write);
+    EXPECT_EQ(d2.access, Access::Type::WRITE);
     EXPECT_EQ(d2.size, 4);
     EXPECT_EQ(d2.value, 1234);
 
     // Copy construct
     MemoryAccess d3(d2);
     EXPECT_EQ(d3.addr, 0x1000);
-    EXPECT_EQ(d3.access, Access::Type::Write);
+    EXPECT_EQ(d3.access, Access::Type::WRITE);
     EXPECT_EQ(d3.size, 4);
     EXPECT_EQ(d3.value, 1234);
 
     // Copy assign
     MemoryAccess d4 = d2;
     EXPECT_EQ(d4.addr, 0x1000);
-    EXPECT_EQ(d4.access, Access::Type::Write);
+    EXPECT_EQ(d4.access, Access::Type::WRITE);
     EXPECT_EQ(d4.size, 4);
     EXPECT_EQ(d4.value, 1234);
 
-    const MemoryAccess m1(4, 0x1234, 123, MemoryAccess::Type::Read);
+    const MemoryAccess m1(4, 0x1234, 123, MemoryAccess::Type::READ);
     EXPECT_EQ(m1.size, 4);
     EXPECT_EQ(m1.addr, 0x1234);
     EXPECT_EQ(m1.value, 123);
-    EXPECT_EQ(m1.access, MemoryAccess::Type::Read);
+    EXPECT_EQ(m1.access, MemoryAccess::Type::READ);
 
-    const MemoryAccess m2(2, 0x1234, 123, MemoryAccess::Type::Read);
+    const MemoryAccess m2(2, 0x1234, 123, MemoryAccess::Type::READ);
     EXPECT_EQ(m2.size, 2);
     EXPECT_EQ(m2.addr, 0x1234);
     EXPECT_EQ(m2.value, 123);
-    EXPECT_EQ(m2.access, MemoryAccess::Type::Read);
+    EXPECT_EQ(m2.access, MemoryAccess::Type::READ);
 
-    const MemoryAccess m3(4, 0x1234, 123, MemoryAccess::Type::Write);
+    const MemoryAccess m3(4, 0x1234, 123, MemoryAccess::Type::WRITE);
     EXPECT_EQ(m3.size, 4);
     EXPECT_EQ(m3.addr, 0x1234);
     EXPECT_EQ(m3.value, 123);
-    EXPECT_EQ(m3.access, MemoryAccess::Type::Write);
+    EXPECT_EQ(m3.access, MemoryAccess::Type::WRITE);
 
-    const MemoryAccess m4(4, 0x1238, 123, MemoryAccess::Type::Read);
+    const MemoryAccess m4(4, 0x1238, 123, MemoryAccess::Type::READ);
     EXPECT_EQ(m4.size, 4);
     EXPECT_EQ(m4.addr, 0x1238);
     EXPECT_EQ(m4.value, 123);
-    EXPECT_EQ(m4.access, MemoryAccess::Type::Read);
+    EXPECT_EQ(m4.access, MemoryAccess::Type::READ);
 
-    const MemoryAccess m5(4, 0x1234, 321, MemoryAccess::Type::Read);
+    const MemoryAccess m5(4, 0x1234, 321, MemoryAccess::Type::READ);
     EXPECT_EQ(m5.size, 4);
     EXPECT_EQ(m5.addr, 0x1234);
     EXPECT_EQ(m5.value, 321);
-    EXPECT_EQ(m5.access, MemoryAccess::Type::Read);
+    EXPECT_EQ(m5.access, MemoryAccess::Type::READ);
 
     // Equality / Inequality.
     EXPECT_TRUE(m1 == m1);
@@ -273,7 +275,6 @@ TEST(MemAccess, base) {
     EXPECT_TRUE(m1 < m4);
     EXPECT_FALSE(m1 < m5);
     EXPECT_FALSE(m5 < m1);
-
 }
 
 TEST(MemAccess, parsing) {
@@ -287,54 +288,56 @@ TEST(MemAccess, parsing) {
             FromStreamBuilder<ReferenceInstruction, ReferenceInstructionBuilder,
                               MemAccessReceiver>
                 FSB(iss);
-                FSB.build(*this);
-            return MA[0];
+            FSB.build(*this);
+            return memAccesses[0];
         }
 
-        void operator()(const ReferenceInstruction &I) { MA = I.memaccess; }
+        void operator()(const ReferenceInstruction &I) {
+            memAccesses = I.memaccess;
+        }
 
       private:
-        vector<MemoryAccess> MA;
+        vector<MemoryAccess> memAccesses;
         istringstream iss;
     };
 
     const MemoryAccess m1 = MemAccessReceiver("597 clk MW1 00021034 00").get();
     EXPECT_EQ(m1.size, 1);
-    EXPECT_EQ(m1.access, MemoryAccess::Type::Write);
+    EXPECT_EQ(m1.access, MemoryAccess::Type::WRITE);
     EXPECT_EQ(m1.addr, 0x021034);
     EXPECT_EQ(m1.value, 0);
 
     const MemoryAccess m2 = MemAccessReceiver("493 clk MR1 00021024 76").get();
     EXPECT_EQ(m2.size, 1);
-    EXPECT_EQ(m2.access, MemoryAccess::Type::Read);
+    EXPECT_EQ(m2.access, MemoryAccess::Type::READ);
     EXPECT_EQ(m2.addr, 0x021024);
     EXPECT_EQ(m2.value, 0x076);
 
     const MemoryAccess m3 =
         MemAccessReceiver("1081 clk MW2 00021498 2009").get();
     EXPECT_EQ(m3.size, 2);
-    EXPECT_EQ(m3.access, MemoryAccess::Type::Write);
+    EXPECT_EQ(m3.access, MemoryAccess::Type::WRITE);
     EXPECT_EQ(m3.addr, 0x021498);
     EXPECT_EQ(m3.value, 0x02009);
 
     const MemoryAccess m4 =
         MemAccessReceiver("1081 clk MR2 00021498 9902").get();
     EXPECT_EQ(m4.size, 2);
-    EXPECT_EQ(m4.access, MemoryAccess::Type::Read);
+    EXPECT_EQ(m4.access, MemoryAccess::Type::READ);
     EXPECT_EQ(m4.addr, 0x021498);
     EXPECT_EQ(m4.value, 0x09902);
 
     const MemoryAccess m5 =
         MemAccessReceiver("4210 clk MW4 106fffc4 00000001").get();
     EXPECT_EQ(m5.size, 4);
-    EXPECT_EQ(m5.access, MemoryAccess::Type::Write);
+    EXPECT_EQ(m5.access, MemoryAccess::Type::WRITE);
     EXPECT_EQ(m5.addr, 0x0106fffc4);
     EXPECT_EQ(m5.value, 1);
 
     const MemoryAccess m6 =
         MemAccessReceiver("4211 clk MR4 0001071c 00021ae4").get();
     EXPECT_EQ(m6.size, 4);
-    EXPECT_EQ(m6.access, MemoryAccess::Type::Read);
+    EXPECT_EQ(m6.access, MemoryAccess::Type::READ);
     EXPECT_EQ(m6.addr, 0x01071c);
     EXPECT_EQ(m6.value, 0x021ae4);
 }
@@ -342,12 +345,12 @@ TEST(MemAccess, parsing) {
 TEST(MemoryAccess, dump) {
     std::ostringstream os;
 
-    const MemoryAccess m1(4, 0x1234, 123, MemoryAccess::Type::Read);
+    const MemoryAccess m1(4, 0x1234, 123, MemoryAccess::Type::READ);
     m1.dump(os);
     EXPECT_EQ(os.str(), "R4(0x7b)@0x1234");
 
     os.str("");
-    const MemoryAccess m2(8, 0x6789, 256, MemoryAccess::Type::Write);
+    const MemoryAccess m2(8, 0x6789, 256, MemoryAccess::Type::WRITE);
     m2.dump(os);
     EXPECT_EQ(os.str(), "W8(0x100)@0x6789");
 }
@@ -356,8 +359,8 @@ TEST(ReferenceInstruction, base) {
     const ReferenceInstruction i1(
         27, IE_EXECUTED, 0x0818a, THUMB, 16, 0x02100, "MOVS     r1,#0", {},
         {
-            RegisterAccess("r1", 0, RegisterAccess::Type::Write),
-            RegisterAccess("cpsr", 0x61000000, RegisterAccess::Type::Write),
+            RegisterAccess("r1", 0, RegisterAccess::Type::WRITE),
+            RegisterAccess("cpsr", 0x61000000, RegisterAccess::Type::WRITE),
         });
     EXPECT_EQ(i1.time, 27);
     EXPECT_EQ(i1.effect, IE_EXECUTED);
@@ -371,18 +374,18 @@ TEST(ReferenceInstruction, base) {
     EXPECT_EQ(i1.regaccess.size(), 2);
     EXPECT_EQ(i1.regaccess[0].name, "r1");
     EXPECT_EQ(i1.regaccess[0].value, 0);
-    EXPECT_EQ(i1.regaccess[0].access, RegisterAccess::Type::Write);
+    EXPECT_EQ(i1.regaccess[0].access, RegisterAccess::Type::WRITE);
     EXPECT_EQ(i1.regaccess[1].name, "cpsr");
     EXPECT_EQ(i1.regaccess[1].value, 0x61000000);
-    EXPECT_EQ(i1.regaccess[1].access, RegisterAccess::Type::Write);
+    EXPECT_EQ(i1.regaccess[1].access, RegisterAccess::Type::WRITE);
     EXPECT_TRUE(i1 == i1);
     EXPECT_FALSE(i1 != i1);
 
     const ReferenceInstruction i2(
         58, IE_EXECUTED, 0x08326, ARM, 32, 0xe9425504,
         "STRD     r5,r5,[r2,#-0x10]",
-        {MemoryAccess(4, 0x00021afc, 0, MemoryAccess::Type::Write),
-         MemoryAccess(4, 0x00021b00, 0, MemoryAccess::Type::Write)},
+        {MemoryAccess(4, 0x00021afc, 0, MemoryAccess::Type::WRITE),
+         MemoryAccess(4, 0x00021b00, 0, MemoryAccess::Type::WRITE)},
         {});
     EXPECT_EQ(i2.time, 58);
     EXPECT_EQ(i2.effect, IE_EXECUTED);
@@ -396,10 +399,10 @@ TEST(ReferenceInstruction, base) {
     EXPECT_EQ(i2.memaccess.size(), 2);
     EXPECT_EQ(i2.memaccess[0].addr, 0x021afc);
     EXPECT_EQ(i2.memaccess[0].value, 0);
-    EXPECT_EQ(i2.memaccess[0].access, MemoryAccess::Type::Write);
+    EXPECT_EQ(i2.memaccess[0].access, MemoryAccess::Type::WRITE);
     EXPECT_EQ(i2.memaccess[1].addr, 0x021b00);
     EXPECT_EQ(i2.memaccess[1].value, 0);
-    EXPECT_EQ(i2.memaccess[1].access, MemoryAccess::Type::Write);
+    EXPECT_EQ(i2.memaccess[1].access, MemoryAccess::Type::WRITE);
     EXPECT_TRUE(i2 == i2);
     EXPECT_FALSE(i2 != i2);
 
@@ -410,8 +413,8 @@ TEST(ReferenceInstruction, base) {
     const ReferenceInstruction i3(
         30, IE_EXECUTED, 0x0818a, THUMB, 16, 0x02100, "MOVS r1,#0", {},
         {
-            RegisterAccess("r1", 0, RegisterAccess::Type::Write),
-            RegisterAccess("cpsr", 0x61000000, RegisterAccess::Type::Write),
+            RegisterAccess("r1", 0, RegisterAccess::Type::WRITE),
+            RegisterAccess("cpsr", 0x61000000, RegisterAccess::Type::WRITE),
         });
     EXPECT_TRUE(i1 == i3);
 
@@ -419,16 +422,16 @@ TEST(ReferenceInstruction, base) {
     const ReferenceInstruction i4(
         27, IE_EXECUTED, 0x0818a, THUMB, 16, 0x02100, "MOVS     r1,#0", {},
         {
-            RegisterAccess("r1", 10, RegisterAccess::Type::Write),
-            RegisterAccess("cpsr", 0x61000FFF, RegisterAccess::Type::Write),
+            RegisterAccess("r1", 10, RegisterAccess::Type::WRITE),
+            RegisterAccess("cpsr", 0x61000FFF, RegisterAccess::Type::WRITE),
         });
     EXPECT_TRUE(i1 == i4);
 
     const ReferenceInstruction i5(
         58, IE_EXECUTED, 0x08326, ARM, 32, 0xe9425504,
         "STRD     r5,r5,[r2,#-0x10]",
-        {MemoryAccess(4, 0x00000afc, 10, MemoryAccess::Type::Write),
-         MemoryAccess(4, 0x00000b00, 20, MemoryAccess::Type::Write)},
+        {MemoryAccess(4, 0x00000afc, 10, MemoryAccess::Type::WRITE),
+         MemoryAccess(4, 0x00000b00, 20, MemoryAccess::Type::WRITE)},
         {});
     EXPECT_TRUE(i2 == i5);
 }
@@ -444,16 +447,16 @@ TEST(ReferenceInstruction, parsing) {
             FromStreamBuilder<ReferenceInstruction, ReferenceInstructionBuilder,
                               InstructionReceiver>
                 FSB(iss);
-                FSB.build(*this);
-            return Insts[0];
+            FSB.build(*this);
+            return instrs[0];
         }
 
         void operator()(const ReferenceInstruction &I) {
-            Insts.emplace_back(I);
+            instrs.emplace_back(I);
         }
 
       private:
-        vector<ReferenceInstruction> Insts;
+        vector<ReferenceInstruction> instrs;
         istringstream iss;
     };
 
@@ -475,10 +478,10 @@ TEST(ReferenceInstruction, parsing) {
     EXPECT_EQ(i1.regaccess.size(), 2);
     EXPECT_EQ(i1.regaccess[1].name, "r1");
     EXPECT_EQ(i1.regaccess[1].value, 0);
-    EXPECT_EQ(i1.regaccess[1].access, RegisterAccess::Type::Write);
+    EXPECT_EQ(i1.regaccess[1].access, RegisterAccess::Type::WRITE);
     EXPECT_EQ(i1.regaccess[0].name, "psr");
     EXPECT_EQ(i1.regaccess[0].value, 0x61000000);
-    EXPECT_EQ(i1.regaccess[0].access, RegisterAccess::Type::Write);
+    EXPECT_EQ(i1.regaccess[0].access, RegisterAccess::Type::WRITE);
 
     const ReferenceInstruction i2 =
         InstructionReceiver("58 clk IT (58) 00008326 e9425504 T thread : STRD  "
@@ -498,10 +501,10 @@ TEST(ReferenceInstruction, parsing) {
     EXPECT_EQ(i2.memaccess.size(), 2);
     EXPECT_EQ(i2.memaccess[0].addr, 0x021afc);
     EXPECT_EQ(i2.memaccess[0].value, 0);
-    EXPECT_EQ(i2.memaccess[0].access, MemoryAccess::Type::Write);
+    EXPECT_EQ(i2.memaccess[0].access, MemoryAccess::Type::WRITE);
     EXPECT_EQ(i2.memaccess[1].addr, 0x021b00);
     EXPECT_EQ(i2.memaccess[1].value, 0);
-    EXPECT_EQ(i2.memaccess[1].access, MemoryAccess::Type::Write);
+    EXPECT_EQ(i2.memaccess[1].access, MemoryAccess::Type::WRITE);
 }
 
 TEST(ReferenceInstruction, dump) {
@@ -510,8 +513,8 @@ TEST(ReferenceInstruction, dump) {
     const ReferenceInstruction i(
         58, IE_EXECUTED, 0x08326, ARM, 32, 0xe9425504,
         "STRD     r5,r5,[r2,#-0x10]",
-        {MemoryAccess(4, 0x00021afc, 0, MemoryAccess::Type::Write),
-         MemoryAccess(4, 0x00021b00, 0, MemoryAccess::Type::Write)},
+        {MemoryAccess(4, 0x00021afc, 0, MemoryAccess::Type::WRITE),
+         MemoryAccess(4, 0x00021b00, 0, MemoryAccess::Type::WRITE)},
         {});
 
     i.dump(os);
@@ -529,19 +532,17 @@ struct TestMTAnalyzer : public PAF::MTAnalyzer {
                    unsigned verbosity = 0)
         : MTAnalyzer(trace, image_filename, verbosity) {}
 
-    void operator()(PAF::ReferenceInstruction &I) {
-        Instructions.push_back(I);
-    }
+    void operator()(PAF::ReferenceInstruction &I) { instructions.push_back(I); }
 
     void getFunctionBody(ExecutionRange &ER, TestMTAnalyzer &) {
-        Instructions.clear();
+        instructions.clear();
         PAF::FromTraceBuilder<PAF::ReferenceInstruction,
                               PAF::ReferenceInstructionBuilder, TestMTAnalyzer>
             FTB(*this);
         FTB.build(ER, *this);
     }
 
-    vector<ReferenceInstruction> Instructions;
+    vector<ReferenceInstruction> instructions;
 };
 
 namespace {
@@ -573,10 +574,10 @@ TEST(MTAnalyzer, base) {
 
     const array<uint64_t, 4> valExp = {125, 125, 126, 134};
     for (size_t i = 0; i < Instances.size(); i++) {
-        EXPECT_EQ(T.getRegisterValueAtTime("r0", Instances[i].Start.time - 1),
+        EXPECT_EQ(T.getRegisterValueAtTime("r0", Instances[i].begin.time - 1),
                   i);
         vector<uint8_t> mem = T.getMemoryValueAtTime(
-            symb_addr, symb_size, Instances[i].Start.time - 1);
+            symb_addr, symb_size, Instances[i].begin.time - 1);
         uint64_t val = 0;
         for (size_t j = 0; j < mem.size(); j++)
             val |= uint64_t(mem[j]) << (j * 8);
@@ -585,17 +586,17 @@ TEST(MTAnalyzer, base) {
 
     for (size_t i = 0; i < Instances.size(); i++) {
         T.getFunctionBody(Instances[i], T);
-        EXPECT_EQ(T.Instructions[0].disassembly, string("MUL r3,r0,r0"));
+        EXPECT_EQ(T.instructions[0].disassembly, string("MUL r3,r0,r0"));
     }
 
     // getFullExecutionRange test.
     PAF::ExecutionRange FER = T.getFullExecutionRange();
-    EXPECT_EQ(FER.Start.time, 0);
-    EXPECT_EQ(FER.Start.tarmac_line, 0);
-    EXPECT_EQ(FER.Start.addr, 0);
+    EXPECT_EQ(FER.begin.time, 0);
+    EXPECT_EQ(FER.begin.tarmac_line, 0);
+    EXPECT_EQ(FER.begin.addr, 0);
 
     ReferenceInstruction LastInstruction;
-    EXPECT_TRUE(T.getInstructionAtTime(LastInstruction, FER.End.time));
+    EXPECT_TRUE(T.getInstructionAtTime(LastInstruction, FER.end.time));
     EXPECT_EQ(LastInstruction.disassembly, "BKPT #0xab");
 
     // GetCallSites.
@@ -603,9 +604,9 @@ TEST(MTAnalyzer, base) {
     EXPECT_EQ(CallSites.size(), 4);
     for (const auto &cs : CallSites) {
         ReferenceInstruction CallInstr;
-        EXPECT_TRUE(T.getInstructionAtTime(CallInstr, cs.Start.time));
+        EXPECT_TRUE(T.getInstructionAtTime(CallInstr, cs.begin.time));
         EXPECT_EQ(CallInstr.disassembly.substr(0, 3), "BL ");
-        EXPECT_EQ(cs.End.addr, cs.Start.addr + CallInstr.width / 8);
+        EXPECT_EQ(cs.end.addr, cs.begin.addr + CallInstr.width / 8);
     }
 }
 
@@ -627,9 +628,9 @@ TEST(MTAnalyzer, labels) {
     for (const auto &cs : WLabels) {
         ReferenceInstruction WStartInstr, WEndInstr;
         // 3 instructions are expected (one per cycle).
-        EXPECT_EQ(cs.End.time - cs.Start.time + 1, 3);
-        EXPECT_TRUE(T.getInstructionAtTime(WStartInstr, cs.Start.time));
-        EXPECT_TRUE(T.getInstructionAtTime(WEndInstr, cs.End.time));
+        EXPECT_EQ(cs.end.time - cs.begin.time + 1, 3);
+        EXPECT_TRUE(T.getInstructionAtTime(WStartInstr, cs.begin.time));
+        EXPECT_TRUE(T.getInstructionAtTime(WEndInstr, cs.end.time));
         EXPECT_GT(WEndInstr.pc, WStartInstr.pc);
     }
 }
@@ -646,12 +647,12 @@ TEST(MTAnalyzer, markers) {
         T.getBetweenFunctionMarkers("marker_start", "marker_end");
     EXPECT_EQ(Markers.size(), 4);
     for (const auto &m : Markers) {
-        EXPECT_GT(m.End.time, m.Start.time);
+        EXPECT_GT(m.end.time, m.begin.time);
         ReferenceInstruction StartInstr;
-        EXPECT_TRUE(T.getInstructionAtTime(StartInstr, m.Start.time - 1));
+        EXPECT_TRUE(T.getInstructionAtTime(StartInstr, m.begin.time - 1));
         EXPECT_EQ(StartInstr.disassembly.substr(0, 3), "BX ");
         ReferenceInstruction EndInstr;
-        EXPECT_TRUE(T.getInstructionAtTime(EndInstr, m.End.time));
+        EXPECT_TRUE(T.getInstructionAtTime(EndInstr, m.end.time));
         EXPECT_EQ(EndInstr.disassembly.substr(0, 3), "BL ");
     }
 }

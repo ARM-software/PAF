@@ -72,10 +72,10 @@ class ParserBase : public LWParser {
     ParserBase(const std::string &str) : LWParser(str) {}
 
     /// An integer type specifier: u8, u16, u32, u64.
-    bool parse_type_specifier(ValueType::Type &VT);
+    bool parseTypeSpecifier(ValueType::Type &VT);
     /// A literal is expressed in its decimal form, postfixed with an '_' and a
     /// type specifier, e.g. 123_u16.
-    Constant *parse_literal();
+    Constant *parseLiteral();
     enum OperatorTy {
         NOT,
         TRUNC8,
@@ -104,23 +104,23 @@ template <typename Ty> class Parser : public ParserBase {
 
     /// Parse the current string and construct its corresponding Expr.
     Expr *parse() {
-        skip_ws();
+        skipWS();
 
         if (end())
             return nullptr;
 
         char c = peek();
         if (c >= '0' && c <= '9')
-            return parse_literal();
+            return parseLiteral();
         if (c == '(') {
             std::string subexpr;
-            if (get_parenthesized_subexpr(subexpr, '(', ')'))
+            if (getParenthesizedSubExpr(subexpr, '(', ')'))
                 return parse(subexpr);
             return nullptr;
         }
         if (c == '$')
-            return parse_variable();
-        return parse_operator();
+            return parseVariable();
+        return parseOperator();
     }
 
     /// Parse the string given as argument and construct its corresponding Expr,
@@ -132,7 +132,7 @@ template <typename Ty> class Parser : public ParserBase {
   private:
     Context<Ty> &context;
 
-    Expr *parse_operator() {
+    Expr *parseOperator() {
         std::string identifier;
         if (!ParserBase::parse(identifier))
             return nullptr;
@@ -141,15 +141,15 @@ template <typename Ty> class Parser : public ParserBase {
         if (Op == OperatorTy::UNKNOWN)
             return nullptr;
 
-        skip_ws();
+        skipWS();
         if (end())
             return nullptr;
 
         std::string args_str;
-        if (!ParserBase::get_parenthesized_subexpr(args_str, '(', ')'))
+        if (!ParserBase::getParenthesizedSubExpr(args_str, '(', ')'))
             return nullptr;
         std::vector<std::unique_ptr<Expr>> args;
-        if (!Parser(context, args_str).parse_arg_list(args))
+        if (!Parser(context, args_str).parseArgList(args))
             return nullptr;
         switch (Op) {
         case OperatorTy::NOT:
@@ -167,10 +167,9 @@ template <typename Ty> class Parser : public ParserBase {
                        ? new Truncate(ValueType::UINT32, args[0].release())
                        : nullptr;
         case OperatorTy::AES_SBOX:
-            return args.size() == 1 ? new AES_SBox(args[0].release()) : nullptr;
+            return args.size() == 1 ? new AESSBox(args[0].release()) : nullptr;
         case OperatorTy::AES_ISBOX:
-            return args.size() == 1 ? new AES_ISBox(args[0].release())
-                                    : nullptr;
+            return args.size() == 1 ? new AESISBox(args[0].release()) : nullptr;
         case OperatorTy::AND:
             return args.size() == 2
                        ? new And(args[0].release(), args[1].release())
@@ -201,22 +200,22 @@ template <typename Ty> class Parser : public ParserBase {
     }
 
     /// arg_list : expression [ ',' expression ]
-    bool parse_arg_list(std::vector<std::unique_ptr<Expr>> &args) {
+    bool parseArgList(std::vector<std::unique_ptr<Expr>> &args) {
         args.clear();
 
-        skip_ws();
+        skipWS();
 
         while (!end()) {
             if (Expr *e = parse()) {
                 args.emplace_back(e);
-                skip_ws();
+                skipWS();
             } else {
                 args.clear();
                 return false;
             }
             if (!end() && peek() == ',') {
                 consume(',');
-                skip_ws();
+                skipWS();
             }
         }
 
@@ -224,7 +223,7 @@ template <typename Ty> class Parser : public ParserBase {
     }
 
     /// variable : '$' identifier '[' index ']'
-    Expr *parse_variable() {
+    Expr *parseVariable() {
         if (!expect('$'))
             return nullptr;
         std::string identifier;
@@ -233,7 +232,7 @@ template <typename Ty> class Parser : public ParserBase {
         if (!context.hasVariable(identifier))
             return nullptr;
         std::string idx_str;
-        if (!ParserBase::get_parenthesized_subexpr(idx_str, '[', ']'))
+        if (!ParserBase::getParenthesizedSubExpr(idx_str, '[', ']'))
             return nullptr;
         size_t idx;
         if (!Parser(context, idx_str).ParserBase::parse(idx))

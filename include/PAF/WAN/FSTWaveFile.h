@@ -36,8 +36,8 @@ namespace WAN {
 struct FSTHierarchyVisitorBase {
     ~FSTHierarchyVisitorBase();
 
-    static const char *VarTypetoString(unsigned char T);
-    static const char *VarDirtoString(unsigned char D);
+    static const char *varTypeToString(unsigned char T);
+    static const char *varDirToString(unsigned char D);
 
     static auto getAsFstHierScope(const fstHier *h) -> decltype(&h->u.scope) {
         return &h->u.scope;
@@ -111,7 +111,7 @@ class FSTWaveFile : public WaveFile {
 
     ~FSTWaveFile();
 
-    operator bool() const { return F != nullptr; }
+    operator bool() const { return f != nullptr; }
 
     bool visitHierarchy(FSTHierarchyVisitorBase *V) const;
 
@@ -119,12 +119,12 @@ class FSTWaveFile : public WaveFile {
     bool visitSignals(FSTWaveBuilderBase<BuilderTy> &B) const {
         fstHandle H = B.getHandle();
         if (H == -1) {
-            fstReaderSetFacProcessMaskAll(F);
+            fstReaderSetFacProcessMaskAll(f);
         } else {
-            fstReaderClrFacProcessMaskAll(F);
-            fstReaderSetFacProcessMask(F, B.getHandle());
+            fstReaderClrFacProcessMaskAll(f);
+            fstReaderSetFacProcessMask(f, B.getHandle());
         }
-        return fstReaderIterBlocks(F, FSTWaveBuilderBase<BuilderTy>::callback,
+        return fstReaderIterBlocks(f, FSTWaveBuilderBase<BuilderTy>::callback,
                                    &B, nullptr);
     }
 
@@ -143,7 +143,7 @@ class FSTWaveFile : public WaveFile {
   private:
     bool openedForWrite;
     // An opaque pointer to the fst data structure / context from fstapi.h
-    void *F = nullptr;
+    void *f = nullptr;
 };
 
 } // namespace WAN

@@ -31,10 +31,10 @@
 
 using namespace PAF::SCA;
 
+using std::cerr;
 using std::initializer_list;
 using std::unique_ptr;
 using std::vector;
-using std::cerr;
 
 TEST(Expr, parse_empty) {
     Expr::Context<uint32_t> ctxt;
@@ -46,24 +46,26 @@ namespace {
 struct ExprChecker {
     const char *str;
     vector<const char *> reprs;
-    Expr::ValueType::Type VT;
+    Expr::ValueType::Type vt;
     vector<Expr::Value::ConcreteType> values;
     ExprChecker(Expr::ValueType::Type VT, Expr::Value::ConcreteType value,
                 const char *str)
-        : str(str), reprs(1, str), VT(VT), values(1, value) {}
-    ExprChecker(Expr::ValueType::Type VT, initializer_list<Expr::Value::ConcreteType> values,
+        : str(str), reprs(1, str), vt(VT), values(1, value) {}
+    ExprChecker(Expr::ValueType::Type VT,
+                initializer_list<Expr::Value::ConcreteType> values,
                 const char *str)
-        : str(str), reprs(1, str), VT(VT), values(values) {}
+        : str(str), reprs(1, str), vt(VT), values(values) {}
     ExprChecker(Expr::ValueType::Type VT, Expr::Value::ConcreteType value,
                 const char *str, const char *repr)
-        : str(str), reprs(1, repr), VT(VT), values(1, value) {}
-    ExprChecker(Expr::ValueType::Type VT, initializer_list<Expr::Value::ConcreteType> values,
+        : str(str), reprs(1, repr), vt(VT), values(1, value) {}
+    ExprChecker(Expr::ValueType::Type VT,
+                initializer_list<Expr::Value::ConcreteType> values,
                 const char *str, const char *repr)
-        : str(str), reprs(1, repr), VT(VT), values(values) {}
+        : str(str), reprs(1, repr), vt(VT), values(values) {}
     ExprChecker(Expr::ValueType::Type VT,
                 initializer_list<Expr::Value::ConcreteType> values,
                 const char *str, initializer_list<const char *> reprs)
-        : str(str), reprs(reprs), VT(VT), values(values) {
+        : str(str), reprs(reprs), vt(VT), values(values) {
         if (reprs.size() != 1 && reprs.size() != values.size()) {
             cerr << "FATAL: unhandled size of reprs vs. values !ç\n";
             exit(EXIT_FAILURE);
@@ -74,7 +76,7 @@ struct ExprChecker {
         unique_ptr<Expr::Expr> E(Expr::Parser<uint32_t>(ctxt, str).parse());
         EXPECT_NE(E.get(), nullptr);
         if (E) {
-            EXPECT_EQ(E->getType(), VT);
+            EXPECT_EQ(E->getType(), vt);
             for (size_t i = 0; i < values.size(); i++) {
                 EXPECT_EQ(E->eval().getValue(), values[i]);
                 EXPECT_EQ(E->repr(), reprs[reprs.size() > 1 ? i : 0]);
@@ -152,11 +154,11 @@ TEST(Expr, parse_variable32) {
     context.addVariable("iN_b", B.cbegin());
 
     for (const auto &ec : {
-             ExprChecker{
-                 Expr::ValueType::UINT32,
-                 {0x31, 0x75},
-                 "OR($InA[1],$iN_b[3])",
-                 {"OR($InA[1](1),$iN_b[3](48))", "OR($InA[1](5),$iN_b[3](112))"}},
+             ExprChecker{Expr::ValueType::UINT32,
+                         {0x31, 0x75},
+                         "OR($InA[1],$iN_b[3])",
+                         {"OR($InA[1](1),$iN_b[3](48))",
+                          "OR($InA[1](5),$iN_b[3](112))"}},
          })
         ec.check(context);
 }

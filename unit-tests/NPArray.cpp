@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: <text>Copyright 2021,2022,2023,2024 Arm Limited
+ * SPDX-FileCopyrightText: <text>Copyright 2021-2024 Arm Limited
  * and/or its affiliates <open-source-office@arm.com></text>
  * SPDX-License-Identifier: Apache-2.0
  *
@@ -47,7 +47,7 @@ TEST(NPArrayBase, base) {
     EXPECT_EQ(a.rows(), 0);
     EXPECT_EQ(a.cols(), 0);
     EXPECT_EQ(a.size(), 0);
-    EXPECT_EQ(a.element_size(), 0);
+    EXPECT_EQ(a.elementSize(), 0);
     EXPECT_TRUE(a.empty());
 
     // Construct.
@@ -57,7 +57,7 @@ TEST(NPArrayBase, base) {
     EXPECT_EQ(b.rows(), 1);
     EXPECT_EQ(b.cols(), 4);
     EXPECT_EQ(b.size(), 4);
-    EXPECT_EQ(b.element_size(), 4);
+    EXPECT_EQ(b.elementSize(), 4);
 
     // Copy construct.
     NPArrayBase c(b);
@@ -65,7 +65,7 @@ TEST(NPArrayBase, base) {
     EXPECT_EQ(c.rows(), 1);
     EXPECT_EQ(c.cols(), 4);
     EXPECT_EQ(c.size(), 4);
-    EXPECT_EQ(c.element_size(), 4);
+    EXPECT_EQ(c.elementSize(), 4);
 
     // Move construct.
     NPArrayBase d(std::move(c));
@@ -73,7 +73,7 @@ TEST(NPArrayBase, base) {
     EXPECT_EQ(d.rows(), 1);
     EXPECT_EQ(d.cols(), 4);
     EXPECT_EQ(d.size(), 4);
-    EXPECT_EQ(d.element_size(), 4);
+    EXPECT_EQ(d.elementSize(), 4);
 
     // Copy assign.
     NPArrayBase e;
@@ -82,7 +82,7 @@ TEST(NPArrayBase, base) {
     EXPECT_EQ(e.rows(), 1);
     EXPECT_EQ(e.cols(), 4);
     EXPECT_EQ(e.size(), 4);
-    EXPECT_EQ(e.element_size(), 4);
+    EXPECT_EQ(e.elementSize(), 4);
 
     // Move assign.
     NPArrayBase f;
@@ -91,7 +91,7 @@ TEST(NPArrayBase, base) {
     EXPECT_EQ(f.rows(), 1);
     EXPECT_EQ(f.cols(), 4);
     EXPECT_EQ(f.size(), 4);
-    EXPECT_EQ(f.element_size(), 4);
+    EXPECT_EQ(f.elementSize(), 4);
 }
 
 TEST(NPArray, empty) {
@@ -101,7 +101,7 @@ TEST(NPArray, empty) {
     EXPECT_FALSE(NPArray<int32_t>(2, 3).empty());
 }
 
-TestWithTempFiles(NPArrayBaseF, "test-NPArrayBase.npy.XXXXXX", 2);
+TEST_WITH_TEMP_FILES(NPArrayBaseF, "test-NPArrayBase.npy.XXXXXX", 2);
 
 TEST_F(NPArrayBaseF, readFromFile) {
     const uint32_t init[] = {0, 1, 2, 3, 4, 5, 6, 7};
@@ -114,7 +114,7 @@ TEST_F(NPArrayBaseF, readFromFile) {
     EXPECT_EQ(a.rows(), 2);
     EXPECT_EQ(a.cols(), 4);
     EXPECT_EQ(a.size(), 8);
-    EXPECT_EQ(a.element_size(), sizeof(init[0]));
+    EXPECT_EQ(a.elementSize(), sizeof(init[0]));
 
     NPArrayBase c(getTemporaryFilename(),
                   NPArrayBase::getEltTyDescr<uint32_t>(), 1);
@@ -122,7 +122,7 @@ TEST_F(NPArrayBaseF, readFromFile) {
     EXPECT_EQ(c.rows(), 1);
     EXPECT_EQ(c.cols(), 4);
     EXPECT_EQ(c.size(), 4);
-    EXPECT_EQ(c.element_size(), sizeof(init[0]));
+    EXPECT_EQ(c.elementSize(), sizeof(init[0]));
 }
 
 TEST(NPArrayBase, viewAs) {
@@ -132,7 +132,7 @@ TEST(NPArrayBase, viewAs) {
     EXPECT_EQ(a.rows(), 2);
     EXPECT_EQ(a.cols(), 16);
     EXPECT_EQ(a.size(), 32);
-    EXPECT_EQ(a.element_size(), 1);
+    EXPECT_EQ(a.elementSize(), 1);
 }
 
 TEST(NPArray, defaultConstruct) {
@@ -141,7 +141,7 @@ TEST(NPArray, defaultConstruct) {
     EXPECT_TRUE(def.empty());
     EXPECT_EQ(def.rows(), 0);
     EXPECT_EQ(def.cols(), 0);
-    EXPECT_EQ(def.element_size(), sizeof(uint16_t));
+    EXPECT_EQ(def.elementSize(), sizeof(uint16_t));
 }
 
 TEST(NPArray, fill) {
@@ -225,7 +225,7 @@ TEST(NPArray, base) {
     EXPECT_EQ(VU32.rows(), 1);
     EXPECT_EQ(VU32.cols(), 4);
     EXPECT_EQ(VU32.size(), 4);
-    EXPECT_EQ(VU32.element_size(), sizeof(uint32_t));
+    EXPECT_EQ(VU32.elementSize(), sizeof(uint32_t));
     for (size_t col = 0; col < VU32.cols(); col++)
         EXPECT_EQ(VU32(0, col), VU32_init[col]);
 
@@ -236,7 +236,7 @@ TEST(NPArray, base) {
     EXPECT_EQ(VS16.rows(), 8);
     EXPECT_EQ(VS16.cols(), 1);
     EXPECT_EQ(VS16.size(), 8);
-    EXPECT_EQ(VS16.element_size(), sizeof(int16_t));
+    EXPECT_EQ(VS16.elementSize(), sizeof(int16_t));
     for (size_t row = 0; row < VS16.rows(); row++)
         EXPECT_EQ(VS16(row, 0), VS16_init[row]);
 
@@ -249,7 +249,7 @@ TEST(NPArray, base) {
     EXPECT_EQ(VF64.rows(), 8);
     EXPECT_EQ(VF64.cols(), 1);
     EXPECT_EQ(VF64.size(), 8);
-    EXPECT_EQ(VF64.element_size(), sizeof(double));
+    EXPECT_EQ(VF64.elementSize(), sizeof(double));
     for (size_t row = 0; row < VF64.rows(); row++)
         EXPECT_EQ(VF64(row, 0), double(row));
 
@@ -258,7 +258,7 @@ TEST(NPArray, base) {
     EXPECT_EQ(WI.rows(), 2);
     EXPECT_EQ(WI.cols(), 2);
     EXPECT_EQ(WI.size(), 4);
-    EXPECT_EQ(WI.element_size(), sizeof(int64_t));
+    EXPECT_EQ(WI.elementSize(), sizeof(int64_t));
     EXPECT_EQ(WI(0, 0), 0);
     EXPECT_EQ(WI(0, 1), 1);
     EXPECT_EQ(WI(1, 0), 2);
@@ -269,7 +269,7 @@ TEST(NPArray, base) {
     EXPECT_EQ(UI.rows(), 3);
     EXPECT_EQ(UI.cols(), 2);
     EXPECT_EQ(UI.size(), 6);
-    EXPECT_EQ(UI.element_size(), sizeof(uint64_t));
+    EXPECT_EQ(UI.elementSize(), sizeof(uint64_t));
     UI(1, 1) = 1;
     UI(0, 0) = 0;
     EXPECT_EQ(UI(1, 1), 1);
@@ -296,19 +296,19 @@ TEST(NPArray, resize) {
     EXPECT_EQ(a.rows(), 2);
     EXPECT_EQ(a.cols(), 4);
     EXPECT_EQ(a.size(), 8);
-    EXPECT_EQ(a.element_size(), sizeof(uint16_t));
+    EXPECT_EQ(a.elementSize(), sizeof(uint16_t));
 
     a.resize(1, 2);
     EXPECT_EQ(a.rows(), 1);
     EXPECT_EQ(a.cols(), 2);
     EXPECT_EQ(a.size(), 2);
-    EXPECT_EQ(a.element_size(), sizeof(uint16_t));
+    EXPECT_EQ(a.elementSize(), sizeof(uint16_t));
 
     a.resize(10, 5);
     EXPECT_EQ(a.rows(), 10);
     EXPECT_EQ(a.cols(), 5);
     EXPECT_EQ(a.size(), 50);
-    EXPECT_EQ(a.element_size(), sizeof(uint16_t));
+    EXPECT_EQ(a.elementSize(), sizeof(uint16_t));
 }
 
 TEST(NPArray, swap) {
@@ -420,41 +420,41 @@ TEST(NPArray, row_insertion) {
     const uint32_t VU32_init[] = {0, 1, 2, 3};
     // Vector row insertion (at the beginning).
     NPArray<uint32_t> VU32(VU32_init, 1, 4);
-    VU32.insert_row(0);
+    VU32.insertRow(0);
     EXPECT_EQ(VU32.cols(), 4);
     EXPECT_EQ(VU32.rows(), 2);
     EXPECT_EQ(VU32.size(), 2 * 4);
-    EXPECT_EQ(VU32.element_size(), sizeof(uint32_t));
+    EXPECT_EQ(VU32.elementSize(), sizeof(uint32_t));
     for (size_t col = 0; col < VU32.cols(); col++)
         EXPECT_EQ(VU32(1, col), VU32_init[col]);
 
     // Vector row insertion (at the end).
     VU32 = NPArray<uint32_t>(VU32_init, 1, 4);
-    VU32.insert_row(1);
+    VU32.insertRow(1);
     EXPECT_EQ(VU32.cols(), 4);
     EXPECT_EQ(VU32.rows(), 2);
     EXPECT_EQ(VU32.size(), 2 * 4);
-    EXPECT_EQ(VU32.element_size(), sizeof(uint32_t));
+    EXPECT_EQ(VU32.elementSize(), sizeof(uint32_t));
     for (size_t col = 0; col < VU32.cols(); col++)
         EXPECT_EQ(VU32(0, col), VU32_init[col]);
 
     // Vector row insertion (at the beginning).
     VU32 = NPArray<uint32_t>(VU32_init, 4, 1);
-    VU32.insert_row(0);
+    VU32.insertRow(0);
     EXPECT_EQ(VU32.cols(), 1);
     EXPECT_EQ(VU32.rows(), 5);
     EXPECT_EQ(VU32.size(), 1 * 5);
-    EXPECT_EQ(VU32.element_size(), sizeof(uint32_t));
+    EXPECT_EQ(VU32.elementSize(), sizeof(uint32_t));
     for (size_t row = 0; row < VU32.rows() - 1; row++)
         EXPECT_EQ(VU32(row + 1, 0), VU32_init[row]);
 
     // Vector row insertion (in the middle).
     VU32 = NPArray<uint32_t>(VU32_init, 4, 1);
-    VU32.insert_row(2);
+    VU32.insertRow(2);
     EXPECT_EQ(VU32.cols(), 1);
     EXPECT_EQ(VU32.rows(), 5);
     EXPECT_EQ(VU32.size(), 1 * 5);
-    EXPECT_EQ(VU32.element_size(), sizeof(uint32_t));
+    EXPECT_EQ(VU32.elementSize(), sizeof(uint32_t));
     for (size_t row = 0; row < 2; row++)
         EXPECT_EQ(VU32(row, 0), VU32_init[row]);
     for (size_t row = 2; row < VU32.rows() - 1; row++)
@@ -462,33 +462,33 @@ TEST(NPArray, row_insertion) {
 
     // Vector row insertion (at the end).
     VU32 = NPArray<uint32_t>(VU32_init, 4, 1);
-    VU32.insert_row(4);
+    VU32.insertRow(4);
     EXPECT_EQ(VU32.cols(), 1);
     EXPECT_EQ(VU32.rows(), 5);
     EXPECT_EQ(VU32.size(), 1 * 5);
-    EXPECT_EQ(VU32.element_size(), sizeof(uint32_t));
+    EXPECT_EQ(VU32.elementSize(), sizeof(uint32_t));
     for (size_t row = 0; row < VU32.rows() - 1; row++)
         EXPECT_EQ(VU32(row, 0), VU32_init[row]);
 
     const int64_t MI64_init[] = {0, 1, 2, 3, 4, 5, 6, 7, 8};
     // Matrix row insertion (at the beginning).
     NPArray<int64_t> MI64(MI64_init, 3, 3);
-    MI64.insert_row(0);
+    MI64.insertRow(0);
     EXPECT_EQ(MI64.cols(), 3);
     EXPECT_EQ(MI64.rows(), 4);
     EXPECT_EQ(MI64.size(), 3 * 4);
-    EXPECT_EQ(MI64.element_size(), sizeof(int64_t));
+    EXPECT_EQ(MI64.elementSize(), sizeof(int64_t));
     for (size_t row = 0; row < MI64.rows() - 1; row++)
         for (size_t col = 0; col < MI64.cols(); col++)
             EXPECT_EQ(MI64(row + 1, col), MI64_init[row * MI64.cols() + col]);
 
     // Matrix row insertion (in the middle).
     MI64 = NPArray<int64_t>(MI64_init, 3, 3);
-    MI64.insert_row(1);
+    MI64.insertRow(1);
     EXPECT_EQ(MI64.cols(), 3);
     EXPECT_EQ(MI64.rows(), 4);
     EXPECT_EQ(MI64.size(), 3 * 4);
-    EXPECT_EQ(MI64.element_size(), sizeof(int64_t));
+    EXPECT_EQ(MI64.elementSize(), sizeof(int64_t));
     {
         size_t row = 0;
         for (size_t col = 0; col < MI64.cols(); col++)
@@ -500,11 +500,11 @@ TEST(NPArray, row_insertion) {
 
     // Matrix row insertion (at the end).
     MI64 = NPArray<int64_t>(MI64_init, 3, 3);
-    MI64.insert_row(3);
+    MI64.insertRow(3);
     EXPECT_EQ(MI64.cols(), 3);
     EXPECT_EQ(MI64.rows(), 4);
     EXPECT_EQ(MI64.size(), 3 * 4);
-    EXPECT_EQ(MI64.element_size(), sizeof(int64_t));
+    EXPECT_EQ(MI64.elementSize(), sizeof(int64_t));
     for (size_t row = 0; row < MI64.rows() - 1; row++)
         for (size_t col = 0; col < MI64.cols(); col++)
             EXPECT_EQ(MI64(row, col), MI64_init[row * MI64.cols() + col]);
@@ -514,41 +514,41 @@ TEST(NPArray, rows_insertion) {
     const uint32_t VU32_init[] = {0, 1, 2, 3};
     // Vector row insertion (at the beginning).
     NPArray<uint32_t> VU32(VU32_init, 1, 4);
-    VU32.insert_rows(0, 2);
+    VU32.insertRows(0, 2);
     EXPECT_EQ(VU32.cols(), 4);
     EXPECT_EQ(VU32.rows(), 3);
     EXPECT_EQ(VU32.size(), 3 * 4);
-    EXPECT_EQ(VU32.element_size(), sizeof(uint32_t));
+    EXPECT_EQ(VU32.elementSize(), sizeof(uint32_t));
     for (size_t col = 0; col < VU32.cols(); col++)
         EXPECT_EQ(VU32(2, col), VU32_init[col]);
 
     // Vector row insertion (at the end).
     VU32 = NPArray<uint32_t>(VU32_init, 1, 4);
-    VU32.insert_rows(1, 2);
+    VU32.insertRows(1, 2);
     EXPECT_EQ(VU32.cols(), 4);
     EXPECT_EQ(VU32.rows(), 3);
     EXPECT_EQ(VU32.size(), 3 * 4);
-    EXPECT_EQ(VU32.element_size(), sizeof(uint32_t));
+    EXPECT_EQ(VU32.elementSize(), sizeof(uint32_t));
     for (size_t col = 0; col < VU32.cols(); col++)
         EXPECT_EQ(VU32(0, col), VU32_init[col]);
 
     // Vector row insertion (at the beginning).
     VU32 = NPArray<uint32_t>(VU32_init, 4, 1);
-    VU32.insert_rows(0, 2);
+    VU32.insertRows(0, 2);
     EXPECT_EQ(VU32.cols(), 1);
     EXPECT_EQ(VU32.rows(), 6);
     EXPECT_EQ(VU32.size(), 1 * 6);
-    EXPECT_EQ(VU32.element_size(), sizeof(uint32_t));
+    EXPECT_EQ(VU32.elementSize(), sizeof(uint32_t));
     for (size_t row = 0; row < VU32.rows() - 2; row++)
         EXPECT_EQ(VU32(row + 2, 0), VU32_init[row]);
 
     // Vector row insertion (in the middle).
     VU32 = NPArray<uint32_t>(VU32_init, 4, 1);
-    VU32.insert_rows(2, 2);
+    VU32.insertRows(2, 2);
     EXPECT_EQ(VU32.cols(), 1);
     EXPECT_EQ(VU32.rows(), 6);
     EXPECT_EQ(VU32.size(), 1 * 6);
-    EXPECT_EQ(VU32.element_size(), sizeof(uint32_t));
+    EXPECT_EQ(VU32.elementSize(), sizeof(uint32_t));
     for (size_t row = 0; row < 2; row++)
         EXPECT_EQ(VU32(row, 0), VU32_init[row]);
     for (size_t row = 2; row < VU32.rows() - 2; row++)
@@ -556,33 +556,33 @@ TEST(NPArray, rows_insertion) {
 
     // Vector row insertion (at the end).
     VU32 = NPArray<uint32_t>(VU32_init, 4, 1);
-    VU32.insert_rows(4, 2);
+    VU32.insertRows(4, 2);
     EXPECT_EQ(VU32.cols(), 1);
     EXPECT_EQ(VU32.rows(), 6);
     EXPECT_EQ(VU32.size(), 1 * 6);
-    EXPECT_EQ(VU32.element_size(), sizeof(uint32_t));
+    EXPECT_EQ(VU32.elementSize(), sizeof(uint32_t));
     for (size_t row = 0; row < VU32.rows() - 2; row++)
         EXPECT_EQ(VU32(row, 0), VU32_init[row]);
 
     const int64_t MI64_init[] = {0, 1, 2, 3, 4, 5, 6, 7, 8};
     // Matrix row insertion (at the beginning).
     NPArray<int64_t> MI64(MI64_init, 3, 3);
-    MI64.insert_rows(0, 2);
+    MI64.insertRows(0, 2);
     EXPECT_EQ(MI64.cols(), 3);
     EXPECT_EQ(MI64.rows(), 5);
     EXPECT_EQ(MI64.size(), 3 * 5);
-    EXPECT_EQ(MI64.element_size(), sizeof(int64_t));
+    EXPECT_EQ(MI64.elementSize(), sizeof(int64_t));
     for (size_t row = 0; row < MI64.rows() - 2; row++)
         for (size_t col = 0; col < MI64.cols(); col++)
             EXPECT_EQ(MI64(row + 2, col), MI64_init[row * MI64.cols() + col]);
 
     // Matrix row insertion (at the middle).
     MI64 = NPArray<int64_t>(MI64_init, 3, 3);
-    MI64.insert_rows(1, 2);
+    MI64.insertRows(1, 2);
     EXPECT_EQ(MI64.cols(), 3);
     EXPECT_EQ(MI64.rows(), 5);
     EXPECT_EQ(MI64.size(), 3 * 5);
-    EXPECT_EQ(MI64.element_size(), sizeof(int64_t));
+    EXPECT_EQ(MI64.elementSize(), sizeof(int64_t));
     {
         size_t row = 0;
         for (size_t col = 0; col < MI64.cols(); col++)
@@ -594,11 +594,11 @@ TEST(NPArray, rows_insertion) {
 
     // Matrix row insertion (at the end).
     MI64 = NPArray<int64_t>(MI64_init, 3, 3);
-    MI64.insert_rows(3, 2);
+    MI64.insertRows(3, 2);
     EXPECT_EQ(MI64.cols(), 3);
     EXPECT_EQ(MI64.rows(), 5);
     EXPECT_EQ(MI64.size(), 3 * 5);
-    EXPECT_EQ(MI64.element_size(), sizeof(int64_t));
+    EXPECT_EQ(MI64.elementSize(), sizeof(int64_t));
     for (size_t row = 0; row < MI64.rows() - 2; row++)
         for (size_t col = 0; col < MI64.cols(); col++)
             EXPECT_EQ(MI64(row, col), MI64_init[row * MI64.cols() + col]);
@@ -608,21 +608,21 @@ TEST(NPArray, column_insertion) {
     const uint32_t VU32_init[] = {0, 1, 2, 3};
     // Vector col insertion (at the beginning).
     NPArray<uint32_t> VU32(VU32_init, 1, 4);
-    VU32.insert_column(0);
+    VU32.insertColumn(0);
     EXPECT_EQ(VU32.cols(), 5);
     EXPECT_EQ(VU32.rows(), 1);
     EXPECT_EQ(VU32.size(), 1 * 5);
-    EXPECT_EQ(VU32.element_size(), sizeof(uint32_t));
+    EXPECT_EQ(VU32.elementSize(), sizeof(uint32_t));
     for (size_t col = 0; col < VU32.cols() - 1; col++)
         EXPECT_EQ(VU32(0, col + 1), VU32_init[col]);
 
     // Vector col insertion (in the middle).
     VU32 = NPArray<uint32_t>(VU32_init, 1, 4);
-    VU32.insert_column(2);
+    VU32.insertColumn(2);
     EXPECT_EQ(VU32.cols(), 5);
     EXPECT_EQ(VU32.rows(), 1);
     EXPECT_EQ(VU32.size(), 1 * 5);
-    EXPECT_EQ(VU32.element_size(), sizeof(uint32_t));
+    EXPECT_EQ(VU32.elementSize(), sizeof(uint32_t));
     for (size_t col = 0; col < 2; col++)
         EXPECT_EQ(VU32(0, col), VU32_init[col]);
     for (size_t col = 2; col < VU32.cols() - 1; col++)
@@ -630,42 +630,42 @@ TEST(NPArray, column_insertion) {
 
     // Vector col insertion (at the end).
     VU32 = NPArray<uint32_t>(VU32_init, 1, 4);
-    VU32.insert_column(4);
+    VU32.insertColumn(4);
     EXPECT_EQ(VU32.cols(), 5);
     EXPECT_EQ(VU32.rows(), 1);
     EXPECT_EQ(VU32.size(), 1 * 5);
-    EXPECT_EQ(VU32.element_size(), sizeof(uint32_t));
+    EXPECT_EQ(VU32.elementSize(), sizeof(uint32_t));
     for (size_t col = 0; col < VU32.cols() - 1; col++)
         EXPECT_EQ(VU32(0, col), VU32_init[col]);
 
     // Vector col insertion (at the beginning).
     VU32 = NPArray<uint32_t>(VU32_init, 4, 1);
-    VU32.insert_column(0);
+    VU32.insertColumn(0);
     EXPECT_EQ(VU32.cols(), 2);
     EXPECT_EQ(VU32.rows(), 4);
     EXPECT_EQ(VU32.size(), 2 * 4);
-    EXPECT_EQ(VU32.element_size(), sizeof(uint32_t));
+    EXPECT_EQ(VU32.elementSize(), sizeof(uint32_t));
     for (size_t row = 0; row < VU32.rows(); row++)
         EXPECT_EQ(VU32(row, 1), VU32_init[row]);
 
     // Vector col insertion (at the end).
     VU32 = NPArray<uint32_t>(VU32_init, 4, 1);
-    VU32.insert_column(1);
+    VU32.insertColumn(1);
     EXPECT_EQ(VU32.cols(), 2);
     EXPECT_EQ(VU32.rows(), 4);
     EXPECT_EQ(VU32.size(), 2 * 4);
-    EXPECT_EQ(VU32.element_size(), sizeof(uint32_t));
+    EXPECT_EQ(VU32.elementSize(), sizeof(uint32_t));
     for (size_t row = 0; row < VU32.rows(); row++)
         EXPECT_EQ(VU32(row, 0), VU32_init[row]);
 
     const int64_t MI64_init[] = {0, 1, 2, 3, 4, 5, 6, 7, 8};
     // Matrix col insertion (at the beginning).
     NPArray<int64_t> MI64(MI64_init, 3, 3);
-    MI64.insert_column(0);
+    MI64.insertColumn(0);
     EXPECT_EQ(MI64.cols(), 4);
     EXPECT_EQ(MI64.rows(), 3);
     EXPECT_EQ(MI64.size(), 3 * 4);
-    EXPECT_EQ(MI64.element_size(), sizeof(int64_t));
+    EXPECT_EQ(MI64.elementSize(), sizeof(int64_t));
     for (size_t row = 0; row < MI64.rows(); row++)
         for (size_t col = 0; col < MI64.cols() - 1; col++)
             EXPECT_EQ(MI64(row, col + 1),
@@ -673,11 +673,11 @@ TEST(NPArray, column_insertion) {
 
     // Matrix col insertion (in the middle).
     MI64 = NPArray<int64_t>(MI64_init, 3, 3);
-    MI64.insert_column(1);
+    MI64.insertColumn(1);
     EXPECT_EQ(MI64.cols(), 4);
     EXPECT_EQ(MI64.rows(), 3);
     EXPECT_EQ(MI64.size(), 3 * 4);
-    EXPECT_EQ(MI64.element_size(), sizeof(int64_t));
+    EXPECT_EQ(MI64.elementSize(), sizeof(int64_t));
     for (size_t row = 0; row < MI64.rows(); row++) {
         size_t col = 0;
         EXPECT_EQ(MI64(row, col), MI64_init[row * (MI64.cols() - 1) + col]);
@@ -688,11 +688,11 @@ TEST(NPArray, column_insertion) {
 
     // Matrix col insertion (at the end).
     MI64 = NPArray<int64_t>(MI64_init, 3, 3);
-    MI64.insert_column(3);
+    MI64.insertColumn(3);
     EXPECT_EQ(MI64.cols(), 4);
     EXPECT_EQ(MI64.rows(), 3);
     EXPECT_EQ(MI64.size(), 3 * 4);
-    EXPECT_EQ(MI64.element_size(), sizeof(int64_t));
+    EXPECT_EQ(MI64.elementSize(), sizeof(int64_t));
     for (size_t row = 0; row < MI64.rows(); row++)
         for (size_t col = 0; col < MI64.cols() - 1; col++)
             EXPECT_EQ(MI64(row, col), MI64_init[row * (MI64.cols() - 1) + col]);
@@ -702,21 +702,21 @@ TEST(NPArray, columns_insertion) {
     const uint32_t VU32_init[] = {0, 1, 2, 3};
     // Vector col insertion (at the beginning).
     NPArray<uint32_t> VU32(VU32_init, 1, 4);
-    VU32.insert_columns(0, 2);
+    VU32.insertColumns(0, 2);
     EXPECT_EQ(VU32.cols(), 6);
     EXPECT_EQ(VU32.rows(), 1);
     EXPECT_EQ(VU32.size(), 1 * 6);
-    EXPECT_EQ(VU32.element_size(), sizeof(uint32_t));
+    EXPECT_EQ(VU32.elementSize(), sizeof(uint32_t));
     for (size_t col = 0; col < VU32.cols() - 2; col++)
         EXPECT_EQ(VU32(0, col + 2), VU32_init[col]);
 
     // Vector col insertion (in the middle).
     VU32 = NPArray<uint32_t>(VU32_init, 1, 4);
-    VU32.insert_columns(1, 2);
+    VU32.insertColumns(1, 2);
     EXPECT_EQ(VU32.cols(), 6);
     EXPECT_EQ(VU32.rows(), 1);
     EXPECT_EQ(VU32.size(), 1 * 6);
-    EXPECT_EQ(VU32.element_size(), sizeof(uint32_t));
+    EXPECT_EQ(VU32.elementSize(), sizeof(uint32_t));
     for (size_t col = 0; col < 1; col++)
         EXPECT_EQ(VU32(0, col), VU32_init[col]);
     for (size_t col = 3; col < VU32.cols() - 2; col++)
@@ -724,42 +724,42 @@ TEST(NPArray, columns_insertion) {
 
     // Vector col insertion (at the end).
     VU32 = NPArray<uint32_t>(VU32_init, 1, 4);
-    VU32.insert_columns(4, 2);
+    VU32.insertColumns(4, 2);
     EXPECT_EQ(VU32.cols(), 6);
     EXPECT_EQ(VU32.rows(), 1);
     EXPECT_EQ(VU32.size(), 1 * 6);
-    EXPECT_EQ(VU32.element_size(), sizeof(uint32_t));
+    EXPECT_EQ(VU32.elementSize(), sizeof(uint32_t));
     for (size_t col = 0; col < VU32.cols() - 2; col++)
         EXPECT_EQ(VU32(0, col), VU32_init[col]);
 
     // Vector col insertion (at the beginning).
     VU32 = NPArray<uint32_t>(VU32_init, 4, 1);
-    VU32.insert_columns(0, 2);
+    VU32.insertColumns(0, 2);
     EXPECT_EQ(VU32.cols(), 3);
     EXPECT_EQ(VU32.rows(), 4);
     EXPECT_EQ(VU32.size(), 3 * 4);
-    EXPECT_EQ(VU32.element_size(), sizeof(uint32_t));
+    EXPECT_EQ(VU32.elementSize(), sizeof(uint32_t));
     for (size_t rows = 0; rows < VU32.rows(); rows++)
         EXPECT_EQ(VU32(rows, 2), VU32_init[rows]);
 
     // Vector col insertion (at the end).
     VU32 = NPArray<uint32_t>(VU32_init, 4, 1);
-    VU32.insert_columns(1, 2);
+    VU32.insertColumns(1, 2);
     EXPECT_EQ(VU32.cols(), 3);
     EXPECT_EQ(VU32.rows(), 4);
     EXPECT_EQ(VU32.size(), 3 * 4);
-    EXPECT_EQ(VU32.element_size(), sizeof(uint32_t));
+    EXPECT_EQ(VU32.elementSize(), sizeof(uint32_t));
     for (size_t rows = 0; rows < VU32.rows(); rows++)
         EXPECT_EQ(VU32(rows, 0), VU32_init[rows]);
 
     const int64_t MI64_init[] = {0, 1, 2, 3, 4, 5, 6, 7, 8};
     // Matrix col insertion (at the beginning).
     NPArray<int64_t> MI64(MI64_init, 3, 3);
-    MI64.insert_columns(0, 2);
+    MI64.insertColumns(0, 2);
     EXPECT_EQ(MI64.cols(), 5);
     EXPECT_EQ(MI64.rows(), 3);
     EXPECT_EQ(MI64.size(), 3 * 5);
-    EXPECT_EQ(MI64.element_size(), sizeof(int64_t));
+    EXPECT_EQ(MI64.elementSize(), sizeof(int64_t));
     for (size_t row = 0; row < MI64.rows(); row++)
         for (size_t col = 0; col < MI64.cols() - 2; col++)
             EXPECT_EQ(MI64(row, col + 2),
@@ -767,11 +767,11 @@ TEST(NPArray, columns_insertion) {
 
     // Matrix col insertion (in the middle).
     MI64 = NPArray<int64_t>(MI64_init, 3, 3);
-    MI64.insert_columns(1, 2);
+    MI64.insertColumns(1, 2);
     EXPECT_EQ(MI64.cols(), 5);
     EXPECT_EQ(MI64.rows(), 3);
     EXPECT_EQ(MI64.size(), 3 * 5);
-    EXPECT_EQ(MI64.element_size(), sizeof(int64_t));
+    EXPECT_EQ(MI64.elementSize(), sizeof(int64_t));
     for (size_t row = 0; row < MI64.rows(); row++) {
         size_t col = 0;
         EXPECT_EQ(MI64(row, col), MI64_init[row * (MI64.cols() - 2) + col]);
@@ -782,11 +782,11 @@ TEST(NPArray, columns_insertion) {
 
     // Matrix col insertion (at the end).
     MI64 = NPArray<int64_t>(MI64_init, 3, 3);
-    MI64.insert_columns(3, 2);
+    MI64.insertColumns(3, 2);
     EXPECT_EQ(MI64.cols(), 5);
     EXPECT_EQ(MI64.rows(), 3);
     EXPECT_EQ(MI64.size(), 3 * 5);
-    EXPECT_EQ(MI64.element_size(), sizeof(int64_t));
+    EXPECT_EQ(MI64.elementSize(), sizeof(int64_t));
     for (size_t row = 0; row < MI64.rows(); row++)
         for (size_t col = 0; col < MI64.cols() - 2; col++)
             EXPECT_EQ(MI64(row, col), MI64_init[row * (MI64.cols() - 2) + col]);
@@ -935,7 +935,7 @@ TEST(NPArray, concatenate) {
 }
 
 // Create the test fixture for NPArray.
-TestWithTempFiles(NPArrayF, "test-NPArray.npy.XXXXXX", 2);
+TEST_WITH_TEMP_FILES(NPArrayF, "test-NPArray.npy.XXXXXX", 2);
 
 template <typename Ty>
 void testConcatenateFromFiles(const string &filename0,
@@ -1030,7 +1030,7 @@ template <typename toTy, typename fromTy> void testConvert() {
     EXPECT_TRUE(T.good());
     EXPECT_EQ(T.rows(), 4);
     EXPECT_EQ(T.cols(), 3);
-    EXPECT_EQ(T.element_size(), sizeof(toTy));
+    EXPECT_EQ(T.elementSize(), sizeof(toTy));
     EXPECT_EQ(T, Exp);
 }
 
@@ -1091,39 +1091,39 @@ TEST_F(NPArrayF, convert) {
 }
 
 template <typename Ty> struct ExtractChecker {
-    const NPArray<Ty> A;
+    const NPArray<Ty> a;
     // Middle row / col.
-    const NPArray<Ty> E1r, E1c;
+    const NPArray<Ty> e1r, e1c;
     // Middle row / col.
-    const NPArray<Ty> E2r, E2c;
+    const NPArray<Ty> e2r, e2c;
     // Duplicate row / col.
-    const NPArray<Ty> E2dr, E2dc;
+    const NPArray<Ty> e2dr, e2dc;
 
     ExtractChecker()
-        : A({0, 1, 2, 3, 4, 5, 6, 7, 8}, 3, 3),
+        : a({0, 1, 2, 3, 4, 5, 6, 7, 8}, 3, 3),
           // Middle row / col.
-          E1r({3, 4, 5}, 1, 3), E1c({1, 4, 7}, 3, 1),
+          e1r({3, 4, 5}, 1, 3), e1c({1, 4, 7}, 3, 1),
           // Middle row / col.
-          E2r({0, 1, 2, 6, 7, 8}, 2, 3), E2c({0, 2, 3, 5, 6, 8}, 3, 2),
+          e2r({0, 1, 2, 6, 7, 8}, 2, 3), e2c({0, 2, 3, 5, 6, 8}, 3, 2),
           // Duplicate row / col.
-          E2dr({3, 4, 5, 3, 4, 5}, 2, 3), E2dc({1, 1, 4, 4, 7, 7}, 3, 2) {}
+          e2dr({3, 4, 5, 3, 4, 5}, 2, 3), e2dc({1, 1, 4, 4, 7, 7}, 3, 2) {}
 
     void check() {
         // Empty row / col extraction.
-        EXPECT_TRUE(A.extract(NPArray<Ty>::ROW, {}).empty());
-        EXPECT_TRUE(A.extract(NPArray<Ty>::COLUMN, {}).empty());
+        EXPECT_TRUE(a.extract(NPArray<Ty>::ROW, {}).empty());
+        EXPECT_TRUE(a.extract(NPArray<Ty>::COLUMN, {}).empty());
 
         // Middle row / col extraction.
-        EXPECT_EQ(A.extract(NPArray<Ty>::ROW, {1}), E1r);
-        EXPECT_EQ(A.extract(NPArray<Ty>::COLUMN, {1}), E1c);
+        EXPECT_EQ(a.extract(NPArray<Ty>::ROW, {1}), e1r);
+        EXPECT_EQ(a.extract(NPArray<Ty>::COLUMN, {1}), e1c);
 
         // Sides' rows / cols extraction.
-        EXPECT_EQ(A.extract(NPArray<Ty>::ROW, {0, 2}), E2r);
-        EXPECT_EQ(A.extract(NPArray<Ty>::COLUMN, {0, 2}), E2c);
+        EXPECT_EQ(a.extract(NPArray<Ty>::ROW, {0, 2}), e2r);
+        EXPECT_EQ(a.extract(NPArray<Ty>::COLUMN, {0, 2}), e2c);
 
         // Extract duplicate rows, cols.
-        EXPECT_EQ(A.extract(NPArray<Ty>::ROW, {1, 1}), E2dr);
-        EXPECT_EQ(A.extract(NPArray<Ty>::COLUMN, {1, 1}), E2dc);
+        EXPECT_EQ(a.extract(NPArray<Ty>::ROW, {1, 1}), e2dr);
+        EXPECT_EQ(a.extract(NPArray<Ty>::COLUMN, {1, 1}), e2dc);
     }
 };
 
@@ -1154,7 +1154,7 @@ void testReadAs(const string &filename) {
     EXPECT_TRUE(T.good());
     EXPECT_EQ(T.rows(), 2);
     EXPECT_EQ(T.cols(), 4);
-    EXPECT_EQ(T.element_size(), sizeof(toTy));
+    EXPECT_EQ(T.elementSize(), sizeof(toTy));
     EXPECT_EQ(T, Exp);
 }
 
@@ -1225,7 +1225,7 @@ void testViewAs(size_t rows, size_t cols, const vector<fromTy> &init) {
 
     EXPECT_EQ(T.rows(), rows);
     EXPECT_EQ(T.cols(), cols * sizeof(fromTy) / sizeof(newTy));
-    EXPECT_EQ(T.element_size(), sizeof(newTy));
+    EXPECT_EQ(T.elementSize(), sizeof(newTy));
 
     const newTy *init2 = reinterpret_cast<const newTy *>(init.data());
 
@@ -1238,7 +1238,7 @@ void testViewAs(size_t rows, size_t cols, const vector<fromTy> &init) {
 
     EXPECT_EQ(T2.rows(), rows);
     EXPECT_EQ(T2.cols(), cols * sizeof(fromTy) / sizeof(newTy));
-    EXPECT_EQ(T2.element_size(), sizeof(newTy));
+    EXPECT_EQ(T2.elementSize(), sizeof(newTy));
 
     for (size_t r = 0; r < T2.rows(); r++)
         for (size_t c = 0; c < T2.cols(); c++)
@@ -1299,7 +1299,7 @@ TEST_F(NPArrayF, readFromFile) {
     EXPECT_EQ(a.rows(), 2);
     EXPECT_EQ(a.cols(), 4);
     EXPECT_EQ(a.size(), 8);
-    EXPECT_EQ(a.element_size(), sizeof(init[0]));
+    EXPECT_EQ(a.elementSize(), sizeof(init[0]));
     for (size_t r = 0; r < a.rows(); r++)
         for (size_t c = 0; c < a.cols(); c++)
             EXPECT_EQ(a(r, c), init[r * a.cols() + c]);
@@ -1309,7 +1309,7 @@ TEST_F(NPArrayF, readFromFile) {
     EXPECT_EQ(c.rows(), 1);
     EXPECT_EQ(c.cols(), 4);
     EXPECT_EQ(c.size(), 4);
-    EXPECT_EQ(c.element_size(), sizeof(init[0]));
+    EXPECT_EQ(c.elementSize(), sizeof(init[0]));
     for (size_t r = 0; r < a.rows(); r++)
         for (size_t c = 0; c < a.cols(); c++)
             EXPECT_EQ(a(r, c), init[r * a.cols() + c]);
@@ -1632,182 +1632,182 @@ TEST(NPArray, scalarAbsdiff) {
 }
 
 template <typename Ty, template <typename> class Op, bool verbose = false>
-struct eltWiseOpCheckerBase {
+struct EltWiseOpCheckerBase {
 
     // Matrices
-    const NPArray<Ty> Am;
-    const NPArray<Ty> Bm;
+    const NPArray<Ty> aM;
+    const NPArray<Ty> bM;
 
     // Horizontal vectors
-    const NPArray<Ty> Ahv;
-    const NPArray<Ty> Bhv;
+    const NPArray<Ty> aHV;
+    const NPArray<Ty> bHV;
 
     // Vertical vectors
-    const NPArray<Ty> Avv;
-    const NPArray<Ty> Bvv;
+    const NPArray<Ty> aVV;
+    const NPArray<Ty> bVV;
 
     // Scalars
-    const NPArray<Ty> As;
-    const NPArray<Ty> Bs;
+    const NPArray<Ty> aS;
+    const NPArray<Ty> bS;
 
     // Expected value
-    const NPArray<Ty> Em_m;   // matrix Op matrix -> matrix
-    const NPArray<Ty> Em_vv;  // matrix Op | -> matrix
-    const NPArray<Ty> Em_hv;  // matrix Op - -> matrix
-    const NPArray<Ty> Em_s;   // matrix Op scalar -> matrix
-    const NPArray<Ty> Evv_m;  // | Op matrix -> matrix
-    const NPArray<Ty> Evv_vv; // | Op | -> |
-    const NPArray<Ty> Evv_s;  // | Op scalar -> |
-    const NPArray<Ty> Ehv_m;  // - Op matrix -> matrix
-    const NPArray<Ty> Ehv_hv; // - Op - -> -
-    const NPArray<Ty> Ehv_s;  // - Op scalar -> -
-    const NPArray<Ty> Es_m;   // scalar Op matrix -> matrix
-    const NPArray<Ty> Es_vv;  // scalar Op | -> |
-    const NPArray<Ty> Es_hv;  // scalar Op - -> -
-    const NPArray<Ty> Es_s;   // scalar Op scalar -> scalar
+    const NPArray<Ty> eMOpM;   // matrix Op matrix -> matrix
+    const NPArray<Ty> eMOpVV;  // matrix Op | -> matrix
+    const NPArray<Ty> eMOpHV;  // matrix Op - -> matrix
+    const NPArray<Ty> eMOpS;   // matrix Op scalar -> matrix
+    const NPArray<Ty> eVVOpM;  // | Op matrix -> matrix
+    const NPArray<Ty> eVVOpVV; // | Op | -> |
+    const NPArray<Ty> eVVOpS;  // | Op scalar -> |
+    const NPArray<Ty> eHVOpM;  // - Op matrix -> matrix
+    const NPArray<Ty> eHVOpHV; // - Op - -> -
+    const NPArray<Ty> eHVOpS;  // - Op scalar -> -
+    const NPArray<Ty> eSOpM;   // scalar Op matrix -> matrix
+    const NPArray<Ty> eSOpVV;  // scalar Op | -> |
+    const NPArray<Ty> eSOpHV;  // scalar Op - -> -
+    const NPArray<Ty> eSOpS;   // scalar Op scalar -> scalar
 
     static const constexpr size_t D = 3;
 
-#define initA                                                                  \
+#define INIT_A                                                                 \
     { 2, 3, 4, 5, 6, 7, 8, 9, 10 }
-#define initB                                                                  \
+#define INIT_B                                                                 \
     { 3, 5, 7, 9, 11, 13, 15, 17, 19 }
 
-    eltWiseOpCheckerBase()
+    EltWiseOpCheckerBase()
         : // Matrices
-          Am(initA, D, D), Bm(initB, D, D),
+          aM(INIT_A, D, D), bM(INIT_B, D, D),
           // Horizontal vectors
-          Ahv(initA, 1, D), Bhv(initB, 1, D),
+          aHV(INIT_A, 1, D), bHV(INIT_B, 1, D),
           // Vertical vectors
-          Avv(initA, D, 1), Bvv(initB, D, 1),
+          aVV(INIT_A, D, 1), bVV(INIT_B, D, 1),
           // Scalars
-          As(initA, 1, 1), Bs(initB, 1, 1),
+          aS(INIT_A, 1, 1), bS(INIT_B, 1, 1),
           // matrix Op matrix -> matrix
-          Em_m(
+          eMOpM(
               {
                   // clang-format off
-                Op<Ty>()(Am(0,0), Bm(0,0)), Op<Ty>()(Am(0,1), Bm(0,1)), Op<Ty>()(Am(0,2), Bm(0,2)),
-                Op<Ty>()(Am(1,0), Bm(1,0)), Op<Ty>()(Am(1,1), Bm(1,1)), Op<Ty>()(Am(1,2), Bm(1,2)),
-                Op<Ty>()(Am(2,0), Bm(2,0)), Op<Ty>()(Am(2,1), Bm(2,1)), Op<Ty>()(Am(2,2), Bm(2,2))
+                Op<Ty>()(aM(0,0), bM(0,0)), Op<Ty>()(aM(0,1), bM(0,1)), Op<Ty>()(aM(0,2), bM(0,2)),
+                Op<Ty>()(aM(1,0), bM(1,0)), Op<Ty>()(aM(1,1), bM(1,1)), Op<Ty>()(aM(1,2), bM(1,2)),
+                Op<Ty>()(aM(2,0), bM(2,0)), Op<Ty>()(aM(2,1), bM(2,1)), Op<Ty>()(aM(2,2), bM(2,2))
                   // clang-format on
               },
               D, D),
           // matrix Op | -> matrix
-          Em_vv(
+          eMOpVV(
               {
                   // clang-format off
-                Op<Ty>()(Am(0,0), Bvv(0,0)), Op<Ty>()(Am(0,1), Bvv(0,0)), Op<Ty>()(Am(0,2), Bvv(0,0)),
-                Op<Ty>()(Am(1,0), Bvv(1,0)), Op<Ty>()(Am(1,1), Bvv(1,0)), Op<Ty>()(Am(1,2), Bvv(1,0)),
-                Op<Ty>()(Am(2,0), Bvv(2,0)), Op<Ty>()(Am(2,1), Bvv(2,0)), Op<Ty>()(Am(2,2), Bvv(2,0))
+                Op<Ty>()(aM(0,0), bVV(0,0)), Op<Ty>()(aM(0,1), bVV(0,0)), Op<Ty>()(aM(0,2), bVV(0,0)),
+                Op<Ty>()(aM(1,0), bVV(1,0)), Op<Ty>()(aM(1,1), bVV(1,0)), Op<Ty>()(aM(1,2), bVV(1,0)),
+                Op<Ty>()(aM(2,0), bVV(2,0)), Op<Ty>()(aM(2,1), bVV(2,0)), Op<Ty>()(aM(2,2), bVV(2,0))
                   // clang-format on
               },
               D, D),
           // matrix Op - -> matrix
-          Em_hv(
+          eMOpHV(
               {
                   // clang-format off
-                Op<Ty>()(Am(0,0), Bhv(0,0)), Op<Ty>()(Am(0,1), Bhv(0,1)), Op<Ty>()(Am(0,2), Bhv(0,2)),
-                Op<Ty>()(Am(1,0), Bhv(0,0)), Op<Ty>()(Am(1,1), Bhv(0,1)), Op<Ty>()(Am(1,2), Bhv(0,2)),
-                Op<Ty>()(Am(2,0), Bhv(0,0)), Op<Ty>()(Am(2,1), Bhv(0,1)), Op<Ty>()(Am(2,2), Bhv(0,2))
+                Op<Ty>()(aM(0,0), bHV(0,0)), Op<Ty>()(aM(0,1), bHV(0,1)), Op<Ty>()(aM(0,2), bHV(0,2)),
+                Op<Ty>()(aM(1,0), bHV(0,0)), Op<Ty>()(aM(1,1), bHV(0,1)), Op<Ty>()(aM(1,2), bHV(0,2)),
+                Op<Ty>()(aM(2,0), bHV(0,0)), Op<Ty>()(aM(2,1), bHV(0,1)), Op<Ty>()(aM(2,2), bHV(0,2))
                   // clang-format on
               },
               D, D),
           // matrix Op scalar -> matrix
-          Em_s(
+          eMOpS(
               {
                   // clang-format off
-                Op<Ty>()(Am(0,0), Bs(0,0)), Op<Ty>()(Am(0,1), Bs(0,0)), Op<Ty>()(Am(0,2), Bs(0,0)),
-                Op<Ty>()(Am(1,0), Bs(0,0)), Op<Ty>()(Am(1,1), Bs(0,0)), Op<Ty>()(Am(1,2), Bs(0,0)),
-                Op<Ty>()(Am(2,0), Bs(0,0)), Op<Ty>()(Am(2,1), Bs(0,0)), Op<Ty>()(Am(2,2), Bs(0,0))
+                Op<Ty>()(aM(0,0), bS(0,0)), Op<Ty>()(aM(0,1), bS(0,0)), Op<Ty>()(aM(0,2), bS(0,0)),
+                Op<Ty>()(aM(1,0), bS(0,0)), Op<Ty>()(aM(1,1), bS(0,0)), Op<Ty>()(aM(1,2), bS(0,0)),
+                Op<Ty>()(aM(2,0), bS(0,0)), Op<Ty>()(aM(2,1), bS(0,0)), Op<Ty>()(aM(2,2), bS(0,0))
                   // clang-format on
               },
               D, D),
           // | Op matrix -> matrix
-          Evv_m(
+          eVVOpM(
               {
                   // clang-format off
-                Op<Ty>()(Avv(0,0), Bm(0,0)), Op<Ty>()(Avv(0,0), Bm(0,1)), Op<Ty>()(Avv(0,0), Bm(0,2)),
-                Op<Ty>()(Avv(1,0), Bm(1,0)), Op<Ty>()(Avv(1,0), Bm(1,1)), Op<Ty>()(Avv(1,0), Bm(1,2)),
-                Op<Ty>()(Avv(2,0), Bm(2,0)), Op<Ty>()(Avv(2,0), Bm(2,1)), Op<Ty>()(Avv(2,0), Bm(2,2))
+                Op<Ty>()(aVV(0,0), bM(0,0)), Op<Ty>()(aVV(0,0), bM(0,1)), Op<Ty>()(aVV(0,0), bM(0,2)),
+                Op<Ty>()(aVV(1,0), bM(1,0)), Op<Ty>()(aVV(1,0), bM(1,1)), Op<Ty>()(aVV(1,0), bM(1,2)),
+                Op<Ty>()(aVV(2,0), bM(2,0)), Op<Ty>()(aVV(2,0), bM(2,1)), Op<Ty>()(aVV(2,0), bM(2,2))
                   // clang-format on
               },
               D, D),
           // | Op | -> |
-          Evv_vv(
+          eVVOpVV(
               {
                   // clang-format off
-                Op<Ty>()(Avv(0,0), Bvv(0,0)),
-                Op<Ty>()(Avv(1,0), Bvv(1,0)),
-                Op<Ty>()(Avv(2,0), Bvv(2,0))
+                Op<Ty>()(aVV(0,0), bVV(0,0)),
+                Op<Ty>()(aVV(1,0), bVV(1,0)),
+                Op<Ty>()(aVV(2,0), bVV(2,0))
                   // clang-format on
               },
               D, 1),
           // | Op scalar -> |
-          Evv_s(
+          eVVOpS(
               {
                   // clang-format off
-                Op<Ty>()(Avv(0,0), Bs(0,0)),
-                Op<Ty>()(Avv(1,0), Bs(0,0)),
-                Op<Ty>()(Avv(2,0), Bs(0,0))
+                Op<Ty>()(aVV(0,0), bS(0,0)),
+                Op<Ty>()(aVV(1,0), bS(0,0)),
+                Op<Ty>()(aVV(2,0), bS(0,0))
                   // clang-format on
               },
               D, 1),
           // - Op matrix -> matrix
-          Ehv_m(
+          eHVOpM(
               {
                   // clang-format off
-                Op<Ty>()(Ahv(0,0), Bm(0,0)), Op<Ty>()(Ahv(0,1), Bm(0,1)), Op<Ty>()(Ahv(0,2), Bm(0,2)),
-                Op<Ty>()(Ahv(0,0), Bm(1,0)), Op<Ty>()(Ahv(0,1), Bm(1,1)), Op<Ty>()(Ahv(0,2), Bm(1,2)),
-                Op<Ty>()(Ahv(0,0), Bm(2,0)), Op<Ty>()(Ahv(0,1), Bm(2,1)), Op<Ty>()(Ahv(0,2), Bm(2,2))
+                Op<Ty>()(aHV(0,0), bM(0,0)), Op<Ty>()(aHV(0,1), bM(0,1)), Op<Ty>()(aHV(0,2), bM(0,2)),
+                Op<Ty>()(aHV(0,0), bM(1,0)), Op<Ty>()(aHV(0,1), bM(1,1)), Op<Ty>()(aHV(0,2), bM(1,2)),
+                Op<Ty>()(aHV(0,0), bM(2,0)), Op<Ty>()(aHV(0,1), bM(2,1)), Op<Ty>()(aHV(0,2), bM(2,2))
                   // clang-format on
               },
               D, D),
           // - Op - -> -
-          Ehv_hv(
+          eHVOpHV(
               {
                   // clang-format off
-                Op<Ty>()(Ahv(0,0), Bhv(0,0)), Op<Ty>()(Ahv(0,1), Bhv(0,1)), Op<Ty>()(Ahv(0,2), Bhv(0,2))
+                Op<Ty>()(aHV(0,0), bHV(0,0)), Op<Ty>()(aHV(0,1), bHV(0,1)), Op<Ty>()(aHV(0,2), bHV(0,2))
                   // clang-format on
               },
               1, D),
           // - Op scalar -> -
-          Ehv_s(
+          eHVOpS(
               {
                   // clang-format off
-                Op<Ty>()(Ahv(0,0), Bs(0,0)), Op<Ty>()(Ahv(0,1), Bs(0,0)), Op<Ty>()(Ahv(0,2), Bs(0,0))
+                Op<Ty>()(aHV(0,0), bS(0,0)), Op<Ty>()(aHV(0,1), bS(0,0)), Op<Ty>()(aHV(0,2), bS(0,0))
                   // clang-format on
               },
               1, D),
           // scalar Op matrix -> matrix
-          Es_m(
+          eSOpM(
               {
                   // clang-format off
-                Op<Ty>()(As(0,0), Bm(0,0)), Op<Ty>()(As(0,0), Bm(0,1)), Op<Ty>()(As(0,0), Bm(0,2)),
-                Op<Ty>()(As(0,0), Bm(1,0)), Op<Ty>()(As(0,0), Bm(1,1)), Op<Ty>()(As(0,0), Bm(1,2)),
-                Op<Ty>()(As(0,0), Bm(2,0)), Op<Ty>()(As(0,0), Bm(2,1)), Op<Ty>()(As(0,0), Bm(2,2))
+                Op<Ty>()(aS(0,0), bM(0,0)), Op<Ty>()(aS(0,0), bM(0,1)), Op<Ty>()(aS(0,0), bM(0,2)),
+                Op<Ty>()(aS(0,0), bM(1,0)), Op<Ty>()(aS(0,0), bM(1,1)), Op<Ty>()(aS(0,0), bM(1,2)),
+                Op<Ty>()(aS(0,0), bM(2,0)), Op<Ty>()(aS(0,0), bM(2,1)), Op<Ty>()(aS(0,0), bM(2,2))
                   // clang-format on
               },
               D, D),
           // scalar Op | -> |
-          Es_vv(
+          eSOpVV(
               {
                   // clang-format off
-                Op<Ty>()(As(0,0), Bvv(0,0)),
-                Op<Ty>()(As(0,0), Bvv(1,0)),
-                Op<Ty>()(As(0,0), Bvv(2,0))
+                Op<Ty>()(aS(0,0), bVV(0,0)),
+                Op<Ty>()(aS(0,0), bVV(1,0)),
+                Op<Ty>()(aS(0,0), bVV(2,0))
                   // clang-format on
               },
               D, 1),
           // scalar Op - -> -
-          Es_hv(
+          eSOpHV(
               {
                   // clang-format off
-                Op<Ty>()(As(0,0), Bhv(0,0)), Op<Ty>()(As(0,0), Bhv(0,1)), Op<Ty>()(As(0,0), Bhv(0,2))
+                Op<Ty>()(aS(0,0), bHV(0,0)), Op<Ty>()(aS(0,0), bHV(0,1)), Op<Ty>()(aS(0,0), bHV(0,2))
                   // clang-format on
               },
               1, D),
           // scalar Op scalar -> scalar
-          Es_s({Op<Ty>()(As(0, 0), Bs(0, 0))}, 1, 1) {}
+          eSOpS({Op<Ty>()(aS(0, 0), bS(0, 0))}, 1, 1) {}
 #undef initA
 #undef initB
 
@@ -1826,36 +1826,36 @@ struct eltWiseOpCheckerBase {
 
     bool check() const {
         // Check matrix Op matrix -> matrix
-        check(Am, Bm, Em_m);
+        check(aM, bM, eMOpM);
         // Check matrix Op | -> matrix
-        check(Am, Bvv, Em_vv);
+        check(aM, bVV, eMOpVV);
         // Check matrix Op - -> matrix
-        check(Am, Bhv, Em_hv);
+        check(aM, bHV, eMOpHV);
         // Check matrix Op scalar -> matrix
-        check(Am, Bs, Em_s);
+        check(aM, bS, eMOpS);
 
         // Check | Op matrix -> matrix
-        check(Avv, Bm, Evv_m);
+        check(aVV, bM, eVVOpM);
         // Check | Op | -> |
-        check(Avv, Bvv, Evv_vv);
+        check(aVV, bVV, eVVOpVV);
         // Check | Op scalar -> |
-        check(Avv, Bs, Evv_s);
+        check(aVV, bS, eVVOpS);
 
         // Check - Op matrix -> matrix
-        check(Ahv, Bm, Ehv_m);
+        check(aHV, bM, eHVOpM);
         // Check - Op - -> -
-        check(Ahv, Bhv, Ehv_hv);
+        check(aHV, bHV, eHVOpHV);
         // Check - Op scalar -> -
-        check(Ahv, Bs, Ehv_s);
+        check(aHV, bS, eHVOpS);
 
         // Check scalar Op matrix -> matrix
-        check(As, Bm, Es_m);
+        check(aS, bM, eSOpM);
         // Check scalar Op | -> |
-        check(As, Bvv, Es_vv);
+        check(aS, bVV, eSOpVV);
         // Check scalar Op - -> -
-        check(As, Bhv, Es_hv);
+        check(aS, bHV, eSOpHV);
         // Check scalar Op scalar -> scalar
-        check(As, Bs, Es_s);
+        check(aS, bS, eSOpS);
 
         return !testing::Test::HasFatalFailure() &&
                !testing::Test::HasNonfatalFailure();
@@ -1863,7 +1863,7 @@ struct eltWiseOpCheckerBase {
 };
 
 template <typename Ty, bool verbose = false>
-struct eltWiseMulChecker : public eltWiseOpCheckerBase<Ty, Multiply, verbose> {
+struct EltWiseMulChecker : public EltWiseOpCheckerBase<Ty, Multiply, verbose> {
     void checkImpl(const NPArray<Ty> &lhs, const NPArray<Ty> &rhs,
                    const NPArray<Ty> &exp) const override {
         EXPECT_EQ(lhs * rhs, exp);
@@ -1880,22 +1880,22 @@ struct eltWiseMulChecker : public eltWiseOpCheckerBase<Ty, Multiply, verbose> {
 };
 
 TEST(NPArray, eltWiseMul) {
-    EXPECT_TRUE(eltWiseMulChecker<uint8_t>().check());
-    EXPECT_TRUE(eltWiseMulChecker<uint16_t>().check());
-    EXPECT_TRUE(eltWiseMulChecker<uint32_t>().check());
-    EXPECT_TRUE(eltWiseMulChecker<uint64_t>().check());
+    EXPECT_TRUE(EltWiseMulChecker<uint8_t>().check());
+    EXPECT_TRUE(EltWiseMulChecker<uint16_t>().check());
+    EXPECT_TRUE(EltWiseMulChecker<uint32_t>().check());
+    EXPECT_TRUE(EltWiseMulChecker<uint64_t>().check());
 
-    EXPECT_TRUE(eltWiseMulChecker<int8_t>().check());
-    EXPECT_TRUE(eltWiseMulChecker<int16_t>().check());
-    EXPECT_TRUE(eltWiseMulChecker<int32_t>().check());
-    EXPECT_TRUE(eltWiseMulChecker<int64_t>().check());
+    EXPECT_TRUE(EltWiseMulChecker<int8_t>().check());
+    EXPECT_TRUE(EltWiseMulChecker<int16_t>().check());
+    EXPECT_TRUE(EltWiseMulChecker<int32_t>().check());
+    EXPECT_TRUE(EltWiseMulChecker<int64_t>().check());
 
-    EXPECT_TRUE(eltWiseMulChecker<float>().check());
-    EXPECT_TRUE(eltWiseMulChecker<double>().check());
+    EXPECT_TRUE(EltWiseMulChecker<float>().check());
+    EXPECT_TRUE(EltWiseMulChecker<double>().check());
 }
 
 template <typename Ty, bool verbose = false>
-struct eltWiseAddChecker : public eltWiseOpCheckerBase<Ty, Add, verbose> {
+struct EltWiseAddChecker : public EltWiseOpCheckerBase<Ty, Add, verbose> {
     void checkImpl(const NPArray<Ty> &lhs, const NPArray<Ty> &rhs,
                    const NPArray<Ty> &exp) const override {
         EXPECT_EQ(lhs + rhs, exp);
@@ -1912,22 +1912,22 @@ struct eltWiseAddChecker : public eltWiseOpCheckerBase<Ty, Add, verbose> {
 };
 
 TEST(NPArray, eltWiseAdd) {
-    EXPECT_TRUE(eltWiseAddChecker<uint8_t>().check());
-    EXPECT_TRUE(eltWiseAddChecker<uint16_t>().check());
-    EXPECT_TRUE(eltWiseAddChecker<uint32_t>().check());
-    EXPECT_TRUE(eltWiseAddChecker<uint64_t>().check());
+    EXPECT_TRUE(EltWiseAddChecker<uint8_t>().check());
+    EXPECT_TRUE(EltWiseAddChecker<uint16_t>().check());
+    EXPECT_TRUE(EltWiseAddChecker<uint32_t>().check());
+    EXPECT_TRUE(EltWiseAddChecker<uint64_t>().check());
 
-    EXPECT_TRUE(eltWiseAddChecker<int8_t>().check());
-    EXPECT_TRUE(eltWiseAddChecker<int16_t>().check());
-    EXPECT_TRUE(eltWiseAddChecker<int32_t>().check());
-    EXPECT_TRUE(eltWiseAddChecker<int64_t>().check());
+    EXPECT_TRUE(EltWiseAddChecker<int8_t>().check());
+    EXPECT_TRUE(EltWiseAddChecker<int16_t>().check());
+    EXPECT_TRUE(EltWiseAddChecker<int32_t>().check());
+    EXPECT_TRUE(EltWiseAddChecker<int64_t>().check());
 
-    EXPECT_TRUE(eltWiseAddChecker<float>().check());
-    EXPECT_TRUE(eltWiseAddChecker<double>().check());
+    EXPECT_TRUE(EltWiseAddChecker<float>().check());
+    EXPECT_TRUE(EltWiseAddChecker<double>().check());
 }
 
 template <typename Ty, bool verbose = false>
-struct eltWiseSubChecker : public eltWiseOpCheckerBase<Ty, Substract, verbose> {
+struct EltWiseSubChecker : public EltWiseOpCheckerBase<Ty, Substract, verbose> {
     void checkImpl(const NPArray<Ty> &lhs, const NPArray<Ty> &rhs,
                    const NPArray<Ty> &exp) const override {
         EXPECT_EQ(lhs - rhs, exp);
@@ -1939,22 +1939,22 @@ struct eltWiseSubChecker : public eltWiseOpCheckerBase<Ty, Substract, verbose> {
 };
 
 TEST(NPArray, eltWiseSub) {
-    EXPECT_TRUE(eltWiseSubChecker<uint8_t>().check());
-    EXPECT_TRUE(eltWiseSubChecker<uint16_t>().check());
-    EXPECT_TRUE(eltWiseSubChecker<uint32_t>().check());
-    EXPECT_TRUE(eltWiseSubChecker<uint64_t>().check());
+    EXPECT_TRUE(EltWiseSubChecker<uint8_t>().check());
+    EXPECT_TRUE(EltWiseSubChecker<uint16_t>().check());
+    EXPECT_TRUE(EltWiseSubChecker<uint32_t>().check());
+    EXPECT_TRUE(EltWiseSubChecker<uint64_t>().check());
 
-    EXPECT_TRUE(eltWiseSubChecker<int8_t>().check());
-    EXPECT_TRUE(eltWiseSubChecker<int16_t>().check());
-    EXPECT_TRUE(eltWiseSubChecker<int32_t>().check());
-    EXPECT_TRUE(eltWiseSubChecker<int64_t>().check());
+    EXPECT_TRUE(EltWiseSubChecker<int8_t>().check());
+    EXPECT_TRUE(EltWiseSubChecker<int16_t>().check());
+    EXPECT_TRUE(EltWiseSubChecker<int32_t>().check());
+    EXPECT_TRUE(EltWiseSubChecker<int64_t>().check());
 
-    EXPECT_TRUE(eltWiseSubChecker<float>().check());
-    EXPECT_TRUE(eltWiseSubChecker<double>().check());
+    EXPECT_TRUE(EltWiseSubChecker<float>().check());
+    EXPECT_TRUE(EltWiseSubChecker<double>().check());
 }
 
 template <typename Ty, bool verbose = false>
-struct eltWiseDivChecker : public eltWiseOpCheckerBase<Ty, Divide, verbose> {
+struct EltWiseDivChecker : public EltWiseOpCheckerBase<Ty, Divide, verbose> {
     void checkImpl(const NPArray<Ty> &lhs, const NPArray<Ty> &rhs,
                    const NPArray<Ty> &exp) const override {
         EXPECT_EQ(lhs / rhs, exp);
@@ -1966,23 +1966,23 @@ struct eltWiseDivChecker : public eltWiseOpCheckerBase<Ty, Divide, verbose> {
 };
 
 TEST(NPArray, eltWiseDiv) {
-    EXPECT_TRUE(eltWiseDivChecker<uint8_t>().check());
-    EXPECT_TRUE(eltWiseDivChecker<uint16_t>().check());
-    EXPECT_TRUE(eltWiseDivChecker<uint32_t>().check());
-    EXPECT_TRUE(eltWiseDivChecker<uint64_t>().check());
+    EXPECT_TRUE(EltWiseDivChecker<uint8_t>().check());
+    EXPECT_TRUE(EltWiseDivChecker<uint16_t>().check());
+    EXPECT_TRUE(EltWiseDivChecker<uint32_t>().check());
+    EXPECT_TRUE(EltWiseDivChecker<uint64_t>().check());
 
-    EXPECT_TRUE(eltWiseDivChecker<int8_t>().check());
-    EXPECT_TRUE(eltWiseDivChecker<int16_t>().check());
-    EXPECT_TRUE(eltWiseDivChecker<int32_t>().check());
-    EXPECT_TRUE(eltWiseDivChecker<int64_t>().check());
+    EXPECT_TRUE(EltWiseDivChecker<int8_t>().check());
+    EXPECT_TRUE(EltWiseDivChecker<int16_t>().check());
+    EXPECT_TRUE(EltWiseDivChecker<int32_t>().check());
+    EXPECT_TRUE(EltWiseDivChecker<int64_t>().check());
 
-    EXPECT_TRUE(eltWiseDivChecker<float>().check());
-    EXPECT_TRUE(eltWiseDivChecker<double>().check());
+    EXPECT_TRUE(EltWiseDivChecker<float>().check());
+    EXPECT_TRUE(EltWiseDivChecker<double>().check());
 }
 
 template <typename Ty, bool verbose = false>
-struct eltWiseAbsDiffChecker
-    : public eltWiseOpCheckerBase<Ty, AbsDiff, verbose> {
+struct EltWiseAbsDiffChecker
+    : public EltWiseOpCheckerBase<Ty, AbsDiff, verbose> {
     void checkImpl(const NPArray<Ty> &lhs, const NPArray<Ty> &rhs,
                    const NPArray<Ty> &exp) const override {
         EXPECT_EQ(absdiff(lhs, rhs), exp);
@@ -1994,25 +1994,25 @@ struct eltWiseAbsDiffChecker
 };
 
 TEST(NPArray, eltWiseAbsDiff) {
-    EXPECT_TRUE(eltWiseAbsDiffChecker<uint8_t>().check());
-    EXPECT_TRUE(eltWiseAbsDiffChecker<uint16_t>().check());
-    EXPECT_TRUE(eltWiseAbsDiffChecker<uint32_t>().check());
-    EXPECT_TRUE(eltWiseAbsDiffChecker<uint64_t>().check());
+    EXPECT_TRUE(EltWiseAbsDiffChecker<uint8_t>().check());
+    EXPECT_TRUE(EltWiseAbsDiffChecker<uint16_t>().check());
+    EXPECT_TRUE(EltWiseAbsDiffChecker<uint32_t>().check());
+    EXPECT_TRUE(EltWiseAbsDiffChecker<uint64_t>().check());
 
-    EXPECT_TRUE(eltWiseAbsDiffChecker<int8_t>().check());
-    EXPECT_TRUE(eltWiseAbsDiffChecker<int16_t>().check());
-    EXPECT_TRUE(eltWiseAbsDiffChecker<int32_t>().check());
-    EXPECT_TRUE(eltWiseAbsDiffChecker<int64_t>().check());
+    EXPECT_TRUE(EltWiseAbsDiffChecker<int8_t>().check());
+    EXPECT_TRUE(EltWiseAbsDiffChecker<int16_t>().check());
+    EXPECT_TRUE(EltWiseAbsDiffChecker<int32_t>().check());
+    EXPECT_TRUE(EltWiseAbsDiffChecker<int64_t>().check());
 
-    EXPECT_TRUE(eltWiseAbsDiffChecker<float>().check());
-    EXPECT_TRUE(eltWiseAbsDiffChecker<double>().check());
+    EXPECT_TRUE(EltWiseAbsDiffChecker<float>().check());
+    EXPECT_TRUE(EltWiseAbsDiffChecker<double>().check());
 }
 
 TEST(NPArray, all) {
     const int64_t init[] = {1, 1, 1, 1, 1, 1, 1, 1, 0};
     NPArray<int64_t> a(init, 3, 3);
 
-    isEqual<int64_t> equalsOne(1);
+    Equal<int64_t> equalsOne(1);
 
     // Check each row / each column.
     EXPECT_TRUE(a.all(equalsOne, decltype(a)::COLUMN, 0));
@@ -2075,7 +2075,7 @@ TEST(NPArray, any) {
     const uint32_t init[] = {1, 1, 1, 1, 1, 1, 1, 1, 0};
     NPArray<uint32_t> a(init, 3, 3);
 
-    isEqual<uint32_t> equalsZero(0);
+    Equal<uint32_t> equalsZero(0);
 
     // Check each row / each column.
     EXPECT_FALSE(a.any(equalsZero, decltype(a)::COLUMN, 0));
@@ -2138,7 +2138,7 @@ TEST(NPArray, none) {
     const int8_t init[] = {1, 1, 1, 1, 1, 1, 1, 1, 0};
     NPArray<int8_t> a(init, 3, 3);
 
-    isEqual<int8_t> equalsZero(0);
+    Equal<int8_t> equalsZero(0);
 
     // Check each row / each column.
     EXPECT_TRUE(a.none(equalsZero, decltype(a)::COLUMN, 0));
@@ -2202,7 +2202,7 @@ TEST(NPArray, count) {
     const double init[] = {1, 1, 1, 1, 1, 1, 1, 1, 0};
     NPArray<double> a(init, 3, 3);
 
-    isEqual<double> equalsOne(1.0);
+    Equal<double> equalsOne(1.0);
 
     // Check each row / each column.
     EXPECT_EQ(a.count(equalsOne, decltype(a)::COLUMN, 0), 3);
@@ -2269,7 +2269,7 @@ template <typename Ty, size_t rows, size_t cols> class SumChecker {
   public:
     SumChecker(const NPArray<Ty> &a, std::initializer_list<Ty> sums_by_row,
                std::initializer_list<Ty> sums_by_col)
-        : a(a), sums_by_row{sums_by_row}, sums_by_col(sums_by_col) {
+        : a(a), sumsByRow{sums_by_row}, sumsByCol(sums_by_col) {
         // Some sanity checks.
         assert(sums_by_row.size() == rows &&
                "expected row means size mismatch");
@@ -2281,10 +2281,10 @@ template <typename Ty, size_t rows, size_t cols> class SumChecker {
         switch (axis) {
         case NPArray<Ty>::ROW:
             assert(i < rows && "exp mean row access out of bounds");
-            return sums_by_row[i];
+            return sumsByRow[i];
         case NPArray<Ty>::COLUMN:
             assert(i < cols && "exp mean col access out of bounds");
-            return sums_by_col[i];
+            return sumsByCol[i];
         }
     }
 
@@ -2347,8 +2347,8 @@ template <typename Ty, size_t rows, size_t cols> class SumChecker {
 
   private:
     const NPArray<Ty> &a;
-    const std::vector<Ty> sums_by_row;
-    const std::vector<Ty> sums_by_col;
+    const std::vector<Ty> sumsByRow;
+    const std::vector<Ty> sumsByCol;
 };
 
 TEST(NPArray, sum) {
@@ -2413,10 +2413,10 @@ template <typename Ty, size_t rows, size_t cols> class MeanChecker {
                 std::initializer_list<Ty> var1_by_col,
                 std::initializer_list<Ty> stddev_by_row,
                 std::initializer_list<Ty> stddev_by_col)
-        : a(a), means_by_row{means_by_row}, means_by_col(means_by_col),
-          var0_by_row(var0_by_row), var1_by_row(var1_by_row),
-          var0_by_col(var0_by_col), var1_by_col(var1_by_col),
-          stddev_by_row(stddev_by_row), stddev_by_col(stddev_by_col) {
+        : a(a), meansByRow{means_by_row}, meansByCol(means_by_col),
+          var0ByRow(var0_by_row), var1ByRow(var1_by_row),
+          var0ByCol(var0_by_col), var1ByCol(var1_by_col),
+          stddevByRow(stddev_by_row), stddevByCol(stddev_by_col) {
         // Some sanity checks.
         assert(means_by_row.size() == rows &&
                "expected row means size mismatch");
@@ -2439,25 +2439,25 @@ template <typename Ty, size_t rows, size_t cols> class MeanChecker {
             assert(i < rows && "exp mean row access out of bounds");
             switch (M) {
             case Metric::MEAN:
-                return means_by_row[i];
+                return meansByRow[i];
             case Metric::VAR0:
-                return var0_by_row[i];
+                return var0ByRow[i];
             case Metric::VAR1:
-                return var1_by_row[i];
+                return var1ByRow[i];
             case Metric::STDDEV:
-                return stddev_by_row[i];
+                return stddevByRow[i];
             }
         case NPArray<Ty>::COLUMN:
             assert(i < cols && "exp mean col access out of bounds");
             switch (M) {
             case Metric::MEAN:
-                return means_by_col[i];
+                return meansByCol[i];
             case Metric::VAR0:
-                return var0_by_col[i];
+                return var0ByCol[i];
             case Metric::VAR1:
-                return var1_by_col[i];
+                return var1ByCol[i];
             case Metric::STDDEV:
-                return stddev_by_col[i];
+                return stddevByCol[i];
             }
         }
     }
@@ -2582,14 +2582,16 @@ template <typename Ty, size_t rows, size_t cols> class MeanChecker {
         for (size_t i = 0; i < range; i++)
             EXPECT_NEAR(v1(0, i), expected(VAR1, axis, begin + i), EPSILON);
         for (size_t i = 0; i < range; i++)
-            EXPECT_NEAR(stddev(0, i), expected(STDDEV, axis, begin + i), EPSILON);
+            EXPECT_NEAR(stddev(0, i), expected(STDDEV, axis, begin + i),
+                        EPSILON);
 
         m1 = meanWithVar(a, axis, begin, end, &v1, &stddev, 1);
         EXPECT_EQ(m1, m);
         for (size_t i = 0; i < range; i++)
             EXPECT_NEAR(v1(0, i), expected(VAR1, axis, begin + i), EPSILON);
         for (size_t i = 0; i < range; i++)
-            EXPECT_NEAR(stddev(0, i), expected(STDDEV, axis, begin + i), EPSILON);
+            EXPECT_NEAR(stddev(0, i), expected(STDDEV, axis, begin + i),
+                        EPSILON);
 
         /* Test #2 */
         m1 = a.meanWithVar(axis, begin, end, &v1, nullptr, 1);
@@ -2608,14 +2610,16 @@ template <typename Ty, size_t rows, size_t cols> class MeanChecker {
         for (size_t i = 0; i < range; i++)
             EXPECT_NEAR(v0(0, i), expected(VAR0, axis, begin + i), EPSILON);
         for (size_t i = 0; i < range; i++)
-            EXPECT_NEAR(stddev(0, i), expected(STDDEV, axis, begin + i), EPSILON);
+            EXPECT_NEAR(stddev(0, i), expected(STDDEV, axis, begin + i),
+                        EPSILON);
 
         m1 = meanWithVar(a, axis, begin, end, &v0, &stddev, 0);
         EXPECT_EQ(m1, m);
         for (size_t i = 0; i < range; i++)
             EXPECT_NEAR(v0(0, i), expected(VAR0, axis, begin + i), EPSILON);
         for (size_t i = 0; i < range; i++)
-            EXPECT_NEAR(stddev(0, i), expected(STDDEV, axis, begin + i), EPSILON);
+            EXPECT_NEAR(stddev(0, i), expected(STDDEV, axis, begin + i),
+                        EPSILON);
 
         /* Test #4 */
         m1 = a.meanWithVar(axis, begin, end, &v0, nullptr, 0);
@@ -2776,14 +2780,14 @@ template <typename Ty, size_t rows, size_t cols> class MeanChecker {
 
   private:
     const NPArray<Ty> &a;
-    const std::vector<Ty> means_by_row;
-    const std::vector<Ty> means_by_col;
-    const std::vector<Ty> var0_by_row;
-    const std::vector<Ty> var1_by_row;
-    const std::vector<Ty> var0_by_col;
-    const std::vector<Ty> var1_by_col;
-    const std::vector<Ty> stddev_by_row;
-    const std::vector<Ty> stddev_by_col;
+    const std::vector<Ty> meansByRow;
+    const std::vector<Ty> meansByCol;
+    const std::vector<Ty> var0ByRow;
+    const std::vector<Ty> var1ByRow;
+    const std::vector<Ty> var0ByCol;
+    const std::vector<Ty> var1ByCol;
+    const std::vector<Ty> stddevByRow;
+    const std::vector<Ty> stddevByCol;
 };
 
 TEST(NPArray, mean) {

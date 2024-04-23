@@ -387,7 +387,7 @@ class Waveform {
                        bool alias, SignalIdxTy idx) {
 #ifndef NDEBUG
             if (hasSignal(signalName))
-                die("Signal already exists in this Scope");
+                DIE("Signal already exists in this Scope");
 #endif
             signals.emplace_back(new SignalDesc(signalName, kind, alias, idx));
         }
@@ -396,7 +396,7 @@ class Waveform {
                        bool alias, SignalIdxTy idx) {
 #ifndef NDEBUG
             if (hasSignal(signalName))
-                die("Signal already exists in this Scope");
+                DIE("Signal already exists in this Scope");
 #endif
             signals.emplace_back(
                 new SignalDesc(std::move(signalName), kind, alias, idx));
@@ -406,7 +406,7 @@ class Waveform {
             for (const auto &s : signals)
                 if (s->getName() == signalName)
                     return *s.get();
-            die("Signal does not exist");
+            DIE("Signal does not exist");
         }
 
         SignalIdxTy getSignalIdx(const std::string &signalName) const {
@@ -791,7 +791,7 @@ class Waveform {
 
     /// Add a change to Signal SIdx.
     Waveform &addValueChange(SignalIdxTy SIdx, Signal::ChangeTy c) {
-        WAN::TimeIdxTy TIdx = addTime(c.Time);
+        WAN::TimeIdxTy TIdx = addTime(c.time);
         signals[SIdx]->append(TIdx, c);
         return *this;
     }
@@ -813,7 +813,7 @@ class Waveform {
     }
 
     void dump(std::ostream &os) const { root.dump(os, true); }
-    void dump_metadata(std::ostream &os) const;
+    void dumpMetadata(std::ostream &os) const;
 
     Scope *getRootScope() { return &root; }
 
@@ -824,7 +824,7 @@ class Waveform {
     const Signal &operator[](SignalIdxTy Idx) const {
 #ifndef NDEBUG
         if (Idx >= signals.size())
-            die("Out of bound access");
+            DIE("Out of bound access");
 #endif
         return *signals[Idx].get();
     }
@@ -843,22 +843,22 @@ class Waveform {
     }
 
     using times_iterator = std::vector<WAN::TimeTy>::iterator;
-    times_iterator times_begin() { return allTimes.begin(); }
-    times_iterator times_end() { return allTimes.end(); }
+    times_iterator timesBegin() { return allTimes.begin(); }
+    times_iterator timesEnd() { return allTimes.end(); }
     using const_times_iterator = std::vector<WAN::TimeTy>::const_iterator;
-    const_times_iterator times_begin() const { return allTimes.begin(); }
-    const_times_iterator times_end() const { return allTimes.end(); }
+    const_times_iterator timesBegin() const { return allTimes.begin(); }
+    const_times_iterator timesEnd() const { return allTimes.end(); }
 
     /// Waveform visitor base class.
     class Visitor : public Scope::Visitor {
       public:
         Visitor(const Waveform *W, const Options &options = Options())
-            : Scope::Visitor(options), W(W) {}
+            : Scope::Visitor(options), w(W) {}
 
-        const Waveform *getWaveform() const { return W; }
+        const Waveform *getWaveform() const { return w; }
 
       protected:
-        const Waveform *W;
+        const Waveform *w;
     };
 
     void visit(Visitor &V) const {
@@ -918,7 +918,7 @@ class Waveform {
         if (it != allTimes.end() && *it == Time)
             return std::distance(allTimes.begin(), it);
 
-        die("Can not add Time to Waveform, this would void all time indexes "
+        DIE("Can not add Time to Waveform, this would void all time indexes "
             "already used");
     }
 };

@@ -1,7 +1,6 @@
 /*
- * SPDX-FileCopyrightText: <text>
- * Copyright 2022,2023 Arm Limited and/or its affiliates <open-source-office@arm.com>
- * </text>
+ * SPDX-FileCopyrightText: <text>Copyright 2022-2024 Arm Limited and/or its
+ * affiliates <open-source-office@arm.com></text>
  * SPDX-License-Identifier: Apache-2.0
  *
  * Licensed under the Apache License, Version 2.0 (the "License");

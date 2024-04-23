@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: <text>Copyright 2022 Arm Limited and/or its
+ * SPDX-FileCopyrightText: <text>Copyright 2022,2024 Arm Limited and/or its
  * affiliates <open-source-office@arm.com></text>
  * SPDX-License-Identifier: Apache-2.0
  *
@@ -33,44 +33,44 @@ class ProgressMonitor {
     /// the prefix string, expecting Total number of steps to reach completion
     /// of the task.
     ProgressMonitor(std::ostream &OS, const std::string &Title, size_t Total)
-        : OS(OS), Title(Title), Total(Total), Progress(0),
-          LastPercentageLogged(-1) {
+        : os(OS), title(Title), totalNumberOfSteps(Total), progress(0),
+          lastPercentageLogged(-1) {
         display();
     }
 
     /// Advance progresses by count steps (default: 1).
     void update(size_t count = 1) {
-        Progress += count;
+        progress += count;
         display();
     }
 
     /// Get the expected total number of steps to completion.
-    size_t total() const { return Total; }
+    size_t total() const { return totalNumberOfSteps; }
     /// Get the number of steps already completed.
-    size_t count() const { return Progress; }
+    size_t count() const { return progress; }
     /// Get the number of steps remaining to completion.
-    size_t remaining() const { return Total - Progress; }
+    size_t remaining() const { return totalNumberOfSteps - progress; }
 
   private:
     /// Display progresses on OS if the changes are big enough.
     void display() {
-        unsigned percentage = 100 * Progress / Total;
-        if (percentage != LastPercentageLogged) {
-            OS << '\r' << Title << ": " << percentage << '%';
-            OS.flush();
-            LastPercentageLogged = percentage;
+        unsigned percentage = 100 * progress / totalNumberOfSteps;
+        if (percentage != lastPercentageLogged) {
+            os << '\r' << title << ": " << percentage << '%';
+            os.flush();
+            lastPercentageLogged = percentage;
         }
     }
     /// The output stream where to display progresses.
-    std::ostream &OS;
+    std::ostream &os;
     /// The title string to use when displaying progresses.
-    const std::string Title;
+    const std::string title;
     /// The total number of steps expected to completion on this task.
-    const size_t Total;
+    const size_t totalNumberOfSteps;
     /// How many steps have been performed since the beginning.
-    size_t Progress;
+    size_t progress;
     /// The last percentage that was updated.
-    unsigned LastPercentageLogged;
+    unsigned lastPercentageLogged;
 };
 
 } // namespace PAF

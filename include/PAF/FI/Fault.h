@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: <text>Copyright 2021,2022 Arm Limited and/or its
+ * SPDX-FileCopyrightText: <text>Copyright 2021,2022,2024 Arm Limited and/or its
  * affiliates <open-source-office@arm.com></text>
  * SPDX-License-Identifier: Apache-2.0
  *
@@ -42,14 +42,14 @@ namespace FI {
 /// executed yet). Accessing the outputs of the instruction requires to step
 /// this instruction.
 struct BreakPoint {
-    uint64_t Address; ///< The breakpoint address.
-    unsigned Count;   ///< The breakpoint count.
+    uint64_t address; ///< The breakpoint address.
+    unsigned count;   ///< The breakpoint count.
 
     /// Construct an uninitialized BreakPoint.
-    BreakPoint() : Address(), Count() {}
+    BreakPoint() : address(), count() {}
     /// COnstruct a BreakPoint for address Address and count Count.
     BreakPoint(uint64_t Address, unsigned Count)
-        : Address(Address), Count(Count) {}
+        : address(Address), count(Count) {}
     /// Copy construct a BreakPoint.
     BreakPoint(const BreakPoint &) = default;
 
@@ -66,15 +66,15 @@ class FaultModelBase {
     /// Construct a FaultModelBase.
     FaultModelBase(unsigned long Time, uint64_t Address, uint32_t Instruction,
                    unsigned Width, const std::string &Disassembly)
-        : Disassembly(Disassembly), Id(0), Time(Time), Address(Address),
-          Instruction(Instruction), Width(Width), BPInfo(nullptr) {}
+        : disassembly(Disassembly), id(0), time(Time), address(Address),
+          instruction(Instruction), width(Width), bpInfo(nullptr) {}
     /// Copy construct a FaultModelBase.
     FaultModelBase(const FaultModelBase &F)
-        : Disassembly(F.Disassembly), Id(F.Id), Time(F.Time),
-          Address(F.Address), Instruction(F.Instruction), Width(F.Width),
-          BPInfo(nullptr) {
+        : disassembly(F.disassembly), id(F.id), time(F.time),
+          address(F.address), instruction(F.instruction), width(F.width),
+          bpInfo(nullptr) {
         if (F.hasBreakpoint())
-            BPInfo = std::unique_ptr<BreakPoint>(new BreakPoint(*F.BPInfo));
+            bpInfo = std::unique_ptr<BreakPoint>(new BreakPoint(*F.bpInfo));
     }
     virtual ~FaultModelBase();
 
@@ -82,26 +82,26 @@ class FaultModelBase {
     virtual const char *getFaultModelName() const = 0;
 
     /// Set this fault's Id.
-    void setId(unsigned long i) { Id = i; }
+    void setId(unsigned long i) { id = i; }
 
     /// Set this fault's BreakPoint.
     void setBreakpoint(uint64_t Addr, unsigned Cnt) {
-        BPInfo.reset(new BreakPoint(Addr, Cnt));
+        bpInfo.reset(new BreakPoint(Addr, Cnt));
     }
     /// Does this fault have its BreakPoint information set ?
-    bool hasBreakpoint() const { return BPInfo != nullptr; }
+    bool hasBreakpoint() const { return bpInfo != nullptr; }
 
     /// Dump this fault to os.
     virtual void dump(std::ostream &os) const;
 
   protected:
-    std::string Disassembly; ///< The original instruction, disassembled.
-    unsigned long Id;        ///< Each fault gets a unique Id within a Campaign.
-    unsigned long Time;      ///< The time at which to inject a fault.
-    uint64_t Address;        ///< The address of the instruction.
-    uint32_t Instruction;    ///< The original instruction opcode.
-    unsigned Width;          ///< The instruction width.
-    std::unique_ptr<BreakPoint> BPInfo; ///< Breakpoint information.
+    std::string disassembly; ///< The original instruction, disassembled.
+    unsigned long id;        ///< Each fault gets a unique Id within a Campaign.
+    unsigned long time;      ///< The time at which to inject a fault.
+    uint64_t address;        ///< The address of the instruction.
+    uint32_t instruction;    ///< The original instruction opcode.
+    unsigned width;          ///< The instruction width.
+    std::unique_ptr<BreakPoint> bpInfo; ///< Breakpoint information.
 };
 
 /// The InstructionSkip class is a fault model where an instruction is replaced
@@ -113,7 +113,7 @@ class InstructionSkip : public FaultModelBase {
                     uint32_t FaultedInstr, unsigned Width, bool Executed,
                     const std::string &Disassembly)
         : FaultModelBase(Time, Address, Instruction, Width, Disassembly),
-          FaultedInstr(FaultedInstr), Executed(Executed) {}
+          faultedInstr(FaultedInstr), executed(Executed) {}
     virtual ~InstructionSkip();
 
     /// Get the fault model name used for this fault.
@@ -125,8 +125,8 @@ class InstructionSkip : public FaultModelBase {
     virtual void dump(std::ostream &os) const override;
 
   private:
-    uint32_t FaultedInstr; ///< The faulted instruction.
-    bool Executed;         ///< True if the original instruction was executed.
+    uint32_t faultedInstr; ///< The faulted instruction.
+    bool executed;         ///< True if the original instruction was executed.
 };
 
 /// The CorruptRegDef class is a fault model where an instruction's output
@@ -139,8 +139,8 @@ class CorruptRegDef : public FaultModelBase {
                   unsigned Width, const std::string &Disassembly,
                   const std::string &RegName)
         : FaultModelBase(Time, Address, Instruction, Width, Disassembly),
-          FaultedReg(RegName) {
-        for (char &c : FaultedReg)
+          faultedReg(RegName) {
+        for (char &c : faultedReg)
             c = std::toupper(c);
     }
     virtual ~CorruptRegDef();
@@ -154,7 +154,7 @@ class CorruptRegDef : public FaultModelBase {
     virtual void dump(std::ostream &os) const override;
 
   private:
-    std::string FaultedReg; ///< The faulted register
+    std::string faultedReg; ///< The faulted register
 };
 
 /// The InjectionRangeInfo class describes the range under fault injection.
@@ -164,23 +164,24 @@ class InjectionRangeInfo {
     InjectionRangeInfo(const std::string &Name, unsigned long StartTime,
                        unsigned long EndTime, uint64_t StartAddress,
                        uint64_t EndAddress)
-        : Name(Name), StartTime(StartTime), EndTime(EndTime),
-          StartAddress(StartAddress & ~1UL), EndAddress(EndAddress & ~1UL) {}
+        : name(Name), startTime(StartTime), endTime(EndTime),
+          startAddress(StartAddress & ~1UL), endAddress(EndAddress & ~1UL) {}
 
     /// Dump this FunctionInfo to os.
     void dump(std::ostream &os) const;
 
   private:
-    /// The function name, mostly to be user friendly as this may not correspond to an actual function.
-    std::string Name;
+    /// The function name, mostly to be user friendly as this may not correspond
+    /// to an actual function.
+    std::string name;
     /// The cycle at which this injection range starts.
-    unsigned long StartTime;
+    unsigned long startTime;
     /// The cycle at which this injection range ends.
-    unsigned long EndTime;
+    unsigned long endTime;
     /// The address at which this injection range starts.
-    uint64_t StartAddress;
+    uint64_t startAddress;
     /// The address at which this injection range ends.
-    uint64_t EndAddress;
+    uint64_t endAddress;
 };
 
 /// An InjectionCampaign is a container with all information needed to perform a
@@ -194,29 +195,29 @@ class InjectionCampaign {
                       const std::string &ReferenceTrace,
                       unsigned long MaxTraceTime, uint64_t ProgramEntryAddress,
                       uint64_t ProgramEndAddress)
-        : Faults(), Image(Image), ReferenceTrace(ReferenceTrace),
-          InjectionRangeInformation(), MaxTraceTime(MaxTraceTime),
-          ProgramEntryAddress(ProgramEntryAddress),
-          ProgramEndAddress(ProgramEndAddress) {}
+        : faults(), image(Image), referenceTrace(ReferenceTrace),
+          injectionRangeInformation(), maxTraceTime(MaxTraceTime),
+          programEntryAddress(ProgramEntryAddress),
+          programEndAddress(ProgramEndAddress) {}
     InjectionCampaign() = delete;
     /// Copy construct an InjectionCampaign.
     InjectionCampaign(const InjectionCampaign &) = default;
 
     /// Add FunctionInfo to this InjectionCampaign.
     InjectionCampaign &addInjectionRangeInfo(InjectionRangeInfo &&IRI) {
-        InjectionRangeInformation.emplace_back(std::move(IRI));
+        injectionRangeInformation.emplace_back(std::move(IRI));
         return *this;
     }
 
     /// Add a Fault to this InjectionCampaign.
     InjectionCampaign &addFault(FaultModelBase *F) {
-        Faults.push_back(std::unique_ptr<FaultModelBase>(F));
-        Faults.back()->setId(Faults.size() - 1);
+        faults.push_back(std::unique_ptr<FaultModelBase>(F));
+        faults.back()->setId(faults.size() - 1);
         return *this;
     }
 
     /// Add an Oracle to this InjectionCampaign.
-    void addOracle(Oracle &&O) { TheOracle = std::move(O); }
+    void addOracle(Oracle &&O) { theOracle = std::move(O); }
 
     /// Dump all faults to os.
     void dumpCampaign(std::ostream &os) const;
@@ -229,15 +230,15 @@ class InjectionCampaign {
 
   private:
     std::vector<std::unique_ptr<FaultModelBase>>
-        Faults;                       ///< The faults to inject.
-    const std::string Image;          ///< The ELF image filename.
-    const std::string ReferenceTrace; ///< The reference tarmac file.
+        faults;                       ///< The faults to inject.
+    const std::string image;          ///< The ELF image filename.
+    const std::string referenceTrace; ///< The reference tarmac file.
     std::vector<InjectionRangeInfo>
-        InjectionRangeInformation;    ///< Describes the functions under test.
-    const unsigned long MaxTraceTime; ///< The maximum trace time.
-    uint64_t ProgramEntryAddress;     ///< The program entry address.
-    uint64_t ProgramEndAddress;       ///< The PC at maximum trace time.
-    Oracle TheOracle; ///< The oracles to run to classify faults.
+        injectionRangeInformation;    ///< Describes the functions under test.
+    const unsigned long maxTraceTime; ///< The maximum trace time.
+    uint64_t programEntryAddress;     ///< The program entry address.
+    uint64_t programEndAddress;       ///< The PC at maximum trace time.
+    Oracle theOracle; ///< The oracles to run to classify faults.
 };
 
 } // namespace FI

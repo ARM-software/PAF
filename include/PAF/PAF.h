@@ -47,13 +47,13 @@ void dump(std::ostream &os, const TarmacSite &S);
 /// End is included in the range.
 struct ExecutionRange {
     /// Start of the ExecutionRange in the Tarmac trace.
-    TarmacSite Start;
+    TarmacSite begin;
     /// End (included) of the ExecutionRange in the Tarmac trace.
-    TarmacSite End;
+    TarmacSite end;
 
     /// Construct an ExecutionRange from Start and End TarmacSites.
-    ExecutionRange(const TarmacSite &Start, const TarmacSite &End)
-        : Start(Start), End(End) {}
+    ExecutionRange(const TarmacSite &start, const TarmacSite &end)
+        : begin(start), end(end) {}
 };
 
 /// The ExecsOfInterest class is used to collect all ExecutionRange where a
@@ -63,22 +63,22 @@ struct ExecutionRange {
 /// is not useful in standalone.
 class ExecsOfInterest : public CallTreeVisitor {
 
-    std::vector<PAF::ExecutionRange> &Functions;
-    const Addr FunctionEntryAddr;
+    std::vector<PAF::ExecutionRange> &functions;
+    const Addr functionEntryAddr;
 
   public:
     /// Given a calltree  CT and a function entry address, construct the object
     /// that the CallTree visitor can use.
     ExecsOfInterest(const CallTree &CT, std::vector<PAF::ExecutionRange> &FI,
                     Addr FunctionEntryAddr)
-        : CallTreeVisitor(CT), Functions(FI),
-          FunctionEntryAddr(FunctionEntryAddr) {}
+        : CallTreeVisitor(CT), functions(FI),
+          functionEntryAddr(FunctionEntryAddr) {}
 
     /// Action to perform when entering the function of interest.
     void onFunctionEntry(const TarmacSite &function_entry,
                          const TarmacSite &function_exit) {
-        if (function_entry.addr == FunctionEntryAddr)
-            Functions.emplace_back(function_entry, function_exit);
+        if (function_entry.addr == functionEntryAddr)
+            functions.emplace_back(function_entry, function_exit);
     }
 };
 
@@ -89,23 +89,24 @@ class ExecsOfInterest : public CallTreeVisitor {
 /// is not useful in standalone.
 class CSOfInterest : public CallTreeVisitor {
 
-    std::vector<PAF::ExecutionRange> &CS;
-    const Addr FunctionEntryAddr;
+    std::vector<PAF::ExecutionRange> &callSites;
+    const Addr functionEntryAddr;
 
   public:
     /// Given a calltree CT and a function entry address, construct the object
     /// that the CallTree visitor can use.
     CSOfInterest(const CallTree &CT, std::vector<PAF::ExecutionRange> &CS,
                  Addr FunctionEntryAddr)
-        : CallTreeVisitor(CT), CS(CS), FunctionEntryAddr(FunctionEntryAddr) {}
+        : CallTreeVisitor(CT), callSites(CS),
+          functionEntryAddr(FunctionEntryAddr) {}
 
     /// Action to perform when entering the call site of interest.
     void onCallSite(const TarmacSite &function_entry,
                     const TarmacSite &function_exit,
                     const TarmacSite &call_site, const TarmacSite &resume_site,
                     const CallTree &TC) {
-        if (TC.getFunctionEntry().addr == FunctionEntryAddr)
-            CS.emplace_back(call_site, resume_site);
+        if (TC.getFunctionEntry().addr == functionEntryAddr)
+            callSites.emplace_back(call_site, resume_site);
     }
 };
 
@@ -113,7 +114,7 @@ class CSOfInterest : public CallTreeVisitor {
 /// (memory accesses) and RegisterAccess (register accesses).
 struct Access {
     /// AccessType represents the direction of an access: read or write.
-    enum class Type { Read, Write };
+    enum class Type { READ, WRITE };
 
     /// The actual value used by this access.
     unsigned long long value;
@@ -148,7 +149,7 @@ struct MemoryAccess : public Access {
     /// MemoryAccess constructor for use by Tarmac parser.
     MemoryAccess(const MemoryEvent &ev)
         : Access(ev.known ? ev.contents : 0,
-                 ev.read ? Access::Type::Read : Access::Type::Write),
+                 ev.read ? Access::Type::READ : Access::Type::WRITE),
           size(ev.size), addr(ev.addr) {}
 
     /// MemoryAccess copy assignment.
@@ -213,7 +214,7 @@ struct RegisterAccess : public Access {
 
     /// Constructor for a Tarmac Parser.
     RegisterAccess(const RegisterEvent &ev)
-        : Access(0, Access::Type::Write), name(reg_name(ev.reg)) {
+        : Access(0, Access::Type::WRITE), name(reg_name(ev.reg)) {
         for (size_t i = 0; i < ev.bytes.size(); i++)
             value |= ev.bytes[i] << (i * 8);
     }
@@ -298,8 +299,8 @@ struct ReferenceInstruction {
     /// Given a time, a program counter, an instruction set, an instruction
     /// width and opcode, and an execution status and a disassembly string,
     /// construct a ReferenceInstruction.
-    ReferenceInstruction(Time time, InstructionEffect effect, Addr pc, ISet iset,
-                         unsigned width, uint32_t instruction,
+    ReferenceInstruction(Time time, InstructionEffect effect, Addr pc,
+                         ISet iset, unsigned width, uint32_t instruction,
                          const std::string &disassembly,
                          const std::vector<MemoryAccess> &memaccess,
                          const std::vector<RegisterAccess> &regaccess)
@@ -310,8 +311,8 @@ struct ReferenceInstruction {
     /// Given a time, a program counter, an instruction set, an instruction
     /// width and opcode, and an execution status and a C-style disassembly
     /// string, construct a ReferenceInstruction.
-    ReferenceInstruction(Time time, InstructionEffect effect, Addr pc, ISet iset,
-                         unsigned width, uint32_t instruction,
+    ReferenceInstruction(Time time, InstructionEffect effect, Addr pc,
+                         ISet iset, unsigned width, uint32_t instruction,
                          const char *disassembly,
                          const std::vector<MemoryAccess> &memaccess,
                          const std::vector<RegisterAccess> &regaccess)
@@ -434,28 +435,28 @@ class FromTraceBuilder : public ParseReceiver, public EventHandlerTy {
   public:
     /// Constructor.
     FromTraceBuilder(const IndexNavigator &IN)
-        : ParseReceiver(), IN(IN), CurInstr() {}
+        : ParseReceiver(), idxNav(IN), curInstr() {}
 
     /// Apply the builder on the ER execution range, with its start / end points
     /// optionally shifted by offsets.
     void build(const ExecutionRange &ER, ContTy &Cont, int StartOffset = 0,
                int EndOffset = 0) {
-        TarmacLineParser TLP(IN.index.isBigEndian(), *this);
+        TarmacLineParser TLP(idxNav.index.isBigEndian(), *this);
         SeqOrderPayload SOP;
 
         // Find the end time, adjusted with the offset if any.
-        if (!IN.node_at_time(ER.End.time, &SOP))
+        if (!idxNav.node_at_time(ER.end.time, &SOP))
             reporter->errx(EXIT_FAILURE, "Can not find end point.");
         if (EndOffset > 0) {
             do {
-                if (!IN.get_next_node(SOP, &SOP))
+                if (!idxNav.get_next_node(SOP, &SOP))
                     reporter->errx(EXIT_FAILURE,
                                    "Can not move end point to later");
                 EndOffset -= 1;
             } while (EndOffset > 0);
         } else if (EndOffset < 0) {
             do {
-                if (!IN.get_previous_node(SOP, &SOP))
+                if (!idxNav.get_previous_node(SOP, &SOP))
                     reporter->errx(EXIT_FAILURE,
                                    "Can not move end point to earlier");
                 EndOffset += 1;
@@ -465,18 +466,18 @@ class FromTraceBuilder : public ParseReceiver, public EventHandlerTy {
 
         // Set SOP to starting point, and tweak it if there is an offset to
         // apply.
-        if (!IN.node_at_time(ER.Start.time, &SOP))
+        if (!idxNav.node_at_time(ER.begin.time, &SOP))
             reporter->errx(EXIT_FAILURE, "Can not find start point.");
         if (StartOffset > 0) {
             do {
-                if (!IN.get_next_node(SOP, &SOP))
+                if (!idxNav.get_next_node(SOP, &SOP))
                     reporter->errx(EXIT_FAILURE,
                                    "Can not move start point to later");
                 StartOffset -= 1;
             } while (StartOffset > 0);
         } else if (StartOffset < 0) {
             do {
-                if (!IN.get_previous_node(SOP, &SOP))
+                if (!idxNav.get_previous_node(SOP, &SOP))
                     reporter->errx(EXIT_FAILURE,
                                    "Can not move start point to earlier");
                 StartOffset += 1;
@@ -485,8 +486,8 @@ class FromTraceBuilder : public ParseReceiver, public EventHandlerTy {
 
         std::vector<std::string> Lines;
         while (SOP.mod_time <= EndTime) {
-            Lines = IN.index.get_trace_lines(SOP);
-            CurInstr = InstructionTy();
+            Lines = idxNav.index.get_trace_lines(SOP);
+            curInstr = InstructionTy();
             for (const std::string &line : Lines) {
                 try {
                     TLP.parse(line);
@@ -495,36 +496,36 @@ class FromTraceBuilder : public ParseReceiver, public EventHandlerTy {
                 }
             }
 
-            Cont(CurInstr);
+            Cont(curInstr);
 
-            if (!IN.get_next_node(SOP, &SOP))
+            if (!idxNav.get_next_node(SOP, &SOP))
                 break;
         }
     }
 
     /// Handler for instruction events generated by the Tarmac parser.
     virtual void got_event(InstructionEvent &ev) override {
-        EventHandlerTy::event(CurInstr, ev);
+        EventHandlerTy::event(curInstr, ev);
     }
 
     /// Handler for register events generated by the Tarmac parser.
     virtual void got_event(RegisterEvent &ev) override {
-        EventHandlerTy::event(CurInstr, ev);
+        EventHandlerTy::event(curInstr, ev);
     }
 
     /// Handler for memory events generated by the Tarmac parser.
     virtual void got_event(MemoryEvent &ev) override {
-        EventHandlerTy::event(CurInstr, ev);
+        EventHandlerTy::event(curInstr, ev);
     }
 
     /// Handler for TextOnly events generated by the Tarmac parser.
     virtual void got_event(TextOnlyEvent &ev) override {
-        EventHandlerTy::event(CurInstr, ev);
+        EventHandlerTy::event(curInstr, ev);
     }
 
   private:
-    const IndexNavigator &IN;
-    InstructionTy CurInstr;
+    const IndexNavigator &idxNav;
+    InstructionTy curInstr;
 };
 
 /// The FromStreamBuilder class is used to build a trace from an in-memory
@@ -535,7 +536,7 @@ template <typename InstructionTy, typename EventHandlerTy = EmptyHandler,
 class FromStreamBuilder : public ParseReceiver, public EventHandlerTy {
   public:
     /// Construct a FromStreamBuilder.
-    FromStreamBuilder(std::istream &is) : ParseReceiver(), is(is), CurInstr() {}
+    FromStreamBuilder(std::istream &is) : ParseReceiver(), is(is), curInstr() {}
 
     /// Apply the Builder on the instruction stream.
     void build(ContTy &Cont, bool isBigEndian = false) {
@@ -552,32 +553,32 @@ class FromStreamBuilder : public ParseReceiver, public EventHandlerTy {
                 reporter->errx(EXIT_FAILURE, "Parse error");
             }
         }
-        Cont(CurInstr);
+        Cont(curInstr);
     }
 
     /// Handler for instruction events generated by the Tarmac parser.
     virtual void got_event(InstructionEvent &ev) override {
-        EventHandlerTy::event(CurInstr, ev);
+        EventHandlerTy::event(curInstr, ev);
     }
 
     /// Handler for register events generated by the Tarmac parser.
     virtual void got_event(RegisterEvent &ev) override {
-        EventHandlerTy::event(CurInstr, ev);
+        EventHandlerTy::event(curInstr, ev);
     }
 
     /// Handler for memory events generated by the Tarmac parser.
     virtual void got_event(MemoryEvent &ev) override {
-        EventHandlerTy::event(CurInstr, ev);
+        EventHandlerTy::event(curInstr, ev);
     }
 
     /// Handler for TextOnly events generated by the Tarmac parser.
     virtual void got_event(TextOnlyEvent &ev) override {
-        EventHandlerTy::event(CurInstr, ev);
+        EventHandlerTy::event(curInstr, ev);
     }
 
   private:
     std::istream &is;
-    InstructionTy CurInstr;
+    InstructionTy curInstr;
 };
 
 /// MTAnalyzer is a base class for all Tarmac analysis classes.
@@ -595,7 +596,7 @@ class MTAnalyzer : public IndexNavigator {
     bool verbose() const { return verbosityLevel > 0; }
 
     /// Get the full execution range for the trace under analysis.
-    PAF::ExecutionRange getFullExecutionRange()const;
+    PAF::ExecutionRange getFullExecutionRange() const;
 
     /// Get all ExecutionRange where function FunctionName was executed.
     /// This includes sub-calls to other functions.
@@ -617,9 +618,10 @@ class MTAnalyzer : public IndexNavigator {
     /// Get all ExecutionRanges between covering the instructions between the N
     /// instructions before Label and the N instructions after Label for each
     /// Labels.
-    std::vector<PAF::ExecutionRange> getWLabels(
-        const std::vector<std::string> &Labels, unsigned N,
-        std::vector<std::pair<uint64_t, std::string>> *OutLabels = nullptr) const;
+    std::vector<PAF::ExecutionRange>
+    getWLabels(const std::vector<std::string> &Labels, unsigned N,
+               std::vector<std::pair<uint64_t, std::string>> *OutLabels =
+                   nullptr) const;
 
     /// Get all ExecutionRanges between the return of the StartFunctionName
     /// function and the call of EndFunctionName.
@@ -640,13 +642,13 @@ class MTAnalyzer : public IndexNavigator {
     /// Get this Index CallTree and cache it for future uses as it is not
     /// invalidated.
     const CallTree &getCallTree() const {
-        if (!CT)
-            CT.reset(new CallTree(*this));
-        return *CT;
+        if (!callTree)
+            callTree.reset(new CallTree(*this));
+        return *callTree;
     }
 
-  private:  
-    mutable std::unique_ptr<CallTree> CT;
+  private:
+    mutable std::unique_ptr<CallTree> callTree;
     unsigned verbosityLevel;
 };
 

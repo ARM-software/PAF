@@ -115,12 +115,6 @@ struct MyVisitor : public Waveform::Visitor {
         }
 
         // Not found :-(
-        // std::cout << "Searching: \"" << fullScopeName << "\",\"" <<
-        // signalName
-        //          << "\", " << S.getNumBits() << ", " << SD.getKind() << ", "
-        //          << SD.getIdx() << ", " << (SD.isAlias() ? "true" : "false")
-        //          << "...\n";
-        // std::cout << "Not found :-(\n";
         return false;
     }
 
@@ -128,7 +122,7 @@ struct MyVisitor : public Waveform::Visitor {
     void leaveScope() override {}
     void visitSignal(const string &FullScopeName,
                      const SignalDesc &SD) override {
-        const Signal &S = (*W)[SD.getIdx()];
+        const Signal &S = (*w)[SD.getIdx()];
 
         // Uncomment the lines below to capture the visited signals.
         // std::cout << "{\"" << FullScopeName << "\",\"" << SD.getName() <<
@@ -365,13 +359,13 @@ TEST(Waveform, iterators) {
 
     // Times iterator
     const std::array<TimeTy, 4> times = {5, 6, 10, 15};
-    Waveform::times_iterator t = W.times_begin();
-    for (size_t i = 0; i < times.size() && t != W.times_end(); i++, t++)
+    Waveform::times_iterator t = W.timesBegin();
+    for (size_t i = 0; i < times.size() && t != W.timesEnd(); i++, t++)
         EXPECT_EQ(*t, times[i]);
 
     // const Times iterator
-    Waveform::const_times_iterator ct = W.times_begin();
-    for (size_t i = 0; i < times.size() && ct != W.times_end(); i++, ct++)
+    Waveform::const_times_iterator ct = W.timesBegin();
+    for (size_t i = 0; i < times.size() && ct != W.timesEnd(); i++, ct++)
         EXPECT_EQ(*ct, times[i]);
 }
 
@@ -470,7 +464,7 @@ TEST(Waveform, fromFile) {
     }
 }
 
-TestWithTempFile(WaveformF, "test-Waveform-toFile.XXXXXX");
+TEST_WITH_TEMP_FILE(WaveformF, "test-Waveform-toFile.XXXXXX");
 
 TEST_F(WaveformF, toFile) {
 
@@ -621,7 +615,7 @@ TEST(Waveform, visitWiresInSpecificScope) {
 TEST(Waveform, dumpMetadata) {
     Waveform W("filename", 12, 45, -3);
     ostringstream ostr;
-    W.dump_metadata(ostr);
+    W.dumpMetadata(ostr);
     EXPECT_EQ(ostr.str(), "Input file: filename\nStart time: 12\nEnd time: "
                           "45\nTimezero: 0\nTimescale: 1 ms\n");
 }

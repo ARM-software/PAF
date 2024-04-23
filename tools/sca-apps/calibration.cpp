@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: <text>Copyright 2021,2022,2023 Arm Limited and/or its
+ * SPDX-FileCopyrightText: <text>Copyright 2021-2024 Arm Limited and/or its
  * affiliates <open-source-office@arm.com></text>
  * SPDX-License-Identifier: Apache-2.0
  *
@@ -31,46 +31,46 @@ using namespace std;
 using namespace PAF::SCA;
 
 template <typename Ty> struct MinMax {
-    Ty min_value;
-    Ty max_value;
-    size_t min_cnt;
-    size_t max_cnt;
+    Ty minValue;
+    Ty maxValue;
+    size_t minCnt;
+    size_t maxCnt;
 
     MinMax()
-        : min_value(numeric_limits<Ty>::max()),
-          max_value(numeric_limits<Ty>::min()), min_cnt(0), max_cnt(0) {}
+        : minValue(numeric_limits<Ty>::max()),
+          maxValue(numeric_limits<Ty>::min()), minCnt(0), maxCnt(0) {}
 
     void operator()(double v) {
-        if (v > max_value) {
-            max_value = v;
-            max_cnt = 1;
-        } else if (v == max_value) {
-            max_cnt += 1;
-        } else if (v == min_value) {
-            min_cnt += 1;
-        } else if (v < min_value) {
-            min_value = v;
-            min_cnt = 1;
+        if (v > maxValue) {
+            maxValue = v;
+            maxCnt = 1;
+        } else if (v == maxValue) {
+            maxCnt += 1;
+        } else if (v == minValue) {
+            minCnt += 1;
+        } else if (v < minValue) {
+            minValue = v;
+            minCnt = 1;
         }
     }
 
     void operator+=(const MinMax &o) {
-        if (o.max_value > max_value) {
-            max_value = o.max_value;
-            max_cnt = o.max_cnt;
-        } else if (o.max_value == max_value)
-            max_cnt += o.max_cnt;
+        if (o.maxValue > maxValue) {
+            maxValue = o.maxValue;
+            maxCnt = o.maxCnt;
+        } else if (o.maxValue == maxValue)
+            maxCnt += o.maxCnt;
 
-        if (o.min_value < min_value) {
-            min_value = o.min_value;
-            min_cnt = o.min_cnt;
-        } else if (o.min_value == min_value)
-            min_cnt += o.min_cnt;
+        if (o.minValue < minValue) {
+            minValue = o.minValue;
+            minCnt = o.minCnt;
+        } else if (o.minValue == minValue)
+            minCnt += o.minCnt;
     }
 
     void dump(ostream &os, const char *filename) const {
-        os << filename << ": \t" << min_value << " (" << min_cnt << ')';
-        os << "\t" << max_value << " (" << max_cnt << ")\n";
+        os << filename << ": \t" << minValue << " (" << minCnt << ')';
+        os << "\t" << maxValue << " (" << maxCnt << ")\n";
     }
 };
 
@@ -144,8 +144,8 @@ int main(int argc, char *argv[]) {
         size_t l_elt_size;
         const char *errstr;
         ifstream ifs(filename, ifstream::binary);
-        if (!NPArrayBase::get_information(ifs, num_rows, num_columns, l_elt_ty,
-                                          l_elt_size, &errstr)) {
+        if (!NPArrayBase::getInformation(ifs, num_rows, num_columns, l_elt_ty,
+                                         l_elt_size, &errstr)) {
             cerr << "Failed to open file '" << filename << "'\n";
             return EXIT_FAILURE;
         }

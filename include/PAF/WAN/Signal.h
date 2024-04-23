@@ -46,30 +46,32 @@ using TimeIdxTy = uint32_t;
 class Logic {
   public:
     enum class Ty : uint8_t {
-        Logic0 = 0x00,
-        Logic1 = 0x01,
-        HighZ = 0x02,
-        Unknown = 0x03
+        LOGIC_0 = 0x00,
+        LOGIC_1 = 0x01,
+        HIGH_Z = 0x02,
+        UNKNOWN = 0x03
     };
 
     // How many bits are used for encoding a LogicValue
     static constexpr size_t encoding() { return 2; }
 
     static constexpr bool isLogic(Ty v) {
-        return v == Ty::Logic0 || v == Ty::Logic1;
+        return v == Ty::LOGIC_0 || v == Ty::LOGIC_1;
     }
-    static constexpr bool isHighZ(Ty v) { return v == Ty::HighZ; }
-    static constexpr bool isUnknown(Ty v) { return v == Ty::Unknown; }
+    static constexpr bool isHighZ(Ty v) { return v == Ty::HIGH_Z; }
+    static constexpr bool isUnknown(Ty v) { return v == Ty::UNKNOWN; }
 
-    static constexpr Ty fromBool(bool b) { return b ? Ty::Logic1 : Ty::Logic0; }
+    static constexpr Ty fromBool(bool b) {
+        return b ? Ty::LOGIC_1 : Ty::LOGIC_0;
+    }
 
     static constexpr bool getAsBool(Ty v) {
         switch (v) {
-        case Ty::Logic1:
+        case Ty::LOGIC_1:
             return true;
-        case Ty::Logic0: /* fall-thru */
-        case Ty::HighZ:  /* fall-thru */
-        case Ty::Unknown:
+        case Ty::LOGIC_0: /* fall-thru */
+        case Ty::HIGH_Z:  /* fall-thru */
+        case Ty::UNKNOWN:
             return false;
         }
     }
@@ -77,63 +79,63 @@ class Logic {
     static constexpr Ty fromChar(char c) {
         switch (c) {
         case '1':
-            return Ty::Logic1;
+            return Ty::LOGIC_1;
         case '0':
-            return Ty::Logic0;
+            return Ty::LOGIC_0;
         case 'z':
         case 'Z':
-            return Ty::HighZ;
+            return Ty::HIGH_Z;
         case 'x':
         case 'X':
-            return Ty::Unknown;
+            return Ty::UNKNOWN;
         default:
-            die("unsupported char to get a Logic value from");
+            DIE("unsupported char to get a Logic value from");
         }
     }
 
     static constexpr char getAsChar(Ty v) {
         switch (v) {
-        case Ty::Logic1:
+        case Ty::LOGIC_1:
             return '1';
-        case Ty::Logic0:
+        case Ty::LOGIC_0:
             return '0';
-        case Ty::HighZ:
+        case Ty::HIGH_Z:
             return 'Z';
-        case Ty::Unknown:
+        case Ty::UNKNOWN:
             return 'X';
         }
     }
 
     static constexpr Ty NOT(Ty v) {
         switch (v) {
-        case Ty::Logic1:
-            return Ty::Logic0;
-        case Ty::Logic0:
-            return Ty::Logic1;
-        case Ty::HighZ: /* fall-thru */
-        case Ty::Unknown:
-            return Ty::Unknown;
+        case Ty::LOGIC_1:
+            return Ty::LOGIC_0;
+        case Ty::LOGIC_0:
+            return Ty::LOGIC_1;
+        case Ty::HIGH_Z: /* fall-thru */
+        case Ty::UNKNOWN:
+            return Ty::UNKNOWN;
         }
     }
 
     static constexpr Ty AND(Ty lhs, Ty rhs) {
         if (isLogic(lhs) && isLogic(rhs))
-            return lhs == Ty::Logic1 && rhs == Ty::Logic1 ? Ty::Logic1
-                                                          : Ty::Logic0;
-        return Ty::Unknown;
+            return lhs == Ty::LOGIC_1 && rhs == Ty::LOGIC_1 ? Ty::LOGIC_1
+                                                            : Ty::LOGIC_0;
+        return Ty::UNKNOWN;
     }
 
     static constexpr Ty OR(Ty lhs, Ty rhs) {
         if (isLogic(lhs) && isLogic(rhs))
-            return lhs == Ty::Logic1 || rhs == Ty::Logic1 ? Ty::Logic1
-                                                          : Ty::Logic0;
-        return Ty::Unknown;
+            return lhs == Ty::LOGIC_1 || rhs == Ty::LOGIC_1 ? Ty::LOGIC_1
+                                                            : Ty::LOGIC_0;
+        return Ty::UNKNOWN;
     }
 
     static constexpr Ty XOR(Ty lhs, Ty rhs) {
         if (isLogic(lhs) && isLogic(rhs))
-            return lhs != rhs ? Ty::Logic1 : Ty::Logic0;
-        return Ty::Unknown;
+            return lhs != rhs ? Ty::LOGIC_1 : Ty::LOGIC_0;
+        return Ty::UNKNOWN;
     }
 };
 
@@ -142,57 +144,57 @@ class Logic {
 class ValueTy {
   public:
     // Single bit constructors
-    ValueTy() : Value(1, Logic::Ty::Unknown) {}
-    explicit ValueTy(Logic::Ty v) : Value(1, v) {}
+    ValueTy() : value(1, Logic::Ty::UNKNOWN) {}
+    explicit ValueTy(Logic::Ty v) : value(1, v) {}
 
     // Bus constructors
-    ValueTy(unsigned numBits, Logic::Ty v = Logic::Ty::Unknown)
-        : Value(numBits, v) {}
-    ValueTy(unsigned numBits, char c) : Value(numBits, Logic::fromChar(c)) {}
+    ValueTy(unsigned numBits, Logic::Ty v = Logic::Ty::UNKNOWN)
+        : value(numBits, v) {}
+    ValueTy(unsigned numBits, char c) : value(numBits, Logic::fromChar(c)) {}
 
     // A range constructor.
     template <typename InputIterator>
-    ValueTy(InputIterator Begin, InputIterator Last) : Value(Begin, Last) {}
+    ValueTy(InputIterator Begin, InputIterator Last) : value(Begin, Last) {}
 
-    explicit ValueTy(const char *str) : Value(strlen(str)) {
-        size_t N = Value.size();
+    explicit ValueTy(const char *str) : value(strlen(str)) {
+        size_t N = value.size();
         for (unsigned i = N; i != 0; i--)
-            Value[N - i] = Logic::fromChar(str[i - 1]);
+            value[N - i] = Logic::fromChar(str[i - 1]);
     }
-    explicit ValueTy(const std::string &str) : Value(str.size()) {
-        size_t N = Value.size();
+    explicit ValueTy(const std::string &str) : value(str.size()) {
+        size_t N = value.size();
         for (unsigned i = N; i != 0; i--)
-            Value[N - i] = Logic::fromChar(str[i - 1]);
+            value[N - i] = Logic::fromChar(str[i - 1]);
     }
 
     ValueTy(const ValueTy &) = default;
     ValueTy(ValueTy &&) = default;
 
-    static ValueTy Logic0(size_t numBits = 1) {
-        return ValueTy(numBits, Logic::Ty::Logic0);
+    static ValueTy logic0(size_t numBits = 1) {
+        return ValueTy(numBits, Logic::Ty::LOGIC_0);
     }
-    static ValueTy Logic1(size_t numBits = 1) {
-        return ValueTy(numBits, Logic::Ty::Logic1);
+    static ValueTy logic1(size_t numBits = 1) {
+        return ValueTy(numBits, Logic::Ty::LOGIC_1);
     }
-    static ValueTy HighZ(size_t numBits = 1) {
-        return ValueTy(numBits, Logic::Ty::HighZ);
+    static ValueTy highZ(size_t numBits = 1) {
+        return ValueTy(numBits, Logic::Ty::HIGH_Z);
     }
-    static ValueTy Unknown(size_t numBits = 1) {
-        return ValueTy(numBits, Logic::Ty::Unknown);
+    static ValueTy unknown(size_t numBits = 1) {
+        return ValueTy(numBits, Logic::Ty::UNKNOWN);
     }
 
     ValueTy &operator=(const ValueTy &) = default;
     ValueTy &operator=(ValueTy &&) = default;
 
-    unsigned size() const { return Value.size(); }
-    bool isWire() const { return Value.size() == 1; }
-    bool isBus() const { return Value.size() > 1; }
+    unsigned size() const { return value.size(); }
+    bool isWire() const { return value.size() == 1; }
+    bool isBus() const { return value.size() > 1; }
 
     bool operator==(const ValueTy &RHS) const {
         if (size() != RHS.size())
-            die("Can not compare ValueTys of different sizes.");
+            DIE("Can not compare ValueTys of different sizes.");
         for (unsigned i = 0; i < size(); i++)
-            if (Value[i] != RHS.Value[i])
+            if (value[i] != RHS.value[i])
                 return false;
         return true;
     }
@@ -201,7 +203,7 @@ class ValueTy {
 
     ValueTy operator~() const {
         ValueTy Tmp(*this);
-        for (auto &v : Tmp.Value)
+        for (auto &v : Tmp.value)
             v = Logic::NOT(v);
         return Tmp;
     }
@@ -210,59 +212,59 @@ class ValueTy {
         std::string Str("");
         Str.reserve(size());
         for (unsigned i = size(); i > 0; i--)
-            Str += Logic::getAsChar(Value[i - 1]);
+            Str += Logic::getAsChar(value[i - 1]);
         return Str;
     }
 
     Logic::Ty get() const {
-        assert(Value.size() == 1 && "Bit index not specified.");
-        return Value[0];
+        assert(value.size() == 1 && "Bit index not specified.");
+        return value[0];
     }
     Logic::Ty get(size_t i) const {
         assert(i < size() && "Out of bound access in ValueTy get.");
-        return Value[i];
+        return value[i];
     }
 
     ValueTy &set(Logic::Ty v, size_t i) {
         assert(i < size() && "Out of bound access in ValueTy get.");
-        Value[i] = v;
+        value[i] = v;
         return *this;
     }
 
     ValueTy operator&=(const ValueTy &RHS) {
         if (size() != RHS.size())
-            die("Signals have different sizes in binary operation.");
+            DIE("Signals have different sizes in binary operation.");
         for (unsigned i = 0; i < size(); i++)
-            Value[i] = Logic::AND(Value[i], RHS.Value[i]);
+            value[i] = Logic::AND(value[i], RHS.value[i]);
         return *this;
     }
 
     ValueTy operator|=(const ValueTy &RHS) {
         if (size() != RHS.size())
-            die("Signals have different sizes in binary operation.");
+            DIE("Signals have different sizes in binary operation.");
         for (unsigned i = 0; i < size(); i++)
-            Value[i] = Logic::OR(Value[i], RHS.Value[i]);
+            value[i] = Logic::OR(value[i], RHS.value[i]);
         return *this;
     }
 
     ValueTy operator^=(const ValueTy &RHS) {
         if (size() != RHS.size())
-            die("Signals have different sizes in binary operation.");
+            DIE("Signals have different sizes in binary operation.");
         for (unsigned i = 0; i < size(); i++)
-            Value[i] = Logic::XOR(Value[i], RHS.Value[i]);
+            value[i] = Logic::XOR(value[i], RHS.value[i]);
         return *this;
     }
 
     unsigned countOnes() const {
         unsigned Cnt = 0;
-        for (const auto &Bit : Value)
-            if (Bit == Logic::Ty::Logic1)
+        for (const auto &Bit : value)
+            if (Bit == Logic::Ty::LOGIC_1)
                 Cnt += 1;
         return Cnt;
     }
 
   private:
-    std::vector<Logic::Ty> Value;
+    std::vector<Logic::Ty> value;
 };
 
 inline ValueTy operator&(const ValueTy &LHS, const ValueTy &RHS) {
@@ -290,19 +292,19 @@ class Signal {
     class Pack {
         typedef uint32_t Ty;
 
-        static const constexpr Ty mask = (1 << Logic::encoding()) - 1;
+        static const constexpr Ty MASK = (1 << Logic::encoding()) - 1;
         static constexpr size_t shiftAmount(size_t offset) {
             return offset * Logic::encoding();
         };
 
       public:
-        Ty raw() const { return V; }
+        Ty raw() const { return value; }
         static constexpr size_t capacity() {
             return (sizeof(Ty) * 8) / Logic::encoding();
         }
 
-        Pack() : V(){};
-        explicit Pack(Logic::Ty v) : V(0) { insert(v, 0); }
+        Pack() : value() {};
+        explicit Pack(Logic::Ty v) : value(0) { insert(v, 0); }
         explicit Pack(char c) : Pack(Logic::fromChar(c)) {}
 
         Pack(const Pack &) = default;
@@ -310,8 +312,8 @@ class Signal {
 
         Pack &insert(Logic::Ty v, size_t offset) {
             assert(offset < capacity() && "Out of pack access");
-            V &= ~(mask << shiftAmount(offset));
-            V |= Ty(v) << shiftAmount(offset);
+            value &= ~(MASK << shiftAmount(offset));
+            value |= Ty(v) << shiftAmount(offset);
             return *this;
         }
         Pack &insert(char c, size_t offset) {
@@ -320,11 +322,11 @@ class Signal {
 
         Logic::Ty get(size_t offset) const {
             assert(offset < capacity() && "Out of pack access");
-            return Logic::Ty((V >> shiftAmount(offset)) & mask);
+            return Logic::Ty((value >> shiftAmount(offset)) & MASK);
         }
 
       private:
-        Ty V;
+        Ty value;
     };
 
   public:
@@ -351,7 +353,7 @@ class Signal {
         // We compare the actual physical values, so we don't bother
         // about the signal name or its kind.
         if (getNumBits() != RHS.getNumBits())
-            die("Can not compare Signals of different size.");
+            DIE("Can not compare Signals of different size.");
         if (getNumChanges() != RHS.getNumChanges())
             return false;
         // Perform a raw comparisons on the flat data.
@@ -457,16 +459,16 @@ class Signal {
     }
 
     struct ChangeTy {
-        TimeTy Time;
-        ValueTy Value;
-        ChangeTy(TimeTy t, const char *str) : Time(t), Value(str) {}
-        ChangeTy(TimeTy t, const ValueTy &v) : Time(t), Value(v) {}
-        ChangeTy(TimeTy t, ValueTy &&v) : Time(t), Value(std::move(v)) {}
+        TimeTy time;
+        ValueTy value;
+        ChangeTy(TimeTy t, const char *str) : time(t), value(str) {}
+        ChangeTy(TimeTy t, const ValueTy &v) : time(t), value(v) {}
+        ChangeTy(TimeTy t, ValueTy &&v) : time(t), value(std::move(v)) {}
         bool operator==(const ChangeTy &RHS) const {
-            return Time == RHS.Time && Value == RHS.Value;
+            return time == RHS.time && value == RHS.value;
         }
         bool operator!=(const ChangeTy &RHS) const {
-            return Time != RHS.Time || Value != RHS.Value;
+            return time != RHS.time || value != RHS.value;
         }
     };
 
@@ -475,11 +477,11 @@ class Signal {
     Signal &append(WAN::TimeIdxTy t, const ChangeTy &c) {
         assert(timeIdx.size() <= value.size() * Pack::capacity() / numBits &&
                "Time and Value size discrepancy");
-        assert(c.Value.size() == numBits && "different number of bits");
+        assert(c.value.size() == numBits && "different number of bits");
         if (!timeIdx.empty())
             assert(t >= timeIdx.back() && "Time must increase monotonically "
                                           "when appending a value change");
-        assert((*allTimes)[t] == c.Time && "Time mismatch");
+        assert((*allTimes)[t] == c.time && "Time mismatch");
 
         if (timeIdx.empty() || t > timeIdx.back()) {
             // New time : the value needs to be written in a new slot in the
@@ -489,17 +491,17 @@ class Signal {
             if (packOffset == 0) {
                 // A new pack is needed: construct the value emplace.
                 for (unsigned i = 0; i < numBits; i++)
-                    value.emplace_back(c.Value.get(i));
+                    value.emplace_back(c.value.get(i));
             } else {
                 for (unsigned i = 0; i < numBits; i++)
-                    value[value.size() - numBits + i].insert(c.Value.get(i),
+                    value[value.size() - numBits + i].insert(c.value.get(i),
                                                              packOffset);
             }
         } else if (t == timeIdx.back()) {
             // Multiple changes at the same time: overwrite the current value.
             size_t packOffset = (timeIdx.size() - 1) % Pack::capacity();
             for (unsigned i = 0; i < numBits; i++)
-                value[value.size() - numBits + i].insert(c.Value.get(i),
+                value[value.size() - numBits + i].insert(c.value.get(i),
                                                          packOffset);
         }
 
@@ -581,14 +583,14 @@ class Signal {
     }
 
     struct ChangeBoundsTy {
-        size_t Low;
-        size_t High;
-        ChangeBoundsTy(size_t Low, size_t High) : Low(Low), High(High) {}
+        size_t low;
+        size_t high;
+        ChangeBoundsTy(size_t Low, size_t High) : low(Low), high(High) {}
         bool operator==(const ChangeBoundsTy &RHS) const {
-            return Low == RHS.Low && High == RHS.High;
+            return low == RHS.low && high == RHS.high;
         }
         bool operator!=(const ChangeBoundsTy &RHS) const {
-            return Low != RHS.Low || High != RHS.High;
+            return low != RHS.low || high != RHS.high;
         }
     };
 
@@ -606,31 +608,31 @@ class Signal {
         return getValueChange(Idx);
     }
 
-    class iterator
+    class Iterator
         : public std::iterator<std::random_access_iterator_tag, ChangeTy> {
       public:
-        iterator(const Signal *Sig, size_t Idx) : Sig(Sig), Idx(Idx) {}
-        iterator(const iterator &it) : Sig(it.Sig), Idx(it.Idx) {}
+        Iterator(const Signal *Sig, size_t Idx) : sig(Sig), idx(Idx) {}
+        Iterator(const Iterator &it) : sig(it.sig), idx(it.idx) {}
 
-        iterator &operator=(const iterator &it) {
-            Sig = it.Sig, Idx = it.Idx;
+        Iterator &operator=(const Iterator &it) {
+            sig = it.sig, idx = it.idx;
             return *this;
         }
 
         // Can be compared for equivalence using the equality/inequality
         // operators
-        bool operator==(const iterator &RHS) const {
-            return Sig == RHS.Sig && Idx == RHS.Idx;
+        bool operator==(const Iterator &RHS) const {
+            return sig == RHS.sig && idx == RHS.idx;
         }
-        bool operator!=(const iterator &RHS) const {
-            return Sig != RHS.Sig || Idx != RHS.Idx;
+        bool operator!=(const Iterator &RHS) const {
+            return sig != RHS.sig || idx != RHS.idx;
         }
 
         // Can be dereferenced as an rvalue (if in a dereferenceable state).
         ChangeTy operator*() const {
-            assert(Idx < Sig->getNumChanges() &&
+            assert(idx < sig->getNumChanges() &&
                    "Signal in a non dereferenceable state");
-            return Sig->getChange(Idx);
+            return sig->getChange(idx);
         }
 #if 0
     ChangeTy *operator->() const {
@@ -639,77 +641,77 @@ class Signal {
 #endif
 
         // Can be incremented.
-        iterator &operator++() {
-            ++Idx;
+        Iterator &operator++() {
+            ++idx;
             return *this;
         }
-        iterator operator++(int) {
-            iterator tmp(*this);
+        Iterator operator++(int) {
+            Iterator tmp(*this);
             operator++();
             return tmp;
         }
         // Can be decremented.
-        iterator &operator--() {
-            --Idx;
+        Iterator &operator--() {
+            --idx;
             return *this;
         }
-        iterator operator--(int) {
-            iterator tmp(*this);
+        Iterator operator--(int) {
+            Iterator tmp(*this);
             operator--();
             return tmp;
         }
 
         // Can be compared with inequality relational operators (<, >, <= and
         // >=).
-        bool operator<(const iterator &RHS) const {
-            assert(Sig == RHS.Sig && "Uncomparable iterators");
-            return Idx < RHS.Idx;
+        bool operator<(const Iterator &RHS) const {
+            assert(sig == RHS.sig && "Uncomparable iterators");
+            return idx < RHS.idx;
         }
-        bool operator>(const iterator &RHS) const {
-            assert(Sig == RHS.Sig && "Uncomparable iterators");
-            return Idx > RHS.Idx;
+        bool operator>(const Iterator &RHS) const {
+            assert(sig == RHS.sig && "Uncomparable iterators");
+            return idx > RHS.idx;
         }
-        bool operator<=(const iterator &RHS) const {
-            assert(Sig == RHS.Sig && "Uncomparable iterators");
-            return Idx <= RHS.Idx;
+        bool operator<=(const Iterator &RHS) const {
+            assert(sig == RHS.sig && "Uncomparable iterators");
+            return idx <= RHS.idx;
         }
-        bool operator>=(const iterator &RHS) const {
-            assert(Sig == RHS.Sig && "Uncomparable iterators");
-            return Idx >= RHS.Idx;
+        bool operator>=(const Iterator &RHS) const {
+            assert(sig == RHS.sig && "Uncomparable iterators");
+            return idx >= RHS.idx;
         }
 
         // Supports compound assignment operations += and -=
-        iterator &operator+=(int n) {
-            Idx += n;
+        Iterator &operator+=(int n) {
+            idx += n;
             return *this;
         }
-        iterator &operator-=(int n) {
-            Idx -= n;
+        Iterator &operator-=(int n) {
+            idx -= n;
             return *this;
         }
 
         // Supports substracting an iterator from another.
-        int operator-(const Signal::iterator &RHS) const {
-            assert(Sig == RHS.Sig && "Un-substractable iterators");
-            return Idx - RHS.Idx;
+        int operator-(const Signal::Iterator &RHS) const {
+            assert(sig == RHS.sig && "Un-substractable iterators");
+            return idx - RHS.idx;
         }
 
         // Supports the offset dereference operator ([])
         ChangeTy operator[](int n) const {
-            assert(Idx + n < Sig->getNumChanges() &&
+            assert(idx + n < sig->getNumChanges() &&
                    "Signal in a non dereferenceable state");
-            return Sig->getChange(Idx + n);
+            return sig->getChange(idx + n);
         }
 
-        bool hasReachedEnd() const { return Idx >= Sig->getNumChanges(); }
+        bool hasReachedEnd() const { return idx >= sig->getNumChanges(); }
 
       private:
-        const Signal *Sig;
-        size_t Idx;
+        const Signal *sig;
+        size_t idx;
     };
 
-    iterator begin() const { return iterator(this, 0); }
-    iterator end() const { return iterator(this, getNumChanges()); }
+    Iterator begin() const { return Iterator(this, 0); }
+    Iterator end() const { return Iterator(this, getNumChanges()); }
 
     size_t getObjectSize() const {
         return sizeof(*this) + timeIdx.size() * sizeof(timeIdx[0]) +
@@ -733,18 +735,18 @@ class Signal {
     unsigned numBits;
 };
 
-inline Signal::iterator operator+(const Signal::iterator &it, int n) {
-    Signal::iterator Tmp(it);
+inline Signal::Iterator operator+(const Signal::Iterator &it, int n) {
+    Signal::Iterator Tmp(it);
     Tmp += n;
     return Tmp;
 }
 
-inline Signal::iterator operator+(int n, const Signal::iterator &it) {
+inline Signal::Iterator operator+(int n, const Signal::Iterator &it) {
     return it + n;
 }
 
-inline Signal::iterator operator-(const Signal::iterator &it, int n) {
-    Signal::iterator Tmp(it);
+inline Signal::Iterator operator-(const Signal::Iterator &it, int n) {
+    Signal::Iterator Tmp(it);
     Tmp -= n;
     return Tmp;
 }
@@ -755,7 +757,7 @@ inline std::ostream &operator<<(std::ostream &os, const ValueTy &v) {
 }
 
 inline std::ostream &operator<<(std::ostream &os, const Signal::ChangeTy &c) {
-    os << "Time:" << c.Time << " Value:" << std::string(c.Value);
+    os << "Time:" << c.time << " Value:" << std::string(c.value);
     return os;
 }
 

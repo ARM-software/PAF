@@ -1,6 +1,6 @@
 /*
- * SPDX-FileCopyrightText: <text>Copyright 2021,2022,2023,2024 Arm Limited and/or its
- * affiliates <open-source-office@arm.com></text>
+ * SPDX-FileCopyrightText: <text>Copyright 2021-2024 Arm Limited
+ * and/or its affiliates <open-source-office@arm.com></text>
  * SPDX-License-Identifier: Apache-2.0
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -132,16 +132,16 @@ int main(int argc, char *argv[]) {
             cout << " \"" << e << "\"";
         cout << '\n';
 
-        if (app.decimation_period() != 1 || app.decimation_offset() != 0)
-            cout << "Decimation: " << app.decimation_period() << '%'
-                 << app.decimation_offset() << '\n';
+        if (app.decimationPeriod() != 1 || app.decimationOffset() != 0)
+            cout << "Decimation: " << app.decimationPeriod() << '%'
+                 << app.decimationOffset() << '\n';
 
-        if (app.output_filename().size() != 0) {
+        if (app.outputFilename().size() != 0) {
             if (app.append())
-                cout << "Appending output to '" << app.output_filename()
+                cout << "Appending output to '" << app.outputFilename()
                      << "'\n";
             else
-                cout << "Saving output to '" << app.output_filename() << "'\n";
+                cout << "Saving output to '" << app.outputFilename() << "'\n";
         }
     }
 
@@ -155,9 +155,9 @@ int main(int argc, char *argv[]) {
              << " samples per trace)\n";
         if (app.verbosity() >= 2)
             traces.dump(cout, 3, 4, "Traces");
-        const size_t nbsamples = min(app.num_samples(), traces.cols());
+        const size_t nbsamples = min(app.numSamples(), traces.cols());
         cout << "Will process " << nbsamples
-             << " samples per traces, starting at sample " << app.sample_start()
+             << " samples per traces, starting at sample " << app.sampleStart()
              << "\n";
     }
 
@@ -178,7 +178,7 @@ int main(int argc, char *argv[]) {
     if (masks)
         context.addVariable("mask", masks->cbegin());
 
-    const size_t sample_to_stop_at = min(app.sample_end(), traces.cols());
+    const size_t sample_to_stop_at = min(app.sampleEnd(), traces.cols());
     const size_t nbtraces = traces.rows();
     NPArray<double> results; // Metric results.
 
@@ -201,7 +201,7 @@ int main(int argc, char *argv[]) {
 
             // Compute the metric.
             results = concatenate(
-                correl(app.sample_start(), sample_to_stop_at, traces, ivalues),
+                correl(app.sampleStart(), sample_to_stop_at, traces, ivalues),
                 results, NPArray<double>::COLUMN);
         } break;
         case Metric::T_TEST: {
@@ -222,11 +222,11 @@ int main(int argc, char *argv[]) {
 
             // Compute the metric.
             results = concatenate(
-                app.is_perfect()
-                    ? perfect_t_test(app.sample_start(), sample_to_stop_at,
+                app.isPerfect()
+                    ? perfect_t_test(app.sampleStart(), sample_to_stop_at,
                                      traces, classifier,
                                      app.verbose() ? &cout : nullptr)
-                    : t_test(app.sample_start(), sample_to_stop_at, traces,
+                    : t_test(app.sampleStart(), sample_to_stop_at, traces,
                              classifier),
                 results, NPArray<double>::COLUMN);
         } break;

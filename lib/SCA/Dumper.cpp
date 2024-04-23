@@ -27,12 +27,12 @@ namespace SCA {
 YAMLMemoryAccessesDumper::YAMLMemoryAccessesDumper(const std::string &filename)
     : MemoryAccessesDumper(!filename.empty()),
       YAMLDumper(filename, "memaccess") {
-    *this << get_header() << ":\n";
+    *this << getHeader() << ":\n";
 }
 
 YAMLMemoryAccessesDumper::YAMLMemoryAccessesDumper(std::ostream &s, bool enable)
     : MemoryAccessesDumper(enable), YAMLDumper(s, "memaccess") {
-    *this << get_header() << ":\n";
+    *this << getHeader() << ":\n";
 }
 
 namespace {
@@ -51,7 +51,7 @@ void dumpMemAccessYAML(YAMLDumper &D, const std::vector<MemoryAccess> &MA,
 
 void YAMLMemoryAccessesDumper::dump(uint64_t PC,
                                     const std::vector<MemoryAccess> &MA) {
-    if (const char *s = get_trace_separator())
+    if (const char *s = getTraceSeparator())
         *this << s << '\n';
 
     if (MA.empty())
@@ -61,10 +61,10 @@ void YAMLMemoryAccessesDumper::dump(uint64_t PC,
     bool has_stores = false;
     for (const auto &a : MA)
         switch (a.access) {
-        case Access::Type::Read:
+        case Access::Type::READ:
             has_loads = true;
             break;
-        case Access::Type::Write:
+        case Access::Type::WRITE:
             has_stores = true;
             break;
         }
@@ -75,12 +75,12 @@ void YAMLMemoryAccessesDumper::dump(uint64_t PC,
     *this << "    - { pc: 0x" << std::hex << PC;
     if (has_loads) {
         *this << ", loads: [";
-        dumpMemAccessYAML(*this, MA, Access::Type::Read);
+        dumpMemAccessYAML(*this, MA, Access::Type::READ);
         *this << ']';
     }
     if (has_stores) {
         *this << ", stores: [";
-        dumpMemAccessYAML(*this, MA, Access::Type::Write);
+        dumpMemAccessYAML(*this, MA, Access::Type::WRITE);
         *this << ']';
     }
     *this << "}\n" << std::dec;
@@ -90,18 +90,18 @@ YAMLInstrDumper::YAMLInstrDumper(const std::string &filename,
                                  bool dumpMemAccess, bool dumpRegBank)
     : InstrDumper(!filename.empty(), dumpMemAccess, dumpRegBank),
       YAMLDumper(filename, "instr") {
-    *this << get_header() << ":\n";
+    *this << getHeader() << ":\n";
 }
 
 YAMLInstrDumper::YAMLInstrDumper(std::ostream &s, bool enable,
                                  bool dumpMemAccess, bool dumpRegBank)
     : InstrDumper(enable, dumpMemAccess, dumpRegBank), YAMLDumper(s, "instr") {
-    *this << get_header() << ":\n";
+    *this << getHeader() << ":\n";
 }
 
 void YAMLInstrDumper::dumpImpl(const ReferenceInstruction &I,
                                const std::vector<uint64_t> *regs) {
-    if (const char *s = get_trace_separator())
+    if (const char *s = getTraceSeparator())
         *this << s << '\n';
 
     *this << "    - { " << std::hex;
@@ -112,9 +112,9 @@ void YAMLInstrDumper::dumpImpl(const ReferenceInstruction &I,
     *this << ", disassembly: \"" << I.disassembly << '"';
     if (dumpMemAccess) {
         *this << ", loads: [";
-        dumpMemAccessYAML(*this, I.memaccess, Access::Type::Read);
+        dumpMemAccessYAML(*this, I.memaccess, Access::Type::READ);
         *this << "], stores: [";
-        dumpMemAccessYAML(*this, I.memaccess, Access::Type::Write);
+        dumpMemAccessYAML(*this, I.memaccess, Access::Type::WRITE);
         *this << ']';
     }
     if (regs && dumpRegBank) {

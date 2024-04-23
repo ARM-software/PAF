@@ -77,36 +77,36 @@ class BPCollector {
         void event(BPoint &B, const TextOnlyEvent &ev) {}
     };
 
-    BPCollector() : BrkCnt() {}
+    BPCollector() : brkCnt() {}
 
     void operator()(const BPoint &B) { add(B.addr); }
 
     unsigned count(uint64_t addr) const {
-        auto it = BrkCnt.find(addr);
-        if (it != BrkCnt.end())
+        auto it = brkCnt.find(addr);
+        if (it != brkCnt.end())
             return it->second;
         return 0;
     }
 
     BPCollector &add(uint64_t addr) {
-        auto it = BrkCnt.find(addr);
-        if (it != BrkCnt.end())
+        auto it = brkCnt.find(addr);
+        if (it != brkCnt.end())
             it->second += 1;
         else
-            BrkCnt.insert(std::pair<uint64_t, unsigned>(addr, 1));
+            brkCnt.insert(std::pair<uint64_t, unsigned>(addr, 1));
         return *this;
     }
 
     void dump(ostream &os) const {
-        for (const auto &P : BrkCnt)
+        for (const auto &P : brkCnt)
             os << "0x" << std::hex << P.first << " - " << std::dec << P.second
                << '\n';
     }
 
-    void clear() { BrkCnt.clear(); }
+    void clear() { brkCnt.clear(); }
 
   private:
-    std::unordered_map<uint64_t, unsigned> BrkCnt;
+    std::unordered_map<uint64_t, unsigned> brkCnt;
 };
 
 // The SuccessorCollector class contains a sequence of (time, address) pairs and
@@ -128,78 +128,78 @@ class SuccessorCollector {
         void event(Point &P, const TextOnlyEvent &ev) {}
     };
 
-    SuccessorCollector() : Trace() {}
+    SuccessorCollector() : trace() {}
 
-    void operator()(const Point &P) { Trace.push_back(P); }
+    void operator()(const Point &P) { trace.push_back(P); }
 
     Point &operator[](size_t idx) {
-        assert(idx < Trace.size() &&
+        assert(idx < trace.size() &&
                "Out of bound access, no successor available.");
-        return Trace[idx];
+        return trace[idx];
     }
     const Point &operator[](size_t idx) const {
-        assert(idx < Trace.size() &&
+        assert(idx < trace.size() &&
                "Out of bound access, no successor available.");
-        return Trace[idx];
+        return trace[idx];
     }
 
     void dump(ostream &os) const {
-        for (const auto &P : Trace)
+        for (const auto &P : trace)
             os << std::dec << P.time << ": 0x" << std::hex << P.addr << '\n';
     }
 
-    void clear() { Trace.clear(); }
+    void clear() { trace.clear(); }
 
   private:
-    vector<Point> Trace;
+    vector<Point> trace;
 };
 
 // This call tree visitor will capture the Intervals spent in function starting
 // at a specific time, excluding calls to sub-functions.
 class CTFlatVisitor : public CallTreeVisitor {
-    PAF::Intervals<TarmacSite> LocalInjectionRanges;
-    const TarmacSite TheFunctionEntry;
-    const TarmacSite TheFunctionExit;
+    PAF::Intervals<TarmacSite> localInjectionRanges;
+    const TarmacSite theFunctionEntry;
+    const TarmacSite theFunctionExit;
     TarmacSite startCaptureSite;
 
   public:
     CTFlatVisitor(const CallTree &CT, const TarmacSite &TheFunctionEntry,
                   const TarmacSite &TheFunctionExit)
-        : CallTreeVisitor(CT), LocalInjectionRanges(),
-          TheFunctionEntry(TheFunctionEntry), TheFunctionExit(TheFunctionExit) {
+        : CallTreeVisitor(CT), localInjectionRanges(),
+          theFunctionEntry(TheFunctionEntry), theFunctionExit(TheFunctionExit) {
     }
 
     PAF::Intervals<TarmacSite> getInjectionRanges() {
-        return LocalInjectionRanges;
+        return localInjectionRanges;
     }
 
     void onFunctionEntry(const TarmacSite &function_entry,
                          const TarmacSite &function_exit) {
-        if (function_entry == TheFunctionEntry &&
-            function_exit == TheFunctionExit)
+        if (function_entry == theFunctionEntry &&
+            function_exit == theFunctionExit)
             startCaptureSite = function_entry;
     }
 
     void onFunctionExit(const TarmacSite &function_entry,
                         const TarmacSite &function_exit) {
-        if (function_entry == TheFunctionEntry &&
-            function_exit == TheFunctionExit)
-            LocalInjectionRanges.insert(startCaptureSite, function_exit);
+        if (function_entry == theFunctionEntry &&
+            function_exit == theFunctionExit)
+            localInjectionRanges.insert(startCaptureSite, function_exit);
     }
 
     void onCallSite(const TarmacSite &function_entry,
                     const TarmacSite &function_exit,
                     const TarmacSite &call_site, const TarmacSite &resume_site,
                     const CallTree &TC) {
-        if (function_entry == TheFunctionEntry &&
-            function_exit == TheFunctionExit)
-            LocalInjectionRanges.insert(startCaptureSite, call_site);
+        if (function_entry == theFunctionEntry &&
+            function_exit == theFunctionExit)
+            localInjectionRanges.insert(startCaptureSite, call_site);
     }
     void onResumeSite(const TarmacSite &function_entry,
                       const TarmacSite &function_exit,
                       const TarmacSite &resume_site) {
-        if (function_entry == TheFunctionEntry &&
-            function_exit == TheFunctionExit)
+        if (function_entry == theFunctionEntry &&
+            function_exit == theFunctionExit)
             startCaptureSite = resume_site;
     }
 };
@@ -211,10 +211,10 @@ class FaulterInjectionPlanner {
                             unsigned long MaxTraceTime,
                             uint64_t ProgramEntryAddress,
                             uint64_t ProgramEndAddress)
-        : CPU(CPU), Breakpoints(), Successors(),
-          Campaign(Image, Tarmac, MaxTraceTime, ProgramEntryAddress & ~1UL,
+        : cpu(CPU), breakpoints(), successors(),
+          campaign(Image, Tarmac, MaxTraceTime, ProgramEntryAddress & ~1UL,
                    ProgramEndAddress & ~1UL),
-          InstCnt(0) {}
+          instCnt(0) {}
     virtual ~FaulterInjectionPlanner() {}
 
     virtual void operator()(const PAF::ReferenceInstruction &I) = 0;
@@ -226,24 +226,24 @@ class FaulterInjectionPlanner {
         // (excluded) the interval start, including the number of times
         // they were visited. This will be used as the starting
         // point for breakpoint count.
-        Breakpoints.clear();
+        breakpoints.clear();
         PAF::FromTraceBuilder<BPCollector::BPoint, BPCollector::EventHandler,
                               BPCollector>
             BPC(IN);
-        BPC.build(PAF::ExecutionRange(TarmacSite(), start), Breakpoints, 0, -1);
+        BPC.build(PAF::ExecutionRange(TarmacSite(), start), breakpoints, 0, -1);
 
         // Collect all instructions successors.
-        Successors.clear();
+        successors.clear();
         PAF::FromTraceBuilder<SuccessorCollector::Point,
                               SuccessorCollector::EventHandler,
                               SuccessorCollector>
             SB(IN);
-        SB.build(PAF::ExecutionRange(start, end), Successors, 0, 1);
+        SB.build(PAF::ExecutionRange(start, end), successors, 0, 1);
     }
 
     // Add a simple Oracle for now : check the function return value.
     FaulterInjectionPlanner &addOracle(Oracle &&O) {
-        Campaign.addOracle(std::move(O));
+        campaign.addOracle(std::move(O));
         return *this;
     }
 
@@ -252,7 +252,7 @@ class FaulterInjectionPlanner {
                                                    unsigned long EndTime,
                                                    uint64_t StartAddress,
                                                    uint64_t EndAddress) {
-        Campaign.addInjectionRangeInfo(InjectionRangeInfo(
+        campaign.addInjectionRangeInfo(InjectionRangeInfo(
             Name, StartTime, EndTime, StartAddress, EndAddress));
         return *this;
     }
@@ -262,16 +262,16 @@ class FaulterInjectionPlanner {
                           unsigned long EndTime, uint64_t StartAddress,
                           uint64_t EndAddress, uint64_t CallAddress,
                           uint64_t ResumeAddress) {
-        Campaign.addInjectionRangeInfo(InjectionRangeInfo(
+        campaign.addInjectionRangeInfo(InjectionRangeInfo(
             Name, StartTime, EndTime, StartAddress, EndAddress));
         return *this;
     }
 
     void dump(const string &campaign_filename) const {
         if (campaign_filename.size() != 0)
-            Campaign.dumpToFile(campaign_filename);
+            campaign.dumpToFile(campaign_filename);
         else
-            Campaign.dump(cout);
+            campaign.dump(cout);
     }
 
     static std::unique_ptr<FaulterInjectionPlanner>
@@ -280,18 +280,17 @@ class FaulterInjectionPlanner {
         uint64_t ProgramEntryAddress, uint64_t ProgramEndAddress);
 
   protected:
-    const PAF::ArchInfo &CPU;
-    BPCollector Breakpoints;
-    SuccessorCollector Successors;
-    InjectionCampaign Campaign;
-    size_t InstCnt;
+    const PAF::ArchInfo &cpu;
+    BPCollector breakpoints;
+    SuccessorCollector successors;
+    InjectionCampaign campaign;
+    size_t instCnt;
 };
 
 class InstructionSkipPlanner : public FaulterInjectionPlanner {
   public:
     InstructionSkipPlanner(const string &Image, const string &Tarmac,
-                           const PAF::ArchInfo &CPU,
-                           unsigned long MaxTraceTime,
+                           const PAF::ArchInfo &CPU, unsigned long MaxTraceTime,
                            uint64_t ProgramEntryAddress,
                            uint64_t ProgramEndAddress)
         : FaulterInjectionPlanner(Image, Tarmac, CPU, MaxTraceTime,
@@ -299,19 +298,18 @@ class InstructionSkipPlanner : public FaulterInjectionPlanner {
 
     virtual void operator()(const PAF::ReferenceInstruction &I) override {
         InstructionSkip *theFault = new InstructionSkip(
-            I.time, I.pc, I.instruction, CPU.getNOP(I.width), I.width,
-            I.effect, PAF::trimSpacesAndComment(I.disassembly));
-        theFault->setBreakpoint(I.pc, Breakpoints.count(I.pc));
-        Breakpoints.add(I.pc);
-        Campaign.addFault(theFault);
+            I.time, I.pc, I.instruction, cpu.getNOP(I.width), I.width, I.effect,
+            PAF::trimSpacesAndComment(I.disassembly));
+        theFault->setBreakpoint(I.pc, breakpoints.count(I.pc));
+        breakpoints.add(I.pc);
+        campaign.addFault(theFault);
     }
 };
 
 class CorruptRegDefPlanner : public FaulterInjectionPlanner {
   public:
     CorruptRegDefPlanner(const string &Image, const string &Tarmac,
-                         const PAF::ArchInfo &CPU,
-                         unsigned long MaxTraceTime,
+                         const PAF::ArchInfo &CPU, unsigned long MaxTraceTime,
                          uint64_t ProgramEntryAddress,
                          uint64_t ProgramEndAddress)
         : FaulterInjectionPlanner(Image, Tarmac, CPU, MaxTraceTime,
@@ -321,23 +319,23 @@ class CorruptRegDefPlanner : public FaulterInjectionPlanner {
         // The CorruptRegDef fault model corrupts the output registers of an
         // instruction: this requires to break at the next intruction, once
         // the instruction to fault has been executed.
-        assert(I.pc == Successors[InstCnt].addr && "Address mismatch");
-        assert(I.time == Successors[InstCnt].time && "Time mismatch");
-        InstCnt++;
-        Addr BkptAddr = Successors[InstCnt].addr;
+        assert(I.pc == successors[instCnt].addr && "Address mismatch");
+        assert(I.time == successors[instCnt].time && "Time mismatch");
+        instCnt++;
+        Addr BkptAddr = successors[instCnt].addr;
         bool faultAdded = false;
         for (const auto &Reg : I.regaccess) {
-            if (Reg.access == PAF::RegisterAccess::Type::Write) {
+            if (Reg.access == PAF::RegisterAccess::Type::WRITE) {
                 faultAdded = true;
                 CorruptRegDef *theFault = new CorruptRegDef(
                     I.time, I.pc, I.instruction, I.width,
                     PAF::trimSpacesAndComment(I.disassembly), Reg.name);
-                theFault->setBreakpoint(BkptAddr, Breakpoints.count(BkptAddr));
-                Campaign.addFault(theFault);
+                theFault->setBreakpoint(BkptAddr, breakpoints.count(BkptAddr));
+                campaign.addFault(theFault);
             }
         }
         if (faultAdded)
-            Breakpoints.add(BkptAddr);
+            breakpoints.add(BkptAddr);
     }
 };
 
@@ -347,11 +345,11 @@ std::unique_ptr<FaulterInjectionPlanner> FaulterInjectionPlanner::get(
     uint64_t ProgramEntryAddress, uint64_t ProgramEndAddress) {
 
     switch (Model) {
-    case Faulter::FaultModel::InstructionSkip:
+    case Faulter::FaultModel::INSTRUCTION_SKIP:
         return std::unique_ptr<FaulterInjectionPlanner>(
             new InstructionSkipPlanner(Image, Tarmac, CPU, MaxTraceTime,
                                        ProgramEntryAddress, ProgramEndAddress));
-    case Faulter::FaultModel::CorruptRegDef:
+    case Faulter::FaultModel::CORRUPT_REG_DEF:
         return std::unique_ptr<FaulterInjectionPlanner>(
             new CorruptRegDefPlanner(Image, Tarmac, CPU, MaxTraceTime,
                                      ProgramEntryAddress, ProgramEndAddress));
@@ -378,12 +376,12 @@ void Faulter::run(const InjectionRangeSpec &IRS, FaultModel Model,
     // Build the intervals where faults have to be injected.
     vector<PAF::ExecutionRange> ER;
 
-    switch (IRS.Kind) {
-    case InjectionRangeSpec::NotSet:
+    switch (IRS.kind) {
+    case InjectionRangeSpec::NOT_SET:
         reporter->errx(EXIT_FAILURE,
                        "No injection range specification provided");
 
-    case InjectionRangeSpec::Functions: {
+    case InjectionRangeSpec::FUNCTIONS: {
         // Some function calls might be calling others from the list, so ensure
         // a proper merging of the ExecutionRanges.
         PAF::Intervals<TarmacSite> IR;
@@ -404,16 +402,16 @@ void Faulter::run(const InjectionRangeSpec &IRS, FaultModel Model,
                 if (IRS.included.invocation(function_name, i)) {
                     string invocation_name =
                         function_name + "@" + std::to_string(i);
-                    IR.insert(LER[i].Start, LER[i].End);
+                    IR.insert(LER[i].begin, LER[i].end);
                     FIP->addInjectionRangeInfo(
-                        invocation_name, LER[i].Start.time, LER[i].End.time,
-                        LER[i].Start.addr, LER[i].End.addr);
+                        invocation_name, LER[i].begin.time, LER[i].end.time,
+                        LER[i].begin.addr, LER[i].end.addr);
                     if (verbose()) {
                         cout << "Will inject faults on '" << invocation_name
                              << "' : ";
-                        PAF::dump(cout, LER[i].Start);
+                        PAF::dump(cout, LER[i].begin);
                         cout << " - ";
-                        PAF::dump(cout, LER[i].End);
+                        PAF::dump(cout, LER[i].end);
                         cout << '\n';
                     }
                 }
@@ -421,13 +419,13 @@ void Faulter::run(const InjectionRangeSpec &IRS, FaultModel Model,
 
         /// We now have non overlapping intervals !
         for (const auto &ir : IR)
-            ER.emplace_back(ir.begin_value(), ir.end_value());
+            ER.emplace_back(ir.beginValue(), ir.endValue());
     } break;
 
-    case InjectionRangeSpec::FlatFunctions: {
+    case InjectionRangeSpec::FLAT_FUNCTIONS: {
         PAF::Intervals<TarmacSite> IR;
 
-        for (const auto &S : IRS.included_flat) {
+        for (const auto &S : IRS.includedFlat) {
             const string function_name = S.first;
 
             // Use local ExecutionRanges so as not to pollute the global one.
@@ -440,28 +438,28 @@ void Faulter::run(const InjectionRangeSpec &IRS, FaultModel Model,
             }
 
             for (unsigned i = 0; i < LER.size(); i++)
-                if (IRS.included_flat.invocation(function_name, i)) {
+                if (IRS.includedFlat.invocation(function_name, i)) {
                     string invocation_name =
                         function_name + "@" + std::to_string(i);
-                    CTFlatVisitor CTF(CT, LER[i].Start, LER[i].End);
+                    CTFlatVisitor CTF(CT, LER[i].begin, LER[i].end);
                     CT.visit(CTF);
                     unsigned j = 0;
                     bool hasCalls = CTF.getInjectionRanges().size() > 1;
                     for (const auto &ir : CTF.getInjectionRanges()) {
-                        IR.insert(ir.begin_value(), ir.end_value());
+                        IR.insert(ir.beginValue(), ir.endValue());
                         const string range_name(
                             invocation_name +
                             (hasCalls ? " - range " + std::to_string(j) : ""));
                         FIP->addInjectionRangeInfo(
-                            range_name, ir.begin_value().time,
-                            ir.end_value().time, ir.begin_value().addr,
-                            ir.end_value().addr);
+                            range_name, ir.beginValue().time,
+                            ir.endValue().time, ir.beginValue().addr,
+                            ir.endValue().addr);
                         if (verbose()) {
                             cout << "Will inject faults on '" << range_name
                                  << "' : ";
-                            PAF::dump(cout, ir.begin_value());
+                            PAF::dump(cout, ir.beginValue());
                             cout << " - ";
-                            PAF::dump(cout, ir.end_value());
+                            PAF::dump(cout, ir.endValue());
                             cout << '\n';
                         }
                         j++;
@@ -470,38 +468,38 @@ void Faulter::run(const InjectionRangeSpec &IRS, FaultModel Model,
         }
         /// We now have non overlapping intervals !
         for (const auto &ir : IR)
-            ER.emplace_back(ir.begin_value(), ir.end_value());
+            ER.emplace_back(ir.beginValue(), ir.endValue());
     } break;
 
-    case InjectionRangeSpec::LabelsPair: {
-        map<uint64_t, string> LabelMap;
-        ER = getLabelPairs(IRS.start_label, IRS.end_label, &LabelMap);
+    case InjectionRangeSpec::LABELS_PAIR: {
+        map<uint64_t, string> labelMap;
+        ER = getLabelPairs(IRS.startLabel, IRS.endLabel, &labelMap);
 
-        // Labels don't necessarily correspond to function names, so synthesize a
-        // 'start_label - end_label' to have a friendly name for the Intervals.
-        for (const auto &er: ER) {
+        // Labels don't necessarily correspond to function names, so synthesize
+        // a 'start_label - end_label' to have a friendly name for the
+        // Intervals.
+        for (const auto &er : ER) {
             string name("");
 
             map<uint64_t, string>::const_iterator it;
-            if ((it = LabelMap.find(er.Start.addr)) != LabelMap.end())
+            if ((it = labelMap.find(er.begin.addr)) != labelMap.end())
                 name += it->second;
             else
                 name += "unknown";
 
             name += " - ";
 
-            if ((it = LabelMap.find(er.End.addr)) != LabelMap.end())
+            if ((it = labelMap.find(er.end.addr)) != labelMap.end())
                 name += it->second;
             else
                 name += "unknown";
 
-            FIP->addInjectionRangeInfo(
-                name, er.Start.time, er.End.time,
-                er.Start.addr, er.End.addr);
+            FIP->addInjectionRangeInfo(name, er.begin.time, er.end.time,
+                                       er.begin.addr, er.end.addr);
         }
     } break;
 
-    case InjectionRangeSpec::WLabels: {
+    case InjectionRangeSpec::WLABELS: {
         vector<std::pair<uint64_t, string>> OutLabels;
         ER = getWLabels(IRS.labels, IRS.window, &OutLabels);
 
@@ -514,8 +512,8 @@ void Faulter::run(const InjectionRangeSpec &IRS, FaultModel Model,
         for (const auto &er : ER) {
             string name("");
 
-            while (it != ite && it->first >= er.Start.time &&
-                   it->first <= er.End.time) {
+            while (it != ite && it->first >= er.begin.time &&
+                   it->first <= er.end.time) {
                 if (!name.empty())
                     name += " + ";
                 name += it->second;
@@ -524,9 +522,8 @@ void Faulter::run(const InjectionRangeSpec &IRS, FaultModel Model,
             if (name.empty())
                 name = "unknown";
 
-            FIP->addInjectionRangeInfo(
-                name, er.Start.time, er.End.time,
-                er.Start.addr, er.End.addr);
+            FIP->addInjectionRangeInfo(name, er.begin.time, er.end.time,
+                                       er.begin.addr, er.end.addr);
         }
     } break;
     }
@@ -536,19 +533,19 @@ void Faulter::run(const InjectionRangeSpec &IRS, FaultModel Model,
 
         if (verbose()) {
             cout << "Injecting faults on range ";
-            PAF::dump(cout, er.Start);
+            PAF::dump(cout, er.begin);
             cout << " - ";
-            PAF::dump(cout, er.End);
+            PAF::dump(cout, er.end);
             cout << '\n';
         }
 
-        FIP->setup(*this, er.Start, er.End);
+        FIP->setup(*this, er.begin, er.end);
 
         // Inject the faults.
         PAF::FromTraceBuilder<PAF::ReferenceInstruction,
                               PAF::ReferenceInstructionBuilder, decltype(*FIP)>
             FTP(*this);
-        FTP.build(PAF::ExecutionRange(er.Start, er.End), *FIP);
+        FTP.build(PAF::ExecutionRange(er.begin, er.end), *FIP);
     }
 
     // Build the Oracle we got from the command line and add it to the Campaign.
@@ -565,18 +562,18 @@ void Faulter::run(const InjectionRangeSpec &IRS, FaultModel Model,
             const string &CSymbName = C.getSymbolName();
             vector<PAF::ExecutionRange> COI;
             switch (C.getKind()) {
-            case Classifier::Kind::CallSite:
-            case Classifier::Kind::ResumeSite:
+            case Classifier::Kind::CALL_SITE:
+            case Classifier::Kind::RESUME_SITE:
                 COI = getCallSitesTo(CSymbName);
                 break;
-            case Classifier::Kind::Entry:
-            case Classifier::Kind::Return:
+            case Classifier::Kind::ENTRY:
+            case Classifier::Kind::RETURN:
                 COI = getInstances(CSymbName);
                 break;
             }
 
             // Sanity check.
-            if (COI.size() == 0 && C.getKind() != Classifier::Kind::Entry) {
+            if (COI.size() == 0 && C.getKind() != Classifier::Kind::ENTRY) {
                 reporter->errx(EXIT_FAILURE,
                                "Classifier '%s' execution not found in the "
                                "trace. Can not guess "
@@ -591,7 +588,7 @@ void Faulter::run(const InjectionRangeSpec &IRS, FaultModel Model,
             }
 
             switch (C.getKind()) {
-            case Classifier::Kind::Entry:
+            case Classifier::Kind::ENTRY:
                 if (COI.size() == 0) {
                     uint64_t CSymbAddr;
                     size_t CSymbSize;
@@ -602,16 +599,16 @@ void Faulter::run(const InjectionRangeSpec &IRS, FaultModel Model,
                             CSymbName.c_str());
                     C.setAddress(CSymbAddr & ~1UL);
                 } else
-                    C.setAddress(COI[0].Start.addr & ~1UL);
+                    C.setAddress(COI[0].begin.addr & ~1UL);
                 break;
-            case Classifier::Kind::Return:
-                C.setAddress(COI[0].End.addr & ~1UL);
+            case Classifier::Kind::RETURN:
+                C.setAddress(COI[0].end.addr & ~1UL);
                 break;
-            case Classifier::Kind::CallSite:
-                C.setAddress(COI[0].Start.addr & ~1UL);
+            case Classifier::Kind::CALL_SITE:
+                C.setAddress(COI[0].begin.addr & ~1UL);
                 break;
-            case Classifier::Kind::ResumeSite:
-                C.setAddress(COI[0].End.addr & ~1UL);
+            case Classifier::Kind::RESUME_SITE:
+                C.setAddress(COI[0].end.addr & ~1UL);
                 break;
             }
         }
@@ -619,5 +616,5 @@ void Faulter::run(const InjectionRangeSpec &IRS, FaultModel Model,
     FIP->addOracle(std::move(O));
 
     // Save the results.
-    FIP->dump(campaign_filename);
+    FIP->dump(campaignFilename);
 }

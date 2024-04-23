@@ -80,7 +80,7 @@ NPArray<double> t_test(size_t b, size_t e, const NPArray<double> &traces,
         cnt1(0, sample) = double(avg[1].count());
     }
 
-    return (mean0 - mean1) / sqrt(var0/cnt0 + var1/cnt1);
+    return (mean0 - mean1) / sqrt(var0 / cnt0 + var1 / cnt1);
 }
 
 /// Welsh t-test with one group of traces and a classification array.
@@ -196,7 +196,7 @@ class PerfectStats {
         DIFFERENT_CONSTANT_VALUES,
         STUDENT_T_TEST,
         WELSH_T_TEST,
-        _LAST_STAT
+        LAST_TT /* End of enum marker: don't use */
     };
 
     PerfectStats() : cnt({0}) {}
@@ -218,7 +218,7 @@ class PerfectStats {
     }
 
   private:
-    array<size_t, _LAST_STAT> cnt;
+    array<size_t, LAST_TT> cnt;
 
     void emit(ostream &os, const char *str, TT t, size_t ns) const {
         os << str << ": " << count(t) << " (";
@@ -244,11 +244,11 @@ NPArray<double> perfect_t_test(size_t b, size_t e,
 
     for (size_t s = b; s < e; s++) {
         const double group0Value = group0(0, s);
-        const bool isGroup0Constant = group0.all(isEqual<double>(group0Value),
-                                                 NPArray<double>::COLUMN, s);
+        const bool isGroup0Constant =
+            group0.all(Equal<double>(group0Value), NPArray<double>::COLUMN, s);
         const double group1Value = group1(0, s);
-        const bool isGroup1Constant = group1.all(isEqual<double>(group1Value),
-                                                 NPArray<double>::COLUMN, s);
+        const bool isGroup1Constant =
+            group1.all(Equal<double>(group1Value), NPArray<double>::COLUMN, s);
 
         if (isGroup0Constant && isGroup1Constant) {
             if (group0Value == group1Value) {

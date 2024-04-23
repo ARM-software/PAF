@@ -31,12 +31,11 @@ using PAF::SCA::Abs;
 using PAF::SCA::AbsDiff;
 using PAF::SCA::Add;
 using PAF::SCA::Divide;
-using PAF::SCA::isEqual;
-using PAF::SCA::isGreater;
-using PAF::SCA::isGreaterOrEqual;
-using PAF::SCA::isLess;
-using PAF::SCA::isLessOrEqual;
-using PAF::SCA::isNotEqual;
+using PAF::SCA::Equal;
+using PAF::SCA::Greater;
+using PAF::SCA::GreaterOrEqual;
+using PAF::SCA::Less;
+using PAF::SCA::LessOrEqual;
 using PAF::SCA::Log;
 using PAF::SCA::Max;
 using PAF::SCA::MaxAbs;
@@ -46,6 +45,7 @@ using PAF::SCA::Min;
 using PAF::SCA::MinAbs;
 using PAF::SCA::Multiply;
 using PAF::SCA::Negate;
+using PAF::SCA::NotEqual;
 using PAF::SCA::NPArray;
 using PAF::SCA::NPArrayBase;
 using PAF::SCA::Sqrt;
@@ -53,36 +53,36 @@ using PAF::SCA::Substract;
 
 template <typename Ty> void checkCmpPredicates() {
     // Equality
-    EXPECT_TRUE(isEqual<Ty>(0)(0));
-    EXPECT_TRUE(isEqual<Ty>(3)(3));
-    EXPECT_FALSE(isEqual<Ty>(0)(3));
-    EXPECT_FALSE(isEqual<Ty>(3)(0));
+    EXPECT_TRUE(Equal<Ty>(0)(0));
+    EXPECT_TRUE(Equal<Ty>(3)(3));
+    EXPECT_FALSE(Equal<Ty>(0)(3));
+    EXPECT_FALSE(Equal<Ty>(3)(0));
 
     // Inequality
-    EXPECT_FALSE(isNotEqual<Ty>(0)(0));
-    EXPECT_FALSE(isNotEqual<Ty>(3)(3));
-    EXPECT_TRUE(isNotEqual<Ty>(0)(3));
-    EXPECT_TRUE(isNotEqual<Ty>(3)(0));
+    EXPECT_FALSE(NotEqual<Ty>(0)(0));
+    EXPECT_FALSE(NotEqual<Ty>(3)(3));
+    EXPECT_TRUE(NotEqual<Ty>(0)(3));
+    EXPECT_TRUE(NotEqual<Ty>(3)(0));
 
     // >
-    EXPECT_TRUE(isGreater<Ty>(2)(3));
-    EXPECT_FALSE(isGreater<Ty>(2)(2));
-    EXPECT_FALSE(isGreater<Ty>(2)(1));
+    EXPECT_TRUE(Greater<Ty>(2)(3));
+    EXPECT_FALSE(Greater<Ty>(2)(2));
+    EXPECT_FALSE(Greater<Ty>(2)(1));
 
     // >=
-    EXPECT_TRUE(isGreaterOrEqual<Ty>(2)(3));
-    EXPECT_TRUE(isGreaterOrEqual<Ty>(2)(2));
-    EXPECT_FALSE(isGreaterOrEqual<Ty>(2)(1));
+    EXPECT_TRUE(GreaterOrEqual<Ty>(2)(3));
+    EXPECT_TRUE(GreaterOrEqual<Ty>(2)(2));
+    EXPECT_FALSE(GreaterOrEqual<Ty>(2)(1));
 
     // <=
-    EXPECT_FALSE(isLessOrEqual<Ty>(2)(3));
-    EXPECT_TRUE(isLessOrEqual<Ty>(2)(2));
-    EXPECT_TRUE(isLessOrEqual<Ty>(2)(1));
+    EXPECT_FALSE(LessOrEqual<Ty>(2)(3));
+    EXPECT_TRUE(LessOrEqual<Ty>(2)(2));
+    EXPECT_TRUE(LessOrEqual<Ty>(2)(1));
 
     // <
-    EXPECT_FALSE(isLess<Ty>(2)(3));
-    EXPECT_FALSE(isLess<Ty>(2)(2));
-    EXPECT_TRUE(isLess<Ty>(2)(1));
+    EXPECT_FALSE(Less<Ty>(2)(3));
+    EXPECT_FALSE(Less<Ty>(2)(2));
+    EXPECT_TRUE(Less<Ty>(2)(1));
 }
 
 TEST(NPPredicate, cmpPredicates) {
@@ -200,114 +200,129 @@ struct MinMaxCheck : public NPCollectorChecker<operation, Ty> {
         const Ty init[] = {5, 1, 2,  3,  4,  0,  6,  7,
                            8, 9, 10, 11, 12, 13, 14, 15};
 
-#define test(...)                                                              \
+#define NP_OP_TEST(...)                                                        \
     NPCollectorChecker<operation, Ty>::template expect<MinMax,                 \
                                                        enableLocation>(        \
         __VA_ARGS__)
 
         operation<Ty, enableLocation> op;
-        test(op, expected{std::numeric_limits<Ty>::min()},
-             expected{std::numeric_limits<Ty>::max()}, __FILE__, __LINE__);
+        NP_OP_TEST(op, expected{std::numeric_limits<Ty>::min()},
+                   expected{std::numeric_limits<Ty>::max()}, __FILE__,
+                   __LINE__);
 
         op(10);
-        test(op, expected{10, 0, 0}, __FILE__, __LINE__);
+        NP_OP_TEST(op, expected{10, 0, 0}, __FILE__, __LINE__);
 
         op.reset();
-        test(op, expected{std::numeric_limits<Ty>::min()},
-             expected{std::numeric_limits<Ty>::max()}, __FILE__, __LINE__);
+        NP_OP_TEST(op, expected{std::numeric_limits<Ty>::min()},
+                   expected{std::numeric_limits<Ty>::max()}, __FILE__,
+                   __LINE__);
 
         op(12, 2, 3);
-        test(op, expected{12, 2, 3}, __FILE__, __LINE__);
+        NP_OP_TEST(op, expected{12, 2, 3}, __FILE__, __LINE__);
 
         // -----------------------------
         // 1 x 1 matrix --- all elements
         const NPArray<Ty> a1x1(init, 1, 1);
         op = a1x1.foreach (operation<Ty, enableLocation>());
-        test(op, expected{5, 0, 0}, __FILE__, __LINE__);
+        NP_OP_TEST(op, expected{5, 0, 0}, __FILE__, __LINE__);
 
         // 1 x 1 matrix --- single row / column
         op = a1x1.foreach (operation<Ty, enableLocation>(), NPArrayBase::COLUMN,
                            0);
-        test(op, expected{5, 0, 0}, __FILE__, __LINE__);
+        NP_OP_TEST(op, expected{5, 0, 0}, __FILE__, __LINE__);
 
         op =
             a1x1.foreach (operation<Ty, enableLocation>(), NPArrayBase::ROW, 0);
-        test(op, expected{5, 0, 0}, __FILE__, __LINE__);
+        NP_OP_TEST(op, expected{5, 0, 0}, __FILE__, __LINE__);
 
         // 1 x 1 matrix --- range of rows / columns
         op = a1x1.foreach (operation<Ty, enableLocation>(), NPArrayBase::COLUMN,
                            0, 1);
-        test(op, expected{5, 0, 0}, __FILE__, __LINE__);
+        NP_OP_TEST(op, expected{5, 0, 0}, __FILE__, __LINE__);
         op = a1x1.foreach (operation<Ty, enableLocation>(), NPArrayBase::ROW, 0,
                            1);
-        test(op, expected{5, 0, 0}, __FILE__, __LINE__);
+        NP_OP_TEST(op, expected{5, 0, 0}, __FILE__, __LINE__);
 
         // -----------------------------
         // 1 x N matrix --- all elements
         const NPArray<Ty> a1x16(init, 1, 16);
         op = a1x16.foreach (operation<Ty, enableLocation>());
-        test(op, expected{15, 0, 15}, expected{0, 0, 5}, __FILE__, __LINE__);
+        NP_OP_TEST(op, expected{15, 0, 15}, expected{0, 0, 5}, __FILE__,
+                   __LINE__);
 
         // 1 x N matrix --- single row / column
         op = a1x16.foreach (operation<Ty, enableLocation>(),
                             NPArrayBase::COLUMN, 3);
-        test(op, expected{3, 0, 3}, __FILE__, __LINE__);
+        NP_OP_TEST(op, expected{3, 0, 3}, __FILE__, __LINE__);
         op = a1x16.foreach (operation<Ty, enableLocation>(), NPArrayBase::ROW,
                             0);
-        test(op, expected{15, 0, 15}, expected{0, 0, 5}, __FILE__, __LINE__);
+        NP_OP_TEST(op, expected{15, 0, 15}, expected{0, 0, 5}, __FILE__,
+                   __LINE__);
 
         // 1 x N matrix --- range of rows / columns
         op = a1x16.foreach (operation<Ty, enableLocation>(),
                             NPArrayBase::COLUMN, 3, 8);
-        test(op, expected{7, 0, 7}, expected{0, 0, 5}, __FILE__, __LINE__);
+        NP_OP_TEST(op, expected{7, 0, 7}, expected{0, 0, 5}, __FILE__,
+                   __LINE__);
         op = a1x16.foreach (operation<Ty, enableLocation>(), NPArrayBase::ROW,
                             0, 1);
-        test(op, expected{15, 0, 15}, expected{0, 0, 5}, __FILE__, __LINE__);
+        NP_OP_TEST(op, expected{15, 0, 15}, expected{0, 0, 5}, __FILE__,
+                   __LINE__);
 
         // -----------------------------
         // N x 1 matrix --- all elements
         const NPArray<Ty> a16x1(init, 16, 1);
         op = a16x1.foreach (operation<Ty, enableLocation>());
-        test(op, expected{15, 15, 0}, expected{0, 5, 0}, __FILE__, __LINE__);
+        NP_OP_TEST(op, expected{15, 15, 0}, expected{0, 5, 0}, __FILE__,
+                   __LINE__);
 
         // N x 1 matrix --- single row / column
         op = a16x1.foreach (operation<Ty, enableLocation>(),
                             NPArrayBase::COLUMN, 0);
-        test(op, expected{15, 15, 0}, expected{0, 5, 0}, __FILE__, __LINE__);
+        NP_OP_TEST(op, expected{15, 15, 0}, expected{0, 5, 0}, __FILE__,
+                   __LINE__);
         op = a16x1.foreach (operation<Ty, enableLocation>(), NPArrayBase::ROW,
                             2);
-        test(op, expected{2, 2, 0}, __FILE__, __LINE__);
+        NP_OP_TEST(op, expected{2, 2, 0}, __FILE__, __LINE__);
 
         // N x 1 matrix --- range of rows / columns
         op = a16x1.foreach (operation<Ty, enableLocation>(),
                             NPArrayBase::COLUMN, 0, 1);
-        test(op, expected{15, 15, 0}, expected{0, 5, 0}, __FILE__, __LINE__);
+        NP_OP_TEST(op, expected{15, 15, 0}, expected{0, 5, 0}, __FILE__,
+                   __LINE__);
         op = a16x1.foreach (operation<Ty, enableLocation>(), NPArrayBase::ROW,
                             6, 15);
-        test(op, expected{14, 14, 0}, expected{6, 6, 0}, __FILE__, __LINE__);
+        NP_OP_TEST(op, expected{14, 14, 0}, expected{6, 6, 0}, __FILE__,
+                   __LINE__);
 
         // -----------------------------
         // N x M matrix --- all elements
         const NPArray<Ty> a4x4(init, 4, 4);
         op = a4x4.foreach (operation<Ty, enableLocation>());
-        test(op, expected{15, 3, 3}, expected{0, 1, 1}, __FILE__, __LINE__);
+        NP_OP_TEST(op, expected{15, 3, 3}, expected{0, 1, 1}, __FILE__,
+                   __LINE__);
 
         // N x M matrix --- single row / column
         op = a4x4.foreach (operation<Ty, enableLocation>(), NPArrayBase::COLUMN,
                            0);
-        test(op, expected{12, 3, 0}, expected{4, 1, 0}, __FILE__, __LINE__);
+        NP_OP_TEST(op, expected{12, 3, 0}, expected{4, 1, 0}, __FILE__,
+                   __LINE__);
         op =
             a4x4.foreach (operation<Ty, enableLocation>(), NPArrayBase::ROW, 2);
-        test(op, expected{11, 2, 3}, expected{8, 2, 0}, __FILE__, __LINE__);
+        NP_OP_TEST(op, expected{11, 2, 3}, expected{8, 2, 0}, __FILE__,
+                   __LINE__);
 
         // N x M matrix --- range of rows / columns
         op = a4x4.foreach (operation<Ty, enableLocation>(), NPArrayBase::COLUMN,
                            0, 2);
-        test(op, expected{13, 3, 1}, expected{0, 1, 1}, __FILE__, __LINE__);
+        NP_OP_TEST(op, expected{13, 3, 1}, expected{0, 1, 1}, __FILE__,
+                   __LINE__);
         op = a4x4.foreach (operation<Ty, enableLocation>(), NPArrayBase::ROW, 1,
                            3);
-        test(op, expected{11, 2, 3}, expected{0, 1, 1}, __FILE__, __LINE__);
-#undef test
+        NP_OP_TEST(op, expected{11, 2, 3}, expected{0, 1, 1}, __FILE__,
+                   __LINE__);
+#undef NP_OP_TEST
     }
 };
 
@@ -379,157 +394,160 @@ struct MinMaxAbsCheck : public NPCollectorChecker<operation, Ty> {
         const Ty init[] = {Ty(-5), 1, Ty(-2), 3,  4,       0,  6,  Ty(-7),
                            8,      9, 10,     11, Ty(-12), 13, 14, 15};
 
-#define test(...)                                                              \
+#define NP_OP_TEST(...)                                                        \
     NPCollectorChecker<operation, Ty>::template expect<MinMax,                 \
                                                        enableLocation>(        \
         __VA_ARGS__)
 
         operation<Ty, enableLocation> op;
-        test(op, expected{std::numeric_limits<Ty>::min()},
-             expected{std::numeric_limits<Ty>::max()}, __FILE__, __LINE__);
+        NP_OP_TEST(op, expected{std::numeric_limits<Ty>::min()},
+                   expected{std::numeric_limits<Ty>::max()}, __FILE__,
+                   __LINE__);
 
         op(10);
-        test(op, expected{10, 0, 0}, __FILE__, __LINE__);
+        NP_OP_TEST(op, expected{10, 0, 0}, __FILE__, __LINE__);
 
         op.reset();
-        test(op, expected{std::numeric_limits<Ty>::min()},
-             expected{std::numeric_limits<Ty>::max()}, __FILE__, __LINE__);
+        NP_OP_TEST(op, expected{std::numeric_limits<Ty>::min()},
+                   expected{std::numeric_limits<Ty>::max()}, __FILE__,
+                   __LINE__);
 
         // -----------------------------
         // 1 x 1 matrix --- all elements
         const NPArray<Ty> a1x1(init, 1, 1);
         op = a1x1.foreach (operation<Ty, enableLocation>());
-        test(op, expected{std::is_unsigned<Ty>() ? Ty(-5) : 5, 0, 0}, __FILE__,
-             __LINE__);
+        NP_OP_TEST(op, expected{std::is_unsigned<Ty>() ? Ty(-5) : 5, 0, 0},
+                   __FILE__, __LINE__);
 
         // 1 x 1 matrix --- single row / column
         op = a1x1.foreach (operation<Ty, enableLocation>(), NPArrayBase::COLUMN,
                            0);
-        test(op, expected{std::is_unsigned<Ty>() ? Ty(-5) : 5, 0, 0}, __FILE__,
-             __LINE__);
+        NP_OP_TEST(op, expected{std::is_unsigned<Ty>() ? Ty(-5) : 5, 0, 0},
+                   __FILE__, __LINE__);
 
         op =
             a1x1.foreach (operation<Ty, enableLocation>(), NPArrayBase::ROW, 0);
-        test(op, expected{std::is_unsigned<Ty>() ? Ty(-5) : 5, 0, 0}, __FILE__,
-             __LINE__);
+        NP_OP_TEST(op, expected{std::is_unsigned<Ty>() ? Ty(-5) : 5, 0, 0},
+                   __FILE__, __LINE__);
 
         // 1 x 1 matrix --- range of rows / columns
         op = a1x1.foreach (operation<Ty, enableLocation>(), NPArrayBase::COLUMN,
                            0, 1);
-        test(op, expected{std::is_unsigned<Ty>() ? Ty(-5) : 5, 0, 0}, __FILE__,
-             __LINE__);
+        NP_OP_TEST(op, expected{std::is_unsigned<Ty>() ? Ty(-5) : 5, 0, 0},
+                   __FILE__, __LINE__);
         op = a1x1.foreach (operation<Ty, enableLocation>(), NPArrayBase::ROW, 0,
                            1);
-        test(op, expected{std::is_unsigned<Ty>() ? Ty(-5) : 5, 0, 0}, __FILE__,
-             __LINE__);
+        NP_OP_TEST(op, expected{std::is_unsigned<Ty>() ? Ty(-5) : 5, 0, 0},
+                   __FILE__, __LINE__);
 
         // -----------------------------
         // 1 x N matrix --- all elements
         const NPArray<Ty> a1x16(init, 1, 16);
         op = a1x16.foreach (operation<Ty, enableLocation>());
-        test(op,
-             std::is_unsigned<Ty>() ? expected{Ty(-2), 0, 2}
-                                    : expected{15, 0, 15},
-             expected{0, 0, 5}, __FILE__, __LINE__);
+        NP_OP_TEST(op,
+                   std::is_unsigned<Ty>() ? expected{Ty(-2), 0, 2}
+                                          : expected{15, 0, 15},
+                   expected{0, 0, 5}, __FILE__, __LINE__);
 
         // 1 x N matrix --- single row / column
         op = a1x16.foreach (operation<Ty, enableLocation>(),
                             NPArrayBase::COLUMN, 3);
-        test(op, expected{3, 0, 3}, __FILE__, __LINE__);
+        NP_OP_TEST(op, expected{3, 0, 3}, __FILE__, __LINE__);
 
         op = a1x16.foreach (operation<Ty, enableLocation>(), NPArrayBase::ROW,
                             0);
-        test(op,
-             std::is_unsigned<Ty>() ? expected{Ty(-2), 0, 2}
-                                    : expected{15, 0, 15},
-             expected{0, 0, 5}, __FILE__, __LINE__);
+        NP_OP_TEST(op,
+                   std::is_unsigned<Ty>() ? expected{Ty(-2), 0, 2}
+                                          : expected{15, 0, 15},
+                   expected{0, 0, 5}, __FILE__, __LINE__);
 
         // 1 x N matrix --- range of rows / columns
         op = a1x16.foreach (operation<Ty, enableLocation>(),
                             NPArrayBase::COLUMN, 3, 8);
-        test(op, expected{std::is_unsigned<Ty>() ? Ty(-7) : 7, 0, 7},
-             expected{0, 0, 5}, __FILE__, __LINE__);
+        NP_OP_TEST(op, expected{std::is_unsigned<Ty>() ? Ty(-7) : 7, 0, 7},
+                   expected{0, 0, 5}, __FILE__, __LINE__);
 
         op = a1x16.foreach (operation<Ty, enableLocation>(), NPArrayBase::ROW,
                             0, 1);
-        test(op,
-             std::is_unsigned<Ty>() ? expected{Ty(-2), 0, 2}
-                                    : expected{15, 0, 15},
-             expected{0, 0, 5}, __FILE__, __LINE__);
+        NP_OP_TEST(op,
+                   std::is_unsigned<Ty>() ? expected{Ty(-2), 0, 2}
+                                          : expected{15, 0, 15},
+                   expected{0, 0, 5}, __FILE__, __LINE__);
 
         // -----------------------------
         // N x 1 matrix --- all elements
         const NPArray<Ty> a16x1(init, 16, 1);
         op = a16x1.foreach (operation<Ty, enableLocation>());
-        test(op,
-             std::is_unsigned<Ty>() ? expected{Ty(-2), 2, 0}
-                                    : expected{15, 15, 0},
-             expected{0, 5, 0}, __FILE__, __LINE__);
+        NP_OP_TEST(op,
+                   std::is_unsigned<Ty>() ? expected{Ty(-2), 2, 0}
+                                          : expected{15, 15, 0},
+                   expected{0, 5, 0}, __FILE__, __LINE__);
 
         // N x 1 matrix --- single row / column
         op = a16x1.foreach (operation<Ty, enableLocation>(),
                             NPArrayBase::COLUMN, 0);
-        test(op,
-             std::is_unsigned<Ty>() ? expected{Ty(-2), 2, 0}
-                                    : expected{15, 15, 0},
-             expected{0, 5, 0}, __FILE__, __LINE__);
+        NP_OP_TEST(op,
+                   std::is_unsigned<Ty>() ? expected{Ty(-2), 2, 0}
+                                          : expected{15, 15, 0},
+                   expected{0, 5, 0}, __FILE__, __LINE__);
 
         op = a16x1.foreach (operation<Ty, enableLocation>(), NPArrayBase::ROW,
                             2);
-        test(op, expected{std::is_unsigned<Ty>() ? Ty(-2) : 2, 2, 0}, __FILE__,
-             __LINE__);
+        NP_OP_TEST(op, expected{std::is_unsigned<Ty>() ? Ty(-2) : 2, 2, 0},
+                   __FILE__, __LINE__);
 
         // N x 1 matrix --- range of rows / columns
         op = a16x1.foreach (operation<Ty, enableLocation>(),
                             NPArrayBase::COLUMN, 0, 1);
-        test(op,
-             std::is_unsigned<Ty>() ? expected{Ty(-2), 2, 0}
-                                    : expected{15, 15, 0},
-             expected{0, 5, 0}, __FILE__, __LINE__);
+        NP_OP_TEST(op,
+                   std::is_unsigned<Ty>() ? expected{Ty(-2), 2, 0}
+                                          : expected{15, 15, 0},
+                   expected{0, 5, 0}, __FILE__, __LINE__);
 
         op = a16x1.foreach (operation<Ty, enableLocation>(), NPArrayBase::ROW,
                             6, 15);
-        test(op,
-             std::is_unsigned<Ty>() ? expected{Ty(-7), 7, 0}
-                                    : expected{14, 14, 0},
-             expected{6, 6, 0}, __FILE__, __LINE__);
+        NP_OP_TEST(op,
+                   std::is_unsigned<Ty>() ? expected{Ty(-7), 7, 0}
+                                          : expected{14, 14, 0},
+                   expected{6, 6, 0}, __FILE__, __LINE__);
 
         // -----------------------------
         // N x M matrix --- all elements
         const NPArray<Ty> a4x4(init, 4, 4);
         op = a4x4.foreach (operation<Ty, enableLocation>());
-        test(op,
-             std::is_unsigned<Ty>() ? expected{Ty(-2), 0, 2}
-                                    : expected{15, 3, 3},
-             expected{0, 1, 1}, __FILE__, __LINE__);
+        NP_OP_TEST(op,
+                   std::is_unsigned<Ty>() ? expected{Ty(-2), 0, 2}
+                                          : expected{15, 3, 3},
+                   expected{0, 1, 1}, __FILE__, __LINE__);
 
         // N x M matrix --- single row / column
         op = a4x4.foreach (operation<Ty, enableLocation>(), NPArrayBase::COLUMN,
                            0);
-        test(op,
-             std::is_unsigned<Ty>() ? expected{Ty(-5), 0, 0}
-                                    : expected{12, 3, 0},
-             expected{4, 1, 0}, __FILE__, __LINE__);
+        NP_OP_TEST(op,
+                   std::is_unsigned<Ty>() ? expected{Ty(-5), 0, 0}
+                                          : expected{12, 3, 0},
+                   expected{4, 1, 0}, __FILE__, __LINE__);
 
         op =
             a4x4.foreach (operation<Ty, enableLocation>(), NPArrayBase::ROW, 2);
-        test(op, expected{11, 2, 3}, expected{8, 2, 0}, __FILE__, __LINE__);
+        NP_OP_TEST(op, expected{11, 2, 3}, expected{8, 2, 0}, __FILE__,
+                   __LINE__);
 
         // N x M matrix --- range of rows / columns
         op = a4x4.foreach (operation<Ty, enableLocation>(), NPArrayBase::COLUMN,
                            0, 2);
-        test(op,
-             std::is_unsigned<Ty>() ? expected{Ty(-5), 0, 0}
-                                    : expected{13, 3, 1},
-             expected{0, 1, 1}, __FILE__, __LINE__);
+        NP_OP_TEST(op,
+                   std::is_unsigned<Ty>() ? expected{Ty(-5), 0, 0}
+                                          : expected{13, 3, 1},
+                   expected{0, 1, 1}, __FILE__, __LINE__);
         op = a4x4.foreach (operation<Ty, enableLocation>(), NPArrayBase::ROW, 1,
                            3);
-        test(op,
-             std::is_unsigned<Ty>() ? expected{Ty(-7), 1, 3}
-                                    : expected{11, 2, 3},
-             expected{0, 1, 1}, __FILE__, __LINE__);
+        NP_OP_TEST(op,
+                   std::is_unsigned<Ty>() ? expected{Ty(-7), 1, 3}
+                                          : expected{11, 2, 3},
+                   expected{0, 1, 1}, __FILE__, __LINE__);
     }
-#undef test
+#undef NP_OP_TEST
 };
 
 TEST(NPCollector, MinAbs) {

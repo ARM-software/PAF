@@ -44,14 +44,14 @@ using FstHandleMapTy = map<fstHandle, SignalIdxTy>;
 
 class ScopesBuilder : public FSTHierarchyVisitorBase {
   public:
-    ScopesBuilder(Waveform &W) : W(W), Scopes() {
-        Scopes.push_back(W.getRootScope());
+    ScopesBuilder(Waveform &W) : w(W), scopes() {
+        scopes.push_back(W.getRootScope());
     }
 
     bool onModule(const char *fullScopeName, const fstHier *h) override {
         const decltype(h->u.scope) *Scope =
             FSTHierarchyVisitorBase::getAsFstHierScope(h);
-        Scopes.push_back(&Scopes.back()->addModule(Scope->name, fullScopeName,
+        scopes.push_back(&scopes.back()->addModule(Scope->name, fullScopeName,
                                                    Scope->component));
         return true;
     }
@@ -59,7 +59,7 @@ class ScopesBuilder : public FSTHierarchyVisitorBase {
     bool onTask(const char *fullScopeName, const fstHier *h) override {
         const decltype(h->u.scope) *Scope =
             FSTHierarchyVisitorBase::getAsFstHierScope(h);
-        Scopes.push_back(&Scopes.back()->addTask(Scope->name, fullScopeName,
+        scopes.push_back(&scopes.back()->addTask(Scope->name, fullScopeName,
                                                  Scope->component));
         return true;
     }
@@ -67,7 +67,7 @@ class ScopesBuilder : public FSTHierarchyVisitorBase {
     bool onFunction(const char *fullScopeName, const fstHier *h) override {
         const decltype(h->u.scope) *Scope =
             FSTHierarchyVisitorBase::getAsFstHierScope(h);
-        Scopes.push_back(&Scopes.back()->addFunction(Scope->name, fullScopeName,
+        scopes.push_back(&scopes.back()->addFunction(Scope->name, fullScopeName,
                                                      Scope->component));
         return true;
     }
@@ -75,13 +75,13 @@ class ScopesBuilder : public FSTHierarchyVisitorBase {
     bool onBlockBegin(const char *fullScopeName, const fstHier *h) override {
         const decltype(h->u.scope) *Scope =
             FSTHierarchyVisitorBase::getAsFstHierScope(h);
-        Scopes.push_back(&Scopes.back()->addBlock(Scope->name, fullScopeName,
+        scopes.push_back(&scopes.back()->addBlock(Scope->name, fullScopeName,
                                                   Scope->component));
         return true;
     }
 
     bool leaveCurrentScope() override {
-        Scopes.pop_back();
+        scopes.pop_back();
         return true;
     }
 
@@ -91,19 +91,19 @@ class ScopesBuilder : public FSTHierarchyVisitorBase {
             FSTHierarchyVisitorBase::getAsFstHierVar(h);
         if (!isAlias) {
             SignalIdxTy idx =
-                W.addRegister(*Scopes.back(), string(Var->name), Var->length);
-            if (!FstHandles
+                w.addRegister(*scopes.back(), string(Var->name), Var->length);
+            if (!fstHandles
                      .insert(
                          std::pair<fstHandle, SignalIdxTy>(Var->handle, idx))
                      .second)
-                die("Error inserting FstIdx to SignalIdx mapping");
+                DIE("Error inserting FstIdx to SignalIdx mapping");
         } else {
-            const auto &it = FstHandles.find(Var->handle);
-            if (it != FstHandles.end())
-                W.addRegister(*Scopes.back(), string(Var->name), Var->length,
+            const auto &it = fstHandles.find(Var->handle);
+            if (it != fstHandles.end())
+                w.addRegister(*scopes.back(), string(Var->name), Var->length,
                               it->second);
             else
-                die("Alias to a not yet existing for register FstHandle");
+                DIE("Alias to a not yet existing for register FstHandle");
         }
 
         return true;
@@ -115,19 +115,19 @@ class ScopesBuilder : public FSTHierarchyVisitorBase {
             FSTHierarchyVisitorBase::getAsFstHierVar(h);
         if (!isAlias) {
             SignalIdxTy idx =
-                W.addWire(*Scopes.back(), string(Var->name), Var->length);
-            if (!FstHandles
+                w.addWire(*scopes.back(), string(Var->name), Var->length);
+            if (!fstHandles
                      .insert(
                          std::pair<fstHandle, SignalIdxTy>(Var->handle, idx))
                      .second)
-                die("Error inserting FstIdx to SignalIdx mapping");
+                DIE("Error inserting FstIdx to SignalIdx mapping");
         } else {
-            const auto &it = FstHandles.find(Var->handle);
-            if (it != FstHandles.end())
-                W.addWire(*Scopes.back(), string(Var->name), Var->length,
+            const auto &it = fstHandles.find(Var->handle);
+            if (it != fstHandles.end())
+                w.addWire(*scopes.back(), string(Var->name), Var->length,
                           it->second);
             else
-                die("Alias to a not yet existing for wire FstHandle");
+                DIE("Alias to a not yet existing for wire FstHandle");
         }
 
         return true;
@@ -135,7 +135,7 @@ class ScopesBuilder : public FSTHierarchyVisitorBase {
 
     bool onPort(const char *fullScopeName, const fstHier *h,
                 bool isAlias) override {
-        die("Port seen but not handled !");
+        DIE("Port seen but not handled !");
     }
 
     bool onInt(const char *fullScopeName, const fstHier *h,
@@ -144,44 +144,44 @@ class ScopesBuilder : public FSTHierarchyVisitorBase {
             FSTHierarchyVisitorBase::getAsFstHierVar(h);
         if (!isAlias) {
             SignalIdxTy idx =
-                W.addInteger(*Scopes.back(), string(Var->name), Var->length);
-            if (!FstHandles
+                w.addInteger(*scopes.back(), string(Var->name), Var->length);
+            if (!fstHandles
                      .insert(
                          std::pair<fstHandle, SignalIdxTy>(Var->handle, idx))
                      .second)
-                die("Error inserting FstIdx to SignalIdx mapping");
+                DIE("Error inserting FstIdx to SignalIdx mapping");
         } else {
-            const auto &it = FstHandles.find(Var->handle);
-            if (it != FstHandles.end())
-                W.addInteger(*Scopes.back(), string(Var->name), Var->length,
+            const auto &it = fstHandles.find(Var->handle);
+            if (it != fstHandles.end())
+                w.addInteger(*scopes.back(), string(Var->name), Var->length,
                              it->second);
             else
-                die("Alias to a not yet existing for integer FstHandle");
+                DIE("Alias to a not yet existing for integer FstHandle");
         }
 
         return true;
     }
 
-    const FstHandleMapTy &getFstHandles() const { return FstHandles; }
+    const FstHandleMapTy &getFstHandles() const { return fstHandles; }
 
   private:
-    Waveform &W;
-    vector<Waveform::Scope *> Scopes;
-    FstHandleMapTy FstHandles;
+    Waveform &w;
+    vector<Waveform::Scope *> scopes;
+    FstHandleMapTy fstHandles;
 };
 
 struct WaveformBuilder : public FSTWaveBuilderBase<WaveformBuilder> {
     WaveformBuilder(Waveform &W, const FstHandleMapTy &FstHandles)
-        : W(W), FstHandles(FstHandles) {}
+        : w(W), fstHandles(FstHandles) {}
 
     void process(uint64_t time, fstHandle facidx, const unsigned char *value) {
-        const auto it = FstHandles.find(facidx);
-        if (it != FstHandles.end())
-            W.addValueChange(it->second, time, (const char *)value);
+        const auto it = fstHandles.find(facidx);
+        if (it != fstHandles.end())
+            w.addValueChange(it->second, time, (const char *)value);
     }
 
-    Waveform &W;
-    const FstHandleMapTy &FstHandles;
+    Waveform &w;
+    const FstHandleMapTy &fstHandles;
 };
 
 struct FstBuilder : public Waveform::Visitor {
@@ -204,18 +204,18 @@ struct FstBuilder : public Waveform::Visitor {
         fstVarDir VarDirection = FST_VD_IMPLICIT;
 
         const SignalIdxTy idx = SD.getIdx();
-        const auto &it = Idx2FstHandleMap.find(idx);
-        assert(W && "Waveform pointer must not be null");
-        if (it != Idx2FstHandleMap.end()) {
+        const auto &it = idx2FstHandleMap.find(idx);
+        assert(w && "Waveform pointer must not be null");
+        if (it != idx2FstHandleMap.end()) {
             // This signal is an alias !
             fstWriterCreateVar(ctx, VarType, VarDirection,
-                               (*W)[idx].getNumBits(), SD.getName().c_str(),
+                               (*w)[idx].getNumBits(), SD.getName().c_str(),
                                it->second);
         } else {
             fstHandle H = fstWriterCreateVar(ctx, VarType, VarDirection,
-                                             (*W)[idx].getNumBits(),
+                                             (*w)[idx].getNumBits(),
                                              SD.getName().c_str(), 0);
-            Idx2FstHandleMap.insert(std::pair<SignalIdxTy, fstHandle>(idx, H));
+            idx2FstHandleMap.insert(std::pair<SignalIdxTy, fstHandle>(idx, H));
         }
     }
 
@@ -245,28 +245,28 @@ struct FstBuilder : public Waveform::Visitor {
     void leaveScope() override { fstWriterSetUpscope(ctx); }
 
     void process() {
-        assert(W && "Waveform pointer must not be null");
-        vector<Signal::iterator> SigIt;
-        SigIt.reserve(W->getNumSignals());
-        for (const auto &s : *W)
+        assert(w && "Waveform pointer must not be null");
+        vector<Signal::Iterator> SigIt;
+        SigIt.reserve(w->getNumSignals());
+        for (const auto &s : *w)
             SigIt.emplace_back(s.begin());
 
         // For each time of change
-        for (auto time = W->times_begin(); time != W->times_end(); time++) {
+        for (auto time = w->timesBegin(); time != w->timesEnd(); time++) {
             fstWriterEmitTimeChange(ctx, *time);
             for (SignalIdxTy sidx = 0; sidx < SigIt.size(); sidx++) {
                 if (!SigIt[sidx].hasReachedEnd()) {
                     const Signal::ChangeTy C = *SigIt[sidx];
                     // If sig has change exactly at time index
-                    if (C.Time == *time) {
+                    if (C.time == *time) {
                         // Find the Fst mapping
-                        const auto &it = Idx2FstHandleMap.find(sidx);
-                        if (it == Idx2FstHandleMap.end())
-                            die("Can not find FstHandle for the this "
+                        const auto &it = idx2FstHandleMap.find(sidx);
+                        if (it == idx2FstHandleMap.end())
+                            DIE("Can not find FstHandle for the this "
                                 "SignalIdx");
                         // And emit change
                         fstWriterEmitValueChange(ctx, it->second,
-                                                 string(C.Value).c_str());
+                                                 string(C.value).c_str());
                         SigIt[sidx]++;
                     }
                 }
@@ -281,7 +281,7 @@ struct FstBuilder : public Waveform::Visitor {
     }
 
     FstBuilder(const string &FileName, const Waveform &W)
-        : Waveform::Visitor(&W), Idx2FstHandleMap(),
+        : Waveform::Visitor(&W), idx2FstHandleMap(),
           ctx(fstWriterCreate(FileName.c_str(), 1 /* use_compressed_hier */)) {
         if (!ctx)
             return;
@@ -299,12 +299,12 @@ struct FstBuilder : public Waveform::Visitor {
 
     operator bool() const { return ctx != nullptr; }
 
-    map<SignalIdxTy, fstHandle> Idx2FstHandleMap;
+    map<SignalIdxTy, fstHandle> idx2FstHandleMap;
     void *ctx;
 };
 } // namespace
 
-const char *FSTHierarchyVisitorBase::VarTypetoString(unsigned char T) {
+const char *FSTHierarchyVisitorBase::varTypeToString(unsigned char T) {
     switch (fstVarType(T)) {
     case FST_VT_VCD_INTEGER:
         return "int";
@@ -313,11 +313,11 @@ const char *FSTHierarchyVisitorBase::VarTypetoString(unsigned char T) {
     case FST_VT_VCD_WIRE:
         return "wire";
     default:
-        die("Unsupported var type ", int(T));
+        DIE("Unsupported var type ", int(T));
     }
 }
 
-const char *FSTHierarchyVisitorBase::VarDirtoString(unsigned char D) {
+const char *FSTHierarchyVisitorBase::varDirToString(unsigned char D) {
     switch (fstVarDir(D)) {
     case FST_VD_MIN: /* fall-thru */
         return "";
@@ -328,7 +328,7 @@ const char *FSTHierarchyVisitorBase::VarDirtoString(unsigned char D) {
     case FST_VD_INOUT:
         return "InOut";
     default:
-        die("Unsupported direction ", int(D));
+        DIE("Unsupported direction ", int(D));
     }
 }
 
@@ -361,53 +361,53 @@ FSTHierarchyVisitorBase::~FSTHierarchyVisitorBase() {}
 
 FSTWaveFile::FSTWaveFile(const string &filename, bool write)
     : WaveFile(filename, WaveFile::FileFormat::FST), openedForWrite(write),
-      F(write ? fstWriterCreate(FileName.c_str(), 1)
-              : fstReaderOpen(FileName.c_str())) {}
+      f(write ? fstWriterCreate(fileName.c_str(), 1)
+              : fstReaderOpen(fileName.c_str())) {}
 
 FSTWaveFile::~FSTWaveFile() {
-    if (F) {
+    if (f) {
         if (openedForWrite)
-            fstWriterClose(F);
+            fstWriterClose(f);
         else
-            fstReaderClose(F);
+            fstReaderClose(f);
     }
 }
 
 Waveform FSTWaveFile::read() {
-    Waveform W(FileName, 0, 0, 0);
+    Waveform W(fileName, 0, 0, 0);
     if (!FSTWaveFile::read(W))
-        die("error reading '%s", FileName.c_str());
+        DIE("error reading '%s", fileName.c_str());
     return W;
 }
 
 bool FSTWaveFile::read(Waveform &W) {
     if (openedForWrite)
-        die("Can not read FST file that has been opened for write");
+        DIE("Can not read FST file that has been opened for write");
 
-    W.setStartTime(fstReaderGetStartTime(F));
-    W.setEndTime(fstReaderGetEndTime(F));
-    W.setTimeScale(fstReaderGetTimescale(F));
-    W.setTimeZero(fstReaderGetTimezero(F));
+    W.setStartTime(fstReaderGetStartTime(f));
+    W.setEndTime(fstReaderGetEndTime(f));
+    W.setTimeScale(fstReaderGetTimescale(f));
+    W.setTimeZero(fstReaderGetTimezero(f));
 
     // Build the scopes data structure.
     ScopesBuilder SB(W);
     if (!visitHierarchy(&SB))
-        die("Error in processing scopes !");
+        DIE("Error in processing scopes !");
 
     // Slurp all signals, creating them as they appear.
     WaveformBuilder WB(W, SB.getFstHandles());
     if (!visitSignals(WB))
-        die("Error in reading signals !");
+        DIE("Error in reading signals !");
 
     return true;
 }
 
 bool FSTWaveFile::write(const Waveform &W) {
     if (!openedForWrite)
-        die("Can not read FST file that has been opened for write");
-    FstBuilder FB(FileName, W);
+        DIE("Can not read FST file that has been opened for write");
+    FstBuilder FB(fileName, W);
     if (!FB)
-        die("Error creating output file: ", FileName);
+        DIE("Error creating output file: ", fileName);
 
     W.visit(FB);
 
@@ -418,15 +418,15 @@ bool FSTWaveFile::write(const Waveform &W) {
 
 bool FSTWaveFile::visitHierarchy(FSTHierarchyVisitorBase *V) const {
     if (openedForWrite)
-        die("Can not read FST file that has been opened for write");
-    while (const fstHier *h = fstReaderIterateHier(F)) {
+        DIE("Can not read FST file that has been opened for write");
+    while (const fstHier *h = fstReaderIterateHier(f)) {
         const char *fullScopeName;
         const decltype(h->u.scope) *Scope;
         const decltype(h->u.var) *Var;
         switch (h->htyp) {
         case FST_HT_SCOPE:
             Scope = FSTHierarchyVisitorBase::getAsFstHierScope(h);
-            fullScopeName = fstReaderPushScope(F, Scope->name, nullptr);
+            fullScopeName = fstReaderPushScope(f, Scope->name, nullptr);
             switch (Scope->typ) {
             case FST_ST_VCD_MODULE:
                 if (!V->onModule(fullScopeName, h))
@@ -452,7 +452,7 @@ bool FSTWaveFile::visitHierarchy(FSTHierarchyVisitorBase *V) const {
             break;
 
         case FST_HT_UPSCOPE:
-            fstReaderPopScope(F);
+            fstReaderPopScope(f);
             if (!V->leaveCurrentScope())
                 return false;
             break;
@@ -508,16 +508,16 @@ struct QuickTimeBuilder : public FSTWaveBuilderBase<QuickTimeBuilder> {
 };
 
 vector<TimeTy> FSTWaveFile::getAllChangesTimes() {
-    if (!F)
-        die("Can not read from input file: ", FileName);
+    if (!f)
+        DIE("Can not read from input file: ", fileName);
     if (openedForWrite)
-        die("Can not read FST file that has been opened for write");
+        DIE("Can not read FST file that has been opened for write");
 
-    fstReaderSetFacProcessMaskAll(F);
+    fstReaderSetFacProcessMaskAll(f);
 
     QuickTimeBuilder QTB;
     if (!visitSignals(QTB))
-        die("Error in reading signals !");
+        DIE("Error in reading signals !");
 
     return vector<WAN::TimeTy>(QTB.times.begin(), QTB.times.end());
 }

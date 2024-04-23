@@ -1,7 +1,6 @@
 /*
- * SPDX-FileCopyrightText: <text>
- * Copyright 2022,2023 Arm Limited and/or its affiliates <open-source-office@arm.com>
- * </text>
+ * SPDX-FileCopyrightText: <text>Copyright 2022-2024 Arm Limited and/or its
+ * affiliates <open-source-office@arm.com></text>
  * SPDX-License-Identifier: Apache-2.0
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -21,9 +20,9 @@
 
 #include "PAF/utils/StopWatch.h"
 
+#include <chrono>
 #include <sstream>
 #include <string>
-#include <chrono>
 #include <thread>
 
 #include "gtest/gtest.h"
@@ -50,9 +49,9 @@ TEST(StopWatch, StopWatchBase) {
 TEST(StopWatch, StopWatch) {
     StopWatch SW;
     // The stopwatch should be stop after creation.
-    EXPECT_FALSE(SW.running());
+    EXPECT_FALSE(SW.isRunning());
     StopWatchBase::TimePoint start = SW.start();
-    EXPECT_TRUE(SW.running());
+    EXPECT_TRUE(SW.isRunning());
     EXPECT_STREQ(SW.units(), " seconds");
     using namespace std::chrono_literals;
     std::this_thread::sleep_for(1s);

@@ -1,6 +1,6 @@
 /*
- * SPDX-FileCopyrightText: <text>Copyright 2021,2022,2023,2024 Arm Limited and/or its
- * affiliates <open-source-office@arm.com></text>
+ * SPDX-FileCopyrightText: <text>Copyright 2021-2024 Arm Limited
+ * and/or its affiliates <open-source-office@arm.com></text>
  * SPDX-License-Identifier: Apache-2.0
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -43,8 +43,8 @@ class OutputBase {
                bool binary = false);
 
     /// Abstract method to write some values to this output.
-    virtual void emit(const NPArray<double> &values,
-                      size_t decimate, size_t offset) const = 0;
+    virtual void emit(const NPArray<double> &values, size_t decimate,
+                      size_t offset) const = 0;
     virtual ~OutputBase();
 
     /// The different output formats supported by SCA applications.
@@ -65,7 +65,7 @@ class OutputBase {
                               bool append = true);
 
     /// Are we emitting to a file ?
-    bool isFile() const { return using_file; }
+    bool isFile() const { return usingFile; }
 
     /// Flush the output stream.
     void flush();
@@ -74,7 +74,7 @@ class OutputBase {
     void close();
 
   private:
-    const bool using_file = false;
+    const bool usingFile = false;
 
   protected:
     /// Give our derived classes a shortcut to the underlying output stream.
@@ -94,28 +94,28 @@ class SCAApp : public Argparse {
     void setup();
 
     /// Get this application's verbosity level.
-    unsigned const verbosity() const { return verbosity_level; }
+    unsigned const verbosity() const { return verbosityLevel; }
     /// Is this application verbose at all ?
-    bool verbose() const { return verbosity_level > 0; }
+    bool verbose() const { return verbosityLevel > 0; }
 
     /// Get this application's output filename.
-    const std::string &output_filename() const { return output_file; }
+    const std::string &outputFilename() const { return outputFile; }
     /// Get this application's output type.
-    OutputBase::OutputType output_type() const { return output_format; }
+    OutputBase::OutputType outputType() const { return outputFormat; }
     /// Does this application want to append data to its output ?
-    bool append() const { return append_to_output; }
+    bool append() const { return appendToOutput; }
 
     /// Get the sample number where computations have to start.
-    size_t sample_start() const { return start_sample; }
+    size_t sampleStart() const { return startSample; }
     /// Get the sample number where computations have to stop.
-    size_t sample_end() const { return start_sample + nb_samples; }
+    size_t sampleEnd() const { return startSample + nbSamples; }
     /// Get the number of samples that have to be processed.
-    size_t num_samples() const { return nb_samples; }
+    size_t numSamples() const { return nbSamples; }
 
     /// Get the decimation period.
-    size_t decimation_period() const { return period; }
+    size_t decimationPeriod() const { return period; }
     /// Get the decimation offset.
-    size_t decimation_offset() const { return offset; }
+    size_t decimationOffset() const { return offset; }
 
     /// Write a sequence of values to this application's output file.
     void output(const NPArray<double> &values) {
@@ -123,29 +123,29 @@ class SCAApp : public Argparse {
     }
 
     /// Flush output file.
-    void flush_output() {
+    void flushOutput() {
         if (out)
             out->flush();
     }
 
     /// Close output file.
-    void close_output() {
+    void closeOutput() {
         if (out)
             out->close();
     }
 
     /// Do we assume perfect inputs ?
-    bool is_perfect() const { return perfect; }
+    bool isPerfect() const { return perfect; }
 
   private:
-    unsigned verbosity_level = 0;
+    unsigned verbosityLevel = 0;
 
-    std::string output_file;
-    bool append_to_output = false;
-    OutputBase::OutputType output_format = OutputBase::OUTPUT_TERSE;
+    std::string outputFile;
+    bool appendToOutput = false;
+    OutputBase::OutputType outputFormat = OutputBase::OUTPUT_TERSE;
 
-    size_t start_sample = 0;
-    size_t nb_samples = 0;
+    size_t startSample = 0;
+    size_t nbSamples = 0;
     size_t period = 1;
     size_t offset = 0;
     std::unique_ptr<OutputBase> out;

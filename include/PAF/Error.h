@@ -43,14 +43,14 @@ void fatalImpl(std::string &&msg, const char *function, const char *sourcefile,
                unsigned sourceline) __attribute__((noreturn));
 } // namespace PAF
 
-#define die(...)                                                               \
+#define DIE(...)                                                               \
     PAF::fatalImpl(PAF::concat("Fatal: ", __VA_ARGS__), __PRETTY_FUNCTION__,   \
                    __FILE__, __LINE__)
 
-#define error(...)                                                             \
+#define ERROR(...)                                                             \
     PAF::errorImpl(PAF::concat("Error: ", __VA_ARGS__), __PRETTY_FUNCTION__,   \
                    __FILE__, __LINE__)
 
-#define warn(...)                                                              \
+#define WARN(...)                                                              \
     PAF::errorImpl(PAF::concat("Warning: ", __VA_ARGS__), __PRETTY_FUNCTION__, \
                    __FILE__, __LINE__)

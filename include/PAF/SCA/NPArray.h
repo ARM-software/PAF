@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: <text>Copyright 2021,2022,2023,2024 Arm Limited
+ * SPDX-FileCopyrightText: <text>Copyright 2021-2024 Arm Limited
  * and/or its affiliates <open-source-office@arm.com></text>
  * SPDX-License-Identifier: Apache-2.0
  *
@@ -54,7 +54,7 @@ class NPArrayBase {
 
     /// Default constructor.
     NPArrayBase(size_t elt_size = 0)
-        : data(nullptr), num_rows(0), num_columns(0), elt_size(elt_size),
+        : data(nullptr), numRows(0), numColumns(0), eltSize(elt_size),
           errstr(nullptr) {}
 
     /// Construct an NPArrayBase from file filename.
@@ -78,15 +78,15 @@ class NPArrayBase {
     /// Takes ownership of data buffer.
     NPArrayBase(std::unique_ptr<char[]> &&data, size_t num_rows,
                 size_t num_columns, unsigned elt_size)
-        : data(std::move(data)), num_rows(num_rows), num_columns(num_columns),
-          elt_size(elt_size), errstr(nullptr) {}
+        : data(std::move(data)), numRows(num_rows), numColumns(num_columns),
+          eltSize(elt_size), errstr(nullptr) {}
 
     /// Construct an NPArray base from raw memory (raw pointer version) and misc
     /// other information.
     NPArrayBase(const char *buf, size_t num_rows, size_t num_columns,
                 unsigned elt_size)
-        : data(new char[num_rows * num_columns * elt_size]), num_rows(num_rows),
-          num_columns(num_columns), elt_size(elt_size), errstr(nullptr) {
+        : data(new char[num_rows * num_columns * elt_size]), numRows(num_rows),
+          numColumns(num_columns), eltSize(elt_size), errstr(nullptr) {
         if (buf)
             memcpy(data.get(), buf, num_rows * num_columns * elt_size);
     }
@@ -94,28 +94,28 @@ class NPArrayBase {
     /// Construct an NPArray base from a vector<vector<Ty>>.
     template <typename Ty>
     NPArrayBase(const std::vector<std::vector<Ty>> &matrix)
-        : data(nullptr), num_rows(matrix.size()), num_columns(0),
-          elt_size(sizeof(Ty)), errstr(nullptr) {
+        : data(nullptr), numRows(matrix.size()), numColumns(0),
+          eltSize(sizeof(Ty)), errstr(nullptr) {
         for (const auto &row : matrix)
-            num_columns = std::max(num_columns, row.size());
-        data.reset(new char[num_rows * num_columns * elt_size]);
-        for (size_t row = 0; row < num_rows; row++)
-            memcpy(data.get() + row * num_columns * elt_size,
-                   matrix[row].data(), matrix[row].size() * elt_size);
+            numColumns = std::max(numColumns, row.size());
+        data.reset(new char[numRows * numColumns * eltSize]);
+        for (size_t row = 0; row < numRows; row++)
+            memcpy(data.get() + row * numColumns * eltSize, matrix[row].data(),
+                   matrix[row].size() * eltSize);
     }
 
     /// Copy construct an NPArrayBase.
     NPArrayBase(const NPArrayBase &Other)
-        : data(new char[Other.size() * Other.element_size()]),
-          num_rows(Other.rows()), num_columns(Other.cols()),
-          elt_size(Other.element_size()), errstr(Other.error()) {
-        memcpy(data.get(), Other.data.get(), num_rows * num_columns * elt_size);
+        : data(new char[Other.size() * Other.elementSize()]),
+          numRows(Other.rows()), numColumns(Other.cols()),
+          eltSize(Other.elementSize()), errstr(Other.error()) {
+        memcpy(data.get(), Other.data.get(), numRows * numColumns * eltSize);
     }
 
     /// Move construct an NPArrayBase.
     NPArrayBase(NPArrayBase &&Other)
-        : data(std::move(Other.data)), num_rows(Other.rows()),
-          num_columns(Other.cols()), elt_size(Other.element_size()),
+        : data(std::move(Other.data)), numRows(Other.rows()),
+          numColumns(Other.cols()), eltSize(Other.elementSize()),
           errstr(Other.error()) {}
 
     /// Copy assign an NPArrayBase.
@@ -124,16 +124,16 @@ class NPArrayBase {
             return *this;
 
         bool needs_realloc = rows() != Other.rows() || cols() != Other.cols() ||
-                             element_size() != Other.element_size();
+                             elementSize() != Other.elementSize();
         if (needs_realloc) {
-            data.reset(new char[Other.size() * Other.element_size()]);
-            num_rows = Other.num_rows;
-            num_columns = Other.num_columns;
-            elt_size = Other.elt_size;
+            data.reset(new char[Other.size() * Other.elementSize()]);
+            numRows = Other.numRows;
+            numColumns = Other.numColumns;
+            eltSize = Other.eltSize;
             errstr = Other.errstr;
         }
 
-        memcpy(data.get(), Other.data.get(), num_rows * num_columns * elt_size);
+        memcpy(data.get(), Other.data.get(), numRows * numColumns * eltSize);
 
         return *this;
     }
@@ -143,9 +143,9 @@ class NPArrayBase {
         if (this == &Other)
             return *this;
 
-        num_rows = Other.num_rows;
-        num_columns = Other.num_columns;
-        elt_size = Other.elt_size;
+        numRows = Other.numRows;
+        numColumns = Other.numColumns;
+        eltSize = Other.eltSize;
         errstr = Other.errstr;
 
         data = std::move(Other.data);
@@ -155,19 +155,19 @@ class NPArrayBase {
 
     /// Swap with \p rhs.
     NPArrayBase &swap(NPArrayBase &rhs) {
-        std::swap(num_rows, rhs.num_rows);
-        std::swap(num_columns, rhs.num_columns);
+        std::swap(numRows, rhs.numRows);
+        std::swap(numColumns, rhs.numColumns);
         std::swap(data, rhs.data);
         return *this;
     }
 
     /// Are those NPArray equal ?
     bool operator==(const NPArrayBase &Other) const noexcept {
-        if (element_size() != Other.element_size() || rows() != Other.rows() ||
+        if (elementSize() != Other.elementSize() || rows() != Other.rows() ||
             cols() != Other.cols())
             return false;
         return std::memcmp(data.get(), Other.data.get(),
-                           size() * element_size()) == 0;
+                           size() * elementSize()) == 0;
     }
 
     /// Are those NPArray different ?
@@ -176,34 +176,34 @@ class NPArrayBase {
     }
 
     /// Get the number of rows.
-    size_t rows() const noexcept { return num_rows; }
+    size_t rows() const noexcept { return numRows; }
 
     /// Get the number of columns.
-    size_t cols() const noexcept { return num_columns; }
+    size_t cols() const noexcept { return numColumns; }
 
     /// Get the number of elements.
-    size_t size() const noexcept { return num_rows * num_columns; }
+    size_t size() const noexcept { return numRows * numColumns; }
 
     /// Get the underlying element size in bytes.
-    unsigned element_size() const noexcept { return elt_size; }
+    unsigned elementSize() const noexcept { return eltSize; }
 
     /// Get the status of this NPArray.
     bool good() const noexcept { return errstr == nullptr; }
 
     /// Is this NPArray empty ?
-    bool empty() const noexcept { return num_rows == 0 || num_columns == 0; }
+    bool empty() const noexcept { return numRows == 0 || numColumns == 0; }
 
     /// Insert (uninitialized) rows at position row.
-    NPArrayBase &insert_rows(size_t row, size_t rows);
+    NPArrayBase &insertRows(size_t row, size_t rows);
 
     /// Insert an (uninitialized) row at position row.
-    NPArrayBase &insert_row(size_t row) { return insert_rows(row, 1); }
+    NPArrayBase &insertRow(size_t row) { return insertRows(row, 1); }
 
     /// Insert (uninitialized) columns at position col.
-    NPArrayBase &insert_columns(size_t col, size_t cols);
+    NPArrayBase &insertColumns(size_t col, size_t cols);
 
     /// Insert an (uninitialized) column at position col.
-    NPArrayBase &insert_column(size_t col) { return insert_columns(col, 1); }
+    NPArrayBase &insertColumn(size_t col) { return insertColumns(col, 1); }
 
     /// Extends this NPArray with the content os \p other, in the \p axis
     /// direction.
@@ -216,20 +216,20 @@ class NPArrayBase {
     NPArrayBase &resize(size_t new_num_rows, size_t new_num_columns) {
         const size_t new_size = new_num_rows * new_num_columns;
         if (new_size != size())
-            data.reset(new char[new_size * element_size()]);
-        num_rows = new_num_rows;
-        num_columns = new_num_columns;
+            data.reset(new char[new_size * elementSize()]);
+        numRows = new_num_rows;
+        numColumns = new_num_columns;
         return *this;
     }
 
     /// Change the matrix underlying element size.
     void viewAs(size_t newEltSize) {
-        assert(elt_size > newEltSize &&
+        assert(eltSize > newEltSize &&
                "New element view must not be larger than the original one");
-        assert(elt_size % newEltSize == 0 &&
+        assert(eltSize % newEltSize == 0 &&
                "Original element size is not a multiple of new element size");
-        num_columns *= elt_size / newEltSize;
-        elt_size = newEltSize;
+        numColumns *= eltSize / newEltSize;
+        eltSize = newEltSize;
     }
 
     /// Get a string describing the last error (if any).
@@ -237,17 +237,16 @@ class NPArrayBase {
     const char *error() const noexcept { return errstr; }
 
     /// Get information from the file header.
-    static bool get_information(std::ifstream &ifs, unsigned &major,
-                                unsigned &minor, std::string &descr,
-                                bool &fortran_order, std::vector<size_t> &shape,
-                                size_t &data_size,
-                                const char **errstr = nullptr);
+    static bool getInformation(std::ifstream &ifs, unsigned &major,
+                               unsigned &minor, std::string &descr,
+                               bool &fortran_order, std::vector<size_t> &shape,
+                               size_t &data_size,
+                               const char **errstr = nullptr);
 
     /// Get high level information from the file header.
-    static bool get_information(std::ifstream &ifs, size_t &num_rows,
-                                size_t &num_columns, std::string &elt_ty,
-                                size_t &elt_size,
-                                const char **errstr = nullptr);
+    static bool getInformation(std::ifstream &ifs, size_t &num_rows,
+                               size_t &num_columns, std::string &elt_ty,
+                               size_t &elt_size, const char **errstr = nullptr);
 
     /// Save to file \p filename.
     bool save(const char *filename, const std::string &descr) const;
@@ -265,7 +264,7 @@ class NPArrayBase {
         assert(row < rows() && "Row is out-of-range");
         assert(col < cols() && "Col is out-of-range");
         const Ty *p = reinterpret_cast<Ty *>(data.get());
-        return &p[row * num_columns + col];
+        return &p[row * numColumns + col];
     }
 
     /// Get a pointer to type Ty to the array.
@@ -274,7 +273,7 @@ class NPArrayBase {
         assert(row < rows() && "Row is out-of-range");
         assert(col < cols() && "Col is out-of-range");
         Ty *p = reinterpret_cast<Ty *>(data.get());
-        return &p[row * num_columns + col];
+        return &p[row * numColumns + col];
     }
 
     /// Set the error string and state.
@@ -285,15 +284,15 @@ class NPArrayBase {
 
     /// Fill our internal buffer with externally provided data.
     void fill(const char *buf, size_t buf_size) noexcept {
-        const size_t size = num_rows * num_columns * elt_size;
+        const size_t size = numRows * numColumns * eltSize;
         assert(buf_size >= size && "data buffer size is too small");
         memcpy(data.get(), buf, size);
     }
 
   private:
     std::unique_ptr<char[]> data;
-    size_t num_rows, num_columns; //< Number of rows and columns.
-    unsigned elt_size;            //< Number of elements.
+    size_t numRows, numColumns; //< Number of rows and columns.
+    unsigned eltSize;           //< Number of elements.
     const char *errstr;
 
     /// Construct an NPArrayBase from file filename.
@@ -343,8 +342,8 @@ template <class Ty> class NPArray : public NPArrayBase {
             std::string l_elt_ty;
             size_t l_elt_size;
             const char *l_errstr;
-            if (!get_information(ifs, l_num_rows, l_num_cols, l_elt_ty,
-                                 l_elt_size, &l_errstr)) {
+            if (!getInformation(ifs, l_num_rows, l_num_cols, l_elt_ty,
+                                l_elt_size, &l_errstr)) {
                 setError(l_errstr);
                 return;
             }
@@ -411,8 +410,8 @@ template <class Ty> class NPArray : public NPArrayBase {
         std::string elt_ty;
         size_t elt_size;
         const char *l_errstr;
-        if (!get_information(ifs, num_rows, num_cols, elt_ty, elt_size,
-                             &l_errstr)) {
+        if (!getInformation(ifs, num_rows, num_cols, elt_ty, elt_size,
+                            &l_errstr)) {
             NPArray res(0, 0);
             res.setError(l_errstr);
             return res;
@@ -743,17 +742,17 @@ template <class Ty> class NPArray : public NPArrayBase {
 
         /// Construct a Row view of nparray.
         RowIterator(NPArrayTy &nparray, size_t row) noexcept
-            : nparray(&nparray), row(row), init_row(row) {}
+            : nparray(&nparray), row(row), initRow(row) {}
 
         /// Copy constructor.
         RowIterator(const RowIterator &Other) noexcept
-            : nparray(Other.nparray), row(Other.row), init_row(Other.row) {}
+            : nparray(Other.nparray), row(Other.row), initRow(Other.row) {}
 
         /// Copy assignment.
         RowIterator &operator=(const RowIterator &Other) noexcept {
             nparray = Other.nparray;
             row = Other.row;
-            init_row = Other.row;
+            initRow = Other.row;
             return *this;
         }
 
@@ -796,7 +795,7 @@ template <class Ty> class NPArray : public NPArrayBase {
 
         /// Reset the row index to the one used at construction.
         RowIterator &reset() {
-            row = init_row;
+            row = initRow;
             return *this;
         }
 
@@ -848,7 +847,7 @@ template <class Ty> class NPArray : public NPArrayBase {
       private:
         NPArrayTy *nparray; ///< The NPArray this row refers to.
         size_t row;         ///< row index in the NPArray.
-        size_t init_row;    ///< The row index used at construction.
+        size_t initRow;     ///< The row index used at construction.
     };
 
     using Row = RowIterator<NPArray<Ty>>;
@@ -1040,7 +1039,8 @@ template <class Ty> class NPArray : public NPArrayBase {
     /// Test if none of the elements in the range [ \p begin , \p end ( on \p
     /// axis satisfy predicate \p pred.
     template <class predicate>
-    bool none(const predicate &pred, Axis axis, size_t begin, size_t end) const {
+    bool none(const predicate &pred, Axis axis, size_t begin,
+              size_t end) const {
         assert(begin <= end && "range's end needs to be strictly greater "
                                "than begin in NPArray::none");
         if (begin >= end)
@@ -1110,7 +1110,8 @@ template <class Ty> class NPArray : public NPArrayBase {
     /// Count how many of the elements in the range [ \p begin , \p end ( on \p
     /// axis satisfy predicate \p pred.
     template <class predicate>
-    size_t count(const predicate &pred, Axis axis, size_t begin, size_t end) const {
+    size_t count(const predicate &pred, Axis axis, size_t begin,
+                 size_t end) const {
         assert(begin <= end && "range's end needs to be strictly greater "
                                "than begin in NPArray::count");
         size_t cnt = 0;
@@ -1154,7 +1155,7 @@ template <class Ty> class NPArray : public NPArrayBase {
     template <template <typename, bool> class collectorOp,
               bool enableLocation = false>
     std::enable_if_t<
-        isNPCollector<Ty, collectorOp, enableLocation>::value &&
+        isNPCollector<Ty, collectorOp, enableLocation>() &&
             std::is_copy_constructible<collectorOp<Ty, enableLocation>>(),
         collectorOp<
             Ty, enableLocation>> foreach (const collectorOp<Ty, enableLocation>
@@ -1172,7 +1173,7 @@ template <class Ty> class NPArray : public NPArrayBase {
     template <template <typename, bool> class collectorOp,
               bool enableLocation = false>
     std::enable_if_t<
-        isNPCollector<Ty, collectorOp, enableLocation>::value &&
+        isNPCollector<Ty, collectorOp, enableLocation>() &&
             std::is_copy_constructible<collectorOp<Ty, enableLocation>>(),
         collectorOp<
             Ty, enableLocation>> foreach (const collectorOp<Ty, enableLocation>
@@ -1203,7 +1204,7 @@ template <class Ty> class NPArray : public NPArrayBase {
     template <template <typename, bool> class collectorOp,
               bool enableLocation = false>
     std::enable_if_t<
-        isNPCollector<Ty, collectorOp, enableLocation>::value &&
+        isNPCollector<Ty, collectorOp, enableLocation>() &&
             std::is_copy_constructible<collectorOp<Ty, enableLocation>>(),
         collectorOp<
             Ty, enableLocation>> foreach (const collectorOp<Ty, enableLocation>
@@ -1237,7 +1238,7 @@ template <class Ty> class NPArray : public NPArrayBase {
         return op;
     }
 
-#define addCollector(fname, OpName)                                            \
+#define ADD_NP_COLLECTOR(fname, OpName)                                        \
     /** Get the specific value in this NPArray. */                             \
     Ty fname() const { return foreach (OpName<Ty, false>()).value(); }         \
     /** Get the minimum value in this NPArray row \p i (resp. column, as       \
@@ -1278,12 +1279,12 @@ template <class Ty> class NPArray : public NPArrayBase {
         return op.value();                                                     \
     }
 
-    addCollector(min, Min);
-    addCollector(minAbs, MinAbs);
-    addCollector(max, Max);
-    addCollector(maxAbs, MaxAbs);
+    ADD_NP_COLLECTOR(min, Min);
+    ADD_NP_COLLECTOR(minAbs, MinAbs);
+    ADD_NP_COLLECTOR(max, Max);
+    ADD_NP_COLLECTOR(maxAbs, MaxAbs);
 
-#undef addCollector
+#undef ADD_NP_COLLECTOR
     /// @}
 
     /// \defgroup SelfApply Modifies this NPArray by replacing each element with
@@ -1295,7 +1296,7 @@ template <class Ty> class NPArray : public NPArrayBase {
     /// the application of \p NPUnaryOperator to this element and returns
     /// this NPArray.
     template <template <typename> class unaryOperation>
-    std::enable_if_t<isNPUnaryOperator<Ty, unaryOperation>::value &
+    std::enable_if_t<isNPUnaryOperator<Ty, unaryOperation>() &&
                          std::is_copy_constructible<unaryOperation<Ty>>(),
                      NPArray &>
     apply(const unaryOperation<Ty> &op) {
@@ -1327,7 +1328,7 @@ template <class Ty> class NPArray : public NPArrayBase {
     /// the application of \p binaryOperation to this element with a scalar
     /// value and returns this NPArray.
     template <template <typename> class binaryOperation>
-    std::enable_if_t<isNPBinaryOperator<Ty, binaryOperation>::value &&
+    std::enable_if_t<isNPBinaryOperator<Ty, binaryOperation>() &&
                          std::is_copy_constructible<binaryOperation<Ty>>(),
                      NPArray &>
     apply(const binaryOperation<Ty> &op, const Ty &rhs) {
@@ -1362,7 +1363,7 @@ template <class Ty> class NPArray : public NPArrayBase {
     /// number of columns (resp. rows), then its content is broadcasted for all
     /// rows (resp. columns).
     template <template <typename> class binaryOperation>
-    std::enable_if_t<isNPBinaryOperator<Ty, binaryOperation>::value &&
+    std::enable_if_t<isNPBinaryOperator<Ty, binaryOperation>() &&
                          std::is_copy_constructible<binaryOperation<Ty>>(),
                      NPArray &>
     apply(const binaryOperation<Ty> &op, const NPArray &rhs) {
@@ -1500,7 +1501,7 @@ template <class Ty> class NPArray : public NPArrayBase {
     /// Extracts the values from a range of \p unaryOperations.
     template <template <typename, bool> class collectorOp,
               bool enableLocation = false>
-    static std::enable_if_t<isNPCollector<Ty, collectorOp>::value,
+    static std::enable_if_t<isNPCollector<Ty, collectorOp>(),
                             NPArray<typename NPOperatorTraits<
                                 Ty, collectorOp, enableLocation>::valueType>>
     extract(const std::vector<collectorOp<Ty, enableLocation>> &ops) {
@@ -1589,7 +1590,7 @@ template <class Ty> class NPArray : public NPArrayBase {
     template <template <typename, bool> class collectorOp,
               bool enableLocation = false>
     std::enable_if_t<
-        isNPCollector<Ty, collectorOp, enableLocation>::value,
+        isNPCollector<Ty, collectorOp, enableLocation>(),
         typename NPOperatorTraits<Ty, collectorOp, enableLocation>::valueType>
     fold(const collectorOp<Ty, enableLocation> &op, Axis axis, size_t i) const {
         return foreach (op, axis, i).value();
@@ -1600,7 +1601,7 @@ template <class Ty> class NPArray : public NPArrayBase {
     /// computed values.
     template <template <typename, bool> class collectorOp,
               bool enableLocation = false>
-    std::enable_if_t<isNPCollector<Ty, collectorOp, enableLocation>::value,
+    std::enable_if_t<isNPCollector<Ty, collectorOp, enableLocation>(),
                      NPArray<typename NPOperatorTraits<
                          Ty, collectorOp, enableLocation>::valueType>>
     fold(const collectorOp<Ty, enableLocation> &op, Axis axis, size_t begin,
@@ -1613,7 +1614,7 @@ template <class Ty> class NPArray : public NPArrayBase {
     /// computed values.
     template <template <typename, bool> class collectorOp,
               bool enableLocation = false>
-    std::enable_if_t<isNPCollector<Ty, collectorOp, enableLocation>::value,
+    std::enable_if_t<isNPCollector<Ty, collectorOp, enableLocation>(),
                      NPArray<typename NPOperatorTraits<
                          Ty, collectorOp, enableLocation>::valueType>>
     fold(const collectorOp<Ty, enableLocation> &op, Axis axis) const {

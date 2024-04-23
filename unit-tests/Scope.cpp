@@ -245,7 +245,7 @@ struct MyVisitor : public Scope::Visitor {
         SignalDesc::Kind kind;
         SignalIdxTy idx;
         bool alias;
-        bool visited=false;
+        bool visited = false;
         Expectation(const string &fullScopeName, const string &signalName,
                     SignalDesc::Kind kind, SignalIdxTy idx, bool alias)
             : fullScopeName(fullScopeName), signalName(signalName), kind(kind),
@@ -264,26 +264,26 @@ struct MyVisitor : public Scope::Visitor {
                      const Waveform::SignalDesc &SD) override {
         EXPECT_EQ(Expectation(fullScopeName, SD.getName(), SD.getKind(),
                               SD.getIdx(), SD.isAlias()),
-                  Expected[i]);
+                  expected[i]);
         // Uncomment the line below to capture the visited signals.
         // std::cout << "{\"" << fullScopeName << "\", \"" << SD.getName()
         //          << "\", " << SD.getKind() << ", " << SD.getIdx() << ", "
         //          << (SD.isAlias() ? "true" : "false") << "},\n";
-        Expected[i].visited = true;
+        expected[i].visited = true;
         i++;
     }
 
     void finalChecks() const {
-        for (const auto &E : Expected)
+        for (const auto &E : expected)
             EXPECT_TRUE(E.visited);
 
-        EXPECT_EQ(i, Expected.size());
+        EXPECT_EQ(i, expected.size());
     }
 
     MyVisitor(const vector<Expectation> &Expected)
-        : Scope::Visitor(Waveform::Visitor::Options()), Expected(Expected) {}
+        : Scope::Visitor(Waveform::Visitor::Options()), expected(Expected) {}
 
-    vector<Expectation> Expected;
+    vector<Expectation> expected;
     unsigned i = 0;
 };
 

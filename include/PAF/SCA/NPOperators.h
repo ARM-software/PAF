@@ -41,27 +41,22 @@ struct NPCollector : public NPOperator {};
 struct NPUnaryOperator : public NPOperator {};
 struct NPBinaryOperator : public NPOperator {};
 
-template <typename DataTy, template <typename> class predicate>
-struct isNPPredicate
-    : std::integral_constant<
-          bool, std::is_base_of<NPPredicate, predicate<DataTy>>::value> {};
+template <typename DataTy, template <typename> class operation>
+constexpr bool isNPUnaryOperator() {
+    return std::is_base_of<NPUnaryOperator, operation<DataTy>>::value;
+}
 
 template <typename DataTy, template <typename> class operation>
-struct isNPUnaryOperator
-    : std::integral_constant<
-          bool, std::is_base_of<NPUnaryOperator, operation<DataTy>>::value> {};
-
-template <typename DataTy, template <typename> class operation>
-struct isNPBinaryOperator
-    : std::integral_constant<
-          bool, std::is_base_of<NPBinaryOperator, operation<DataTy>>::value> {};
+constexpr bool isNPBinaryOperator() {
+    return std::is_base_of<NPBinaryOperator, operation<DataTy>>::value;
+}
 
 template <typename DataTy, template <typename, bool> class operation,
           bool enableLocation = false>
-struct isNPCollector
-    : std::integral_constant<
-          bool, std::is_base_of<NPCollector,
-                                operation<DataTy, enableLocation>>::value> {};
+constexpr bool isNPCollector() {
+    return std::is_base_of<NPCollector,
+                           operation<DataTy, enableLocation>>::value;
+}
 
 template <typename DataTy, template <typename, bool> class operation,
           bool enableLocation = false>
@@ -81,55 +76,43 @@ struct NPOperatorTraits {
 
 /// NPPredicates implement the function call operator and must be copyable.
 
-template <typename Ty> struct isEqual : public NPPredicate {
-    const Ty V;
+template <typename Ty> struct Equal : public NPPredicate {
+    const Ty value;
     // TODO: move this to a template parameter with C++20.
-    constexpr isEqual(const Ty &V): V(V) {}
-    constexpr bool operator()(const Ty &v) const {
-        return v == V;
-    }
+    constexpr Equal(const Ty &v) : value(v) {}
+    constexpr bool operator()(const Ty &v) const { return v == value; }
 };
 
-template <typename Ty> struct isNotEqual : public NPPredicate {
-    const Ty V;
+template <typename Ty> struct NotEqual : public NPPredicate {
+    const Ty value;
     // TODO: move this to a template parameter with C++20.
-    constexpr isNotEqual(const Ty &V): V(V) {}
-    constexpr bool operator()(const Ty &v) const {
-        return v != V;
-    }
+    constexpr NotEqual(const Ty &v) : value(v) {}
+    constexpr bool operator()(const Ty &v) const { return v != value; }
 };
 
-template <typename Ty> struct isLess : public NPPredicate {
-    const Ty V;
+template <typename Ty> struct Less : public NPPredicate {
+    const Ty value;
     // TODO: move this to a template parameter with C++20.
-    constexpr isLess(const Ty &V): V(V) {}
-    constexpr bool operator()(const Ty &v) const {
-        return v < V;
-    }
+    constexpr Less(const Ty &v) : value(v) {}
+    constexpr bool operator()(const Ty &v) const { return v < value; }
 };
-template <typename Ty> struct isLessOrEqual : public NPPredicate {
-    const Ty V;
+template <typename Ty> struct LessOrEqual : public NPPredicate {
+    const Ty value;
     // TODO: move this to a template parameter with C++20.
-    constexpr isLessOrEqual(const Ty &V): V(V) {}
-    constexpr bool operator()(const Ty &v) const {
-        return v <= V;
-    }
+    constexpr LessOrEqual(const Ty &v) : value(v) {}
+    constexpr bool operator()(const Ty &v) const { return v <= value; }
 };
-template <typename Ty> struct isGreater : public NPPredicate {
-    const Ty V;
+template <typename Ty> struct Greater : public NPPredicate {
+    const Ty value;
     // TODO: move this to a template parameter with C++20.
-    constexpr isGreater(const Ty &V): V(V) {}
-    constexpr bool operator()(const Ty &v) const {
-        return v > V;
-    }
+    constexpr Greater(const Ty &v) : value(v) {}
+    constexpr bool operator()(const Ty &v) const { return v > value; }
 };
-template <typename Ty> struct isGreaterOrEqual : public NPPredicate {
-    const Ty V;
+template <typename Ty> struct GreaterOrEqual : public NPPredicate {
+    const Ty value;
     // TODO: move this to a template parameter with C++20.
-    constexpr isGreaterOrEqual(const Ty &V): V(V) {}
-    constexpr bool operator()(const Ty &v) const {
-        return v >= V;
-    }
+    constexpr GreaterOrEqual(const Ty &v) : value(v) {}
+    constexpr bool operator()(const Ty &v) const { return v >= value; }
 };
 
 /// NPOperators provides several generally useful functors to be used with

@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: <text>Copyright 2021,2022 Arm Limited and/or its
+ * SPDX-FileCopyrightText: <text>Copyright 2021,2022,2024 Arm Limited and/or its
  * affiliates <open-source-office@arm.com></text>
  * SPDX-License-Identifier: Apache-2.0
  *
@@ -31,8 +31,8 @@
 using std::string;
 using std::unique_ptr;
 
-using PAF::SCA::NPArray;
 using PAF::SCA::NoiseSource;
+using PAF::SCA::NPArray;
 
 unique_ptr<Reporter> reporter = make_cli_reporter();
 
@@ -91,7 +91,8 @@ int main(int argc, char *argv[]) {
     if (newColNumber == 0)
         newColNumber = inputNPY.cols();
 
-    unique_ptr<PAF::SCA::NoiseSource> NS(NoiseSource::getSource(noiseTy, noiseLevel));
+    unique_ptr<PAF::SCA::NoiseSource> NS(
+        NoiseSource::getSource(noiseTy, noiseLevel));
     unique_ptr<double[]> outputSamples(new double[newRowNumber * newColNumber]);
     NPArray<double> outputNPY(std::move(outputSamples), newRowNumber,
                               newColNumber);

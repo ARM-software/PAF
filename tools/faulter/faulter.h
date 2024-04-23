@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: <text>Copyright 2021,2022 Arm Limited and/or its
+ * SPDX-FileCopyrightText: <text>Copyright 2021,2022,2024 Arm Limited and/or its
  * affiliates <open-source-office@arm.com></text>
  * SPDX-License-Identifier: Apache-2.0
  *
@@ -81,12 +81,18 @@ class FunctionSpec {
 };
 
 struct InjectionRangeSpec {
-    enum { NotSet, Functions, LabelsPair, WLabels, FlatFunctions } Kind = NotSet;
+    enum {
+        NOT_SET,
+        FUNCTIONS,
+        LABELS_PAIR,
+        WLABELS,
+        FLAT_FUNCTIONS
+    } kind = NOT_SET;
     FunctionSpec included;
-    FunctionSpec included_flat;
+    FunctionSpec includedFlat;
     FunctionSpec excluded;
-    std::string start_label;
-    std::string end_label;
+    std::string startLabel;
+    std::string endLabel;
     std::vector<std::string> labels;
     unsigned window;
 };
@@ -94,16 +100,16 @@ struct InjectionRangeSpec {
 class Faulter : public PAF::MTAnalyzer {
 
   public:
-    enum class FaultModel { InstructionSkip, CorruptRegDef };
+    enum class FaultModel { INSTRUCTION_SKIP, CORRUPT_REG_DEF };
 
     Faulter(const TracePair &trace, const std::string &image_filename,
             bool verbose, const std::string &campaign_filename = "")
         : PAF::MTAnalyzer(trace, image_filename, verbose),
-          campaign_filename(campaign_filename) {}
+          campaignFilename(campaign_filename) {}
 
     void run(const InjectionRangeSpec &IRS, FaultModel Model,
              const std::string &oracleSpec);
 
   private:
-    const std::string campaign_filename;
+    const std::string campaignFilename;
 };
