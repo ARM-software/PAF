@@ -419,33 +419,33 @@ bool FSTWaveFile::write(const Waveform &W) {
 bool FSTWaveFile::visitHierarchy(FSTHierarchyVisitorBase *V) const {
     if (openedForWrite)
         DIE("Can not read FST file that has been opened for write");
+    vector<const char *> scopeStack;
     while (const fstHier *h = fstReaderIterateHier(f)) {
-        const char *fullScopeName;
         const decltype(h->u.scope) *Scope;
         const decltype(h->u.var) *Var;
         switch (h->htyp) {
         case FST_HT_SCOPE:
             Scope = FSTHierarchyVisitorBase::getAsFstHierScope(h);
-            fullScopeName = fstReaderPushScope(f, Scope->name, nullptr);
+            scopeStack.push_back(fstReaderPushScope(f, Scope->name, nullptr));
             switch (Scope->typ) {
             case FST_ST_VCD_MODULE:
-                if (!V->onModule(fullScopeName, h))
+                if (!V->onModule(scopeStack.back(), h))
                     return false;
                 break;
             case FST_ST_VCD_TASK:
-                if (!V->onTask(fullScopeName, h))
+                if (!V->onTask(scopeStack.back(), h))
                     return false;
                 break;
             case FST_ST_VCD_FUNCTION:
-                if (!V->onFunction(fullScopeName, h))
+                if (!V->onFunction(scopeStack.back(), h))
                     return false;
                 break;
             case FST_ST_VCD_BEGIN:
-                if (!V->onBlockBegin(fullScopeName, h))
+                if (!V->onBlockBegin(scopeStack.back(), h))
                     return false;
                 break;
             default:
-                if (!V->onUnknownScope(fullScopeName, h))
+                if (!V->onUnknownScope(scopeStack.back(), h))
                     return false;
                 break;
             }
@@ -453,11 +453,13 @@ bool FSTWaveFile::visitHierarchy(FSTHierarchyVisitorBase *V) const {
 
         case FST_HT_UPSCOPE:
             fstReaderPopScope(f);
+            scopeStack.pop_back();
             if (!V->leaveCurrentScope())
                 return false;
             break;
 
         case FST_HT_VAR:
+            assert(scopeStack.size() != 0 && "Var not in a scope");
             Var = FSTHierarchyVisitorBase::getAsFstHierVar(h);
             switch (Var->direction) {
             case FST_VD_MIN:
@@ -465,29 +467,29 @@ bool FSTWaveFile::visitHierarchy(FSTHierarchyVisitorBase *V) const {
             case FST_VD_INPUT:
             case FST_VD_OUTPUT:
             case FST_VD_INOUT:
-                if (!V->onPort(fullScopeName, h, Var->is_alias))
+                if (!V->onPort(scopeStack.back(), h, Var->is_alias))
                     return false;
                 break;
             default:
-                if (!V->onUnknownVarDirection(fullScopeName, h, Var->is_alias))
+                if (!V->onUnknownVarDirection(scopeStack.back(), h, Var->is_alias))
                     return false;
                 break;
             }
             switch (Var->typ) {
             case FST_VT_VCD_INTEGER:
-                if (!V->onInt(fullScopeName, h, Var->is_alias))
+                if (!V->onInt(scopeStack.back(), h, Var->is_alias))
                     return false;
                 break;
             case FST_VT_VCD_REG:
-                if (!V->onReg(fullScopeName, h, Var->is_alias))
+                if (!V->onReg(scopeStack.back(), h, Var->is_alias))
                     return false;
                 break;
             case FST_VT_VCD_WIRE:
-                if (!V->onWire(fullScopeName, h, Var->is_alias))
+                if (!V->onWire(scopeStack.back(), h, Var->is_alias))
                     return false;
                 break;
             default:
-                if (!V->onUnknownVarType(fullScopeName, h, Var->is_alias))
+                if (!V->onUnknownVarType(scopeStack.back(), h, Var->is_alias))
                     return false;
                 break;
             }

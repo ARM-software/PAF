@@ -136,7 +136,7 @@ struct MemoryAccess : public Access {
     Addr addr;   ///< The access address.
 
     /// Uninitialized MemoryAccess constructor.
-    MemoryAccess() : Access() {}
+    MemoryAccess() : Access(), size(), addr() {}
     /// MemoryAccess copy constructor.
     MemoryAccess(const MemoryAccess &) = default;
     /// MemoryAccess move constructor.
