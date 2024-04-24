@@ -114,15 +114,13 @@ class InstructionSkip : public FaultModelBase {
                     const std::string &Disassembly)
         : FaultModelBase(Time, Address, Instruction, Width, Disassembly),
           faultedInstr(FaultedInstr), executed(Executed) {}
-    virtual ~InstructionSkip();
+    ~InstructionSkip() override;
 
     /// Get the fault model name used for this fault.
-    virtual const char *getFaultModelName() const override {
-        return "InstructionSkip";
-    }
+    const char *getFaultModelName() const override { return "InstructionSkip"; }
 
     /// Dump this fault to os.
-    virtual void dump(std::ostream &os) const override;
+    void dump(std::ostream &os) const override;
 
   private:
     uint32_t faultedInstr; ///< The faulted instruction.
@@ -143,15 +141,13 @@ class CorruptRegDef : public FaultModelBase {
         for (char &c : faultedReg)
             c = std::toupper(c);
     }
-    virtual ~CorruptRegDef();
+    ~CorruptRegDef() override;
 
     /// Get the fault model name used for this fault.
-    virtual const char *getFaultModelName() const override {
-        return "CorruptRegDef";
-    }
+    const char *getFaultModelName() const override { return "CorruptRegDef"; }
 
     /// Dump this fault to os.
-    virtual void dump(std::ostream &os) const override;
+    void dump(std::ostream &os) const override;
 
   private:
     std::string faultedReg; ///< The faulted register

@@ -28,8 +28,8 @@ namespace SCA {
 class ConstantNoiseSource : public NoiseSource {
   public:
     ConstantNoiseSource(double value) : value(value) {}
-    virtual ~ConstantNoiseSource() {}
-    virtual double get() override { return value; }
+    ~ConstantNoiseSource() override {}
+    double get() override { return value; }
 
   private:
     double value;
@@ -56,7 +56,7 @@ class UniformNoise : public RandomNoiseSource {
     UniformNoise(double NoiseLevel)
         : RandomNoiseSource(), noiseDist(-NoiseLevel / 2.0, NoiseLevel / 2.0) {}
 
-    virtual double get() override { return noiseDist(twister); }
+    double get() override { return noiseDist(twister); }
 
   private:
     std::uniform_real_distribution<double> noiseDist;
@@ -67,7 +67,7 @@ class NormalNoise : public RandomNoiseSource {
     NormalNoise(double NoiseLevel)
         : RandomNoiseSource(), noiseDist(0.0, NoiseLevel / 2.0) {}
 
-    virtual double get() override { return noiseDist(twister); }
+    double get() override { return noiseDist(twister); }
 
   private:
     std::normal_distribution<double> noiseDist;

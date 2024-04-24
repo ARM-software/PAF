@@ -68,7 +68,7 @@ using PAF::SCA::YAMLTimingInfo;
 class TestTimingInfo : public TimingInfo {
   public:
     TestTimingInfo() : TimingInfo() {}
-    virtual void save(std::ostream &os) const override {}
+    void save(std::ostream &os) const override {}
     size_t minimum() const { return cmin; }
     size_t maximum() const { return cmax; }
     const vector<pair<Addr, unsigned>> &locations() const { return pcCycle; }
@@ -1055,7 +1055,7 @@ class PowerAnalysisConfigWithNoise : public PowerAnalysisConfig {
     PowerAnalysisConfigWithNoise() : PowerAnalysisConfig() {}
     PowerAnalysisConfigWithNoise(PowerAnalysisConfig::Selection s)
         : PowerAnalysisConfig(s, PowerAnalysisConfig::HAMMING_WEIGHT) {}
-    virtual double getNoise() override { return 1.0; }
+    double getNoise() override { return 1.0; }
 };
 
 TEST(PowerTrace, withNoise) {
@@ -1300,7 +1300,7 @@ TEST(PowerTrace, HammingDistanceWithConfig) {
         InstsStateOracle(size_t NR = 18, uint64_t v = 0)
             : regBankInitialState(NR, v) {}
 
-        virtual std::vector<uint64_t> getRegBankState(Time t) const override {
+        std::vector<uint64_t> getRegBankState(Time t) const override {
             return regBankInitialState;
         }
 
@@ -1316,12 +1316,12 @@ TEST(PowerTrace, HammingDistanceWithConfig) {
         Insts2StateOracle(size_t NR = 18, uint64_t v = 0)
             : regBankInitialState(NR, v) {}
 
-        virtual std::vector<uint64_t> getRegBankState(Time t) const override {
+        std::vector<uint64_t> getRegBankState(Time t) const override {
             return regBankInitialState;
         }
 
-        virtual uint64_t getMemoryState(Addr address, size_t size,
-                                        Time t) const override {
+        uint64_t getMemoryState(Addr address, size_t size,
+                                Time t) const override {
             if (t == Insts2[3].time - 1 && address == 0xf939b3c)
                 return 0x00cafe00;
             if (t == Insts2[6].time - 1 && address == 0xf939b40)

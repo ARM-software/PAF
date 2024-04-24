@@ -295,7 +295,7 @@ struct FstBuilder : public Waveform::Visitor {
         fstWriterSetTimezero(ctx, W.getTimeZero());
     }
 
-    ~FstBuilder() { fstWriterClose(ctx); }
+    ~FstBuilder() override { fstWriterClose(ctx); }
 
     operator bool() const { return ctx != nullptr; }
 

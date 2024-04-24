@@ -109,7 +109,7 @@ class FSTWaveFile : public WaveFile {
     FSTWaveFile(const FSTWaveFile &) = delete;
     FSTWaveFile(const std::string &filename, bool write);
 
-    ~FSTWaveFile();
+    ~FSTWaveFile() override;
 
     operator bool() const { return f != nullptr; }
 

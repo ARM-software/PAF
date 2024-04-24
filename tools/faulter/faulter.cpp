@@ -296,7 +296,7 @@ class InstructionSkipPlanner : public FaulterInjectionPlanner {
         : FaulterInjectionPlanner(Image, Tarmac, CPU, MaxTraceTime,
                                   ProgramEntryAddress, ProgramEndAddress) {}
 
-    virtual void operator()(const PAF::ReferenceInstruction &I) override {
+    void operator()(const PAF::ReferenceInstruction &I) override {
         InstructionSkip *theFault = new InstructionSkip(
             I.time, I.pc, I.instruction, cpu.getNOP(I.width), I.width, I.effect,
             PAF::trimSpacesAndComment(I.disassembly));
@@ -315,7 +315,7 @@ class CorruptRegDefPlanner : public FaulterInjectionPlanner {
         : FaulterInjectionPlanner(Image, Tarmac, CPU, MaxTraceTime,
                                   ProgramEntryAddress, ProgramEndAddress) {}
 
-    virtual void operator()(const PAF::ReferenceInstruction &I) override {
+    void operator()(const PAF::ReferenceInstruction &I) override {
         // The CorruptRegDef fault model corrupts the output registers of an
         // instruction: this requires to break at the next intruction, once
         // the instruction to fault has been executed.

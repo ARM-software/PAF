@@ -191,7 +191,7 @@ class WLabelCollector : ParseReceiver {
                "Addresses must be sorted");
     }
 
-    virtual void got_event(InstructionEvent &ev) override {
+    void got_event(InstructionEvent &ev) override {
         buffer.emplace_back(ev.pc & ~1UL, ev.time, 0, 0);
     }
 

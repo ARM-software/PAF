@@ -90,7 +90,7 @@ class YAMLTimingInfo : public TimingInfo {
     YAMLTimingInfo() : TimingInfo() {}
 
     /// Save this TimingInfo to file os.
-    virtual void save(std::ostream &os) const override;
+    void save(std::ostream &os) const override;
 };
 
 /// PowerDumper is a base class for emitting a power trace.
@@ -108,7 +108,7 @@ class PowerDumper : public Dumper {
                       const PAF::ReferenceInstruction *I) = 0;
 
     /// Destruct this PowerDumper
-    virtual ~PowerDumper() {}
+    ~PowerDumper() override {}
 };
 
 /// CSVPowerDumper is a PowerDumper specialization for writing the power trace
@@ -162,7 +162,7 @@ class NPYPowerDumper : public PowerDumper, public FilenameDumper {
     }
 
     /// Destruct this NPYPowerDumper.
-    virtual ~NPYPowerDumper() override { npyA.save(filename); };
+    ~NPYPowerDumper() override { npyA.save(filename); };
 
   private:
     NPAdapter<double> npyA;

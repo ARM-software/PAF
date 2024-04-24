@@ -154,7 +154,7 @@ class RegBankDumper : public Dumper {
     virtual void dump(const std::vector<uint64_t> &regs) = 0;
 
     /// Destruct this RegBankDumper.
-    virtual ~RegBankDumper() {}
+    ~RegBankDumper() override {}
 };
 
 /// NPYRegBankDumper is used to dump a trace of the register bank content as a
@@ -178,7 +178,7 @@ class NPYRegBankDumper : public RegBankDumper, public FilenameDumper {
     void dump(const std::vector<uint64_t> &regs) override { npyA.append(regs); }
 
     /// Destruct this NPYRegBankDumper, saving the NPY file along the way.
-    virtual ~NPYRegBankDumper() {
+    ~NPYRegBankDumper() override {
         if (enabled())
             npyA.save(filename);
     }
@@ -198,7 +198,7 @@ class MemoryAccessesDumper : public Dumper {
     virtual void dump(uint64_t PC, const std::vector<MemoryAccess> &MA) = 0;
 
     /// Destruct this MemoryAccessesDumper.
-    virtual ~MemoryAccessesDumper() {}
+    ~MemoryAccessesDumper() override {}
 };
 
 /// The FileMemoryAccessesDumper class will dump a trace of memory accesses to a
@@ -257,7 +257,7 @@ class InstrDumper : public Dumper {
     }
 
     /// Destruct this InstrDumper.
-    virtual ~InstrDumper() {}
+    ~InstrDumper() override {}
 
   protected:
     bool dumpMemAccess;

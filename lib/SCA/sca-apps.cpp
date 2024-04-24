@@ -169,8 +169,8 @@ class TerseOutput : public OutputBase {
     TerseOutput(const std::string &filename, bool append = true)
         : OutputBase(filename, append, /* binary: */ false) {}
 
-    virtual void emit(const NPArray<double> &values, size_t decimate,
-                      size_t offset) const override {
+    void emit(const NPArray<double> &values, size_t decimate,
+              size_t offset) const override {
         emitComment(values, decimate, offset);
     }
 };
@@ -180,8 +180,8 @@ class GnuplotOutput : public OutputBase {
     GnuplotOutput(const std::string &filename)
         : OutputBase(filename, /* append: */ false, /* binary: */ false) {}
 
-    virtual void emit(const NPArray<double> &values, size_t decimate,
-                      size_t offset) const override {
+    void emit(const NPArray<double> &values, size_t decimate,
+              size_t offset) const override {
         if (values.empty())
             return;
 
@@ -205,8 +205,8 @@ class NumpyOutput : public OutputBase {
         assert(isFile() && "Numpy output must be to a file");
     }
 
-    virtual void emit(const NPArray<double> &values, size_t decimate,
-                      size_t offset) const override {
+    void emit(const NPArray<double> &values, size_t decimate,
+              size_t offset) const override {
         if (values.empty())
             return;
 
@@ -232,8 +232,8 @@ class PythonOutput : public OutputBase {
     PythonOutput(const std::string &filename, bool append = true)
         : OutputBase(filename, append, /* binary: */ false) {}
 
-    virtual void emit(const NPArray<double> &values, size_t decimate,
-                      size_t offset) const override {
+    void emit(const NPArray<double> &values, size_t decimate,
+              size_t offset) const override {
         if (values.empty())
             return;
 

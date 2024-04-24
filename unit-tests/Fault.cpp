@@ -67,8 +67,8 @@ TEST(Fault, FaultModelBase) {
                        const string &Disassembly)
             : FaultModelBase(Time, Address, Instruction, Width, Disassembly) {}
         FaultModelTest(const FaultModelTest &fm) : FaultModelBase(fm) {}
-        virtual ~FaultModelTest() {}
-        virtual const char *getFaultModelName() const override {
+        ~FaultModelTest() override {}
+        const char *getFaultModelName() const override {
             return "FaultModelTest";
         }
 
@@ -79,9 +79,7 @@ TEST(Fault, FaultModelBase) {
         const string &getDisassembly() const { return disassembly; }
         unsigned long getId() const { return id; }
 
-        virtual void dump(std::ostream &os) const override {
-            FaultModelBase::dump(os);
-        }
+        void dump(std::ostream &os) const override { FaultModelBase::dump(os); }
     };
 
     FaultModelTest f0(1, 1234, 0x02105, 16, "MOVS r1,#5");
