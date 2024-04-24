@@ -122,8 +122,8 @@ const char *V7MRegisterNames[unsigned(V7MInfo::Register::NUM_REGISTERS)] = {
     undefined(I, __PRETTY_FUNCTION__, __FILE__, __LINE__)
 
 template <typename Ty>
-constexpr typename std::underlying_type<Ty>::type to_underlying(Ty e) noexcept {
-    return static_cast<typename std::underlying_type<Ty>::type>(e);
+constexpr std::underlying_type_t<Ty> to_underlying(Ty e) noexcept {
+    return static_cast<std::underlying_type_t<Ty>>(e);
 }
 
 PAF::InstrInfo decodeT16Instr(const PAF::ReferenceInstruction &I) {

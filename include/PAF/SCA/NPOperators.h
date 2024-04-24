@@ -63,14 +63,13 @@ template <typename DataTy, template <typename, bool> class operation,
 struct NPOperatorTraits {
     /// \p valueType is the type of the result of \p value(), with the const /
     /// ref removed.
-    using valueType = typename std::remove_reference<typename std::remove_const<
-        decltype(operation<DataTy, enableLocation>().value())>::type>::type;
+    using valueType = std::remove_reference_t<std::remove_const_t<
+        decltype(operation<DataTy, enableLocation>().value())>>;
 
     /// \p applicationReturnType is the return type of the application of \p
     /// operation.
-    using applicationReturnType = typename std::remove_reference<
-        typename std::remove_const<decltype(operation<DataTy, enableLocation>()(
-            DataTy(), 0, 0))>::type>::type;
+    using applicationReturnType = std::remove_reference_t<std::remove_const_t<
+        decltype(operation<DataTy, enableLocation>()(DataTy(), 0, 0))>>;
 };
 
 /// NPPredicates implement the function call operator and must be copyable.
