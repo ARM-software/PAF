@@ -297,7 +297,7 @@ class InstructionSkipPlanner : public FaulterInjectionPlanner {
                                   ProgramEntryAddress, ProgramEndAddress) {}
 
     void operator()(const PAF::ReferenceInstruction &I) override {
-        InstructionSkip *theFault = new InstructionSkip(
+        auto *theFault = new InstructionSkip(
             I.time, I.pc, I.instruction, cpu.getNOP(I.width), I.width, I.effect,
             PAF::trimSpacesAndComment(I.disassembly));
         theFault->setBreakpoint(I.pc, breakpoints.count(I.pc));
@@ -327,7 +327,7 @@ class CorruptRegDefPlanner : public FaulterInjectionPlanner {
         for (const auto &Reg : I.regAccess) {
             if (Reg.access == PAF::RegisterAccess::Type::WRITE) {
                 faultAdded = true;
-                CorruptRegDef *theFault = new CorruptRegDef(
+                auto *theFault = new CorruptRegDef(
                     I.time, I.pc, I.instruction, I.width,
                     PAF::trimSpacesAndComment(I.disassembly), Reg.name);
                 theFault->setBreakpoint(BkptAddr, breakpoints.count(BkptAddr));

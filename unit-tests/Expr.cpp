@@ -216,8 +216,8 @@ TEST(Expr, Inputs) {
     EXPECT_EQ(In->eval().getValue(), 4321);
     EXPECT_EQ(In->repr(), "In(4321)");
 
-    Input *In1 = new Input("In1", ValueType::UINT32, 60);
-    Input *In2 = new Input("In2", ValueType::UINT32, 70);
+    auto *In1 = new Input("In1", ValueType::UINT32, 60);
+    auto *In2 = new Input("In2", ValueType::UINT32, 70);
     unique_ptr<Expr> bop(new And(In1, In2));
     EXPECT_EQ(bop->repr(), "AND(In1(60),In2(70))");
 

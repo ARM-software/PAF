@@ -50,7 +50,7 @@ NPArray<Ty> *readNumpyFile(const std::string &name, const string &filename,
     if (filename.empty())
         return nullptr;
 
-    NPArray<Ty> *np = new NPArray<Ty>(filename);
+    auto *np = new NPArray<Ty>(filename);
     if (np) {
         if (!np->good())
             reporter->errx(
