@@ -212,7 +212,7 @@ class NumpyOutput : public OutputBase {
 
         assert(decimate > 0 && "decimate can not be 0");
 
-        ofstream *ofs = dynamic_cast<ofstream *>(out);
+        auto *ofs = dynamic_cast<ofstream *>(out);
         if (!ofs)
             reporter->errx(EXIT_FAILURE, "Numpy output must be a file");
         if (decimate == 1) {

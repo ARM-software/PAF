@@ -89,7 +89,7 @@ struct FSTHierarchyVisitorBase {
 template <class BuilderTy> struct FSTWaveBuilderBase {
     static void callback(void *user_callback_data_pointer, uint64_t time,
                          fstHandle facidx, const unsigned char *value) {
-        BuilderTy *B = static_cast<BuilderTy *>(user_callback_data_pointer);
+        auto *B = static_cast<BuilderTy *>(user_callback_data_pointer);
         B->process(time, facidx, value);
     }
     fstHandle getHandle() const {

@@ -1227,7 +1227,7 @@ void testViewAs(size_t rows, size_t cols, const vector<fromTy> &init) {
     EXPECT_EQ(T.cols(), cols * sizeof(fromTy) / sizeof(newTy));
     EXPECT_EQ(T.elementSize(), sizeof(newTy));
 
-    const newTy *init2 = reinterpret_cast<const newTy *>(init.data());
+    const auto *init2 = reinterpret_cast<const newTy *>(init.data());
 
     for (size_t r = 0; r < T.rows(); r++)
         for (size_t c = 0; c < T.cols(); c++)
