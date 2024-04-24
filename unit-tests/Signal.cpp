@@ -974,9 +974,9 @@ TEST(Signal, Iterators) {
 
     // begin, end, operator*, operator!=
     unsigned t = 0;
-    for (Signal::Iterator it = Clk.begin(), ie = Clk.end(); it != ie; it++) {
-        EXPECT_EQ((*it).time, 5 * t);
-        EXPECT_EQ((*it).value, ValueTy(t % 2 == 0 ? "0" : "1"));
+    for (const auto &&it : Clk) {
+        EXPECT_EQ((it).time, 5 * t);
+        EXPECT_EQ((it).value, ValueTy(t % 2 == 0 ? "0" : "1"));
         t++;
     }
     EXPECT_EQ(t, 10);

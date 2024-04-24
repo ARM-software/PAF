@@ -129,8 +129,8 @@ class RunInfo {
     }
 
     bool checkDuration(size_t d) const {
-        for (size_t s = 0; s < segments.size(); s++)
-            if (segments[s].end - segments[s].start != d)
+        for (const auto &segment : segments)
+            if (segment.end - segment.start != d)
                 return false;
 
         return true;

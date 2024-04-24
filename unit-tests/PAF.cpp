@@ -577,8 +577,8 @@ TEST(MTAnalyzer, base) {
         EXPECT_EQ(val, valExp[i]);
     }
 
-    for (size_t i = 0; i < Instances.size(); i++) {
-        T.getFunctionBody(Instances[i], T);
+    for (auto &Instance : Instances) {
+        T.getFunctionBody(Instance, T);
         EXPECT_EQ(T.instructions[0].disassembly, string("MUL r3,r0,r0"));
     }
 
