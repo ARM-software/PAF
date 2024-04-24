@@ -238,7 +238,7 @@ bool NPArrayBase::getInformation(ifstream &ifs, unsigned &major,
 
     data_size = actual_file_size - header_length - 10;
 
-    unique_ptr<char> hbuf(new char[header_length]);
+    unique_ptr<char[]> hbuf(new char[header_length]);
     ifs.read(hbuf.get(), header_length);
     string header(hbuf.get(), header_length);
     hbuf.reset();
