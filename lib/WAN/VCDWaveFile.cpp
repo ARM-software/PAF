@@ -78,7 +78,7 @@ class VCDParserBase {
         currentLine.clear();
 
         string tmp;
-        while (1) {
+        while (true) {
             getline(is, tmp);
             currentLine.append(tmp);
             if (is.good())
@@ -816,7 +816,7 @@ bool VCDWaveFile::write(const Waveform &W) {
     uint64_t currentTime = W.getStartTime();
     F << '#' << currentTime << '\n';
     vector<size_t> ChangeIndexes(W.getNumSignals(), 0);
-    while (1) {
+    while (true) {
         if (currentTime == W.getStartTime()) {
             // For the initial dump section all signals need to be dumped.
             F << "$dumpvars\n";
