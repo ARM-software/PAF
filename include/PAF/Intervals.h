@@ -174,8 +174,7 @@ template <typename Ty> class Intervals {
         if (size() != Other.size())
             return false;
 
-        for (const_iterator m = begin(), o = Other.begin(), me = end(),
-                            oe = Other.end();
+        for (auto m = begin(), o = Other.begin(), me = end(), oe = Other.end();
              m != me && o != oe; m++, o++)
             if (*m != *o)
                 return false;

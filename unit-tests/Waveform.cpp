@@ -359,7 +359,7 @@ TEST(Waveform, iterators) {
 
     // Times iterator
     const std::array<TimeTy, 4> times = {5, 6, 10, 15};
-    Waveform::times_iterator t = W.timesBegin();
+    auto t = W.timesBegin();
     for (size_t i = 0; i < times.size() && t != W.timesEnd(); i++, t++)
         EXPECT_EQ(*t, times[i]);
 
