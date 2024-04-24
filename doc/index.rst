@@ -1680,7 +1680,12 @@ working with the code base: developers' eyes are agile enough to quickly adapt
 provided the formatting is consistent. But formatting is boring, no developper
 should have to worry about it in the 21st century ! We have thus provided a
 ``.clang-format``, which allows to automate the formating consistantly in most
-develoment environments. Please use it !
+develoment environments. A ``.clang-tidy`` file is also provided in order to
+use consistant naming. Please use them ! VSCode provide excellent support
+for ``clang-format`` and ``clang-tidy``, and all the major editors have
+now the language-server feature to interact with ``clangd`` for example
+to provide code completion and much more (like code formating and naming
+convention checks).
 
 Code base organization
 ----------------------
