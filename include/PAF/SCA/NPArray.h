@@ -307,7 +307,7 @@ class NPArrayBase {
 template <class Ty> class NPArray : public NPArrayBase {
   public:
     /// The array elements' type.
-    typedef Ty DataTy;
+    using DataTy = Ty;
 
     static_assert(std::is_arithmetic<Ty>(),
                   "expecting an integral or floating point type");

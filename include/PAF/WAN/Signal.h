@@ -290,7 +290,7 @@ class Signal {
     // The PackTy class packs several values together in the same (memory)
     // storage location. This optimization is done in order to use less memory.
     class Pack {
-        typedef uint32_t Ty;
+        using Ty = uint32_t;
 
         static const constexpr Ty MASK = (1 << Logic::encoding()) - 1;
         static constexpr size_t shiftAmount(size_t offset) {

@@ -97,7 +97,7 @@ class ValueType {
 class Value {
   public:
     /// The concrete type used by values.
-    typedef uint64_t ConcreteType;
+    using ConcreteType = uint64_t;
 
     /// Construct a default Value.
     Value() : val(ConcreteType()) {}
