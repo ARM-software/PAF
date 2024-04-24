@@ -36,7 +36,8 @@
 using namespace std;
 using namespace PAF::SCA;
 
-enum class Metric { PEARSON_CORRELATION, T_TEST };
+enum class Metric : uint8_t { PEARSON_CORRELATION, T_TEST };
+
 #ifndef METRIC
 #error The METRIC macro is not defined. Select one from PEARSON_CORRELATION, T_TEST.
 #endif

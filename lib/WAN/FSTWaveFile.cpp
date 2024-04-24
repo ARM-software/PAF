@@ -471,7 +471,8 @@ bool FSTWaveFile::visitHierarchy(FSTHierarchyVisitorBase *V) const {
                     return false;
                 break;
             default:
-                if (!V->onUnknownVarDirection(scopeStack.back(), h, Var->is_alias))
+                if (!V->onUnknownVarDirection(scopeStack.back(), h,
+                                              Var->is_alias))
                     return false;
                 break;
             }

@@ -150,11 +150,14 @@ class Waveform {
     // The SignalDesc class describes a signal.
     class SignalDesc {
       public:
-        enum class Kind { REGISTER, WIRE, INTEGER };
+        enum class Kind : uint8_t { REGISTER, WIRE, INTEGER };
 
         SignalDesc(const std::string &name, Kind kind, bool alias,
                    SignalIdxTy idx)
             : name(name), idx(idx), kind(kind), alias(alias) {}
+
+        SignalDesc(std::string &&name, Kind kind, bool alias, SignalIdxTy idx)
+            : name(std::move(name)), idx(idx), kind(kind), alias(alias) {}
 
         SignalDesc() = delete;
         SignalDesc(const SignalDesc &) = default;
@@ -203,7 +206,7 @@ class Waveform {
     class Scope {
 
       public:
-        enum class Kind { MODULE, FUNCTION, TASK, BLOCK };
+        enum class Kind : uint8_t { MODULE, FUNCTION, TASK, BLOCK };
 
         Scope(const std::string &fullScopeName, const std::string &scopeName,
               const std::string &instanceName, Kind kind)
@@ -211,10 +214,11 @@ class Waveform {
               instanceName(instanceName), subScopes(), signals(), kind(kind),
               root(false) {}
         Scope(std::string &&FullScopeName, std::string &&ScopeName,
-              const std::string &instanceName, Kind kind)
-            : fullScopeName(FullScopeName), scopeName(ScopeName),
-              instanceName(instanceName), subScopes(), signals(), kind(kind),
-              root(false) {}
+              std::string &&instanceName, Kind kind)
+            : fullScopeName(std::move(FullScopeName)),
+              scopeName(std::move(ScopeName)),
+              instanceName(std::move(instanceName)), subScopes(), signals(),
+              kind(kind), root(false) {}
         Scope()
             : fullScopeName("(root)"), scopeName("(root)"),
               instanceName("(root)"), subScopes(), signals(),
@@ -445,7 +449,11 @@ class Waveform {
         /// Scope visitor base class.
         class Visitor {
           public:
-            enum class FilterAction { SKIP_ALL, ENTER_SCOPE_ONLY, VISIT_ALL };
+            enum class FilterAction : uint8_t {
+                SKIP_ALL,
+                ENTER_SCOPE_ONLY,
+                VISIT_ALL
+            };
 
             class Options {
               public:
@@ -565,13 +573,12 @@ class Waveform {
             signals.back()->fixupTimeOrigin(&allTimes);
         }
     }
-    Waveform(Waveform &&W)
+    Waveform(Waveform &&W) noexcept
         : fileName(std::move(W.fileName)), version(std::move(W.version)),
           date(std::move(W.date)), comment(std::move(W.comment)),
-          startTime(std::move(W.startTime)), endTime(std::move(W.endTime)),
-          timeZero(std::move(W.timeZero)), timeScale(std::move(W.timeScale)),
-          root(std::move(W.root)), allTimes(std::move(W.allTimes)),
-          signals(std::move(W.signals)) {
+          startTime(W.startTime), endTime(W.endTime), timeZero(W.timeZero),
+          timeScale(W.timeScale), root(std::move(W.root)),
+          allTimes(std::move(W.allTimes)), signals(std::move(W.signals)) {
         for (auto &s : signals)
             s->fixupTimeOrigin(&allTimes);
     }
@@ -594,15 +601,15 @@ class Waveform {
         }
         return *this;
     }
-    Waveform &operator=(Waveform &&W) {
+    Waveform &operator=(Waveform &&W) noexcept {
         fileName = std::move(W.fileName);
         version = std::move(W.version);
         date = std::move(W.date);
         comment = std::move(W.comment);
-        startTime = std::move(W.startTime);
-        endTime = std::move(W.endTime);
-        timeZero = std::move(W.timeZero);
-        timeScale = std::move(W.timeScale);
+        startTime = W.startTime;
+        endTime = W.endTime;
+        timeZero = W.timeZero;
+        timeScale = W.timeScale;
         root = std::move(W.root);
         allTimes = std::move(W.allTimes);
         signals = std::move(W.signals);
@@ -790,7 +797,7 @@ class Waveform {
     }
 
     /// Add a change to Signal SIdx.
-    Waveform &addValueChange(SignalIdxTy SIdx, Signal::ChangeTy c) {
+    Waveform &addValueChange(SignalIdxTy SIdx, const Signal::ChangeTy &c) {
         WAN::TimeIdxTy TIdx = addTime(c.time);
         signals[SIdx]->append(TIdx, c);
         return *this;

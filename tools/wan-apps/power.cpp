@@ -18,6 +18,7 @@
  * This file is part of PAF, the Physical Attack Framework.
  */
 
+#include <cstdint>
 #include <fstream>
 #include <iostream>
 #include <map>
@@ -144,7 +145,7 @@ std::random_device RD;
 std::mt19937 MT(RD());
 std::normal_distribution<double> PowerNoiseDist(0.0, 0.5);
 
-enum HammingTy { HAMMING_WEIGHT, HAMMING_DISTANCE };
+enum class Hamming : uint8_t { WEIGHT, DISTANCE };
 
 struct HammingVisitor : public Waveform::Visitor {
 
@@ -378,17 +379,18 @@ int main(int argc, char *argv[]) {
     Waveform::Visitor::Options VisitOptions(
         false /* skipRegs */, false /* skipWires */, false /* skipIntegers */);
 
-    enum { SAVE_AS_CSV } SaveAs = SAVE_AS_CSV;
+    enum class SaveFormat : uint8_t { CSV };
+    SaveFormat SaveAs = SaveFormat::CSV;
     string SaveFileName("-");
 
-    HammingTy HammingModel = HAMMING_WEIGHT;
+    Hamming model = Hamming::WEIGHT;
 
     Argparse ap("wan-power", argc, argv);
     ap.optnoval({"--verbose"}, "verbose output", [&]() { Verbose++; });
     ap.optval({"--csv"}, "CSV_FILE",
               "Save power trace in csv format to file ('-' for stdout)",
               [&](const string &filename) {
-                  SaveAs = SAVE_AS_CSV;
+                  SaveAs = SaveFormat::CSV;
                   SaveFileName = filename;
               });
     ap.optnoval({"--no-noise"}, "Don't add noise to the power trace",
@@ -400,9 +402,9 @@ int main(int argc, char *argv[]) {
         VisitOptions.setSkipRegisters(true).setSkipIntegers(true);
     });
     ap.optnoval({"--hamming-weight"}, "Use hamming weight model",
-                [&]() { HammingModel = HAMMING_WEIGHT; });
+                [&]() { model = Hamming::WEIGHT; });
     ap.optnoval({"--hamming-distance"}, "Use hamming distance model",
-                [&]() { HammingModel = HAMMING_DISTANCE; });
+                [&]() { model = Hamming::DISTANCE; });
     ap.optval({"--decimate"}, "PERIOD%OFFSET",
               "decimate output (default: PERIOD=1, OFFSET=0)",
               [&](const string &s) {
@@ -440,11 +442,11 @@ int main(int argc, char *argv[]) {
         In.dump(cout);
 
     unique_ptr<HammingVisitor> HV(nullptr);
-    switch (HammingModel) {
-    case HAMMING_WEIGHT:
+    switch (model) {
+    case Hamming::WEIGHT:
         HV.reset(new HammingWeight(VisitOptions));
         break;
-    case HAMMING_DISTANCE:
+    case Hamming::DISTANCE:
         HV.reset(new HammingDistance(VisitOptions));
         break;
     }
@@ -496,7 +498,7 @@ int main(int argc, char *argv[]) {
         HV->addNoise();
 
     switch (SaveAs) {
-    case SAVE_AS_CSV:
+    case SaveFormat::CSV:
         HV->dumpAsCSV(SaveFileName, Period, Offset);
         break;
     }

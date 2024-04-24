@@ -22,6 +22,7 @@
 
 #include "PAF/PAF.h"
 
+#include <cstdint>
 #include <map>
 #include <set>
 #include <string>
@@ -100,7 +101,7 @@ struct InjectionRangeSpec {
 class Faulter : public PAF::MTAnalyzer {
 
   public:
-    enum class FaultModel { INSTRUCTION_SKIP, CORRUPT_REG_DEF };
+    enum class FaultModel : uint8_t { INSTRUCTION_SKIP, CORRUPT_REG_DEF };
 
     Faulter(const TracePair &trace, const std::string &image_filename,
             bool verbose, const std::string &campaign_filename = "")

@@ -399,14 +399,14 @@ class PowerTrace {
           config(Config), instructions(), cpu(CPU) {}
 
     /// Move construct a PowerTrace.
-    PowerTrace(PowerTrace &&PT)
+    PowerTrace(PowerTrace &&PT) noexcept
         : powerDumper(PT.powerDumper), regBankDumper(PT.regBankDumper),
           memAccessDumper(PT.memAccessDumper), instrDumper(PT.instrDumper),
           timing(PT.timing), config(PT.config),
           instructions(std::move(PT.instructions)), cpu(PT.cpu) {}
 
     /// Move assign a PowerTrace.
-    PowerTrace &operator=(PowerTrace &&PT) {
+    PowerTrace &operator=(PowerTrace &&PT) noexcept {
         powerDumper = PT.powerDumper;
         regBankDumper = PT.regBankDumper;
         memAccessDumper = PT.memAccessDumper;

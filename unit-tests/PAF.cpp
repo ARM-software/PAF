@@ -195,7 +195,7 @@ TEST(RegAccess, dump) {
 }
 
 TEST(MemAccess, base) {
-    // Move assign
+    // Assign
     MemoryAccess d;
     d = MemoryAccess(4, 0x1000, 1234, Access::Type::WRITE);
     EXPECT_EQ(d.addr, 0x1000);
@@ -203,22 +203,15 @@ TEST(MemAccess, base) {
     EXPECT_EQ(d.size, 4);
     EXPECT_EQ(d.value, 1234);
 
-    // Move construct
-    MemoryAccess d2(std::move(d));
-    EXPECT_EQ(d2.addr, 0x1000);
-    EXPECT_EQ(d2.access, Access::Type::WRITE);
-    EXPECT_EQ(d2.size, 4);
-    EXPECT_EQ(d2.value, 1234);
-
     // Copy construct
-    MemoryAccess d3(d2);
+    MemoryAccess d3(d);
     EXPECT_EQ(d3.addr, 0x1000);
     EXPECT_EQ(d3.access, Access::Type::WRITE);
     EXPECT_EQ(d3.size, 4);
     EXPECT_EQ(d3.value, 1234);
 
     // Copy assign
-    MemoryAccess d4 = d2;
+    MemoryAccess d4 = d3;
     EXPECT_EQ(d4.addr, 0x1000);
     EXPECT_EQ(d4.access, Access::Type::WRITE);
     EXPECT_EQ(d4.size, 4);

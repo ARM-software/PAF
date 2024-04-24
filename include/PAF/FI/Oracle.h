@@ -113,7 +113,7 @@ class Classifier {
     };
 
     struct RegCmp : public Cmp {
-        enum class CC { EQ, NE, GT, GE, LT, LE };
+        enum class CC : uint8_t { EQ, NE, GT, GE, LT, LE };
         std::string regName;
         uint64_t regValue;
         CC cmpOp;
@@ -141,7 +141,13 @@ class Classifier {
     };
 
     struct ClassificationExpr {
-        enum class Kind { NO_EFFECT, SUCCESS, CAUGHT, CRASH, UNDECIDED };
+        enum class Kind : uint8_t {
+            NO_EFFECT,
+            SUCCESS,
+            CAUGHT,
+            CRASH,
+            UNDECIDED
+        };
         ClassificationExpr(Kind K) : checkers(), exprKind(K) {}
         ~ClassificationExpr() {
             for (auto &c : checkers)
@@ -154,7 +160,7 @@ class Classifier {
 
   public:
     /// Kind describes the ClassificationLocation.
-    enum class Kind { CALL_SITE, ENTRY, RETURN, RESUME_SITE };
+    enum class Kind : uint8_t { CALL_SITE, ENTRY, RETURN, RESUME_SITE };
 
     /// Construct a Classifier for symbol with <tt>ClassificationLocation</tt>
     /// K.

@@ -1,5 +1,5 @@
 ---
-Checks:          'clang-diagnostic-*,clang-analyzer-*,readability-identifier-naming'
+Checks:          'clang-diagnostic-*,clang-analyzer-*,readability-identifier-naming,performance-*'
 WarningsAsErrors: ''
 HeaderFileExtensions:
   - h

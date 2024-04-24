@@ -23,6 +23,7 @@
 #include "PAF/WAN/Signal.h"
 #include "PAF/WAN/Waveform.h"
 
+#include <cstdint>
 #include <memory>
 #include <string>
 #include <vector>
@@ -34,7 +35,7 @@ namespace WAN {
 // vcd, fst, ...
 class WaveFile {
   public:
-    enum class FileFormat { UNKNOWN, VCD, FST };
+    enum class FileFormat : uint8_t { UNKNOWN, VCD, FST };
 
     WaveFile() = delete;
     WaveFile(const WaveFile &) = delete;

@@ -25,6 +25,7 @@
 #include "PAF/PAF.h"
 
 #include <cassert>
+#include <cstdint>
 #include <memory>
 #include <string>
 #include <vector>
@@ -34,24 +35,25 @@ namespace PAF {
 /// The AddressingMode class is used to describe the addressing modes used by
 /// load & store instructions.
 struct AddressingMode {
-    enum OffsetFormat {
-        AMF_NO_ACCESS,
-        AMF_IMMEDIATE,
-        AMF_REGISTER,
-        AMF_SCALED_REGISTER
+    enum class OffsetFormat : uint8_t {
+        NO_ACCESS,
+        IMMEDIATE,
+        REGISTER,
+        SCALED_REGISTER
     };
-    enum BaseUpdate {
-        AMU_OFFSET,
-        AMU_PRE_INDEXED,
-        AMU_POST_INDEXED,
-        AMU_UNINDEXED
+    enum class BaseUpdate : uint8_t {
+        OFFSET,
+        PRE_INDEXED,
+        POST_INDEXED,
+        UNINDEXED
     };
 
-    AddressingMode() : offset(AMF_NO_ACCESS), update(AMU_OFFSET) {}
+    AddressingMode()
+        : offset(OffsetFormat::NO_ACCESS), update(BaseUpdate::OFFSET) {}
     AddressingMode(OffsetFormat Offset, BaseUpdate Update)
         : offset(Offset), update(Update) {}
 
-    bool isValid() const { return offset != AMF_NO_ACCESS; }
+    bool isValid() const { return offset != OffsetFormat::NO_ACCESS; }
 
     bool operator==(const AddressingMode &Other) const {
         return offset == Other.offset && update == Other.update;
@@ -111,12 +113,12 @@ class InstrInfo {
     /// Set this instruction as a load instruction (no base register update
     /// version).
     InstrInfo &setLoad(AddressingMode::OffsetFormat Offset) {
-        return setLoad(Offset, AddressingMode::AMU_OFFSET);
+        return setLoad(Offset, AddressingMode::BaseUpdate::OFFSET);
     }
     /// Set this instruction as a store instruction (no base register update
     /// version).
     InstrInfo &setStore(AddressingMode::OffsetFormat Offset) {
-        return setStore(Offset, AddressingMode::AMU_OFFSET);
+        return setStore(Offset, AddressingMode::BaseUpdate::OFFSET);
     }
     /// Set this instruction as a branch instruction.
     InstrInfo &setBranch() {
@@ -233,7 +235,7 @@ class V7MInfo : public ArchInfo {
     bool isStatusRegister(const std::string &reg) const override;
 
     /// ARMv7-M available registers.
-    enum class Register : unsigned {
+    enum class Register {
         R0 = 0,
         R1,
         R2,
@@ -302,7 +304,7 @@ class V8AInfo : public ArchInfo {
     bool isStatusRegister(const std::string &reg) const override;
 
     /// ARMv8-A available registers.
-    enum class Register : unsigned { NUM_REGISTERS = 0 };
+    enum class Register { NUM_REGISTERS = 0 };
 
     /// How many registers does this architecture have ?
     unsigned numRegisters() const override;

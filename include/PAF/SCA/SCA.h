@@ -76,7 +76,7 @@ double t_test(size_t s, double m0, const NPArray<double> &traces);
 /// Compute Student's t-test for samples \p s in traces for which \p select
 /// returns true.
 double t_test(size_t s, double m0, const NPArray<double> &traces,
-              std::function<bool(size_t)> select);
+              const std::function<bool(size_t)> &select);
 
 /// Compute Student's t-test from samples \p b to \p e in \p traces.
 NPArray<double> t_test(size_t b, size_t e, const std::vector<double> &m0,
@@ -86,7 +86,7 @@ NPArray<double> t_test(size_t b, size_t e, const std::vector<double> &m0,
 /// for which \p select returns true.
 NPArray<double> t_test(size_t b, size_t e, const std::vector<double> &m0,
                        const NPArray<double> &traces,
-                       std::function<bool(size_t)> select);
+                       const std::function<bool(size_t)> &select);
 
 /// Compute the so-called perfect t-test between \p group0 and \p group1, from
 /// sample \p b to \p e.

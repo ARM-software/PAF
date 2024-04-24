@@ -30,6 +30,7 @@
 #include "libtarmac/reporter.hh"
 #include "libtarmac/tarmacutil.hh"
 
+#include <cstdint>
 #include <cstdlib>
 #include <fstream>
 #include <iostream>
@@ -98,7 +99,7 @@ int main(int argc, char **argv) {
     AnalysisRangeSpecifier ARS;
     PowerAnalysisConfig::PowerModel PwrModel =
         PowerAnalysisConfig::HAMMING_WEIGHT;
-    enum class OutputFormat { CSV, NPY } OutFmt = OutputFormat::CSV;
+    enum class OutputFormat : uint8_t { CSV, NPY } OutFmt = OutputFormat::CSV;
 
     Argparse ap("paf-power", argc, argv);
     ap.optval({"-o", "--output"}, "OutputFilename",
@@ -296,7 +297,7 @@ int main(int argc, char **argv) {
             ERS = PA.getInstances(ARS.getFunctionName());
             break;
         case AnalysisRangeSpecifier::FUNCTION_MARKERS: {
-            auto markers = ARS.getMarkers();
+            const auto &markers = ARS.getMarkers();
             ERS = PA.getBetweenFunctionMarkers(markers.first, markers.second);
             break;
         }

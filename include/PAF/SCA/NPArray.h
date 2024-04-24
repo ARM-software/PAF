@@ -113,7 +113,7 @@ class NPArrayBase {
     }
 
     /// Move construct an NPArrayBase.
-    NPArrayBase(NPArrayBase &&Other)
+    NPArrayBase(NPArrayBase &&Other) noexcept
         : data(std::move(Other.data)), numRows(Other.rows()),
           numColumns(Other.cols()), eltSize(Other.elementSize()),
           errstr(Other.error()) {}
@@ -139,7 +139,7 @@ class NPArrayBase {
     }
 
     /// Move assign an NPArrayBase.
-    NPArrayBase &operator=(NPArrayBase &&Other) {
+    NPArrayBase &operator=(NPArrayBase &&Other) noexcept {
         if (this == &Other)
             return *this;
 
@@ -569,7 +569,7 @@ template <class Ty> class NPArray : public NPArrayBase {
     NPArray(const NPArray &Other) : NPArrayBase(Other) {}
 
     /// Move construct an NParray.
-    NPArray(NPArray &&Other) : NPArrayBase(std::move(Other)) {}
+    NPArray(NPArray &&Other) noexcept : NPArrayBase(std::move(Other)) {}
 
     /// Set all elements in this NPArray to \p v.
     NPArray &fill(const Ty &v) {
@@ -606,7 +606,7 @@ template <class Ty> class NPArray : public NPArrayBase {
     }
 
     /// Move assign an NParray.
-    NPArray &operator=(NPArray &&Other) {
+    NPArray &operator=(NPArray &&Other) noexcept {
         this->NPArrayBase::operator=(std::move(Other));
         return *this;
     }

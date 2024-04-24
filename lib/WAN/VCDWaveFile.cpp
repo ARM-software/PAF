@@ -26,6 +26,7 @@
 #include <algorithm>
 #include <cmath>
 #include <cstddef>
+#include <cstdint>
 #include <cstdio>
 #include <fstream>
 #include <iostream>
@@ -195,7 +196,7 @@ class VCDParserBase {
 
 class VCDParserQuick : public VCDParserBase {
   public:
-    VCDParserQuick(const string Filename) : VCDParserBase(Filename) {}
+    VCDParserQuick(const string &Filename) : VCDParserBase(Filename) {}
     vector<TimeTy> parse() {
         signed char TS;
         bool hasTimescale = false;
@@ -248,7 +249,7 @@ class VCDParserQuick : public VCDParserBase {
 
 class VCDParserFull : public VCDParserBase {
     // Keyword kinds.
-    enum class KW {
+    enum class KW : uint8_t {
         UNKNOWN,
         DATE,
         COMMENT,
@@ -266,10 +267,10 @@ class VCDParserFull : public VCDParserBase {
     };
 
     // Scope kinds.
-    enum class SK { MODULE, TASK, FUNCTION, BLOCK };
+    enum class SK : uint8_t { MODULE, TASK, FUNCTION, BLOCK };
 
     // Var kinds.
-    enum class VK { WIRE, REG, INTEGER };
+    enum class VK : uint8_t { WIRE, REG, INTEGER };
 
   public:
     VCDParserFull(Waveform &W, const string &Filename)

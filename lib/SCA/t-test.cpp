@@ -135,7 +135,7 @@ double t_test(size_t s, double m0, const NPArray<double> &traces) {
 /// Compute Student's t-test for sample s for the traces where select returns
 /// true.
 double t_test(size_t s, double m0, const NPArray<double> &traces,
-              function<bool(size_t)> select) {
+              const function<bool(size_t)> &select) {
     assert(s <= traces.cols() && "Not that many samples in the trace");
 
     MeanWithVar<NPArray<double>::DataTy> avg;
@@ -172,7 +172,7 @@ NPArray<double> t_test(size_t b, size_t e, const vector<double> &m0,
 /// returns true.
 NPArray<double> t_test(size_t b, size_t e, const vector<double> &m0,
                        const NPArray<double> &traces,
-                       function<bool(size_t)> select) {
+                       const function<bool(size_t)> &select) {
     assert(b <= e && "Wrong begin / end samples");
     assert(b < traces.cols() && "Not that many samples in traces");
     assert(e <= traces.cols() && "Not that many samples in traces");

@@ -114,7 +114,7 @@ class CSOfInterest : public CallTreeVisitor {
 /// (memory accesses) and RegisterAccess (register accesses).
 struct Access {
     /// AccessType represents the direction of an access: read or write.
-    enum class Type { READ, WRITE };
+    enum class Type : uint8_t { READ, WRITE };
 
     /// The actual value used by this access.
     unsigned long long value;
@@ -139,8 +139,6 @@ struct MemoryAccess : public Access {
     MemoryAccess() : Access(), size(), addr() {}
     /// MemoryAccess copy constructor.
     MemoryAccess(const MemoryAccess &) = default;
-    /// MemoryAccess move constructor.
-    MemoryAccess(MemoryAccess &&) = default;
     /// Construct a MemoryAccess from a size, addr, value and direction.
     MemoryAccess(size_t size, Addr addr, unsigned long long value,
                  Access::Type direction)
@@ -154,8 +152,6 @@ struct MemoryAccess : public Access {
 
     /// MemoryAccess copy assignment.
     MemoryAccess &operator=(const MemoryAccess &) = default;
-    /// MemoryAccess move assignment.
-    MemoryAccess &operator=(MemoryAccess &&) = default;
 
     /// Equality operator. 2 MemoryAccesses are equal iff they are at the same
     /// address, of the same type and same size.
@@ -209,7 +205,7 @@ struct RegisterAccess : public Access {
     /// Copy constructor.
     RegisterAccess(const RegisterAccess &) = default;
     /// Move constructor.
-    RegisterAccess(RegisterAccess &&Other)
+    RegisterAccess(RegisterAccess &&Other) noexcept
         : Access(Other), name(std::move(Other.name)) {}
 
     /// Constructor for a Tarmac Parser.
@@ -222,7 +218,7 @@ struct RegisterAccess : public Access {
     /// Copy assignment operator.
     RegisterAccess &operator=(const RegisterAccess &) = default;
     /// Move assignment operator.
-    RegisterAccess &operator=(RegisterAccess &&Other) {
+    RegisterAccess &operator=(RegisterAccess &&Other) noexcept {
         Access::operator=(Other);
         name = std::move(Other.name);
         return *this;
@@ -290,7 +286,7 @@ struct ReferenceInstruction {
     /// Copy constructor.
     ReferenceInstruction(const ReferenceInstruction &) = default;
     /// Move constructor.
-    ReferenceInstruction(ReferenceInstruction &&Other)
+    ReferenceInstruction(ReferenceInstruction &&Other) noexcept
         : disassembly(trimSpacesAndComment(Other.disassembly)),
           memAccess(std::move(Other.memAccess)),
           regAccess(std::move(Other.regAccess)), time(Other.time), pc(Other.pc),
@@ -328,7 +324,7 @@ struct ReferenceInstruction {
     /// Copy assignment operator.
     ReferenceInstruction &operator=(const ReferenceInstruction &) = default;
     /// Move assignment operator.
-    ReferenceInstruction &operator=(ReferenceInstruction &&Other) {
+    ReferenceInstruction &operator=(ReferenceInstruction &&Other) noexcept {
         disassembly = trimSpacesAndComment(Other.disassembly);
         memAccess = std::move(Other.memAccess);
         regAccess = std::move(Other.regAccess);
