@@ -98,7 +98,7 @@ class LabeledStack {
     }
 
     LabeledStack &push(ElementKind k, const TarmacSite &ts) {
-        stack.push_back(Element(k, ts));
+        stack.emplace_back(k, ts);
         return *this;
     }
 
@@ -192,7 +192,7 @@ class WLabelCollector : ParseReceiver {
     }
 
     virtual void got_event(InstructionEvent &ev) override {
-        buffer.push_back(TarmacSite(ev.pc & ~1UL, ev.time, 0, 0));
+        buffer.emplace_back(ev.pc & ~1UL, ev.time, 0, 0);
     }
 
     void operator()(const TarmacSite &ts) {
@@ -202,8 +202,7 @@ class WLabelCollector : ParseReceiver {
             if ((it = labelMap.find(ts.addr)) != labelMap.end())
                 label = it->second;
             if (outLabels)
-                outLabels->push_back(
-                    std::pair<uint64_t, string>(ts.time, label));
+                outLabels->emplace_back(ts.time, label);
 
             SeqOrderPayload SOP;
 

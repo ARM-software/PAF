@@ -149,7 +149,7 @@ int main(int argc, char **argv) {
             line++;
         AC.find_buffer_limit(true, &SOPEnd);
 
-        Ranges.push_back(ExecutionRange(SOPStart, SOPEnd));
+        Ranges.emplace_back(SOPStart, SOPEnd);
     }
 
     for (const auto &R : Ranges)

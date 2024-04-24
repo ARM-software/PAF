@@ -49,12 +49,12 @@ TestWithTemporaryFiles::TestWithTemporaryFiles(const char *tpl, unsigned num)
         int fd = mkstemp(tmpTpl.get());
         if (fd != -1) {
             close(fd);
-            tmpFileNames.push_back(tmpTpl.get());
+            tmpFileNames.emplace_back(tmpTpl.get());
         } else {
-            tmpFileNames.push_back("");
+            tmpFileNames.emplace_back("");
         }
     }
-    tmpFileNames.push_back("");
+    tmpFileNames.emplace_back("");
 }
 
 bool TestWithTemporaryFiles::checkFileContent(const vector<string> &exp,

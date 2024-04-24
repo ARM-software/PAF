@@ -403,7 +403,7 @@ class TestRegBankDumper : public RegBankDumper {
         regbank.clear();
     }
 
-    void nextTrace() override { regbank.push_back(vector<uint64_t>()); }
+    void nextTrace() override { regbank.emplace_back(); }
 
     void dump(const std::vector<uint64_t> &regs) override {
         if (regbank.empty()) {
