@@ -215,7 +215,7 @@ class FaulterInjectionPlanner {
           campaign(Image, Tarmac, MaxTraceTime, ProgramEntryAddress & ~1UL,
                    ProgramEndAddress & ~1UL),
           instCnt(0) {}
-    virtual ~FaulterInjectionPlanner() {}
+    virtual ~FaulterInjectionPlanner() = default;
 
     virtual void operator()(const PAF::ReferenceInstruction &I) = 0;
 

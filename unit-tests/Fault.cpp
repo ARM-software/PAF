@@ -66,8 +66,8 @@ TEST(Fault, FaultModelBase) {
                        uint32_t Instruction, unsigned Width,
                        const string &Disassembly)
             : FaultModelBase(Time, Address, Instruction, Width, Disassembly) {}
-        FaultModelTest(const FaultModelTest &fm) : FaultModelBase(fm) {}
-        ~FaultModelTest() override {}
+        FaultModelTest(const FaultModelTest &fm) = default;
+        ~FaultModelTest() override = default;
         const char *getFaultModelName() const override {
             return "FaultModelTest";
         }

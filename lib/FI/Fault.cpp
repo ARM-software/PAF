@@ -46,7 +46,7 @@ void BreakPoint::dump(ostream &os) const {
     os << "}";
 }
 
-FaultModelBase::~FaultModelBase() {}
+FaultModelBase::~FaultModelBase() = default;
 
 void FaultModelBase::dump(ostream &os) const {
     os << "Id: " << id;
@@ -69,7 +69,7 @@ void InstructionSkip::dump(ostream &os) const {
     os << "}";
 }
 
-InstructionSkip::~InstructionSkip() {}
+InstructionSkip::~InstructionSkip() = default;
 
 void CorruptRegDef::dump(ostream &os) const {
     os << "{ ";
@@ -78,7 +78,7 @@ void CorruptRegDef::dump(ostream &os) const {
     os << "}";
 }
 
-CorruptRegDef::~CorruptRegDef() {}
+CorruptRegDef::~CorruptRegDef() = default;
 
 void InjectionCampaign::dump(ostream &os) const {
     os << "Image: \"" << image << "\"\n";

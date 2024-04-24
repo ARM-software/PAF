@@ -108,7 +108,7 @@ class PowerDumper : public Dumper {
                       const PAF::ReferenceInstruction *I) = 0;
 
     /// Destruct this PowerDumper
-    ~PowerDumper() override {}
+    ~PowerDumper() override = default;
 };
 
 /// CSVPowerDumper is a PowerDumper specialization for writing the power trace
@@ -344,8 +344,8 @@ class PowerTrace {
     /// where an MTAnalyzer may not be available.
     class OracleBase {
       public:
-        OracleBase() {}
-        virtual ~OracleBase() {}
+        OracleBase() = default;
+        virtual ~OracleBase() = default;
         virtual std::vector<uint64_t> getRegBankState(Time t) const {
             return std::vector<uint64_t>();
         }

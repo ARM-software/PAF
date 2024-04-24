@@ -47,7 +47,7 @@ namespace {
 class PowerModelBase {
   public:
     struct MemAccessPower {
-        MemAccessPower() {}
+        MemAccessPower() = default;
         MemAccessPower(const MemAccessPower &) = default;
         MemAccessPower(double Address, double Data)
             : data(Data), address(Address) {}
@@ -56,7 +56,7 @@ class PowerModelBase {
     };
 
     PowerModelBase() = delete;
-    virtual ~PowerModelBase() {}
+    virtual ~PowerModelBase() = default;
 
     PowerModelBase(PAF::SCA::PowerDumper &Dumper, const PAF::ArchInfo &CPU,
                    PAF::SCA::PowerAnalysisConfig &Config)
@@ -368,7 +368,7 @@ class HammingDistancePM : public PowerModelBase {
 namespace PAF {
 namespace SCA {
 
-TimingInfo::~TimingInfo() {}
+TimingInfo::~TimingInfo() = default;
 
 void TimingInfo::saveToFile(const string &filename) const {
     if (filename.empty() || pcCycle.empty())
@@ -467,7 +467,7 @@ void CSVPowerDumper::dump(double total, double pc, double instr, double oreg,
     *this << '\n';
 }
 
-PowerAnalysisConfig::~PowerAnalysisConfig() {}
+PowerAnalysisConfig::~PowerAnalysisConfig() = default;
 
 void PowerTrace::analyze(const OracleBase &Oracle) {
 

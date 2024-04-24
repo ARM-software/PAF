@@ -252,7 +252,7 @@ template <class DataTy> class NPInput : public InputBase {
         : NPInput(nprow, index, std::string(name)) {}
 
     /// Destruct this NPInput.
-    ~NPInput() override {}
+    ~NPInput() override = default;
 
     /// Get the type of this NPInput.
     ValueType::Type getType() const override {

@@ -48,9 +48,9 @@ class NoiseSource {
     };
 
     /// Default constructor.
-    NoiseSource() {}
+    NoiseSource() = default;
     /// Destructor.
-    virtual ~NoiseSource() {}
+    virtual ~NoiseSource() = default;
 
     /// Get the noise value.
     virtual double get() = 0;

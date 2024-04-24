@@ -33,7 +33,7 @@ using std::unique_ptr;
 namespace PAF {
 namespace WAN {
 
-WaveFile::~WaveFile() {}
+WaveFile::~WaveFile() = default;
 
 // Guess the file format by looking at the file suffix.
 WaveFile::FileFormat WaveFile::getFileFormat(const string &filename) {

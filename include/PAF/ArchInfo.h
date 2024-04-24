@@ -184,7 +184,7 @@ class InstrInfo {
 class ArchInfo {
   public:
     /// Destructor.
-    virtual ~ArchInfo() {}
+    virtual ~ArchInfo() = default;
 
     /// Get a nop instruction of the specified size (in bytes).
     virtual uint32_t getNOP(unsigned InstrSize) const = 0;

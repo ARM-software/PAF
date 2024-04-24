@@ -31,24 +31,24 @@ namespace PAF {
 namespace SCA {
 namespace Expr {
 
-Value::~Value() {}
-Expr::~Expr() {}
-InputBase::~InputBase() {}
-Constant::~Constant() {}
-Input::~Input() {}
-UnaryOp::~UnaryOp() {}
-Not::~Not() {}
-Truncate::~Truncate() {}
-AESOp::~AESOp() {}
-AESSBox::~AESSBox() {}
-AESISBox::~AESISBox() {}
-BinaryOp::~BinaryOp() {}
-Xor::~Xor() {}
-Or::~Or() {}
-And::~And() {}
-Lsl::~Lsl() {}
-Asr::~Asr() {}
-Lsr::~Lsr() {}
+Value::~Value() = default;
+Expr::~Expr() = default;
+InputBase::~InputBase() = default;
+Constant::~Constant() = default;
+Input::~Input() = default;
+UnaryOp::~UnaryOp() = default;
+Not::~Not() = default;
+Truncate::~Truncate() = default;
+AESOp::~AESOp() = default;
+AESSBox::~AESSBox() = default;
+AESISBox::~AESISBox() = default;
+BinaryOp::~BinaryOp() = default;
+Xor::~Xor() = default;
+Or::~Or() = default;
+And::~And() = default;
+Lsl::~Lsl() = default;
+Asr::~Asr() = default;
+Lsr::~Lsr() = default;
 
 string Constant::repr() const {
     string s(val.repr());

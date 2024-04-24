@@ -357,7 +357,7 @@ bool FSTHierarchyVisitorBase::onUnknownVarType(const char *fullScopeName,
     return false;
 }
 
-FSTHierarchyVisitorBase::~FSTHierarchyVisitorBase() {}
+FSTHierarchyVisitorBase::~FSTHierarchyVisitorBase() = default;
 
 FSTWaveFile::FSTWaveFile(const string &filename, bool write)
     : WaveFile(filename, WaveFile::FileFormat::FST), openedForWrite(write),

@@ -516,7 +516,7 @@ class Waveform {
             Options &getOptions() { return options; }
             const Options &getOptions() const { return options; }
 
-            virtual ~Visitor() {}
+            virtual ~Visitor() = default;
             virtual void enterScope(const Scope &scope) = 0;
             virtual void leaveScope() = 0;
             virtual void visitSignal(const std::string &fullScopeName,

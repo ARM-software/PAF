@@ -283,7 +283,7 @@ struct ReferenceInstruction {
     uint32_t instruction;
 
     /// Empty constructor.
-    ReferenceInstruction() {}
+    ReferenceInstruction() = default;
     /// Copy constructor.
     ReferenceInstruction(const ReferenceInstruction &) = default;
     /// Move constructor.
@@ -381,7 +381,7 @@ struct ReferenceInstruction {
 class EmptyCont {
   public:
     /// Empty constructor.
-    EmptyCont() {}
+    EmptyCont() = default;
     /// Empty operation.
     void operator()(const ReferenceInstruction &) {}
 };

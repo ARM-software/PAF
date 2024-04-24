@@ -108,7 +108,7 @@ namespace FI {
 class Classifier {
 
     struct Cmp {
-        virtual ~Cmp() {}
+        virtual ~Cmp() = default;
         virtual void dump(std::ostream &os) const = 0;
     };
 

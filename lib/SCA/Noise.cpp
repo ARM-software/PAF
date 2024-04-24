@@ -28,7 +28,7 @@ namespace SCA {
 class ConstantNoiseSource : public NoiseSource {
   public:
     ConstantNoiseSource(double value) : value(value) {}
-    ~ConstantNoiseSource() override {}
+    ~ConstantNoiseSource() override = default;
     double get() override { return value; }
 
   private:
@@ -38,7 +38,7 @@ class ConstantNoiseSource : public NoiseSource {
 class NullNoise : public ConstantNoiseSource {
   public:
     NullNoise() : ConstantNoiseSource(0.0) {}
-    ~NullNoise() override {}
+    ~NullNoise() override = default;
     double get() override { return 0.0; }
 };
 
