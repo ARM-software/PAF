@@ -110,36 +110,36 @@ TEST(Expr, Truncate) {
     EXPECT_EQ(op->repr(), "TRUNC32(1311768467463790320_u64)");
 
     // UINT64 -> UINT16
-    op.reset(new Truncate(ValueType::UINT16,
-                          new Constant(ValueType::UINT64, 0x123456789ABCDEF0)));
+    op = std::make_unique<Truncate>(
+        ValueType::UINT16, new Constant(ValueType::UINT64, 0x123456789ABCDEF0));
     EXPECT_EQ(op->getType(), ValueType::UINT16);
     EXPECT_EQ(op->eval().getValue(), 0xDEF0);
     EXPECT_EQ(op->repr(), "TRUNC16(1311768467463790320_u64)");
 
     // UIN64 -> UINT8
-    op.reset(new Truncate(ValueType::UINT8,
-                          new Constant(ValueType::UINT64, 0x123456789ABCDEF0)));
+    op = std::make_unique<Truncate>(
+        ValueType::UINT8, new Constant(ValueType::UINT64, 0x123456789ABCDEF0));
     EXPECT_EQ(op->getType(), ValueType::UINT8);
     EXPECT_EQ(op->eval().getValue(), 0xF0);
     EXPECT_EQ(op->repr(), "TRUNC8(1311768467463790320_u64)");
 
     // UINT32 -> UINT16
-    op.reset(new Truncate(ValueType::UINT16,
-                          new Constant(ValueType::UINT32, 0x12345678)));
+    op = std::make_unique<Truncate>(
+        ValueType::UINT16, new Constant(ValueType::UINT32, 0x12345678));
     EXPECT_EQ(op->getType(), ValueType::UINT16);
     EXPECT_EQ(op->eval().getValue(), 0x5678);
     EXPECT_EQ(op->repr(), "TRUNC16(305419896_u32)");
 
     // UINT32 -> UINT8
-    op.reset(new Truncate(ValueType::UINT8,
-                          new Constant(ValueType::UINT32, 0x12345678)));
+    op = std::make_unique<Truncate>(
+        ValueType::UINT8, new Constant(ValueType::UINT32, 0x12345678));
     EXPECT_EQ(op->getType(), ValueType::UINT8);
     EXPECT_EQ(op->eval().getValue(), 0x78);
     EXPECT_EQ(op->repr(), "TRUNC8(305419896_u32)");
 
     // UIN16 -> UINT8
-    op.reset(new Truncate(ValueType::UINT8,
-                          new Constant(ValueType::UINT16, 0x1234)));
+    op = std::make_unique<Truncate>(ValueType::UINT8,
+                                    new Constant(ValueType::UINT16, 0x1234));
     EXPECT_EQ(op->getType(), ValueType::UINT8);
     EXPECT_EQ(op->eval().getValue(), 0x34);
     EXPECT_EQ(op->repr(), "TRUNC8(4660_u16)");
@@ -166,32 +166,32 @@ TEST(Expr, BinaryOps) {
     EXPECT_EQ(bop->eval().getValue(), 0xF420);
     EXPECT_EQ(bop->repr(), "XOR(42258_u16,20786_u16)");
 
-    bop.reset(new Or(new Constant(ValueType::UINT16, 0xA512),
-                     new Constant(ValueType::UINT16, 0x5132)));
+    bop = std::make_unique<Or>(new Constant(ValueType::UINT16, 0xA512),
+                               new Constant(ValueType::UINT16, 0x5132));
     EXPECT_EQ(bop->getType(), ValueType::UINT16);
     EXPECT_EQ(bop->eval().getValue(), 0xF532);
     EXPECT_EQ(bop->repr(), "OR(42258_u16,20786_u16)");
 
-    bop.reset(new And(new Constant(ValueType::UINT16, 0xA512),
-                      new Constant(ValueType::UINT16, 0x5132)));
+    bop = std::make_unique<And>(new Constant(ValueType::UINT16, 0xA512),
+                                new Constant(ValueType::UINT16, 0x5132));
     EXPECT_EQ(bop->getType(), ValueType::UINT16);
     EXPECT_EQ(bop->eval().getValue(), 0x0112);
     EXPECT_EQ(bop->repr(), "AND(42258_u16,20786_u16)");
 
-    bop.reset(new Lsl(new Constant(ValueType::UINT16, 0xA512),
-                      new Constant(ValueType::UINT16, 0x04)));
+    bop = std::make_unique<Lsl>(new Constant(ValueType::UINT16, 0xA512),
+                                new Constant(ValueType::UINT16, 0x04));
     EXPECT_EQ(bop->getType(), ValueType::UINT16);
     EXPECT_EQ(bop->eval().getValue(), 0x5120);
     EXPECT_EQ(bop->repr(), "LSL(42258_u16,4_u16)");
 
-    bop.reset(new Lsr(new Constant(ValueType::UINT16, 0xA512),
-                      new Constant(ValueType::UINT16, 0x02)));
+    bop = std::make_unique<Lsr>(new Constant(ValueType::UINT16, 0xA512),
+                                new Constant(ValueType::UINT16, 0x02));
     EXPECT_EQ(bop->getType(), ValueType::UINT16);
     EXPECT_EQ(bop->eval().getValue(), 0x2944);
     EXPECT_EQ(bop->repr(), "LSR(42258_u16,2_u16)");
 
-    bop.reset(new Asr(new Constant(ValueType::UINT16, 0xA512),
-                      new Constant(ValueType::UINT16, 0x02)));
+    bop = std::make_unique<Asr>(new Constant(ValueType::UINT16, 0xA512),
+                                new Constant(ValueType::UINT16, 0x02));
     EXPECT_EQ(bop->getType(), ValueType::UINT16);
     EXPECT_EQ(bop->eval().getValue(), 0xE944);
     EXPECT_EQ(bop->repr(), "ASR(42258_u16,2_u16)");
@@ -207,7 +207,7 @@ TEST(Expr, Inputs) {
     EXPECT_EQ(In->eval().getValue(), 156);
     EXPECT_EQ(In->repr(), "156");
 
-    In.reset(new Input("In", ValueType::UINT32, 1234));
+    In = std::make_unique<Input>("In", ValueType::UINT32, 1234);
     EXPECT_EQ(In->getType(), ValueType::UINT32);
     EXPECT_EQ(In->eval().getValue(), 1234);
     EXPECT_EQ(In->repr(), "In(1234)");

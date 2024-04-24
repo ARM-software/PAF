@@ -263,14 +263,16 @@ int main(int argc, char **argv) {
     unique_ptr<PowerDumper> PwrDumper;
     switch (OutFmt) {
     case OutputFormat::CSV:
-        PwrDumper.reset(new CSVPowerDumper(OutputFilename, detailed_output));
+        PwrDumper =
+            std::make_unique<CSVPowerDumper>(OutputFilename, detailed_output);
         break;
     case OutputFormat::NPY:
         if (OutputFilename.empty())
             reporter->errx(
                 EXIT_FAILURE,
                 "Output file name can not be empty with the npy format");
-        PwrDumper.reset(new NPYPowerDumper(OutputFilename, tu.traces.size()));
+        PwrDumper =
+            std::make_unique<NPYPowerDumper>(OutputFilename, tu.traces.size());
         break;
     }
 

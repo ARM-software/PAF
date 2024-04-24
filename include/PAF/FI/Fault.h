@@ -74,7 +74,7 @@ class FaultModelBase {
           address(F.address), instruction(F.instruction), width(F.width),
           bpInfo(nullptr) {
         if (F.hasBreakpoint())
-            bpInfo = std::unique_ptr<BreakPoint>(new BreakPoint(*F.bpInfo));
+            bpInfo = std::make_unique<BreakPoint>(*F.bpInfo);
     }
     virtual ~FaultModelBase();
 
@@ -86,7 +86,7 @@ class FaultModelBase {
 
     /// Set this fault's BreakPoint.
     void setBreakpoint(uint64_t Addr, unsigned Cnt) {
-        bpInfo.reset(new BreakPoint(Addr, Cnt));
+        bpInfo = std::make_unique<BreakPoint>(Addr, Cnt);
     }
     /// Does this fault have its BreakPoint information set ?
     bool hasBreakpoint() const { return bpInfo != nullptr; }

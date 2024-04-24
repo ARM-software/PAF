@@ -29,6 +29,7 @@
 #include <cstdlib>
 #include <iostream>
 #include <map>
+#include <memory>
 #include <string>
 #include <vector>
 
@@ -636,7 +637,7 @@ class MTAnalyzer : public IndexNavigator {
     /// invalidated.
     const CallTree &getCallTree() const {
         if (!callTree)
-            callTree.reset(new CallTree(*this));
+            callTree = std::make_unique<CallTree>(*this);
         return *callTree;
     }
 

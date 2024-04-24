@@ -444,10 +444,10 @@ int main(int argc, char *argv[]) {
     unique_ptr<HammingVisitor> HV(nullptr);
     switch (model) {
     case Hamming::WEIGHT:
-        HV.reset(new HammingWeight(VisitOptions));
+        HV = std::make_unique<HammingWeight>(VisitOptions);
         break;
     case Hamming::DISTANCE:
-        HV.reset(new HammingDistance(VisitOptions));
+        HV = std::make_unique<HammingDistance>(VisitOptions);
         break;
     }
 

@@ -477,12 +477,12 @@ void PowerTrace::analyze(const OracleBase &Oracle) {
     unique_ptr<PowerModelBase> pwr;
     switch (config.getPowerModel()) {
     case PowerAnalysisConfig::HAMMING_WEIGHT:
-        pwr.reset(new HammingWeightPM(powerDumper, *cpu, config));
+        pwr = std::make_unique<HammingWeightPM>(powerDumper, *cpu, config);
         break;
     case PowerAnalysisConfig::HAMMING_DISTANCE:
-        pwr.reset(new HammingDistancePM(
+        pwr = std::make_unique<HammingDistancePM>(
             powerDumper, *cpu, config, Oracle,
-            Oracle.getRegBankState(instructions[0].time - 1)));
+            Oracle.getRegBankState(instructions[0].time - 1));
         break;
     }
 

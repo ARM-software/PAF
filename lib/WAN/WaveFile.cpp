@@ -25,6 +25,8 @@
 #include "PAF/WAN/FSTWaveFile.h"
 #endif
 
+#include <memory>
+
 using std::string;
 using std::unique_ptr;
 
@@ -50,11 +52,11 @@ unique_ptr<WaveFile> WaveFile::get(const string &filename) {
     unique_ptr<WaveFile> F;
     switch (WaveFile::getFileFormat(filename)) {
     case WaveFile::FileFormat::VCD:
-        F.reset(new VCDWaveFile(filename));
+        F = std::make_unique<VCDWaveFile>(filename);
         break;
     case WaveFile::FileFormat::FST:
 #ifdef HAS_GTKWAVE_FST
-        F.reset(new FSTWaveFile(filename, /* write: */ false));
+        F = std::make_unique<FSTWaveFile>(filename, /* write: */ false);
 #else
         die("can not read '%s': FST support was not built.", filename.c_str());
 #endif
