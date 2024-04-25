@@ -30,7 +30,7 @@
 namespace PAF {
 namespace WAN {
 
-// The VCDWaveFile class is an abstraction of the VCD file format.
+/// The VCDWaveFile class is an abstraction of the VCD file format.
 class VCDWaveFile : public WaveFile {
   public:
     VCDWaveFile() = delete;
@@ -38,17 +38,21 @@ class VCDWaveFile : public WaveFile {
     VCDWaveFile(const std::string &filename)
         : WaveFile(filename, WaveFile::FileFormat::VCD) {}
 
-    // Convenience method to read from a single input file.
+    /// Convenience method to read from a single input file.
     Waveform read();
 
-    // Construct a Waveform from file FileName.
+    /// Construct a Waveform from file FileName.
     bool read(Waveform &W) override;
 
-    // Save Waveform W to file 'FileName'.
+    /// Save Waveform W to file 'FileName'.
     bool write(const Waveform &W) override;
 
-    // Quickly read the file to collect all times with changes.
+    /// Quickly read the file to collect all times with changes.
     std::vector<WAN::TimeTy> getAllChangesTimes() override;
+
+    /// Format the ValueChange string \p s for emitting in a VCD file by
+    /// stripping leading zeroes and lowercasing the string.
+    static std::string formatValueChange(const std::string &s);
 };
 
 } // namespace WAN

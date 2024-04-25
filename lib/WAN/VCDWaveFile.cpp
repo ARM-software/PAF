@@ -782,14 +782,21 @@ struct VCDHierDumper : public Waveform::Visitor {
         o << " $end\n";
     }
 };
+} // namespace
 
-string to_lower(const string &s) {
-    string r(s);
-    std::transform(r.begin(), r.end(), r.begin(),
+string VCDWaveFile::formatValueChange(const string &s) {
+    // Count leading zeroes
+    size_t leadingZeroes = 0;
+    while (s.size() - leadingZeroes > 1 && s[leadingZeroes] == '0')
+        leadingZeroes += 1;
+
+    string r;
+    r.resize(s.size() - leadingZeroes);
+
+    std::transform(s.begin() + leadingZeroes, s.end(), r.begin(),
                    [](unsigned char c) { return std::tolower(c); });
     return r;
 }
-} // namespace
 
 bool VCDWaveFile::write(const Waveform &W) {
     std::ofstream F(fileName.c_str());
@@ -826,9 +833,10 @@ bool VCDWaveFile::write(const Waveform &W) {
                     DIE("VCD signal id not found");
                 size_t ChangeIdx = ChangeIndexes[Idx];
                 if (W[Idx].getNumBits() == 1)
-                    F << to_lower(W[Idx].getChange(ChangeIdx).value);
+                    F << formatValueChange(W[Idx].getChange(ChangeIdx).value);
                 else
-                    F << 'b' << to_lower(W[Idx].getChange(ChangeIdx).value)
+                    F << 'b'
+                      << formatValueChange(W[Idx].getChange(ChangeIdx).value)
                       << ' ';
                 F << r->second << '\n';
                 ChangeIndexes[Idx] += 1;
@@ -845,9 +853,12 @@ bool VCDWaveFile::write(const Waveform &W) {
                     if (r == VHD.sigMap.end())
                         DIE("VCD signal id not found");
                     if (W[Idx].getNumBits() == 1) {
-                        F << to_lower(W[Idx].getChange(ChangeIdx).value);
+                        F << formatValueChange(
+                            W[Idx].getChange(ChangeIdx).value);
                     } else {
-                        F << 'b' << to_lower(W[Idx].getChange(ChangeIdx).value)
+                        F << 'b'
+                          << formatValueChange(
+                                 W[Idx].getChange(ChangeIdx).value)
                           << ' ';
                     }
                     F << r->second << '\n';

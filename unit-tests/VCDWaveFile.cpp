@@ -40,6 +40,36 @@ using namespace testing;
 
 static const string VCDInput(SAMPLES_SRC_DIR "Counters.vcd");
 
+TEST(VCDWaveFile, formatValueChange) {
+    EXPECT_EQ(VCDWaveFile::formatValueChange("0"), "0");
+    EXPECT_EQ(VCDWaveFile::formatValueChange("1"), "1");
+    EXPECT_EQ(VCDWaveFile::formatValueChange("A"), "a");
+    EXPECT_EQ(VCDWaveFile::formatValueChange("a"), "a");
+    EXPECT_EQ(VCDWaveFile::formatValueChange("F"), "f");
+    EXPECT_EQ(VCDWaveFile::formatValueChange("f"), "f");
+
+    EXPECT_EQ(VCDWaveFile::formatValueChange("00"), "0");
+    EXPECT_EQ(VCDWaveFile::formatValueChange("01"), "1");
+    EXPECT_EQ(VCDWaveFile::formatValueChange("0A"), "a");
+    EXPECT_EQ(VCDWaveFile::formatValueChange("0a"), "a");
+    EXPECT_EQ(VCDWaveFile::formatValueChange("0F"), "f");
+    EXPECT_EQ(VCDWaveFile::formatValueChange("0f"), "f");
+
+    EXPECT_EQ(VCDWaveFile::formatValueChange("000"), "0");
+    EXPECT_EQ(VCDWaveFile::formatValueChange("001"), "1");
+    EXPECT_EQ(VCDWaveFile::formatValueChange("00A"), "a");
+    EXPECT_EQ(VCDWaveFile::formatValueChange("00a"), "a");
+    EXPECT_EQ(VCDWaveFile::formatValueChange("00F"), "f");
+    EXPECT_EQ(VCDWaveFile::formatValueChange("00f"), "f");
+
+    EXPECT_EQ(VCDWaveFile::formatValueChange("00100"), "100");
+    EXPECT_EQ(VCDWaveFile::formatValueChange("00201"), "201");
+    EXPECT_EQ(VCDWaveFile::formatValueChange("00a0A"), "a0a");
+    EXPECT_EQ(VCDWaveFile::formatValueChange("00e0a"), "e0a");
+    EXPECT_EQ(VCDWaveFile::formatValueChange("00F0F"), "f0f");
+    EXPECT_EQ(VCDWaveFile::formatValueChange("00c0f"), "c0f");
+}
+
 TEST(VCDWaveFile, Read) {
     VCDWaveFile F(VCDInput);
     EXPECT_EQ(F.getFileFormat(), WaveFile::FileFormat::VCD);
@@ -78,7 +108,10 @@ TEST_F(VCDWaveFileF, Write) {
         W.getRootScope()->addModule("instance", "test", "test");
     SignalIdxTy SIdx = W.addWire(S, "a_signal", 4);
     W.addValueChange(SIdx, 0, "0000");
+    W.addValueChange(SIdx, 5, string("0010"));
     W.addValueChange(SIdx, 10, string("1010"));
+    W.addValueChange(SIdx, 15, string("100"));
+    W.addValueChange(SIdx, 20, string("1"));
     F.write(W);
 
     EXPECT_TRUE(checkFileContent({
@@ -101,10 +134,16 @@ TEST_F(VCDWaveFileF, Write) {
     "$enddefinitions $end",
     "#0",
     "$dumpvars",
-    "b0000 !",
+    "b0 !",
     "$end",
+    "#5",
+    "b10 !",
     "#10",
-    "b1010 !"
+    "b1010 !",
+    "#15",
+    "b100 !",
+    "#20",
+    "b1 !"
     // clang-format off
   }));
 }
