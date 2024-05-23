@@ -24,23 +24,23 @@
    :target: https://github.com/ARM-software/PAF/blob/main/LICENSE.txt
 
 .. |CIUbuntu2004| image:: https://github.com/ARM-software/PAF/actions/workflows/ubuntu-2004.yml/badge.svg
-   :alt: Last build status on Ubuntu 20.04
+   :alt: Last build status on Ubuntu 20.04 x86
    :target: https://github.com/ARM-software/PAF/actions/workflows/ubuntu-2004.yml
 
 .. |CIUbuntu2204| image:: https://github.com/ARM-software/PAF/actions/workflows/ubuntu-2204.yml/badge.svg
-   :alt: Last build status on Ubuntu 22.04
+   :alt: Last build status on Ubuntu 22.04 x86
    :target: https://github.com/ARM-software/PAF/actions/workflows/ubuntu-2204.yml
 
 .. |CIUbuntu2404| image:: https://github.com/ARM-software/PAF/actions/workflows/ubuntu-2404.yml/badge.svg
-   :alt: Last build status on Ubuntu 24.04
+   :alt: Last build status on Ubuntu 24.04 x86
    :target: https://github.com/ARM-software/PAF/actions/workflows/ubuntu-2404.yml
 
 .. |CImacOS13| image:: https://github.com/ARM-software/PAF/actions/workflows/macos-13.yml/badge.svg
-   :alt: Last build status on macOS Ventura
+   :alt: Last build status on macOS Ventura x86
    :target: https://github.com/ARM-software/PAF/actions/workflows/macos-13.yml
 
 .. |CImacOS14| image:: https://github.com/ARM-software/PAF/actions/workflows/macos-14.yml/badge.svg
-   :alt: Last build status on macOS Sonoma
+   :alt: Last build status on macOS Sonoma arm
    :target: https://github.com/ARM-software/PAF/actions/workflows/macos-14.yml
 
 ===============================================================================

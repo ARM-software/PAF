@@ -16,7 +16,7 @@
 #
 # This file is part of PAF, the Physical Attack Framework.
 
-name: "macOS Sonoma"
+name: "macOS Sonoma (arm)"
 
 on:
   push:

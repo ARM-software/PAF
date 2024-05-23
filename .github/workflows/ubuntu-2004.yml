@@ -16,7 +16,7 @@
 #
 # This file is part of PAF, the Physical Attack Framework.
 
-name: "Ubuntu 20.04 (gcc + clang)"
+name: "Ubuntu 20.04 (x86) (gcc + clang)"
 
 on:
   push:
@@ -30,7 +30,7 @@ env:
 
 jobs:
   configure_build_test_doc_with_clang:
-    name: "Configure, build, test (with clang) + build doc"
+    name: "(x86, clang) Configure, build, test + build doc"
     runs-on: ubuntu-20.04
     steps:
     - uses: actions/checkout@v4
@@ -39,19 +39,19 @@ jobs:
     - name: Install dependencies for apps with a GUI, doxygen and Ninja
       run: sudo apt-get install pkg-config libwxgtk3.0-gtk3-dev doxygen graphviz ninja-build
     - name: Configure
-      run: CC=clang CXX=clang++ cmake -B ${{github.workspace}}/build-clang -DCMAKE_BUILD_TYPE:STRING=${{env.CMAKE_BUILD_TYPE}} -DPAF_BUILD_DOCUMENTATION:BOOL=ON -G Ninja
+      run: CC=clang CXX=clang++ cmake -B ${{github.workspace}}/build-clang-x86 -DCMAKE_BUILD_TYPE:STRING=${{env.CMAKE_BUILD_TYPE}} -DPAF_BUILD_DOCUMENTATION:BOOL=ON -G Ninja
     - name: Build
-      working-directory: ${{github.workspace}}/build-clang
+      working-directory: ${{github.workspace}}/build-clang-x86
       run: ninja
     - name: Test
-      working-directory: ${{github.workspace}}/build-clang
+      working-directory: ${{github.workspace}}/build-clang-x86
       run: ninja check
     - name: Documentation
-      working-directory: ${{github.workspace}}/build-clang
+      working-directory: ${{github.workspace}}/build-clang-x86
       run: ninja doc
 
   configure_build_test_doc_with_gcc:
-    name: "Configure, build, test (with gcc) + build doc"
+    name: "(x86, gcc) Configure, build, test + build doc"
     runs-on: ubuntu-20.04
     steps:
     - uses: actions/checkout@v4
@@ -60,13 +60,13 @@ jobs:
     - name: Install dependencies for apps with a GUI, doxygen and Ninja
       run: sudo apt-get install pkg-config libwxgtk3.0-gtk3-dev doxygen graphviz ninja-build
     - name: Configure
-      run: CC=gcc CXX=g++ cmake -B ${{github.workspace}}/build-gcc -DCMAKE_BUILD_TYPE:STRING=${{env.CMAKE_BUILD_TYPE}} -DPAF_BUILD_DOCUMENTATION:BOOL=ON -G Ninja
+      run: CC=gcc CXX=g++ cmake -B ${{github.workspace}}/build-gcc-x86 -DCMAKE_BUILD_TYPE:STRING=${{env.CMAKE_BUILD_TYPE}} -DPAF_BUILD_DOCUMENTATION:BOOL=ON -G Ninja
     - name: Build
-      working-directory: ${{github.workspace}}/build-gcc
+      working-directory: ${{github.workspace}}/build-gcc-x86
       run: ninja
     - name: Test
-      working-directory: ${{github.workspace}}/build-gcc
+      working-directory: ${{github.workspace}}/build-gcc-x86
       run: ninja check
     - name: Documentation
-      working-directory: ${{github.workspace}}/build-gcc
+      working-directory: ${{github.workspace}}/build-gcc-x86
       run: ninja doc

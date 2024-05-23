@@ -16,7 +16,7 @@
 #
 # This file is part of PAF, the Physical Attack Framework.
 
-name: "macOS Ventura"
+name: "macOS Ventura (x86)"
 
 on:
   push:
