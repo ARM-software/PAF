@@ -1,4 +1,4 @@
-# SPDX-FileCopyrightText: <text>Copyright 2021,2022 Arm Limited and/or its
+# SPDX-FileCopyrightText: <text>Copyright 2021,2022,2024 Arm Limited and/or its
 # affiliates <open-source-office@arm.com></text>
 # SPDX-License-Identifier: Apache-2.0
 #
@@ -25,7 +25,7 @@ setup(
         install_requires=[
           'pyyaml==6.0.1',
           'pyelftools==0.29',
-          'tqdm==4.65.2'
+          'tqdm>=4.66.3'
         ],
         scripts=['run-model.py', 'campaign.py', 'generate-xref.py'],
 )
