@@ -29,6 +29,7 @@
 
 #include "gtest/gtest.h"
 
+#include <array>
 #include <cmath>
 #include <initializer_list>
 #include <iostream>
@@ -40,6 +41,7 @@
 
 using namespace testing;
 
+using std::array;
 using std::map;
 using std::pair;
 using std::string;
@@ -522,8 +524,9 @@ struct TestInstrDumper : public InstrDumper {
 
 class TestOracle : public PowerTrace::OracleBase {
   public:
-    TestOracle(const ReferenceInstruction Inst[], size_t N)
-        : PowerTrace::OracleBase(), registers(), nr(0), defaultValue(0) {
+    TestOracle(const ReferenceInstruction *Inst, size_t N)
+        : PowerTrace::OracleBase(), registers(), regbank(), nr(0),
+          defaultValue(0) {
         // Gather how many registers we have in this instruction sequence.
         // And check time is strictly monotonically increasing.
         Time t;
@@ -541,10 +544,9 @@ class TestOracle : public PowerTrace::OracleBase {
         // Build the different register bank states.
         for (size_t i = 0; i < N; i++) {
             // Extend the trace with a copy of the last snapshot.
-            if (!regbank.empty()) {
-                regbank[Inst[i].time] = regbank.rbegin()->second;
-            } else
-                regbank[Inst[i].time] = vector<uint64_t>(nr, defaultValue);
+            regbank.insert(make_pair(Inst[i].time,
+                                     i == 0 ? vector<uint64_t>(nr, defaultValue)
+                                            : regbank[Inst[i - 1].time]));
 
             // Add register updates to the snapshot
             for (const auto &RA : Inst[i].regAccess) {
@@ -595,7 +597,7 @@ class TestOracle : public PowerTrace::OracleBase {
     const uint64_t defaultValue;
 };
 
-static const ReferenceInstruction Insts[] = {
+static const array<ReferenceInstruction, 4> Insts{{
     // clang-format off
     {
         27, IE_EXECUTED, 0x089bc, THUMB, 16, 0x02105, "MOVS r1,#5",
@@ -632,6 +634,7 @@ static const ReferenceInstruction Insts[] = {
             RegisterAccess("r4", 0x00021f64, RegisterAccess::Type::WRITE)
         }
     },
+    }
     // clang-format on
 };
 
@@ -944,7 +947,7 @@ TEST(PowerTrace, base) {
     TestTimingInfo TTI;
     PowerAnalysisConfig PAC;
     unique_ptr<ArchInfo> CPU(new PAF::V7MInfo());
-    TestOracle Oracle(Insts, sizeof(Insts) / sizeof(Insts[0]));
+    TestOracle Oracle(&Insts[0], Insts.size());
 
     PowerTrace PT(TPD, TTI, TRBD, TMAD, TID, PAC, CPU.get());
     EXPECT_STREQ(PT.getArchInfo()->description(), "Arm V7M ISA");
@@ -1066,7 +1069,7 @@ TEST(PowerTrace, withNoise) {
     TestTimingInfo TTI;
     PowerAnalysisConfigWithNoise PAC;
     unique_ptr<ArchInfo> CPU(new PAF::V7MInfo());
-    TestOracle Oracle(Insts, sizeof(Insts) / sizeof(Insts[0]));
+    TestOracle Oracle(&Insts[0], Insts.size());
 
     PowerTrace PT(TPD, TTI, TRBD, TMAD, TID, PAC, CPU.get());
     PT.add(Insts[0]);
@@ -1091,7 +1094,7 @@ TEST(PowerTrace, HammingWeightWithConfig) {
     TestTimingInfo TTI;
     PowerAnalysisConfig PAC;
     unique_ptr<ArchInfo> CPU(new PAF::V7MInfo());
-    TestOracle Oracle(Insts, sizeof(Insts) / sizeof(Insts[0]));
+    TestOracle Oracle(&Insts[0], Insts.size());
 
     PAC.clear().set(PowerAnalysisConfig::WITH_PC);
     PowerTrace PT1(TPD, TTI, TRBD, TMAD, TID, PAC, CPU.get());
@@ -1222,7 +1225,7 @@ TEST(PowerTrace, HammingWeightWithConfig) {
 
 // clang-format off
 // Test sequence for checking load-to-load / store-to-store hamming distance computation.
-static const ReferenceInstruction Insts2[] = {
+static const array<ReferenceInstruction,7> Insts2{{
     {
         27, IE_EXECUTED, 0x08324, THUMB, 16, 0x02105, "movs r1,#5",
         {},
@@ -1287,7 +1290,7 @@ static const ReferenceInstruction Insts2[] = {
             RegisterAccess("r11", 0xf93933c, RegisterAccess::Type::READ)
         }
     },
-};
+}};
 // clang-format on
 
 TEST(PowerTrace, HammingDistanceWithConfig) {
