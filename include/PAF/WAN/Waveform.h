@@ -38,8 +38,8 @@ namespace WAN {
 
 class Waveform {
 
-    // This adaptor template class is used to provide an iterator which unwraps
-    // the unique_ptr pointer used in the Waveform's containers.
+    /// This adaptor template class is used to provide an iterator which unwraps
+    /// the unique_ptr pointer used in the Waveform's containers.
     template <typename SignalTy>
     struct SignalsIterator
         : public std::iterator<std::random_access_iterator_tag, SignalTy> {
@@ -52,53 +52,53 @@ class Waveform {
         SignalsIterator(const SignalsIterator &) = default;
         SignalsIterator &operator=(const SignalsIterator &) = default;
 
-        // Iterator can be compared for equality.
+        /// Iterator can be compared for equality.
         bool operator==(const SignalsIterator &rhs) const {
             return signals == rhs.signals && idx == rhs.idx;
         }
-        // Iterator can be compared for inequality.
+        /// Iterator can be compared for inequality.
         bool operator!=(const SignalsIterator &rhs) const {
             return signals != rhs.signals || idx != rhs.idx;
         }
 
-        // Iterator can be dereferenced as an rvalue.
+        /// Iterator can be dereferenced as an rvalue.
         SignalTy &operator*() const {
             assert(idx < signals->size() &&
                    "SignalsIterator not in a dereferenceable state");
             return *(*signals)[idx].get();
         }
-        // Iterator can be dereferenced as an rvalue.
+        /// Iterator can be dereferenced as an rvalue.
         SignalTy *operator->() const {
             assert(idx < signals->size() &&
                    "SignalsIterator not in a dereferenceable state");
             return (*signals)[idx].get();
         }
 
-        // Iterator can be pre-incremented.
+        /// Iterator can be pre-incremented.
         SignalsIterator &operator++() {
             ++idx;
             return *this;
         }
-        // Iterator can be post-incremented.
+        /// Iterator can be post-incremented.
         SignalsIterator operator++(int) {
             SignalsIterator tmp(*this);
             operator++();
             return tmp;
         }
-        // Iterator can be pre-decremented.
+        /// Iterator can be pre-decremented.
         SignalsIterator &operator--() {
             --idx;
             return *this;
         }
-        // Iterator can be post-decremented.
+        /// Iterator can be post-decremented.
         SignalsIterator operator--(int) {
             SignalsIterator tmp(*this);
             operator--();
             return tmp;
         }
 
-        // Can be compared with inequality relational operators (<, >, <= and
-        // >=).
+        /// Can be compared with inequality relational operators (<, >, <= and
+        /// >=).
         bool operator<(const SignalsIterator &rhs) const {
             assert(signals == rhs.signals && "Uncomparable SignalsIterators");
             return idx < rhs.idx;
@@ -116,25 +116,25 @@ class Waveform {
             return idx >= rhs.idx;
         }
 
-        // Iterator supports compound assignment operations +=
+        /// Iterator supports compound assignment operations +=
         SignalsIterator &operator+=(int n) {
             idx += n;
             return *this;
         }
-        // Iterator supports compound assignment operation -=
+        /// Iterator supports compound assignment operation -=
         SignalsIterator &operator-=(int n) {
             idx -= n;
             return *this;
         }
 
-        // Supports substracting an iterator from another.
+        /// Supports substracting an iterator from another.
         int operator-(const SignalsIterator &rhs) const {
             assert(signals == rhs.signals &&
                    "Un-substractable SignalsIterators");
             return idx - rhs.idx;
         }
 
-        // Supports the offset dereference operator ([])
+        /// Supports the offset dereference operator ([])
         SignalTy &operator[](int n) const {
             assert(idx + n < signals->size() &&
                    "SignalsIterator not in a dereferenceable state");
@@ -147,7 +147,7 @@ class Waveform {
     };
 
   public:
-    // The SignalDesc class describes a signal.
+    /// The SignalDesc class describes a signal.
     class SignalDesc {
       public:
         enum class Kind : uint8_t { REGISTER, WIRE, INTEGER };
@@ -201,8 +201,8 @@ class Waveform {
         bool alias;
     };
 
-    // The Scope class provides a hierarchical view of the signals, and allows
-    // retrieving the index used to store the actual signals.
+    /// The Scope class provides a hierarchical view of the signals, and allows
+    /// retrieving the index used to store the actual signals.
     class Scope {
 
       public:

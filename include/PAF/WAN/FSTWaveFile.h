@@ -99,10 +99,10 @@ template <class BuilderTy> struct FSTWaveBuilderBase {
     }
 };
 
-// The FSTWaveFile class is an abstraction of the FST file format.
-//
-// It relies on the fstapi shipped with gtkwave to deal with the actual FST
-// file format details.
+/// The FSTWaveFile class is an abstraction of the FST file format.
+///
+/// It relies on the fstapi shipped with gtkwave to deal with the actual FST
+/// file format details.
 class FSTWaveFile : public WaveFile {
   public:
     FSTWaveFile() = delete;
@@ -128,16 +128,16 @@ class FSTWaveFile : public WaveFile {
                                    &B, nullptr);
     }
 
-    // Convenience method to read from a single input file.
+    /// Convenience method to read from a single input file.
     Waveform read();
 
-    // Construct a Waveform from file FileName.
+    /// Construct a Waveform.
     bool read(Waveform &W) override;
 
-    // Save Waveform W to file 'FileName'.
+    /// Save Waveform W to file 'FileName'.
     bool write(const Waveform &W) override;
 
-    // Quickly read the file to collect all times with changes.
+    /// Quickly read the file to collect all times with changes.
     std::vector<WAN::TimeTy> getAllChangesTimes() override;
 
   private:

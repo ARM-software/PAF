@@ -31,8 +31,8 @@
 namespace PAF {
 namespace WAN {
 
-// WaveFile is a base class for the different file formats supported by WAN:
-// vcd, fst, ...
+/// WaveFile is a base class for the different file formats supported by WAN:
+/// vcd, fst, ...
 class WaveFile {
   public:
     enum class FileFormat : uint8_t { UNKNOWN, VCD, FST };
@@ -44,28 +44,30 @@ class WaveFile {
 
     virtual ~WaveFile();
 
-    // Get WaveFile format for filename.
+    /// Get WaveFile format for filename.
     static FileFormat getFileFormat(const std::string &filename);
 
-    // Get this WaveFile format.
+    /// Get this WaveFile format.
     FileFormat getFileFormat() const { return fileFmt; }
 
-    // Get this WaveFile filename.
+    /// Get this WaveFile filename.
     const std::string &getFileName() const { return fileName; }
 
+    /// Convenience method to automatically detect the wavefile format and read
+    /// it for read / write.
     static std::unique_ptr<WaveFile> get(const std::string &filename,
                                          bool write);
 
-    // Convenience method to read from a single input file.
+    /// Convenience method to read from a single input file.
     Waveform read();
 
-    // Construct a Waveform from file FileName.
+    /// Construct a Waveform from file FileName.
     virtual bool read(Waveform &W) = 0;
 
-    // Save Waveform W to file 'FileName'.
+    /// Save Waveform W to file 'FileName'.
     virtual bool write(const Waveform &W) = 0;
 
-    // Quickly read the file to collect all times with changes.
+    /// Quickly read the file to collect all times with changes.
     virtual std::vector<WAN::TimeTy> getAllChangesTimes() = 0;
 
   protected:

@@ -39,10 +39,10 @@ using TimeTy = uint64_t;
 using SignalIdxTy = uint32_t;
 using TimeIdxTy = uint32_t;
 
-// The Logic class represents the type of logical values, as in hardware
-// description languages: 0 (low), 1 (high), Z (tri-state) and U (unknown). It
-// purposely does not contain storage, which is handled in other classes as
-// there are different requirements.
+/// The Logic class represents the type of logical values, as in hardware
+/// description languages: 0 (low), 1 (high), Z (tri-state) and U (unknown). It
+/// purposely does not contain storage, which is handled in other classes as
+/// there are different requirements.
 class Logic {
   public:
     enum class Ty : uint8_t {
@@ -139,8 +139,8 @@ class Logic {
     }
 };
 
-// The Value class represents the actual value of a wire or a bus at a specific
-// time.
+/// The Value class represents the actual value of a wire or a bus at a specific
+/// time.
 class ValueTy {
   public:
     // Single bit constructors
@@ -287,8 +287,8 @@ inline ValueTy operator^(const ValueTy &LHS, const ValueTy &RHS) {
 
 class Signal {
 
-    // The PackTy class packs several values together in the same (memory)
-    // storage location. This optimization is done in order to use less memory.
+    /// The PackTy class packs several values together in the same (memory)
+    /// storage location. This optimization is done in order to use less memory.
     class Pack {
         using Ty = uint32_t;
 
