@@ -422,7 +422,7 @@ const vector<MyVisitor::Expectation> expectedWiresInDUT{{
 
 TEST(Waveform, fromFile) {
     for (const auto &file : filesToTest) {
-        std::unique_ptr<WaveFile> wf = WaveFile::get(file);
+        std::unique_ptr<WaveFile> wf = WaveFile::get(file, /* write: */ false);
         // Zap parts of the header which contain non constant metadata.
         const Waveform W = wf->read().setVersion("").setDate("");
 
@@ -469,7 +469,7 @@ TEST_WITH_TEMP_FILE(WaveformF, "test-Waveform-toFile.XXXXXX");
 TEST_F(WaveformF, toFile) {
 
     for (const auto &file : filesToTest) {
-        std::unique_ptr<WaveFile> wf = WaveFile::get(file);
+        std::unique_ptr<WaveFile> wf = WaveFile::get(file, /* write: */ false);
         const Waveform W = wf->read();
 
         const string tmpFile(getTemporaryFilename());
@@ -515,7 +515,7 @@ TEST_F(WaveformF, toFile) {
 TEST(Waveform, visitAll) {
 
     for (const auto &file : filesToTest) {
-        std::unique_ptr<WaveFile> wf = WaveFile::get(file);
+        std::unique_ptr<WaveFile> wf = WaveFile::get(file, /* write: */ false);
 
         // Check the defaults
         const Waveform W = wf->read();
@@ -533,7 +533,7 @@ TEST(Waveform, visitAll) {
 TEST(Waveform, visitNothing) {
 
     for (const auto &file : filesToTest) {
-        std::unique_ptr<WaveFile> wf = WaveFile::get(file);
+        std::unique_ptr<WaveFile> wf = WaveFile::get(file, /* write: */ false);
         const Waveform W = wf->read();
         MyVisitor WV(W, expectedNothing, Visitor::Options(true, true, true));
         W.visit(WV);
@@ -544,7 +544,7 @@ TEST(Waveform, visitNothing) {
 TEST(Waveform, visitRegistersOnly) {
 
     for (const auto &file : filesToTest) {
-        std::unique_ptr<WaveFile> wf = WaveFile::get(file);
+        std::unique_ptr<WaveFile> wf = WaveFile::get(file, /* write: */ false);
         const Waveform W = wf->read();
         MyVisitor WV(W, expectedRegs, Visitor::Options(false, true, true));
         W.visit(WV);
@@ -555,7 +555,7 @@ TEST(Waveform, visitRegistersOnly) {
 TEST(Waveform, visitWiresOnly) {
 
     for (const auto &file : filesToTest) {
-        std::unique_ptr<WaveFile> wf = WaveFile::get(file);
+        std::unique_ptr<WaveFile> wf = WaveFile::get(file, /* write: */ false);
         const Waveform W = wf->read();
         MyVisitor WV(W, expectedWires, Visitor::Options(true, false, true));
         W.visit(WV);
@@ -566,7 +566,7 @@ TEST(Waveform, visitWiresOnly) {
 TEST(Waveform, visitIntegersOnly) {
 
     for (const auto &file : filesToTest) {
-        std::unique_ptr<WaveFile> wf = WaveFile::get(file);
+        std::unique_ptr<WaveFile> wf = WaveFile::get(file, /* write: */ false);
         const Waveform W = wf->read();
         MyVisitor WV(W, expectedIntegers, Visitor::Options(true, true, false));
         W.visit(WV);
@@ -577,7 +577,7 @@ TEST(Waveform, visitIntegersOnly) {
 TEST(Waveform, visitRegistersInSpecificScope) {
 
     for (const auto &file : filesToTest) {
-        std::unique_ptr<WaveFile> wf = WaveFile::get(file);
+        std::unique_ptr<WaveFile> wf = WaveFile::get(file, /* write: */ false);
         const Waveform W = wf->read();
         MyVisitor WV(
             W, expectedRegistersInDUT,
@@ -596,7 +596,7 @@ TEST(Waveform, visitRegistersInSpecificScope) {
 TEST(Waveform, visitWiresInSpecificScope) {
 
     for (const auto &file : filesToTest) {
-        std::unique_ptr<WaveFile> wf = WaveFile::get(file);
+        std::unique_ptr<WaveFile> wf = WaveFile::get(file, /* write: */ false);
         const Waveform W = wf->read();
         MyVisitor WV(
             W, expectedWiresInDUT,

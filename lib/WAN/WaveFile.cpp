@@ -48,7 +48,7 @@ WaveFile::FileFormat WaveFile::getFileFormat(const string &filename) {
     return WaveFile::FileFormat::UNKNOWN;
 }
 
-unique_ptr<WaveFile> WaveFile::get(const string &filename) {
+unique_ptr<WaveFile> WaveFile::get(const string &filename, bool write) {
     unique_ptr<WaveFile> F;
     switch (WaveFile::getFileFormat(filename)) {
     case WaveFile::FileFormat::VCD:
@@ -56,7 +56,7 @@ unique_ptr<WaveFile> WaveFile::get(const string &filename) {
         break;
     case WaveFile::FileFormat::FST:
 #ifdef HAS_GTKWAVE_FST
-        F = std::make_unique<FSTWaveFile>(filename, /* write: */ false);
+        F = std::make_unique<FSTWaveFile>(filename, write);
 #else
         die("can not read '%s': FST support was not built.", filename.c_str());
 #endif

@@ -386,8 +386,9 @@ int main(int argc, char *argv[]) {
                 "will be nothing to process");
     });
 
-    array<Waveform, 2> W{WaveFile::get(inputFiles[0])->read(),
-                         WaveFile::get(inputFiles[1])->read()};
+    array<Waveform, 2> W{
+        WaveFile::get(inputFiles[0], /* write: */ false)->read(),
+        WaveFile::get(inputFiles[1], /* write: */ false)->read()};
 
     if (W[0].getEndTime() != W[1].getEndTime()) {
         cout << W[0].getFileName() << " and " << W[1].getFileName()
@@ -432,7 +433,8 @@ int main(int argc, char *argv[]) {
             diff.dumpByTime(cout, verbose);
             break;
         case DUMP_TO_FILE:
-            diff.dumpToFile(WaveFile::get(outputFile).get(), verbose);
+            diff.dumpToFile(WaveFile::get(outputFile, /* write: */ true).get(),
+                            verbose);
             break;
         }
     else

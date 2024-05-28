@@ -150,7 +150,8 @@ int main(int argc, char *argv[]) {
 
     for (const auto &filename : inputFiles) {
 
-        std::unique_ptr<WaveFile> wf = WaveFile::get(filename);
+        std::unique_ptr<WaveFile> wf =
+            WaveFile::get(filename, /* write: */ false);
         const Waveform W = wf->read();
 
         switch (action) {

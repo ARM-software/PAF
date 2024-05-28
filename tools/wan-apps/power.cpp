@@ -454,7 +454,7 @@ int main(int argc, char *argv[]) {
     size_t Duration = 0;
     size_t NumSignals = 0;
     for (const auto &I : In) {
-        Waveform WIn = WaveFile::get(I.inputFile)->read();
+        Waveform WIn = WaveFile::get(I.inputFile, /* write: */ false)->read();
         RunInfo CI(I.cycleInfo);
 
         if (Verbose) {

@@ -68,7 +68,8 @@ int main(int argc, char *argv[]) {
     // Collect all changes times.
     set<TimeTy> AllTimes;
     for (const auto &f : InputFiles) {
-        const auto times = WaveFile::get(f)->getAllChangesTimes();
+        const auto times =
+            WaveFile::get(f, /* write: */ false)->getAllChangesTimes();
         AllTimes.insert(times.begin(), times.end());
     }
 
@@ -76,7 +77,7 @@ int main(int argc, char *argv[]) {
     Waveform WMain(InputFiles[0], 0, 0, 0);
     WMain.addTimes(AllTimes.begin(), AllTimes.end());
     for (const auto &f : InputFiles) {
-        if (!WaveFile::get(f)->read(WMain))
+        if (!WaveFile::get(f, /* write: */ false)->read(WMain))
             DIE("error reading '%s", f.c_str());
         if (Statistics) {
             unique_ptr<WaveformStatistics> Stats(new WaveformStatistics(WMain));
@@ -88,7 +89,7 @@ int main(int argc, char *argv[]) {
     }
 
     // Save the merge.
-    if (!WaveFile::get(SaveFileName)->write(WMain))
+    if (!WaveFile::get(SaveFileName, /* write: */ true)->write(WMain))
         DIE("error saving waveform to '%s'", SaveFileName.c_str());
 
     return EXIT_SUCCESS;

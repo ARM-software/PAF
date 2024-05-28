@@ -404,7 +404,7 @@ bool FSTWaveFile::read(Waveform &W) {
 
 bool FSTWaveFile::write(const Waveform &W) {
     if (!openedForWrite)
-        DIE("Can not read FST file that has been opened for write");
+        DIE("Can not write FST file that has been opened for read");
     FstBuilder FB(fileName, W);
     if (!FB)
         DIE("Error creating output file: ", fileName);

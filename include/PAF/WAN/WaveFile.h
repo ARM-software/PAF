@@ -53,7 +53,8 @@ class WaveFile {
     // Get this WaveFile filename.
     const std::string &getFileName() const { return fileName; }
 
-    static std::unique_ptr<WaveFile> get(const std::string &filename);
+    static std::unique_ptr<WaveFile> get(const std::string &filename,
+                                         bool write);
 
     // Convenience method to read from a single input file.
     Waveform read();
