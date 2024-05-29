@@ -32,12 +32,14 @@
 #include "libtarmac/reporter.hh"
 
 #include "PAF/Error.h"
+#include "PAF/SCA/NPArray.h"
 #include "PAF/WAN/Signal.h"
 #include "PAF/WAN/WaveFile.h"
 #include "PAF/WAN/Waveform.h"
 
 using namespace std;
 using namespace PAF::WAN;
+using PAF::SCA::NPArray;
 
 namespace {
 
@@ -239,18 +241,18 @@ struct HammingVisitor : public Waveform::Visitor {
                 p += PowerNoiseDist(MT);
     }
 
-    void dumpAsCSV(const string &Filename, size_t period, size_t offset) const {
+    void dumpAsCSV(const string &filename, size_t period, size_t offset) const {
         ostream *os;
         ofstream *ofs = nullptr;
 
         check();
 
-        if (Filename.empty() || Filename == "-") {
+        if (filename.empty() || filename == "-") {
             os = &cout;
         } else {
-            ofs = new ofstream(Filename);
+            ofs = new ofstream(filename);
             if (!*ofs)
-                DIE("Error opening output file ", Filename);
+                DIE("Error opening output file ", filename);
             os = ofs;
         }
 
@@ -271,6 +273,26 @@ struct HammingVisitor : public Waveform::Visitor {
             ofs->close();
             delete ofs;
         }
+    }
+
+    void dumpAsNPY(const string &filename, size_t period, size_t offset) const {
+
+        check();
+
+        const size_t numCols = power.size() / period;
+        const size_t numRows = power.cbegin()->second.size();
+        NPArray<double> npy(numRows, numCols);
+
+        size_t col = 0;
+        for (const auto &H : power) {
+            if (col % period == offset) {
+                for (size_t row = 0; row < numRows; row++)
+                    npy(row, col / period) = H.second[row];
+            }
+            col += 1;
+        }
+
+        npy.save(filename);
     }
 
     const RunInfo *runInfo = nullptr;
@@ -379,7 +401,7 @@ int main(int argc, char *argv[]) {
     Waveform::Visitor::Options VisitOptions(
         false /* skipRegs */, false /* skipWires */, false /* skipIntegers */);
 
-    enum class SaveFormat : uint8_t { CSV };
+    enum class SaveFormat : uint8_t { CSV, NPY };
     SaveFormat SaveAs = SaveFormat::CSV;
     string SaveFileName("-");
 
@@ -387,10 +409,17 @@ int main(int argc, char *argv[]) {
 
     Argparse ap("wan-power", argc, argv);
     ap.optnoval({"--verbose"}, "verbose output", [&]() { Verbose++; });
-    ap.optval({"--csv"}, "CSV_FILE",
-              "Save power trace in csv format to file ('-' for stdout)",
+    ap.optval(
+        {"--csv"}, "CSV_FILE",
+        "Save power trace in csv format to file CSV_FILE ('-' for stdout)",
+        [&](const string &filename) {
+            SaveAs = SaveFormat::CSV;
+            SaveFileName = filename;
+        });
+    ap.optval({"--npy"}, "NPY_FILE",
+              "Save power trace in npy format to file NPY_FILE",
               [&](const string &filename) {
-                  SaveAs = SaveFormat::CSV;
+                  SaveAs = SaveFormat::NPY;
                   SaveFileName = filename;
               });
     ap.optnoval({"--no-noise"}, "Don't add noise to the power trace",
@@ -500,6 +529,9 @@ int main(int argc, char *argv[]) {
     switch (SaveAs) {
     case SaveFormat::CSV:
         HV->dumpAsCSV(SaveFileName, Period, Offset);
+        break;
+    case SaveFormat::NPY:
+        HV->dumpAsNPY(SaveFileName, Period, Offset);
         break;
     }
 

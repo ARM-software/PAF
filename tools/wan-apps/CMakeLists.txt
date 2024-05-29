@@ -39,7 +39,7 @@ add_paf_executable(merge
 
 add_paf_executable(power
   SOURCES power.cpp
-  LIBRARIES wan paf
+  LIBRARIES wan paf sca
   EXEC_PREFIX "wan"
   OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin"
   )
