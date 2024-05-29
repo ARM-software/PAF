@@ -147,12 +147,12 @@ std::random_device RD;
 std::mt19937 MT(RD());
 std::normal_distribution<double> PowerNoiseDist(0.0, 0.5);
 
-enum class Hamming : uint8_t { WEIGHT, DISTANCE };
-
 struct HammingVisitor : public Waveform::Visitor {
 
-    HammingVisitor(const Waveform::Visitor::Options &options)
-        : Waveform::Visitor(nullptr, options), powerTmp(), power() {}
+    HammingVisitor(const string &fileName,
+                   const Waveform::Visitor::Options &options)
+        : Waveform::Visitor(nullptr, options), powerTmp(), power(),
+          fileName(fileName), runInfo(nullptr) {}
 
     HammingVisitor &setWaveform(const Waveform *wf, const RunInfo *ri) {
         w = wf;
@@ -223,6 +223,32 @@ struct HammingVisitor : public Waveform::Visitor {
             powerTmp.emplace(Time, Val);
     }
 
+    void addNoise() {
+        for (auto &H : power)
+            for (auto &p : H.second)
+                p += PowerNoiseDist(MT);
+    }
+
+    void dump(size_t period, size_t offset) const {
+        check();
+        switch (getFileFormat()) {
+        case FileFormat::CSV:
+            dumpAsCSV(period, offset);
+            break;
+        case FileFormat::NPY:
+            dumpAsNPY(period, offset);
+            break;
+        }
+        return;
+    }
+
+  protected:
+    map<TimeTy, double> powerTmp;
+    map<TimeTy, vector<double>> power;
+    string fileName;
+    const RunInfo *runInfo;
+
+  private:
     // Check our invariant: all records should have the same number of samples.
     void check() const {
         size_t N = 0;
@@ -235,24 +261,34 @@ struct HammingVisitor : public Waveform::Visitor {
         }
     }
 
-    void addNoise() {
-        for (auto &H : power)
-            for (auto &p : H.second)
-                p += PowerNoiseDist(MT);
+    enum class FileFormat : uint8_t { CSV, NPY };
+
+    FileFormat getFileFormat() const {
+        if (fileName == "-")
+            return FileFormat::CSV;
+        size_t pos = fileName.find_last_of('.');
+        if (pos == string::npos)
+            DIE("Can not extract file format for '", fileName, "'");
+        string suffix = fileName.substr(pos);
+        if (suffix == ".csv")
+            return FileFormat::CSV;
+        else if (suffix == ".npy")
+            return FileFormat::NPY;
+        else
+            DIE("Unknown file format '", suffix, "' for '", fileName,
+                "'. Use .npy or .csv");
     }
 
-    void dumpAsCSV(const string &filename, size_t period, size_t offset) const {
+    void dumpAsCSV(size_t period, size_t offset) const {
         ostream *os;
         ofstream *ofs = nullptr;
 
-        check();
-
-        if (filename.empty() || filename == "-") {
+        if (fileName.empty() || fileName == "-") {
             os = &cout;
         } else {
-            ofs = new ofstream(filename);
+            ofs = new ofstream(fileName);
             if (!*ofs)
-                DIE("Error opening output file ", filename);
+                DIE("Error opening output file ", fileName);
             os = ofs;
         }
 
@@ -275,10 +311,7 @@ struct HammingVisitor : public Waveform::Visitor {
         }
     }
 
-    void dumpAsNPY(const string &filename, size_t period, size_t offset) const {
-
-        check();
-
+    void dumpAsNPY(size_t period, size_t offset) const {
         const size_t numCols = power.size() / period;
         const size_t numRows = power.cbegin()->second.size();
         NPArray<double> npy(numRows, numCols);
@@ -292,18 +325,15 @@ struct HammingVisitor : public Waveform::Visitor {
             col += 1;
         }
 
-        npy.save(filename);
+        npy.save(fileName);
     }
-
-    const RunInfo *runInfo = nullptr;
-    map<TimeTy, double> powerTmp;
-    map<TimeTy, vector<double>> power;
 };
 
 struct HammingWeight : public HammingVisitor {
 
-    HammingWeight(const Waveform::Visitor::Options &options)
-        : HammingVisitor(options) {}
+    HammingWeight(const string &fileName,
+                  const Waveform::Visitor::Options &options)
+        : HammingVisitor(fileName, options) {}
 
     void visitSignal(const string &FullScopeName,
                      const Waveform::SignalDesc &SD) override {
@@ -318,8 +348,9 @@ struct HammingWeight : public HammingVisitor {
 
 struct HammingDistance : public HammingVisitor {
 
-    HammingDistance(const Waveform::Visitor::Options &options)
-        : HammingVisitor(options) {}
+    HammingDistance(const string &fileName,
+                    const Waveform::Visitor::Options &options)
+        : HammingVisitor(fileName, options) {}
 
     void visitSignal(const string &FullScopeName,
                      const Waveform::SignalDesc &SD) override {
@@ -340,6 +371,42 @@ struct HammingDistance : public HammingVisitor {
             PreviousValue = Change.value;
         }
     }
+};
+
+/// The Analysis class collects all the items required to create the
+/// actual HammingVisitor object. The actual creation is deferred (and performed
+/// with the create method) because the Visitor::Options argument is only
+/// available after all options have been parsed and processed.
+class Analysis {
+  public:
+    enum Kind { HAMMING_WEIGHT = 0, HAMMING_DISTANCE, NUM_ANALYSIS };
+
+    Analysis() : HV(), fileName() {}
+    Analysis(const string &fileName) : HV(), fileName(fileName) {}
+
+    bool create(Kind kind, const Waveform::Visitor::Options &options) {
+        if (fileName.empty())
+            return false;
+        switch (kind) {
+        case Kind::HAMMING_WEIGHT:
+            HV.reset(new HammingWeight(fileName, options));
+            return true;
+        case Kind::HAMMING_DISTANCE:
+            HV.reset(new HammingDistance(fileName, options));
+            return true;
+        case Kind::NUM_ANALYSIS:
+            DIE("This Kind should not be used as an analysis");
+        }
+        return false;
+    }
+
+    operator bool() const { return HV.get() != nullptr; }
+    HammingVisitor &operator*() { return *HV; }
+    HammingVisitor *operator->() { return HV.get(); }
+
+  private:
+    unique_ptr<HammingVisitor> HV;
+    string fileName;
 };
 
 class Inputs {
@@ -393,59 +460,53 @@ class Inputs {
 std::unique_ptr<Reporter> reporter = make_cli_reporter();
 
 int main(int argc, char *argv[]) {
-    Inputs In;
-    unsigned Verbose = 0;
-    size_t Period = 1;
-    size_t Offset = 0;
-    bool AddNoise = true;
-    Waveform::Visitor::Options VisitOptions(
+    Inputs in;
+    unsigned verbose = 0;
+    size_t period = 1;
+    size_t offset = 0;
+    bool addNoise = true;
+    Waveform::Visitor::Options visitOptions(
         false /* skipRegs */, false /* skipWires */, false /* skipIntegers */);
 
-    enum class SaveFormat : uint8_t { CSV, NPY };
-    SaveFormat SaveAs = SaveFormat::CSV;
-    string SaveFileName("-");
-
-    Hamming model = Hamming::WEIGHT;
+    vector<Analysis> analyses(Analysis::NUM_ANALYSIS);
 
     Argparse ap("wan-power", argc, argv);
-    ap.optnoval({"--verbose"}, "verbose output", [&]() { Verbose++; });
-    ap.optval(
-        {"--csv"}, "CSV_FILE",
-        "Save power trace in csv format to file CSV_FILE ('-' for stdout)",
-        [&](const string &filename) {
-            SaveAs = SaveFormat::CSV;
-            SaveFileName = filename;
-        });
-    ap.optval({"--npy"}, "NPY_FILE",
-              "Save power trace in npy format to file NPY_FILE",
-              [&](const string &filename) {
-                  SaveAs = SaveFormat::NPY;
-                  SaveFileName = filename;
-              });
+    ap.optnoval({"--verbose"}, "verbose output", [&]() { verbose++; });
     ap.optnoval({"--no-noise"}, "Don't add noise to the power trace",
-                [&]() { AddNoise = false; });
+                [&]() { addNoise = false; });
     ap.optnoval({"--regs"}, "Trace registers only", [&]() {
-        VisitOptions.setSkipWires(true).setSkipIntegers(true);
+        visitOptions.setSkipWires(true).setSkipIntegers(true);
     });
     ap.optnoval({"--wires"}, "Trace wires only", [&]() {
-        VisitOptions.setSkipRegisters(true).setSkipIntegers(true);
+        visitOptions.setSkipRegisters(true).setSkipIntegers(true);
     });
-    ap.optnoval({"--hamming-weight"}, "Use hamming weight model",
-                [&]() { model = Hamming::WEIGHT; });
-    ap.optnoval({"--hamming-distance"}, "Use hamming distance model",
-                [&]() { model = Hamming::DISTANCE; });
+    ap.optval({"--hamming-weight"}, "FILENAME",
+              "Use hamming weight model and save result to FILENAME. Depending "
+              "on the FILENAME's extension, it will be saved in numpy format "
+              "(.npy) or CSV (.csv). Use '-' to output the CSV file to stdout.",
+              [&](const string &fileName) {
+                  analyses[Analysis::HAMMING_WEIGHT] = Analysis(fileName);
+              });
+    ap.optval(
+        {"--hamming-distance"}, "FILENAME",
+        "Use hamming distance model and save result to FILENAME. Depending on "
+        "the FILENAME's extension, it will be saved in numpy format (.npy) or "
+        "CSV (.csv). Use '-' to output the CSV file to stdout.",
+        [&](const string &fileName) {
+            analyses[Analysis::HAMMING_DISTANCE] = Analysis(fileName);
+        });
     ap.optval({"--decimate"}, "PERIOD%OFFSET",
               "decimate output (default: PERIOD=1, OFFSET=0)",
               [&](const string &s) {
                   size_t pos = s.find('%');
                   if (pos == string::npos)
                       DIE("'%' separator not found in decimation specifier");
-                  Period = stoul(s);
-                  Offset = stoul(s.substr(pos + 1));
-                  if (Period == 0)
+                  period = stoul(s);
+                  offset = stoul(s.substr(pos + 1));
+                  if (period == 0)
                       DIE("Bogus decimation specification, PERIOD "
                           "must be strictly higher than 0");
-                  if (Offset >= Period)
+                  if (offset >= period)
                       DIE("Bogus decimation specification, OFFSET "
                           "must be strictly lower than PERIOD");
               });
@@ -453,40 +514,36 @@ int main(int argc, char *argv[]) {
         {"--scope-filter"}, "FILTER",
         "Filter scopes matching FILTER (use '^' to anchor the search at the "
         "start of the full scope name",
-        [&](const string &Filter) { VisitOptions.addScopeFilter(Filter); });
+        [&](const string &Filter) { visitOptions.addScopeFilter(Filter); });
     ap.positional_multiple("F[,CYCLE_INFO]",
                            "Input file in fst or vcd format to read, with an "
                            "optional cycle info file.",
-                           [&](const string &s) { In.parse(s); });
+                           [&](const string &s) { in.parse(s); });
 
     ap.parse([&]() {
-        if (In.empty())
+        if (in.empty())
             DIE("No input file name");
-        if (VisitOptions.isAllSkipped())
+        if (visitOptions.isAllSkipped())
             DIE("Registers, Wires and Integers are all skipped: there "
                 "will be nothing to process");
+        size_t cnt = 0;
+        for (size_t i = Analysis::HAMMING_WEIGHT; i < Analysis::NUM_ANALYSIS;
+             i++)
+            cnt += analyses[i].create(Analysis::Kind(i), visitOptions);
+        if (cnt == 0)
+            DIE("No analysis to perform");
     });
 
-    if (Verbose)
-        In.dump(cout);
+    if (verbose)
+        in.dump(cout);
 
-    unique_ptr<HammingVisitor> HV(nullptr);
-    switch (model) {
-    case Hamming::WEIGHT:
-        HV = std::make_unique<HammingWeight>(VisitOptions);
-        break;
-    case Hamming::DISTANCE:
-        HV = std::make_unique<HammingDistance>(VisitOptions);
-        break;
-    }
-
-    size_t Duration = 0;
-    size_t NumSignals = 0;
-    for (const auto &I : In) {
+    size_t duration = 0;
+    size_t numSignals = 0;
+    for (const auto &I : in) {
         Waveform WIn = WaveFile::get(I.inputFile, /* write: */ false)->read();
         RunInfo CI(I.cycleInfo);
 
-        if (Verbose) {
+        if (verbose) {
             cout << "Processing " << I.inputFile << '\n';
             CI.dump(cout);
         }
@@ -494,46 +551,45 @@ int main(int argc, char *argv[]) {
         // Some quick sanity checks:
         //  - all segments from all FSTs must have the same duration.
         //  - same number of signals in all FSTs.
-        if (Duration == 0) {
+        if (duration == 0) {
             if (CI.empty())
-                Duration = WIn.getEndTime() - WIn.getStartTime();
+                duration = WIn.getEndTime() - WIn.getStartTime();
             else
-                Duration = CI.getDuration();
-            if (Verbose)
-                cout << "Simulation segment duration: " << Duration << '\n';
+                duration = CI.getDuration();
+            if (verbose)
+                cout << "Simulation segment duration: " << duration << '\n';
         }
         if (CI.empty()) {
-            if (Duration != WIn.getEndTime() - WIn.getStartTime())
+            if (duration != WIn.getEndTime() - WIn.getStartTime())
                 DIE("Simulation duration in ", I.inputFile,
                     " is inconsistent with the previous files");
-        } else if (!CI.checkDuration(Duration))
+        } else if (!CI.checkDuration(duration))
             DIE("Inconsistent segment simulation duration in ", I.inputFile);
 
-        if (NumSignals == 0) {
-            NumSignals = WIn.getNumSignals();
-            if (Verbose)
+        if (numSignals == 0) {
+            numSignals = WIn.getNumSignals();
+            if (verbose)
                 cout << "Signals to analyze: " << WIn.getNumSignals() << '\n';
-        } else if (NumSignals != WIn.getNumSignals())
+        } else if (numSignals != WIn.getNumSignals())
             DIE("Number of signals in ", I.inputFile,
                 " is inconsistent with the previous files");
 
         // Now the real work !
-        HV->setWaveform(&WIn, &CI);
-        WIn.visit(*HV.get());
-        HV->reduce();
+        for (auto &analysis : analyses) {
+            if (analysis) {
+                analysis->setWaveform(&WIn, &CI);
+                WIn.visit(*analysis);
+                analysis->reduce();
+            }
+        }
     }
 
-    if (AddNoise)
-        HV->addNoise();
-
-    switch (SaveAs) {
-    case SaveFormat::CSV:
-        HV->dumpAsCSV(SaveFileName, Period, Offset);
-        break;
-    case SaveFormat::NPY:
-        HV->dumpAsNPY(SaveFileName, Period, Offset);
-        break;
-    }
+    for (auto &analysis : analyses)
+        if (analysis) {
+            if (addNoise)
+                analysis->addNoise();
+            analysis->dump(period, offset);
+        }
 
     return 0;
 }
