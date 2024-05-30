@@ -38,9 +38,8 @@ using namespace PAF::WAN;
 std::unique_ptr<Reporter> reporter = make_cli_reporter();
 
 int main(int argc, char *argv[]) {
-    vector<string> InputFiles;
+    vector<string> inputFiles;
     unsigned Verbose = 0;
-    bool Statistics = false;
     string SaveFileName;
 
     Waveform::Visitor::Options VisitOptions(
@@ -48,45 +47,22 @@ int main(int argc, char *argv[]) {
 
     Argparse ap("wan-merge", argc, argv);
     ap.optnoval({"--verbose"}, "verbose output", [&]() { Verbose++; });
-    ap.optnoval({"--statistics"}, "emit statistics about the files read",
-                [&]() { Statistics = true; });
     ap.optval({"--output"}, "OUTPUT_FILE", "Save merged traces in OUTPUT_FILE",
               [&](const string &filename) { SaveFileName = filename; });
 
     ap.positional_multiple("FILES", "Input file in fst or vcd format to read",
-                           [&](const string &s) { InputFiles.push_back(s); });
+                           [&](const string &s) { inputFiles.push_back(s); });
 
     ap.parse([&]() {
-        if (InputFiles.empty())
+        if (inputFiles.empty())
             DIE("No input file");
-        if (InputFiles.size() == 1 &&
+        if (inputFiles.size() == 1 &&
             WaveFile::getFileFormat(SaveFileName) ==
-                WaveFile::getFileFormat(InputFiles[0]))
+                WaveFile::getFileFormat(inputFiles[0]))
             DIE("Nothing to do with this single output");
     });
 
-    // Collect all changes times.
-    set<TimeTy> AllTimes;
-    for (const auto &f : InputFiles) {
-        const auto times =
-            WaveFile::get(f, /* write: */ false)->getAllChangesTimes();
-        AllTimes.insert(times.begin(), times.end());
-    }
-
-    // Read all files, the first one will be used to merge all the others.
-    Waveform WMain(InputFiles[0], 0, 0, 0);
-    WMain.addTimes(AllTimes.begin(), AllTimes.end());
-    for (const auto &f : InputFiles) {
-        if (!WaveFile::get(f, /* write: */ false)->read(WMain))
-            DIE("error reading '%s", f.c_str());
-        if (Statistics) {
-            unique_ptr<WaveformStatistics> Stats(new WaveformStatistics(WMain));
-            WMain.visit(*Stats);
-            Stats->dump(cout);
-            cout << "Waveform size (after reading " << f
-                 << "): " << WMain.getObjectSize() << '\n';
-        }
-    }
+    Waveform WMain = readAndMerge(inputFiles);
 
     // Save the merge.
     if (!WaveFile::get(SaveFileName, /* write: */ true)->write(WMain))

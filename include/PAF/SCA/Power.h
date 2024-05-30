@@ -168,20 +168,11 @@ class NPYPowerDumper : public PowerDumper, public FilenameDumper {
     NPAdapter<double> npyA;
 };
 
-/// The PowerAnalysisConfig class is used to configure a power analysis run. It
-/// allows to select what has to be considered as a power source: the opcode,
-/// the program counter, ...
-class PowerAnalysisConfig {
+/// The PowerTraceConfig class is used to configure how a trace is processed in
+/// power analysis run. It allows to select what has to be considered as a power
+/// source: the opcode, the program counter, ...
+class PowerTraceConfig {
   public:
-    /// The PowerModel enumeration selects the power model to use: Hamming
-    /// weight or Hamming distance.
-    enum PowerModel {
-        /// Hamming weight.
-        HAMMING_WEIGHT,
-        /// Hamming distance.
-        HAMMING_DISTANCE
-    };
-
     /// Selection is used to select the contributions sources to the power
     /// analysis. The contribution of each source will depend on the power model
     /// in use (HW: Hamming Weight, HD: Hamming Distance).
@@ -212,43 +203,23 @@ class PowerAnalysisConfig {
     };
 
     /// Default constructor, consider all power sources.
-    PowerAnalysisConfig()
-        : noiseSource(NoiseSource::getSource(NoiseSource::ZERO, 0.)),
-          config(WITH_ALL), powerModel(HAMMING_WEIGHT), noise(true) {}
-    /// Constructor for a specified power model (and all sources).
-    PowerAnalysisConfig(PowerModel PwrModel)
-        : noiseSource(NoiseSource::getSource(NoiseSource::ZERO, 0.)),
-          config(WITH_ALL), powerModel(PwrModel), noise(true) {}
+    PowerTraceConfig() : config(WITH_ALL) {}
     /// Constructor for the case with a single power source.
-    PowerAnalysisConfig(Selection s, PowerModel PwrModel)
-        : noiseSource(NoiseSource::getSource(NoiseSource::ZERO, 0.)), config(s),
-          powerModel(PwrModel), noise(true) {}
-    /// Constructor with a custom NoiseSource and a single power source.
-    PowerAnalysisConfig(std::unique_ptr<NoiseSource> &&ns, Selection s,
-                        PowerModel PwrModel)
-        : noiseSource(std::move(ns)), config(s), powerModel(PwrModel),
-          noise(true) {}
-    /// Default move constructor.
-    PowerAnalysisConfig(PowerAnalysisConfig &&) = default;
-
-    ~PowerAnalysisConfig();
-
-    /// Default move assign operator.
-    PowerAnalysisConfig &operator=(PowerAnalysisConfig &&) = default;
+    PowerTraceConfig(Selection s) : config(s) {}
 
     /// Remove all power sources from this configuration.
-    PowerAnalysisConfig &clear() {
+    PowerTraceConfig &clear() {
         config = 0;
         return *this;
     }
     /// Set s as a power source for this configuration.
-    PowerAnalysisConfig &set(Selection s) {
+    PowerTraceConfig &set(Selection s) {
         config |= s;
         return *this;
     }
     /// Set all the those sources for this configuration.
     template <typename... SelTy>
-    PowerAnalysisConfig &set(Selection s, SelTy... sels) {
+    PowerTraceConfig &set(Selection s, SelTy... sels) {
         return set(s).set(sels...);
     }
 
@@ -300,6 +271,28 @@ class PowerAnalysisConfig {
     /// Does this config have all power sources set ?
     bool withAll() const { return config == WITH_ALL; }
 
+  private:
+    unsigned config;
+};
+
+class PowerAnalysisConfig {
+  public:
+    /// The PowerModel enumeration selects the power model to use: Hamming
+    /// weight or Hamming distance.
+    enum PowerModel {
+        /// Hamming weight.
+        HAMMING_WEIGHT,
+        /// Hamming distance.
+        HAMMING_DISTANCE
+    };
+
+    /// Constructor for a specified power model (and all sources).
+    PowerAnalysisConfig(PowerModel PwrModel,
+                        std::unique_ptr<PowerDumper> &&dumper,
+                        NoiseSource::Type noiseTy, double noiseLevel)
+        : noiseSource(NoiseSource::getSource(noiseTy, noiseLevel)),
+          powerDumper(std::move(dumper)), powerModel(PwrModel), noise(true) {}
+
     /// Set power model to use.
     PowerAnalysisConfig &set(PowerModel m) {
         powerModel = m;
@@ -312,8 +305,9 @@ class PowerAnalysisConfig {
     /// Will the power analysis use the Hamming distance model ?
     bool isHammingDistance() const { return powerModel == HAMMING_DISTANCE; }
 
-    /// Should noise be added to the synthetic power trace.
+    /// Should noise be added to the synthetic power trace ?
     bool addNoise() const { return noise; }
+
     /// Disable adding noise to the synthetic power trace.
     PowerAnalysisConfig &setWithoutNoise() {
         noise = false;
@@ -325,27 +319,29 @@ class PowerAnalysisConfig {
         return *this;
     }
     /// Get some noise to add to the computed power.
-    virtual double getNoise() { return noiseSource->get(); }
+    double getNoise() const { return noiseSource->get(); }
+
+    PowerDumper &getDumper() { return *powerDumper; }
 
   private:
     std::unique_ptr<NoiseSource> noiseSource;
-    unsigned config;
+    std::unique_ptr<PowerDumper> powerDumper;
     PowerModel powerModel;
     bool noise;
 };
 
-/// The PowerTrace class represents a unit of work: andExecutionRange
-/// extracted from a Tarmac trace on which analysis can be performed to build a
-/// synthetic power trace.
+/// The PowerTrace class represents a unit of work: an ExecutionRange
+/// extracted from a Tarmac trace on which analysis can be performed to build
+/// synthetic power trace(s).
 class PowerTrace {
   public:
-    /// OracleBase is used to by the PowerModel classes to access extra
+    /// Oracle is used by the PowerModel classes to access extra
     /// information. It provides an indirection layer useful for unit testing,
     /// where an MTAnalyzer may not be available.
-    class OracleBase {
+    class Oracle {
       public:
-        OracleBase() = default;
-        virtual ~OracleBase() = default;
+        Oracle() = default;
+        virtual ~Oracle() = default;
         virtual std::vector<uint64_t> getRegBankState(Time t) const {
             return std::vector<uint64_t>();
         }
@@ -356,16 +352,16 @@ class PowerTrace {
         }
     };
 
-    class MTAOracle : public OracleBase {
+    class MTAOracle : public Oracle {
       public:
-        MTAOracle(const PAF::MTAnalyzer &MTA, const PAF::ArchInfo *CPU)
-            : OracleBase(), analyzer(MTA), cpu(CPU) {}
+        MTAOracle(const PAF::MTAnalyzer &MTA, const PAF::ArchInfo &CPU)
+            : Oracle(), analyzer(MTA), CPU(CPU) {}
         std::vector<uint64_t> getRegBankState(Time t) const override {
-            const unsigned NR = cpu->numRegisters();
+            const unsigned NR = CPU.numRegisters();
             std::vector<uint64_t> regbankInitialState(NR);
             for (unsigned r = 0; r < NR; r++)
                 regbankInitialState[r] =
-                    analyzer.getRegisterValueAtTime(cpu->registerName(r), t);
+                    analyzer.getRegisterValueAtTime(CPU.registerName(r), t);
             return regbankInitialState;
         }
         uint64_t getMemoryState(Addr address, size_t size,
@@ -386,37 +382,17 @@ class PowerTrace {
 
       private:
         const PAF::MTAnalyzer &analyzer;
-        const PAF::ArchInfo *cpu;
+        const PAF::ArchInfo &CPU;
     };
 
     /// Construct a PowerTrace.
-    PowerTrace(PowerDumper &PwrDumper, TimingInfo &Timing,
-               RegBankDumper &RbDumper, MemoryAccessesDumper &MADumper,
-               InstrDumper &IDumper, PowerAnalysisConfig &Config,
-               const PAF::ArchInfo *CPU)
-        : powerDumper(PwrDumper), regBankDumper(RbDumper),
-          memAccessDumper(MADumper), instrDumper(IDumper), timing(Timing),
-          config(Config), instructions(), cpu(CPU) {}
+    PowerTrace(const PowerTraceConfig &PTConfig, const PAF::ArchInfo &CPU)
+        : instructions(), PTConfig(PTConfig), CPU(CPU) {}
 
     /// Move construct a PowerTrace.
-    PowerTrace(PowerTrace &&PT) noexcept
-        : powerDumper(PT.powerDumper), regBankDumper(PT.regBankDumper),
-          memAccessDumper(PT.memAccessDumper), instrDumper(PT.instrDumper),
-          timing(PT.timing), config(PT.config),
-          instructions(std::move(PT.instructions)), cpu(PT.cpu) {}
-
-    /// Move assign a PowerTrace.
-    PowerTrace &operator=(PowerTrace &&PT) noexcept {
-        powerDumper = PT.powerDumper;
-        regBankDumper = PT.regBankDumper;
-        memAccessDumper = PT.memAccessDumper;
-        instrDumper = PT.instrDumper;
-        timing = PT.timing;
-        config = std::move(PT.config);
-        instructions = std::move(PT.instructions);
-        cpu = PT.cpu;
-        return *this;
-    }
+    PowerTrace(PowerTrace &&Other) noexcept
+        : instructions(std::move(Other.instructions)), PTConfig(Other.PTConfig),
+          CPU(Other.CPU) {}
 
     /// Add a new instruction to the trace.
     void add(const PAF::ReferenceInstruction &I) { instructions.push_back(I); }
@@ -432,20 +408,17 @@ class PowerTrace {
     /// Perform the analysis on the ExecutionRange, dispatching power
     /// information to our Dumper which will be in charge of formatting the
     /// results to the user's taste.
-    void analyze(const OracleBase &Oracle);
+    void analyze(std::vector<PowerAnalysisConfig> &PAConfigs, Oracle &oracle,
+                 TimingInfo &timing, RegBankDumper &RBDumper,
+                 MemoryAccessesDumper &MADumper, InstrDumper &IDumper);
 
     /// Get this PowerTrace ArchInfo.
-    const PAF::ArchInfo *getArchInfo() const { return cpu; }
+    const PAF::ArchInfo &getArchInfo() const { return CPU; }
 
   private:
-    PowerDumper &powerDumper;
-    RegBankDumper &regBankDumper;
-    MemoryAccessesDumper &memAccessDumper;
-    InstrDumper &instrDumper;
-    TimingInfo &timing;
-    PowerAnalysisConfig &config;
     std::vector<PAF::ReferenceInstruction> instructions;
-    const PAF::ArchInfo *cpu;
+    const PowerTraceConfig &PTConfig;
+    const PAF::ArchInfo &CPU;
 };
 
 /// The PowerAnalyzer class is used to create a PowerTrace.
@@ -458,11 +431,8 @@ class PowerAnalyzer : public PAF::MTAnalyzer {
         : MTAnalyzer(trace, image_filename) {}
 
     /// Get a PowerTrace from the analyzer.
-    PowerTrace getPowerTrace(PowerDumper &PwrDumper, TimingInfo &Timing,
-                             RegBankDumper &RbDumper,
-                             MemoryAccessesDumper &MADumper,
-                             InstrDumper &IDumper, PowerAnalysisConfig &Config,
-                             const ArchInfo *CPU,
+    PowerTrace getPowerTrace(const PowerTraceConfig &PTConfig,
+                             const ArchInfo &CPU,
                              const PAF::ExecutionRange &ER);
 };
 

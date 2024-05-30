@@ -76,6 +76,8 @@ class WaveFile {
     FileFormat fileFmt;
 };
 
+Waveform readAndMerge(const std::vector<std::string> &files);
+
 } // namespace WAN
 
 } // namespace PAF

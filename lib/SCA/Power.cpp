@@ -36,6 +36,10 @@ using std::string;
 using std::unique_ptr;
 using std::vector;
 
+using PAF::SCA::PowerAnalysisConfig;
+using PAF::SCA::PowerTrace;
+using PAF::SCA::PowerTraceConfig;
+
 namespace {
 
 // This is an attempt to model where power is coming from and when (i.e. at
@@ -58,19 +62,13 @@ class PowerModelBase {
     PowerModelBase() = delete;
     virtual ~PowerModelBase() = default;
 
-    PowerModelBase(PAF::SCA::PowerDumper &Dumper, const PAF::ArchInfo &CPU,
-                   PAF::SCA::PowerAnalysisConfig &Config)
-        : dumper(Dumper), cpu(CPU), config(Config), memory(), outputRegs(),
-          inputRegs(0.0), pc(0.0), psr(0.0), instr(0.0), cycles(1) {}
+    PowerModelBase(const PAF::ArchInfo &CPU, const PowerTraceConfig &PTConfig,
+                   PowerAnalysisConfig &PAConfig)
+        : cpu(CPU), PTConfig(PTConfig), PAConfig(PAConfig), memory(),
+          outputRegs(), inputRegs(0.0), pc(0.0), psr(0.0), instr(0.0),
+          cycles(1) {}
 
-    /// How many cycles were used by the last added instruction.
-    unsigned getCyclesFromLastInstr() {
-        cycles = 1;
-        unsigned mcycles = std::max(outputRegs.size(), memory.size());
-        if (mcycles > 1)
-            cycles += mcycles - 1;
-        return cycles;
-    }
+    unsigned getLastInstrCycles() const { return cycles; }
 
     virtual void add(const PAF::ReferenceInstruction &I) = 0;
 
@@ -84,21 +82,21 @@ class PowerModelBase {
             double PPSR = psr;
             double PInstr = instr;
 
-            if (config.addNoise()) {
-                if (config.withInstructionsOutputs()) {
-                    POReg += config.getNoise();
-                    PPSR += config.getNoise();
+            if (PAConfig.addNoise()) {
+                if (PTConfig.withInstructionsOutputs()) {
+                    POReg += PAConfig.getNoise();
+                    PPSR += PAConfig.getNoise();
                 }
-                if (config.withInstructionsInputs())
-                    PIReg += config.getNoise();
-                if (config.withMemAddress())
-                    PAddr += config.getNoise();
-                if (config.withMemData())
-                    PData += config.getNoise();
-                if (config.withPC())
-                    PPC += config.getNoise();
-                if (config.withOpcode())
-                    PInstr += config.getNoise();
+                if (PTConfig.withInstructionsInputs())
+                    PIReg += PAConfig.getNoise();
+                if (PTConfig.withMemAddress())
+                    PAddr += PAConfig.getNoise();
+                if (PTConfig.withMemData())
+                    PData += PAConfig.getNoise();
+                if (PTConfig.withPC())
+                    PPC += PAConfig.getNoise();
+                if (PTConfig.withOpcode())
+                    PInstr += PAConfig.getNoise();
             }
 
             // Scaling factors, very finger in the air values.
@@ -114,15 +112,15 @@ class PowerModelBase {
                            F_ORegisters * POReg + F_IRegisters * PIReg +
                            F_Address * PAddr + F_Data * PData;
 
-            dumper.dump(total, pc, instr, POReg + PPSR, PIReg, PAddr, PData,
-                        i == 0 ? I : nullptr);
+            PAConfig.getDumper().dump(total, pc, instr, POReg + PPSR, PIReg,
+                                      PAddr, PData, i == 0 ? I : nullptr);
         }
     }
 
   protected:
-    PAF::SCA::PowerDumper &dumper;
     const PAF::ArchInfo &cpu;
-    PAF::SCA::PowerAnalysisConfig &config;
+    const PowerTraceConfig &PTConfig;
+    PowerAnalysisConfig &PAConfig;
 
     vector<MemAccessPower> memory;
     vector<double> outputRegs;
@@ -131,6 +129,14 @@ class PowerModelBase {
     double psr;
     double instr;
     unsigned cycles;
+
+    /// Set how many cycles were used by the last added instruction.
+    void setLastInstrCycles() {
+        cycles = 1;
+        unsigned mcycles = std::max(outputRegs.size(), memory.size());
+        if (mcycles > 1)
+            cycles += mcycles - 1;
+    }
 };
 
 class HammingWeightPM : public PowerModelBase {
@@ -151,14 +157,14 @@ class HammingWeightPM : public PowerModelBase {
 
   public:
     HammingWeightPM() = delete;
-    HammingWeightPM(PAF::SCA::PowerDumper &Dumper, const PAF::ArchInfo &CPU,
-                    PAF::SCA::PowerAnalysisConfig &Config)
-        : PowerModelBase(Dumper, CPU, Config), hwPC(Config.withPC()),
-          hwInstr(Config.withOpcode()), hwMemAddr(Config.withMemAddress()),
-          hwMemData(Config.withMemData()),
-          hwPSR(Config.withInstructionsOutputs()),
-          hwInputReg(Config.withInstructionsInputs()),
-          hwOutputReg(Config.withInstructionsOutputs()) {}
+    HammingWeightPM(const PAF::ArchInfo &CPU, const PowerTraceConfig &PTConfig,
+                    PowerAnalysisConfig &PAConfig)
+        : PowerModelBase(CPU, PTConfig, PAConfig), hwPC(PTConfig.withPC()),
+          hwInstr(PTConfig.withOpcode()), hwMemAddr(PTConfig.withMemAddress()),
+          hwMemData(PTConfig.withMemData()),
+          hwPSR(PTConfig.withInstructionsOutputs()),
+          hwInputReg(PTConfig.withInstructionsInputs()),
+          hwOutputReg(PTConfig.withInstructionsOutputs()) {}
 
     void add(const PAF::ReferenceInstruction &I) override {
         pc = hwPC(I.pc);
@@ -173,7 +179,8 @@ class HammingWeightPM : public PowerModelBase {
         inputRegs = 0.0;
         outputRegs.clear();
         // Register accesses estimated power consumption
-        if (config.withInstructionsInputs() || config.withInstructionsOutputs())
+        if (PTConfig.withInstructionsInputs() ||
+            PTConfig.withInstructionsOutputs())
             for (const PAF::RegisterAccess &RA : I.regAccess) {
                 switch (RA.access) {
                 // Output registers.
@@ -189,6 +196,8 @@ class HammingWeightPM : public PowerModelBase {
                     break;
                 }
             }
+
+        setLastInstrCycles();
     }
 
   private:
@@ -257,13 +266,13 @@ class HammingDistancePM : public PowerModelBase {
 
   public:
     HammingDistancePM() = delete;
-    HammingDistancePM(PAF::SCA::PowerDumper &Dumper, const PAF::ArchInfo &CPU,
-                      PAF::SCA::PowerAnalysisConfig &Config,
-                      const PAF::SCA::PowerTrace::OracleBase &O,
-                      vector<uint64_t> &&regs)
-        : PowerModelBase(Dumper, CPU, Config), oracle(O), hdPC(Config.withPC()),
-          hdInstr(Config.withOpcode()),
-          regs(Config.withInstructionsOutputs(), std::move(regs)),
+    HammingDistancePM(const PAF::ArchInfo &CPU,
+                      const PowerTraceConfig &PTConfig,
+                      PowerAnalysisConfig &PAConfig,
+                      const PowerTrace::Oracle &oracle, vector<uint64_t> &&regs)
+        : PowerModelBase(CPU, PTConfig, PAConfig), oracle(oracle),
+          hdPC(PTConfig.withPC()), hdInstr(PTConfig.withOpcode()),
+          regs(PTConfig.withInstructionsOutputs(), std::move(regs)),
           lastLoad(nullptr), lastStore(nullptr), lastAccess(nullptr) {}
 
     void add(const PAF::ReferenceInstruction &I) override {
@@ -275,44 +284,44 @@ class HammingDistancePM : public PowerModelBase {
         for (unsigned i = 0; i < I.memAccess.size(); i++) {
             double AddrPwr = 0.0;
             double DataPwr = 0.0;
-            if ((config.withMemAddress() || config.withMemData()) &&
-                (config.withMemoryAccessTransitions() ||
-                 config.withMemoryUpdateTransitions())) {
+            if ((PTConfig.withMemAddress() || PTConfig.withMemData()) &&
+                (PTConfig.withMemoryAccessTransitions() ||
+                 PTConfig.withMemoryUpdateTransitions())) {
                 const PAF::MemoryAccess &MA = I.memAccess[i];
                 switch (MA.access) {
                 case PAF::MemoryAccess::Type::READ:
                     // Address bus transitions modelling.
-                    if (config.withMemAddress()) {
-                        if (config.withLoadToLoadTransitions())
+                    if (PTConfig.withMemAddress()) {
+                        if (PTConfig.withLoadToLoadTransitions())
                             AddrPwr += Bus::addr(MA, lastLoad);
-                        if (config.withLastMemoryAccessTransitions())
+                        if (PTConfig.withLastMemoryAccessTransitions())
                             AddrPwr += Bus::addr(MA, lastAccess);
                     }
                     // Data bus transitions modelling.
-                    if (config.withMemData()) {
-                        if (config.withLoadToLoadTransitions())
+                    if (PTConfig.withMemData()) {
+                        if (PTConfig.withLoadToLoadTransitions())
                             DataPwr += Bus::value(MA, lastLoad);
-                        if (config.withLastMemoryAccessTransitions())
+                        if (PTConfig.withLastMemoryAccessTransitions())
                             DataPwr += Bus::value(MA, lastAccess);
                     }
                     break;
                 case PAF::MemoryAccess::Type::WRITE:
                     // Address bus transitions modelling.
-                    if (config.withMemAddress()) {
-                        if (config.withStoreToStoreTransitions())
+                    if (PTConfig.withMemAddress()) {
+                        if (PTConfig.withStoreToStoreTransitions())
                             AddrPwr += Bus::addr(MA, lastStore);
-                        if (config.withLastMemoryAccessTransitions())
+                        if (PTConfig.withLastMemoryAccessTransitions())
                             AddrPwr += Bus::addr(MA, lastAccess);
                     }
                     // Data bus transitions modelling.
-                    if (config.withMemData()) {
-                        if (config.withStoreToStoreTransitions())
+                    if (PTConfig.withMemData()) {
+                        if (PTConfig.withStoreToStoreTransitions())
                             DataPwr += Bus::value(MA, lastStore);
-                        if (config.withLastMemoryAccessTransitions())
+                        if (PTConfig.withLastMemoryAccessTransitions())
                             DataPwr += Bus::value(MA, lastAccess);
                     }
                     // Memory point update.
-                    if (config.withMemoryUpdateTransitions()) {
+                    if (PTConfig.withMemoryUpdateTransitions()) {
                         DataPwr += HD<typeof(PAF::MemoryAccess::value)>(
                             MA.value, oracle.getMemoryState(MA.addr, MA.size,
                                                             I.time - 1));
@@ -351,10 +360,12 @@ class HammingDistancePM : public PowerModelBase {
                 break;
             }
         }
+
+        setLastInstrCycles();
     }
 
   private:
-    const PAF::SCA::PowerTrace::OracleBase &oracle;
+    const PowerTrace::Oracle &oracle;
     Reg<Addr> hdPC;
     Reg<uint32_t> hdInstr;
     RegBank regs;
@@ -467,93 +478,100 @@ void CSVPowerDumper::dump(double total, double pc, double instr, double oreg,
     *this << '\n';
 }
 
-PowerAnalysisConfig::~PowerAnalysisConfig() = default;
-
-void PowerTrace::analyze(const OracleBase &Oracle) {
+void PowerTrace::analyze(std::vector<PowerAnalysisConfig> &PAConfigs,
+                         Oracle &oracle, TimingInfo &timing,
+                         RegBankDumper &RBDumper,
+                         MemoryAccessesDumper &MADumper, InstrDumper &IDumper) {
 
     if (instructions.empty())
         return;
 
-    unique_ptr<PowerModelBase> pwr;
-    switch (config.getPowerModel()) {
-    case PowerAnalysisConfig::HAMMING_WEIGHT:
-        pwr = std::make_unique<HammingWeightPM>(powerDumper, *cpu, config);
-        break;
-    case PowerAnalysisConfig::HAMMING_DISTANCE:
-        pwr = std::make_unique<HammingDistancePM>(
-            powerDumper, *cpu, config, Oracle,
-            Oracle.getRegBankState(instructions[0].time - 1));
-        break;
-    }
+    if (RBDumper.enabled())
+        RBDumper.preDump();
+    if (MADumper.enabled())
+        MADumper.preDump();
+    if (IDumper.enabled())
+        IDumper.preDump();
 
-    powerDumper.preDump();
-    if (regBankDumper.enabled())
-        regBankDumper.preDump();
-    if (memAccessDumper.enabled())
-        memAccessDumper.preDump();
-    if (instrDumper.enabled())
-        instrDumper.preDump();
+    vector<unique_ptr<PowerModelBase>> PMs;
+    PMs.reserve(PAConfigs.size());
+    for (auto &cfg : PAConfigs) {
+        cfg.getDumper().preDump();
+        switch (cfg.getPowerModel()) {
+        case PowerAnalysisConfig::HAMMING_WEIGHT:
+            PMs.emplace_back(new HammingWeightPM(CPU, PTConfig, cfg));
+            break;
+        case PowerAnalysisConfig::HAMMING_DISTANCE:
+            PMs.emplace_back(new HammingDistancePM(
+                CPU, PTConfig, cfg, oracle,
+                oracle.getRegBankState(instructions[0].time - 1)));
+            break;
+        }
+    }
 
     for (unsigned i = 0; i < instructions.size(); i++) {
         const PAF::ReferenceInstruction &I = instructions[i];
-        pwr->add(I);
-        unsigned cycles = pwr->getCyclesFromLastInstr();
+        for (auto &pm : PMs) {
+            pm->add(I);
+            pm->dump(&I);
+        }
+        unsigned cycles = PMs[0]->getLastInstrCycles();
         timing.add(I.pc, cycles);
-        pwr->dump(&I);
-        const auto regBank = Oracle.getRegBankState(I.time);
-        if (regBankDumper.enabled())
-            regBankDumper.dump(regBank);
-        if (memAccessDumper.enabled())
-            memAccessDumper.dump(I.pc, I.memAccess);
-        if (instrDumper.enabled())
-            instrDumper.dump(I, regBank);
+        const auto regBank = oracle.getRegBankState(I.time);
+        if (RBDumper.enabled())
+            RBDumper.dump(regBank);
+        if (MADumper.enabled())
+            MADumper.dump(I.pc, I.memAccess);
+        if (IDumper.enabled())
+            IDumper.dump(I, regBank);
 
         // Insert dummy cycles when needed if we are not at the end of the
         // sequence.
         if (i < instructions.size() - 1) {
-            if (cpu->isBranch(I)) {
-                unsigned bcycles = cpu->getCycles(I, &instructions[i + 1]);
+            if (CPU.isBranch(I)) {
+                unsigned bcycles = CPU.getCycles(I, &instructions[i + 1]);
                 if (bcycles > cycles) {
                     timing.incr(bcycles - cycles);
                     for (unsigned i = 0; i < bcycles - cycles; i++)
-                        pwr->dump();
+                        for (auto &pm : PMs)
+                            pm->dump();
                 }
             }
         }
     }
 
-    powerDumper.postDump();
-    if (regBankDumper.enabled())
-        regBankDumper.postDump();
-    if (memAccessDumper.enabled())
-        memAccessDumper.postDump();
-    if (instrDumper.enabled())
-        instrDumper.postDump();
+    for (auto &cfg : PAConfigs)
+        cfg.getDumper().postDump();
+
+    if (RBDumper.enabled())
+        RBDumper.postDump();
+    if (MADumper.enabled())
+        MADumper.postDump();
+    if (IDumper.enabled())
+        IDumper.postDump();
 }
 
-PowerTrace PowerAnalyzer::getPowerTrace(
-    PowerDumper &PwrDumper, TimingInfo &Timing, RegBankDumper &RbDumper,
-    MemoryAccessesDumper &MADumper, InstrDumper &IDumper,
-    PowerAnalysisConfig &Config, const ArchInfo *CPU,
-    const PAF::ExecutionRange &ER) {
+PowerTrace PowerAnalyzer::getPowerTrace(const PowerTraceConfig &PTConfig,
+                                        const ArchInfo &CPU,
+                                        const PAF::ExecutionRange &ER) {
 
     struct PTCont {
         PAF::MTAnalyzer &analyzer;
         PowerTrace &trace;
-        const PowerAnalysisConfig &config;
-        const ArchInfo &cpu;
+        const PowerTraceConfig &PTConfig;
+        const ArchInfo &CPU;
 
         PTCont(PAF::MTAnalyzer &MTA, PowerTrace &PT,
-               const PowerAnalysisConfig &Config)
-            : analyzer(MTA), trace(PT), config(Config), cpu(*PT.getArchInfo()) {
-        }
+               const PowerTraceConfig &PTConfig)
+            : analyzer(MTA), trace(PT), PTConfig(PTConfig),
+              CPU(PT.getArchInfo()) {}
 
         void operator()(PAF::ReferenceInstruction &I) {
-            if (config.withInstructionsInputs()) {
-                const InstrInfo II = cpu.getInstrInfo(I);
+            if (PTConfig.withInstructionsInputs()) {
+                const InstrInfo II = CPU.getInstrInfo(I);
                 for (const auto &r :
                      II.getUniqueInputRegisters(/* Implicit: */ false)) {
-                    const char *name = cpu.registerName(r);
+                    const char *name = CPU.registerName(r);
                     uint32_t value =
                         analyzer.getRegisterValueAtTime(name, I.time - 1);
                     I.add(RegisterAccess(name, value,
@@ -588,8 +606,8 @@ PowerTrace PowerAnalyzer::getPowerTrace(
         }
     };
 
-    PowerTrace PT(PwrDumper, Timing, RbDumper, MADumper, IDumper, Config, CPU);
-    PTCont PTC(*this, PT, Config);
+    PowerTrace PT(PTConfig, CPU);
+    PTCont PTC(*this, PT, PTConfig);
     PAF::FromTraceBuilder<PAF::ReferenceInstruction,
                           PAF::ReferenceInstructionBuilder, PTCont>
         FTB(*this);

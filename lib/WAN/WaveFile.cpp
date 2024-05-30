@@ -20,13 +20,16 @@
 
 #include "PAF/WAN/WaveFile.h"
 #include "PAF/WAN/VCDWaveFile.h"
+#include "PAF/WAN/Waveform.h"
 
 #ifdef HAS_GTKWAVE_FST
 #include "PAF/WAN/FSTWaveFile.h"
 #endif
 
 #include <memory>
+#include <set>
 
+using std::set;
 using std::string;
 using std::unique_ptr;
 
@@ -74,5 +77,28 @@ Waveform WaveFile::read() {
         DIE("error reading '%s", fileName.c_str());
     return W;
 }
+
+Waveform readAndMerge(const std::vector<std::string> &files) {
+    if (files.empty())
+        return Waveform();
+
+    // Collect all changes times.
+    set<TimeTy> AllTimes;
+    for (const auto &file : files) {
+        const auto times =
+            WaveFile::get(file, /* write: */ false)->getAllChangesTimes();
+        AllTimes.insert(times.begin(), times.end());
+    }
+
+    // Read all files, the first one will be used to merge all the others.
+    Waveform WMain(files[0], 0, 0, 0);
+    WMain.addTimes(AllTimes.begin(), AllTimes.end());
+    for (const auto &f : files)
+        if (!WaveFile::get(f, /* write: */ false)->read(WMain))
+            DIE("error reading '%s", f.c_str());
+
+    return WMain;
+}
+
 } // namespace WAN
 } // namespace PAF

@@ -63,3 +63,8 @@ TEST(WaveFile, FileFormat) {
     EXPECT_EQ(WaveFile::getFileFormat("toto.png"),
               WaveFile::FileFormat::UNKNOWN);
 }
+
+TEST(WaveFile, readAndMerge) {
+    Waveform W = readAndMerge(vector<string>());
+    EXPECT_EQ(W.getNumSignals(), 0);
+}

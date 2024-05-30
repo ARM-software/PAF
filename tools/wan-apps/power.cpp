@@ -36,9 +36,11 @@
 #include "PAF/WAN/Signal.h"
 #include "PAF/WAN/WaveFile.h"
 #include "PAF/WAN/Waveform.h"
+#include "PAF/utils/Misc.h"
 
 using namespace std;
 using namespace PAF::WAN;
+using PAF::split;
 using PAF::SCA::NPArray;
 
 namespace {
@@ -412,47 +414,63 @@ class Analysis {
 class Inputs {
   public:
     struct Input {
-        string inputFile;
+        vector<string> inputFiles;
         string cycleInfo;
-        Input(const string &InputFile, const string &CycleInfo)
-            : inputFile(InputFile), cycleInfo(CycleInfo) {}
-        Input(const string &InputFile) : inputFile(InputFile), cycleInfo("") {}
+        Input(vector<string> &&inputFiles, string &&CycleInfo)
+            : inputFiles(std::move(inputFiles)), cycleInfo(std::move(CycleInfo)) {}
 
         bool hasCycleInfo() const { return cycleInfo.size(); }
+
+        Waveform getWaveform() const {
+            if (inputFiles.size() == 1)
+                return WaveFile::get(inputFiles[0], /* write: */ false)->read();
+            return PAF::WAN::readAndMerge(inputFiles);
+        }
+
+        operator string() const {
+            const char *sep = "";
+            string str;
+            for (const auto &inputFile : inputFiles) {
+                str += sep;
+                str += inputFile;
+                sep = ",";
+            }
+            if (hasCycleInfo()) {
+                str += " + ";
+                str += cycleInfo;
+            } else
+                str += " - no cycle info";
+            return str;
+        }
     };
 
-    Inputs() : in() {}
+    Inputs() : inputs() {}
 
-    bool empty() const { return in.empty(); }
+    bool empty() const { return inputs.empty(); }
 
-    vector<Input>::const_iterator begin() const { return in.begin(); }
-    vector<Input>::const_iterator end() const { return in.end(); }
+    vector<Input>::const_iterator begin() const { return inputs.begin(); }
+    vector<Input>::const_iterator end() const { return inputs.end(); }
 
     void parse(const string &s) {
-        size_t comma = s.find_first_of(',');
-        if (comma != string::npos) {
-            add(s.substr(0, comma), s.substr(comma + 1));
-        } else
-            add(s);
+        string runInfo;
+        string traces = s;
+        size_t percent = s.find_first_of('%');
+        if (percent != string::npos) {
+            runInfo = s.substr(percent + 1);
+            traces = s.substr(0, percent);
+        }
+
+        inputs.emplace_back(split(',', traces), std::move(runInfo));
     }
 
     void dump(ostream &os) const {
         os << "Inputs:\n";
-        for (const auto &I : in) {
-            os << " - " << I.inputFile;
-            if (I.hasCycleInfo())
-                os << " (" << I.cycleInfo << ")";
-            os << '\n';
-        }
+        for (const auto &I : inputs)
+            os << " - " << string(I) << '\n';
     }
 
   private:
-    vector<Input> in;
-
-    Inputs &add(const string &fst, const string &info = "") {
-        in.emplace_back(fst, info);
-        return *this;
-    }
+    vector<Input> inputs;
 };
 
 }; // namespace
@@ -515,10 +533,12 @@ int main(int argc, char *argv[]) {
         "Filter scopes matching FILTER (use '^' to anchor the search at the "
         "start of the full scope name",
         [&](const string &Filter) { visitOptions.addScopeFilter(Filter); });
-    ap.positional_multiple("F[,CYCLE_INFO]",
-                           "Input file in fst or vcd format to read, with an "
-                           "optional cycle info file.",
-                           [&](const string &s) { in.parse(s); });
+    ap.positional_multiple(
+        "F[,F]*[%CYCLE_INFO]?",
+        "Input file(s) in fst or vcd format to read, with an "
+        "optional cycle info file. If multiple files ar given, they will be "
+        "merged into a single waveform",
+        [&](const string &s) { in.parse(s); });
 
     ap.parse([&]() {
         if (in.empty())
@@ -540,12 +560,13 @@ int main(int argc, char *argv[]) {
     size_t duration = 0;
     size_t numSignals = 0;
     for (const auto &I : in) {
-        Waveform WIn = WaveFile::get(I.inputFile, /* write: */ false)->read();
+        Waveform WIn = I.getWaveform();
         RunInfo CI(I.cycleInfo);
 
         if (verbose) {
-            cout << "Processing " << I.inputFile << '\n';
-            CI.dump(cout);
+            cout << "Processing " << string(I) << '\n';
+            if (I.hasCycleInfo())
+                CI.dump(cout);
         }
 
         // Some quick sanity checks:
@@ -561,17 +582,18 @@ int main(int argc, char *argv[]) {
         }
         if (CI.empty()) {
             if (duration != WIn.getEndTime() - WIn.getStartTime())
-                DIE("Simulation duration in ", I.inputFile,
+                DIE("Simulation duration in ", string(I).c_str(),
                     " is inconsistent with the previous files");
         } else if (!CI.checkDuration(duration))
-            DIE("Inconsistent segment simulation duration in ", I.inputFile);
+            DIE("Inconsistent segment simulation duration in ",
+                string(I).c_str());
 
         if (numSignals == 0) {
             numSignals = WIn.getNumSignals();
             if (verbose)
                 cout << "Signals to analyze: " << WIn.getNumSignals() << '\n';
         } else if (numSignals != WIn.getNumSignals())
-            DIE("Number of signals in ", I.inputFile,
+            DIE("Number of signals in ", string(I).c_str(),
                 " is inconsistent with the previous files");
 
         // Now the real work !

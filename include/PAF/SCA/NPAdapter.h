@@ -32,7 +32,9 @@ namespace SCA {
 template <class DataTy> class NPAdapter {
   public:
     /// Construct an NPYAdapter with num_rows rows.
-    NPAdapter(size_t num_rows) : currentRow(0), maxRowLength(0), w(num_rows) {}
+    NPAdapter(size_t expected_num_rows)
+        : currentRow(0), maxRowLength(0),
+          w(expected_num_rows > 1 ? expected_num_rows : 1) {}
 
     /// Move to next row.
     void next() {

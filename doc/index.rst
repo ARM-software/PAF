@@ -947,42 +947,79 @@ turned off). ``paf-power`` will record one power trace per function execution
 it found in the Tarmac traces.
 
 The command line syntax looks like:
-   ``paf-power`` [ *options* ] *FUNCTION* *TRACEFILE*\ ...
+   ``paf-power`` [ *options* ] *TRACEFILE*\ ...
 
 The following options are recognized:
-
-``-o`` or ``--output=OutputFilename``
-  Output file name (default: standard output)
-
-``--timing=TimingFilename``
-  Emit timing information to TimingFilename
-
-``--csv``
-  Emit the power trace in CSV format (default)
-
-``--npy``
-  Emit the power trace in NPY format
-
-``--detailed-output``
-  Emit more detailed information in the CSV file
 
 ``--no-noise``
   Do not add noise to the power trace
 
-``--noise-level VALUE``
+``--noise-level=VALUE``
   Level of noise to add (default: 1.0)
 
 ``--uniform-noise``
   Use a uniform distribution noise sourceforge
 
-``--normal-noise``
-  Use a normal distribution noise source
-
-``--hamming-weight``
+``--hamming-weight=FILENAME``
   Use the hamming weight power model
 
-``--hamming-distance``
+``--hamming-distance=FILENAME``
   Use the hamming distance power model
+
+``--timing=TimingFilename``
+  Emit timing information to TimingFilename
+
+``--regbank-trace=FILENAME``
+  Dump a trace of the register bank content in numpy
+  format to FILENAME
+
+``--memory-accesses-trace=FILENAME``
+  Dump a trace of memory accesses in yaml format to FILENAME
+
+``--instruction-trace=FILENAME``
+  Dump an instruction trace in yaml format to FILENAME
+
+``--detailed-output``
+  Emit more detailed information in the CSV file
+
+``--with-pc``
+  Include the program counter contribution to the power (HW, HD)
+
+``--with-opcode (HW, HD)``
+  Include the instruction encoding contribution to the power
+
+``--with-mem-address``
+  Include the memory accesses address contribution to the power (HW, HD)
+
+``--with-mem-data``
+  Include the memory accesses data contribution to the power (HW, HD)
+
+``--with-instruction-inputs``
+  Include the instructions input operands contribution to the power (HW only)
+
+``--with-instruction-outputs``
+  Include the instructions output operands contribution to the power (HW, HD)
+
+``--with-load-to-load-transitions``
+  Include load to load accesses contribution to the power (HD)
+
+``--with-store-to-store-transitions``
+  Include store to store accesses contribution to the power (HD)
+
+``--with-all-memory-accesses-transitions``
+  Include all consecutive memory accesses contribution to the power (HD)
+
+``--with-memory-update-transitions``
+  Include memory update contribution to the power (HD)
+
+``--function=FUNCTION``
+  Analyze code running within FUNCTION
+
+``--via-file=FILE``
+  Read command line arguments from FILE
+
+``--between-functions=FUNCTION_START,FUNCTION_END``
+  Analyze code between FUNCTION_START return and FUNCTION_END call
 
 ``--image=IMAGEFILE``
   Image file name
@@ -1614,9 +1651,6 @@ The following options are recognized:
   ``--verbose``
     verbose output
 
-  ``--statistics``
-    emit statistics about the files read
-
   ``--output=OUTPUT_FILE``
     Save merged traces in OUTPUT_FILE
 
@@ -1626,9 +1660,9 @@ The following options are recognized:
 ``wan-power`` is a utility to ...
 
 The command line syntax looks like:
-  ``wan-power`` [*options*] *F*[*,CYCLE_INFO*]...
+  ``wan-power`` [*options*] *F*[,*F*][%*CYCLE_INFO*]...
 
-where *F* is an input file in fst or vcd format. It can optionnaly be completed
+where *F* is one or more input files in fst or vcd format. It can optionnaly be completed
 with a *CYCLE_INFO* file. The *CYCLE_INFO* file is used to extract specific
 sections of the waveform, which happens when a simulation repeatedly ran some
 experiment and one wants to analyze only those experiments and produce one power
@@ -1640,9 +1674,6 @@ The following options are recognized:
     ``--verbose``
       verbose output
 
-    ``--csv=CSV_FILE``
-      Save power trace in csv format to file ('-' for stdout)
-
     ``--no-noise``
       Don't add noise to the power trace
 
@@ -1652,11 +1683,17 @@ The following options are recognized:
     ``--wires``
       Trace wires only
 
-    ``--hamming-weight``
-      Use hamming weight model
+    ``--hamming-weight=FILENAME``
+      Use hamming weight model and save result to FILENAME.
+      Depending on the FILENAME's extension, it will be
+      saved in numpy format (.npy) or CSV (.csv). Use '-'
+      to output the CSV file to stdout.
 
-    ``--hamming-distance``
-      Use hamming distance model
+    ``--hamming-distance=FILENAME``
+      Use hamming distance model and save result to FILENAME.
+      Depending on the FILENAME's extension, it will be
+      saved in numpy format (.npy) or CSV (.csv). Use '-'
+      to output the CSV file to stdout.
 
     ``--decimate=PERIOD%OFFSET``
       decimate output (default: PERIOD=1, OFFSET=0)
