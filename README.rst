@@ -161,6 +161,12 @@ configure and build system:
   at configure time `-DWITH_GTKWAVE_FST_SUPPORT:BOOL=OFF` to drop `fst` file
   format support.
 
+Security
+========
+
+To report security vulnerabilities in this project, follow the guidance in the
+`security policy <SECURITY.rst>`_.
+
 Feedback, contributions and support
 ===================================
 
