@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: <text>Copyright 2021-2024 Arm Limited
+ * SPDX-FileCopyrightText: <text>Copyright 2021-2025 Arm Limited
  * and/or its affiliates <open-source-office@arm.com></text>
  * SPDX-License-Identifier: Apache-2.0
  *
@@ -42,7 +42,7 @@ enum class Metric : uint8_t { PEARSON_CORRELATION, T_TEST };
 #error The METRIC macro is not defined. Select one from PEARSON_CORRELATION, T_TEST.
 #endif
 
-std::unique_ptr<Reporter> reporter = make_cli_reporter();
+unique_ptr<Reporter> reporter = make_cli_reporter();
 
 template <typename Ty>
 NPArray<Ty> *readNumpyFile(const std::string &name, const string &filename,

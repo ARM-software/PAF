@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: <text>Copyright 2021,2022,2024 Arm Limited and/or its
+ * SPDX-FileCopyrightText: <text>Copyright 2021,2022,2024,2025 Arm Limited and/or its
  * affiliates <open-source-office@arm.com></text>
  * SPDX-License-Identifier: Apache-2.0
  *
@@ -34,7 +34,7 @@
 using namespace std;
 using namespace PAF::SCA;
 
-std::unique_ptr<Reporter> reporter = make_cli_reporter();
+unique_ptr<Reporter> reporter = make_cli_reporter();
 
 int main(int argc, char *argv[]) {
     vector<string> traces_path;
