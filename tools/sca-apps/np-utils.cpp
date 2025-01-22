@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: <text>Copyright 2021,2022,2024 Arm Limited and/or its
+ * SPDX-FileCopyrightText: <text>Copyright 2021,2022,2024,2025 Arm Limited and/or its
  * affiliates <open-source-office@arm.com></text>
  * SPDX-License-Identifier: Apache-2.0
  *
@@ -237,7 +237,7 @@ int main(int argc, char *argv[]) {
     vector<size_t> shape;
     const char *errstr = nullptr;
 
-    ifstream ifs(filename.c_str(), ifstream::binary);
+    ifstream ifs(filename, ifstream::binary);
     if (!ifs)
         reporter->errx(EXIT_FAILURE, "Error opening '%s'", filename.c_str());
 

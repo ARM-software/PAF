@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: <text>Copyright 2023,2024 Arm Limited and/or its
+ * SPDX-FileCopyrightText: <text>Copyright 2023-2025 Arm Limited and/or its
  * affiliates <open-source-office@arm.com></text>
  * SPDX-License-Identifier: Apache-2.0
  *
@@ -116,7 +116,7 @@ int main(int argc, char *argv[]) {
         return EXIT_SUCCESS;
 
     // Determine the element type.
-    ifstream ifs(input_filenames[0].c_str(), ifstream::binary);
+    ifstream ifs(input_filenames[0], ifstream::binary);
     if (!ifs)
         reporter->errx(EXIT_FAILURE, "Error opening file '%s'",
                        input_filenames[0].c_str());
