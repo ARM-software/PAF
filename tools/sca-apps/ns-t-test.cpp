@@ -37,12 +37,17 @@ using namespace PAF::SCA;
 unique_ptr<Reporter> reporter = make_cli_reporter();
 
 int main(int argc, char *argv[]) {
+    bool convert = false;
     vector<string> traces_path;
     enum { GROUP_BY_NPY, GROUP_INTERLEAVED } grouping = GROUP_BY_NPY;
     SCAApp app("paf-ns-t-test", argc, argv);
     app.optnoval({"--interleaved"},
                  "assume interleaved traces in a single NPY file",
                  [&]() { grouping = GROUP_INTERLEAVED; });
+    app.optnoval(
+        {"--convert"},
+        "convert the power information to floating point (default: no)",
+        [&]() { convert = true; });
     app.positional_multiple("TRACES", "group of traces",
                             [&](const string &s) { traces_path.push_back(s); });
     app.setup();
@@ -90,7 +95,8 @@ int main(int argc, char *argv[]) {
     size_t sample_to_stop_at = app.sampleEnd();
     vector<NPArray<double>> traces;
     for (const auto &trace_path : traces_path) {
-        NPArray<double> t(trace_path);
+        NPArray<double> t =
+            readNumpyPowerFile<double>(trace_path, convert, *reporter);
         if (!t.good())
             reporter->errx(EXIT_FAILURE, "Error reading traces from '%s' (%s)",
                            trace_path.c_str(), t.error());

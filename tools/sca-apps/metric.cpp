@@ -31,10 +31,21 @@
 #include <cstdlib>
 #include <iostream>
 #include <memory>
+#include <string>
+#include <type_traits>
 #include <vector>
 
 using namespace std;
 using namespace PAF::SCA;
+
+// The expected type in the 'data' files (e.g. inputs, masks, keys, ...)
+using NPDataTy = uint32_t;
+static_assert(is_integral<NPDataTy>(), "NPDataTy must be an integral type");
+
+// The expected type for the power trace data.
+using NPPowerTy = double;
+static_assert(is_floating_point<NPPowerTy>(),
+              "NPPowerTy must be a floating point type");
 
 enum class Metric : uint8_t { PEARSON_CORRELATION, T_TEST };
 
@@ -45,32 +56,32 @@ enum class Metric : uint8_t { PEARSON_CORRELATION, T_TEST };
 unique_ptr<Reporter> reporter = make_cli_reporter();
 
 template <typename Ty>
-NPArray<Ty> *readNumpyFile(const std::string &name, const string &filename,
-                           unsigned verbosity) {
+unique_ptr<NPArray<Ty>> readNumpyDataFile(const string &name,
+                                          const string &filename,
+                                          unsigned verbosity) {
     if (filename.empty())
         return nullptr;
 
-    auto *np = new NPArray<Ty>(filename);
-    if (np) {
-        if (!np->good())
-            reporter->errx(
-                EXIT_FAILURE,
-                "Error reading numpy data for '%s' from file '%s' (%s)",
-                name.c_str(), filename.c_str(), np->error());
+    unique_ptr<NPArray<Ty>> np(new NPArray<Ty>(filename));
 
-        if (verbosity > 0) {
-            cout << "Read " << np->rows() << " x " << np->cols()
-                 << " data from " << filename << '\n';
-            if (verbosity >= 2)
-                np->dump(cout, 3, 4, name.c_str());
-        }
+    if (!np)
+        reporter->errx(EXIT_FAILURE,
+                       "Error reading numpy data for '%s' from file '%s'",
+                       name.c_str(), filename.c_str());
+    if (!np->good())
+        reporter->errx(EXIT_FAILURE,
+                       "Error reading numpy data for '%s' from file '%s' (%s)",
+                       name.c_str(), filename.c_str(), np->error());
+
+    if (verbosity > 0) {
+        cout << "Read " << np->rows() << " x " << np->cols() << " data from "
+             << filename << '\n';
+        if (verbosity >= 2)
+            np->dump(cout, 3, 4, name.c_str());
     }
 
     return np;
 }
-
-using NPDataTy = uint32_t;
-using NPPowerTy = double;
 
 int main(int argc, char *argv[]) {
 
@@ -78,6 +89,7 @@ int main(int argc, char *argv[]) {
     string inputs_file;
     string masks_file;
     string keys_file;
+    bool convert = false;
     vector<string> expr_strings;
 
     SCAApp app(argv[0], argc, argv);
@@ -93,6 +105,10 @@ int main(int argc, char *argv[]) {
     app.optval({"-k", "--keys"}, "KEYSFILE",
                "use KEYSFILE as key data, in npy format",
                [&](const string &s) { keys_file = s; });
+    app.optnoval(
+        {"--convert"},
+        "convert the power information to floating point (default: no)",
+        [&]() { convert = true; });
     app.positional_multiple(
         "EXPRESSION",
         "use EXPRESSION to compute the intermediate value. A specific value "
@@ -128,6 +144,9 @@ int main(int argc, char *argv[]) {
         if (!keys_file.empty())
             cout << "Reading keys from: '" << keys_file << "'\n";
 
+        cout << "Converting power trace to float: " << (convert ? "yes" : "no")
+             << '\n';
+
         cout << "Computing intermediate value(s) from expression(s):";
         for (const auto &e : expr_strings)
             cout << " \"" << e << "\"";
@@ -147,7 +166,9 @@ int main(int argc, char *argv[]) {
     }
 
     // Read our traces.
-    const NPArray<NPPowerTy> traces(traces_file);
+    const NPArray<NPPowerTy> traces =
+        readNumpyPowerFile<NPPowerTy>(traces_file, convert, *reporter);
+
     if (!traces.good())
         reporter->errx(EXIT_FAILURE, "Error reading traces from '%s' (%s)",
                        traces_file.c_str(), traces.error());
@@ -163,12 +184,12 @@ int main(int argc, char *argv[]) {
     }
 
     // Read our inputs, keys and masks data.
-    unique_ptr<const NPArray<NPDataTy>> inputs(
-        readNumpyFile<NPDataTy>("input", inputs_file, app.verbosity()));
-    unique_ptr<const NPArray<NPDataTy>> keys(
-        readNumpyFile<NPDataTy>("keys", keys_file, app.verbosity()));
-    unique_ptr<const NPArray<NPDataTy>> masks(
-        readNumpyFile<NPDataTy>("masks", masks_file, app.verbosity()));
+    unique_ptr<const NPArray<NPDataTy>> inputs =
+        readNumpyDataFile<NPDataTy>("input", inputs_file, app.verbosity());
+    unique_ptr<const NPArray<NPDataTy>> keys =
+        readNumpyDataFile<NPDataTy>("keys", keys_file, app.verbosity());
+    unique_ptr<const NPArray<NPDataTy>> masks =
+        readNumpyDataFile<NPDataTy>("masks", masks_file, app.verbosity());
 
     // Construct the intermediate value expression.
     Expr::Context<uint32_t> context;

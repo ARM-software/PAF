@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: <text>Copyright 2021-2024 Arm Limited
+ * SPDX-FileCopyrightText: <text>Copyright 2021-2025 Arm Limited
  * and/or its affiliates <open-source-office@arm.com></text>
  * SPDX-License-Identifier: Apache-2.0
  *
@@ -23,9 +23,13 @@
 #include "PAF/SCA/NPArray.h"
 
 #include "libtarmac/argparse.hh"
+#include "libtarmac/reporter.hh"
 
+#include <fstream>
+#include <limits>
 #include <memory>
 #include <string>
+#include <type_traits>
 
 namespace PAF {
 namespace SCA {
@@ -151,6 +155,104 @@ class SCAApp : public Argparse {
     std::unique_ptr<OutputBase> out;
     bool perfect = false;
 };
+
+/// Convert a value from its integral value to a floating point value in the
+/// [-0.5, 0.5] range for signed integers and [0.0, 1.0] range for unsigned
+/// integers.
+template <typename Ty, typename fromTy> struct Scale : public NPUnaryOperator {
+    static_assert(std::is_floating_point<Ty>(),
+                  "Ty must be a floating point type");
+    static_assert(std::is_integral<fromTy>(),
+                  "fromTy must be an integral type");
+    constexpr Ty operator()(const Ty &v) const {
+        if (std::is_unsigned<fromTy>())
+            return v / Ty(std::numeric_limits<fromTy>::max());
+
+        const Ty R = Ty(std::numeric_limits<fromTy>::max()) -
+                     Ty(std::numeric_limits<fromTy>::min());
+        return -0.5 + (v - Ty(std::numeric_limits<fromTy>::min())) / R;
+    }
+};
+
+template <typename Ty> class ScaleFromUInt8 : public Scale<Ty, uint8_t> {};
+template <typename Ty> class ScaleFromUInt16 : public Scale<Ty, uint16_t> {};
+template <typename Ty> class ScaleFromUInt32 : public Scale<Ty, uint32_t> {};
+template <typename Ty> class ScaleFromUInt64 : public Scale<Ty, uint64_t> {};
+template <typename Ty> class ScaleFromInt8 : public Scale<Ty, int8_t> {};
+template <typename Ty> class ScaleFromInt16 : public Scale<Ty, int16_t> {};
+template <typename Ty> class ScaleFromInt32 : public Scale<Ty, int32_t> {};
+template <typename Ty> class ScaleFromInt64 : public Scale<Ty, int64_t> {};
+
+template <typename Ty>
+NPArray<Ty> readNumpyPowerFile(const std::string &filename, bool convert,
+                               Reporter &reporter) {
+    // No conversion requested, return the NPArray as we read it ! This will
+    // fail if the element type is not the expected floating point format.
+    if (!convert)
+        return NPArray<Ty>(filename);
+
+    // Conversion requested ! Discover the element type.
+    std::ifstream ifs(filename, std::ifstream::binary);
+    if (!ifs)
+        reporter.errx(EXIT_FAILURE, "Error opening file '%s'",
+                      filename.c_str());
+
+    size_t num_rows;
+    size_t num_cols;
+    std::string elt_ty;
+    size_t elt_size;
+    const char *l_errstr = nullptr;
+    if (!NPArrayBase::getInformation(ifs, num_rows, num_cols, elt_ty, elt_size,
+                                     &l_errstr))
+        reporter.errx(EXIT_FAILURE,
+                      "Error retrieving information for file '%s'",
+                      filename.c_str());
+    ifs.close();
+
+    // Read the data as floating point, with a conversion done on the fly !
+    NPArray<Ty> a = NPArray<Ty>::readAs(filename);
+    if (!a.good())
+        return a;
+
+    // Scale data to the [-0.5, 0.5[ range for signed integers and [-1.0, 1.[
+    // (unsigned integers).
+    assert(elt_ty.size() == 2 && "Unexpected size for NPArray eltTy");
+    if (elt_ty[0] == 'f') {
+        return a;
+    } else if (elt_ty[0] == 'u') {
+        switch (elt_ty[1]) {
+        case '1':
+            return a.apply(ScaleFromUInt8<Ty>());
+        case '2':
+            return a.apply(ScaleFromUInt16<Ty>());
+        case '4':
+            return a.apply(ScaleFromUInt32<Ty>());
+        case '8':
+            return a.apply(ScaleFromUInt64<Ty>());
+        default:
+            reporter.errx(
+                EXIT_FAILURE,
+                "Unsupported unsigned integer element concatenation for now");
+        }
+    } else if (elt_ty[0] == 'i') {
+        switch (elt_ty[1]) {
+        case '1':
+            return a.apply(ScaleFromInt8<Ty>());
+        case '2':
+            return a.apply(ScaleFromInt16<Ty>());
+        case '4':
+            return a.apply(ScaleFromInt32<Ty>());
+        case '8':
+            return a.apply(ScaleFromInt64<Ty>());
+        default:
+            reporter.errx(EXIT_FAILURE,
+                          "Unsupported integer element concatenation for now");
+        }
+    } else
+        reporter.errx(EXIT_FAILURE, "Unsupported element type for now");
+
+    return NPArray<Ty>();
+}
 
 } // namespace SCA
 } // namespace PAF

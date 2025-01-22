@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: <text>Copyright 2021-2024 Arm Limited and/or its
+ * SPDX-FileCopyrightText: <text>Copyright 2021-2025 Arm Limited and/or its
  * affiliates <open-source-office@arm.com></text>
  * SPDX-License-Identifier: Apache-2.0
  *
@@ -24,6 +24,7 @@
 #include "paf-unit-testing.h"
 
 #include <array>
+#include <limits>
 #include <vector>
 
 #include "gtest/gtest.h"
@@ -31,6 +32,7 @@
 using namespace PAF::SCA;
 
 using std::array;
+using std::numeric_limits;
 using std::vector;
 
 TEST(SCAApp, defaults) {
@@ -679,4 +681,71 @@ TEST_F(SCAAppF, numpy_output) {
     EXPECT_EQ(R3.rows(), v10.size());
     EXPECT_EQ(R3.cols(), v10[0].size() / 2);
     EXPECT_EQ(R3, NPArray<double>({2., 6., 7., 3., -1.}, 1, v10[0].size() / 2));
+}
+
+TEST(SCAApp, scalePowerTrace) {
+    NPArray<double> result =
+        convert<double, uint8_t>(
+            NPArray<uint8_t>({numeric_limits<uint8_t>::min(),
+                              numeric_limits<uint8_t>::max()},
+                             1, 2))
+            .apply(ScaleFromUInt8<double>());
+    EXPECT_DOUBLE_EQ(result(0, 0), 0.);
+    EXPECT_DOUBLE_EQ(result(0, 1), 1.0);
+
+    result = convert<double, uint16_t>(
+                 NPArray<uint16_t>({numeric_limits<uint16_t>::min(),
+                                    numeric_limits<uint16_t>::max()},
+                                   1, 2))
+                 .apply(ScaleFromUInt16<double>());
+    EXPECT_DOUBLE_EQ(result(0, 0), 0.);
+    EXPECT_DOUBLE_EQ(result(0, 1), 1.0);
+
+    result = convert<double, uint32_t>(
+                 NPArray<uint32_t>({numeric_limits<uint32_t>::min(),
+                                    numeric_limits<uint32_t>::max()},
+                                   1, 2))
+                 .apply(ScaleFromUInt32<double>());
+    EXPECT_DOUBLE_EQ(result(0, 0), 0.);
+    EXPECT_DOUBLE_EQ(result(0, 1), 1.0);
+
+    result = convert<double, uint64_t>(
+                 NPArray<uint64_t>({numeric_limits<uint64_t>::min(),
+                                    numeric_limits<uint64_t>::max()},
+                                   1, 2))
+                 .apply(ScaleFromUInt64<double>());
+    EXPECT_DOUBLE_EQ(result(0, 0), 0.);
+    EXPECT_DOUBLE_EQ(result(0, 1), 1.0);
+
+    result =
+        convert<double, int8_t>(NPArray<int8_t>({numeric_limits<int8_t>::min(),
+                                                 numeric_limits<int8_t>::max()},
+                                                1, 2))
+            .apply(ScaleFromInt8<double>());
+    EXPECT_DOUBLE_EQ(result(0, 0), -0.5);
+    EXPECT_DOUBLE_EQ(result(0, 1), 0.5);
+
+    result = convert<double, int16_t>(
+                 NPArray<int16_t>({numeric_limits<int16_t>::min(),
+                                   numeric_limits<int16_t>::max()},
+                                  1, 2))
+                 .apply(ScaleFromInt16<double>());
+    EXPECT_DOUBLE_EQ(result(0, 0), -0.5);
+    EXPECT_DOUBLE_EQ(result(0, 1), 0.5);
+
+    result = convert<double, int32_t>(
+                 NPArray<int32_t>({numeric_limits<int32_t>::min(),
+                                   numeric_limits<int32_t>::max()},
+                                  1, 2))
+                 .apply(ScaleFromInt32<double>());
+    EXPECT_DOUBLE_EQ(result(0, 0), -0.5);
+    EXPECT_DOUBLE_EQ(result(0, 1), 0.5);
+
+    result = convert<double, int64_t>(
+                 NPArray<int64_t>({numeric_limits<int64_t>::min(),
+                                   numeric_limits<int64_t>::max()},
+                                  1, 2))
+                 .apply(ScaleFromInt64<double>());
+    EXPECT_DOUBLE_EQ(result(0, 0), -0.5);
+    EXPECT_DOUBLE_EQ(result(0, 1), 0.5);
 }
