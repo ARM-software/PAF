@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: <text>Copyright 2022-2024 Arm Limited and/or its
+ * SPDX-FileCopyrightText: <text>Copyright 2022-2025 Arm Limited and/or its
  * affiliates <open-source-office@arm.com></text>
  * SPDX-License-Identifier: Apache-2.0
  *
@@ -59,4 +59,32 @@ TEST(ProgressMonitor, Basic) {
     EXPECT_EQ(PM.total(), 200);
     EXPECT_EQ(PM.count(), 4);
     EXPECT_EQ(PM.remaining(), 196);
+}
+
+TEST(ProgressMonitor, Invisible) {
+    ostringstream os;
+    ProgressMonitor PM(os, "MyTitle", 100, /* Visible: */ false);
+
+    EXPECT_EQ(os.str(), "");
+    EXPECT_EQ(PM.total(), 100);
+    EXPECT_EQ(PM.count(), 0);
+    EXPECT_EQ(PM.remaining(), 100);
+
+    PM.update();
+    EXPECT_EQ(os.str(), "");
+    EXPECT_EQ(PM.total(), 100);
+    EXPECT_EQ(PM.count(), 1);
+    EXPECT_EQ(PM.remaining(), 99);
+
+    PM.update();
+    EXPECT_EQ(os.str(), "");
+    EXPECT_EQ(PM.total(), 100);
+    EXPECT_EQ(PM.count(), 2);
+    EXPECT_EQ(PM.remaining(), 98);
+
+    PM.update(2);
+    EXPECT_EQ(os.str(), "");
+    EXPECT_EQ(PM.total(), 100);
+    EXPECT_EQ(PM.count(), 4);
+    EXPECT_EQ(PM.remaining(), 96);
 }

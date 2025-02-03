@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: <text>Copyright 2022,2024 Arm Limited and/or its
+ * SPDX-FileCopyrightText: <text>Copyright 2022,2024,2025 Arm Limited and/or its
  * affiliates <open-source-office@arm.com></text>
  * SPDX-License-Identifier: Apache-2.0
  *
@@ -32,9 +32,10 @@ class ProgressMonitor {
     /// Construct a ProgressMonitor, to output progress on OS, using Title as
     /// the prefix string, expecting Total number of steps to reach completion
     /// of the task.
-    ProgressMonitor(std::ostream &OS, const std::string &Title, size_t Total)
+    ProgressMonitor(std::ostream &OS, const std::string &Title, size_t Total,
+                    bool Visible = true)
         : os(OS), title(Title), totalNumberOfSteps(Total), progress(0),
-          lastPercentageLogged(-1) {
+          lastPercentageLogged(-1), visible(Visible) {
         display();
     }
 
@@ -56,8 +57,10 @@ class ProgressMonitor {
     void display() {
         unsigned percentage = 100 * progress / totalNumberOfSteps;
         if (percentage != lastPercentageLogged) {
-            os << '\r' << title << ": " << percentage << '%';
-            os.flush();
+            if (visible) {
+                os << '\r' << title << ": " << percentage << '%';
+                os.flush();
+            }
             lastPercentageLogged = percentage;
         }
     }
@@ -71,6 +74,8 @@ class ProgressMonitor {
     size_t progress;
     /// The last percentage that was updated.
     unsigned lastPercentageLogged;
+    /// Display the progress monitor iff true.
+    bool visible;
 };
 
 } // namespace PAF
