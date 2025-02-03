@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: <text>Copyright 2021-2024 Arm Limited
+ * SPDX-FileCopyrightText: <text>Copyright 2021-2025 Arm Limited
  * and/or its affiliates <open-source-office@arm.com></text>
  * SPDX-License-Identifier: Apache-2.0
  *
@@ -1347,9 +1347,8 @@ template <class Ty> class NPArray : public NPArrayBase {
                          std::is_copy_constructible<binaryOperation<Ty>>(),
                      NPArray &>
     apply(const binaryOperation<Ty> &op, const Ty &rhs) {
-        for (size_t row = 0; row < rows(); row++)
-            for (size_t col = 0; col < cols(); col++)
-                at(row, col) = op(at(row, col), rhs);
+        for (size_t idx = 0; idx < size(); idx++)
+            at(idx) = op(at(idx), rhs);
         return *this;
     }
 
@@ -1393,9 +1392,8 @@ template <class Ty> class NPArray : public NPArrayBase {
             ((rhs.rows() == 1 ? 1 : 0) << 1) | ((rhs.cols() == 1 ? 1 : 0) << 0);
         switch (k) {
         case 0x0: // this: matrix + rhs: matrix -> matrix
-            for (size_t row = 0; row < rows(); row++)
-                for (size_t col = 0; col < cols(); col++)
-                    at(row, col) = op(at(row, col), rhs.at(row, col));
+            for (size_t idx = 0; idx < size(); idx++)
+                at(idx) = op(at(idx), rhs.at(idx));
             break;
         case 0x1: // this: matrix + rhs: | -> matrix
             for (size_t row = 0; row < rows(); row++)
@@ -1408,10 +1406,12 @@ template <class Ty> class NPArray : public NPArrayBase {
                     at(row, col) = op(at(row, col), rhs.at(0, col));
             break;
         case 0x3: // this: matrix + rhs: scalar -> matrix
-            for (size_t row = 0; row < rows(); row++)
-                for (size_t col = 0; col < cols(); col++)
-                    at(row, col) = op(at(row, col), rhs.at(0, 0));
+        {
+            const DataTy tmp = rhs.at(0, 0);
+            for (size_t idx = 0; idx < size(); idx++)
+                at(idx) = op(at(idx), tmp);
             break;
+        }
         case 0x4: // this: | + rhs: matrix -> matrix
         {
             NPArray tmp(*this);
@@ -1458,9 +1458,8 @@ template <class Ty> class NPArray : public NPArrayBase {
         {
             const DataTy tmp = at(0, 0);
             *this = rhs;
-            for (size_t row = 0; row < rows(); row++)
-                for (size_t col = 0; col < cols(); col++)
-                    at(row, col) = op(tmp, at(row, col));
+            for (size_t idx = 0; idx < size(); idx++)
+                at(idx) = op(tmp, at(idx));
             break;
         }
         case 0xd: // this: scalar + rhs: | -> |
