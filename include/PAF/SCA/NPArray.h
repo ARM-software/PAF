@@ -276,6 +276,22 @@ class NPArrayBase {
         return &p[row * numColumns + col];
     }
 
+    /// Get a pointer to type Ty to the array using linear addressing (const version).
+    template <class Ty>
+    const Ty *getAs(const size_t &idx) const noexcept {
+        assert(idx < size() && "idx is out-of-range");
+        const Ty *p = reinterpret_cast<Ty *>(data.get());
+        return &p[idx];
+    }
+
+    /// Get a pointer to type Ty to the array using linear addressing.
+    template <class Ty>
+    Ty *getAs(const size_t &idx) noexcept {
+        assert(idx < size() && "idx is out-of-range");
+        Ty *p = reinterpret_cast<Ty *>(data.get());
+        return &p[idx];
+    }
+
     /// Set the error string and state.
     NPArrayBase &setError(const char *s) {
         errstr = s;
@@ -1300,9 +1316,8 @@ template <class Ty> class NPArray : public NPArrayBase {
                          std::is_copy_constructible<unaryOperation<Ty>>(),
                      NPArray &>
     apply(const unaryOperation<Ty> &op) {
-        for (size_t row = 0; row < rows(); row++)
-            for (size_t col = 0; col < cols(); col++)
-                at(row, col) = op(at(row, col));
+        for (size_t idx = 0; idx < size(); idx++)
+            at(idx) = op(at(idx));
         return *this;
     }
 
@@ -1708,12 +1723,19 @@ template <class Ty> class NPArray : public NPArrayBase {
     static std::string descr() { return getEltTyDescr<Ty>(); }
 
   private:
-    /// Provide a convenience shorthand for in-class operations.
+    /// A convenience shorthand for in-class operations.
     Ty &at(size_t row, size_t col) { return (*this)(row, col); }
 
-    /// Provide a convenience shorthand for in-class operations (const
+    /// A convenience shorthand for in-class operations (const
     /// version).
     Ty at(size_t row, size_t col) const { return (*this)(row, col); }
+
+    /// A convenience shorthand for in-class operations using linear addressing.
+    Ty &at(size_t idx) { return *getAs<Ty>(idx); }
+
+    /// A convenience shorthand for in-class operations using linear addressing
+    /// (const version).
+    const Ty &at(size_t idx) const { return *getAs<Ty>(idx); }
 };
 
 /// Convert the type of the \p src NPArray elements from \p fromTy to \p newTy.
