@@ -91,7 +91,7 @@ int main(int argc, char *argv[]) {
         }
     }
 
-    size_t nbtraces = std::numeric_limits<size_t>::max();
+    size_t nbtraces = numeric_limits<size_t>::max();
     size_t sample_to_stop_at = app.sampleEnd();
     vector<NPArray<double>> traces;
     for (const auto &trace_path : traces_path) {

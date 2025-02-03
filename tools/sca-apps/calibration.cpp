@@ -25,6 +25,7 @@
 #include <cstdlib>
 #include <iostream>
 #include <limits>
+#include <string>
 #include <vector>
 
 using namespace std;
@@ -121,7 +122,7 @@ template <typename Ty> bool visit(const vector<const char *> &filenames) {
     return true;
 }
 
-std::unique_ptr<Reporter> reporter = make_cli_reporter();
+unique_ptr<Reporter> reporter = make_cli_reporter();
 
 int main(int argc, char *argv[]) {
 
@@ -135,12 +136,12 @@ int main(int argc, char *argv[]) {
     // Check that if we were given several input files they are all with the
     // same element types.
     bool first = true;
-    std::string elt_ty;
+    string elt_ty;
     unsigned elt_size;
     for (const auto &filename : filenames) {
         size_t num_rows;
         size_t num_columns;
-        std::string l_elt_ty;
+        string l_elt_ty;
         size_t l_elt_size;
         const char *errstr;
         ifstream ifs(filename, ifstream::binary);

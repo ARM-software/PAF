@@ -31,7 +31,7 @@
 using namespace std;
 using namespace PAF::SCA;
 
-std::unique_ptr<Reporter> reporter = make_cli_reporter();
+unique_ptr<Reporter> reporter = make_cli_reporter();
 
 namespace {
 

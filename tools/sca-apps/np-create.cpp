@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: <text>Copyright 2021,2022,2024 Arm Limited and/or its
+ * SPDX-FileCopyrightText: <text>Copyright 2021,2022,2024,2025 Arm Limited and/or its
  * affiliates <open-source-office@arm.com></text>
  * SPDX-License-Identifier: Apache-2.0
  *
@@ -81,7 +81,7 @@ static bool write_as(const string &filename, const vector<string> &cmdline_data,
 
 } // namespace
 
-std::unique_ptr<Reporter> reporter = make_cli_reporter();
+unique_ptr<Reporter> reporter = make_cli_reporter();
 
 int main(int argc, char *argv[]) {
     size_t rows = 0;
