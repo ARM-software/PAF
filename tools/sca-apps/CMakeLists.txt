@@ -1,4 +1,4 @@
-# SPDX-FileCopyrightText: <text>Copyright 2021-2024 Arm Limited and/or its
+# SPDX-FileCopyrightText: <text>Copyright 2021-2025 Arm Limited and/or its
 # affiliates <open-source-office@arm.com></text>
 # SPDX-License-Identifier: Apache-2.0
 #
@@ -18,6 +18,12 @@
 
 add_paf_executable(calibration
   SOURCES calibration.cpp
+  LIBRARIES sca paf
+  OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin"
+  )
+
+add_paf_executable(np-average
+  SOURCES np-average.cpp
   LIBRARIES sca paf
   OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin"
   )
@@ -62,6 +68,6 @@ add_paf_executable(t-test
 add_paf_executable(correl
   SOURCES metric.cpp
   COMPILE_DEFINITIONS "METRIC=Metric::PEARSON_CORRELATION"
-  LIBRARIES sca paf 
+  LIBRARIES sca paf
   OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin"
   )
