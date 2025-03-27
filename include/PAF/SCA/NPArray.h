@@ -633,7 +633,7 @@ template <class Ty> class NPArray : public NPArrayBase {
         return *this;
     }
 
-    /// Extend this Matrix by the content of the \p other matrix.
+    /// Extend this Matrix by the content of the \p other matrix on the \p axis direction.
     NPArray &extend(const NPArray &other, Axis axis) {
         assert(good() && "Can not extend this NPArray (bad state)");
         assert(
@@ -2031,6 +2031,7 @@ meanWithVar(const NPArray<Ty> &npy, typename NPArrayBase::Axis axis,
     return npy.meanWithVar(axis, var, stddev, ddof);
 }
 
+/// Concatenate \p npy1 and \p npy2 along the specified \p axis.
 template <class Ty>
 NPArray<Ty> concatenate(const NPArray<Ty> &npy1, const NPArray<Ty> &npy2,
                         NPArrayBase::Axis axis) {
