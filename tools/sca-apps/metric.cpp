@@ -202,7 +202,9 @@ int main(int argc, char *argv[]) {
 
     const size_t sample_to_stop_at = min(app.sampleEnd(), traces.cols());
     const size_t nbtraces = traces.rows();
-    NPArray<double> results; // Metric results.
+
+    // Our empty (for now) metric results.
+    NPArray<double> results(0, sample_to_stop_at - app.sampleStart());
 
     // Compute the metrics for each of the expressions.
     for (const auto &str : expr_strings) {
@@ -223,8 +225,9 @@ int main(int argc, char *argv[]) {
 
             // Compute the metric.
             results = concatenate(
+                results,
                 correl(app.sampleStart(), sample_to_stop_at, traces, ivalues),
-                results, NPArray<double>::COLUMN);
+                NPArray<double>::COLUMN);
         } break;
         case Metric::T_TEST: {
             // Build the classifier.
@@ -244,13 +247,14 @@ int main(int argc, char *argv[]) {
 
             // Compute the metric.
             results = concatenate(
+                results,
                 app.isPerfect()
                     ? perfect_t_test(app.sampleStart(), sample_to_stop_at,
                                      traces, classifier,
                                      app.verbose() ? &cout : nullptr)
                     : t_test(app.sampleStart(), sample_to_stop_at, traces,
                              classifier),
-                results, NPArray<double>::COLUMN);
+                NPArray<double>::COLUMN);
         } break;
         }
     }
