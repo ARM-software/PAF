@@ -41,11 +41,12 @@ double find_max(const NPArray<double>::const_Row &row, size_t *index,
     double max_v = row[offset];
     *index = offset;
 
-    for (size_t i = decimate + offset; i < row.size(); i += decimate)
+    for (auto i = decimate + offset; i < row.size(); i += decimate) {
         if (fabs(row[i]) > fabs(max_v)) {
             max_v = row[i];
             *index = i;
         }
+    }
 
     return max_v;
 }

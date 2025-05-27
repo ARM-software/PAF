@@ -173,13 +173,7 @@ template <typename Ty> class Intervals {
     bool operator==(const Intervals &Other) const {
         if (size() != Other.size())
             return false;
-
-        for (auto m = begin(), o = Other.begin(), me = end(), oe = Other.end();
-             m != me && o != oe; m++, o++)
-            if (*m != *o)
-                return false;
-
-        return true;
+        return std::equal(begin(), end(), Other.begin());
     }
 
     /// Are Other and this Intervals different ?

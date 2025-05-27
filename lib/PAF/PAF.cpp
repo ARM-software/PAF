@@ -198,8 +198,8 @@ class WLabelCollector : ParseReceiver {
     void operator()(const TarmacSite &ts) {
         if (binary_search(addresses.begin(), addresses.end(), ts.addr)) {
             string label = "unknown";
-            map<uint64_t, string>::const_iterator it;
-            if ((it = labelMap.find(ts.addr)) != labelMap.end())
+            auto it = labelMap.find(ts.addr);
+            if (it != labelMap.end())
                 label = it->second;
             if (outLabels)
                 outLabels->emplace_back(ts.time, label);
