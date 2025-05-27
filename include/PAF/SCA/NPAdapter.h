@@ -21,6 +21,7 @@
 #pragma once
 
 #include "PAF/SCA/NPArray.h"
+#include <algorithm>
 
 namespace PAF {
 namespace SCA {
@@ -80,11 +81,18 @@ template <class DataTy> class NPAdapter {
         if (w[num_traces - 1].empty())
             num_traces -= 1;
         auto matrix = std::make_unique<DataTy[]>(num_traces * maxRowLength);
-        PAF::SCA::NPArray<DataTy> npy(std::move(matrix), num_traces,
-                                      maxRowLength);
-        for (size_t row = 0; row < num_traces; row++)
-            for (size_t col = 0; col < maxRowLength; col++)
-                npy(row, col) = col < w[row].size() ? w[row][col] : 0.0;
+        // Flatten row vectors into contiguous matrix, with zero-padding
+        for (size_t r = 0; r < num_traces; ++r) {
+            const auto &row = w[r];
+            size_t len = row.size();
+            auto dest = matrix.get() + r * maxRowLength;
+            // copy row elements
+            std::copy(row.begin(), row.begin() + len, dest);
+            // zero-fill remainder
+            if (len < maxRowLength)
+                std::fill(dest + len, dest + maxRowLength, DataTy{});
+        }
+        PAF::SCA::NPArray<DataTy> npy(std::move(matrix), num_traces, maxRowLength);
         npy.save(filename);
     }
 
