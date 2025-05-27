@@ -44,7 +44,6 @@ template <class DataTy> class NPAdapter {
             w.emplace_back();
         // Reserve space in new row to avoid reallocation later
         w[currentRow].reserve(maxRowLength);
-        w[currentRow].reserve(maxRowLength);
     }
 
     /// Append values to the current row.
