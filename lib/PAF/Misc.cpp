@@ -19,6 +19,7 @@
  */
 
 #include "PAF/utils/Misc.h"
+#include <algorithm>
 
 using std::string;
 using std::vector;
@@ -27,6 +28,9 @@ namespace PAF {
 
 vector<string> split(char delim, const string &str) {
     vector<string> res;
+    // Pre-allocate based on number of delimiters to avoid reallocations
+    size_t count = std::count(str.begin(), str.end(), delim);
+    res.reserve(count + 1);
     size_t last = 0;
     size_t pos = 0;
     while ((pos = str.find(delim, last)) != string::npos) {

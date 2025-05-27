@@ -41,7 +41,9 @@ template <class DataTy> class NPAdapter {
         maxRowLength = std::max(maxRowLength, w[currentRow].size());
         currentRow += 1;
         if (currentRow == w.size())
-            w.emplace_back(std::vector<DataTy>());
+            w.emplace_back();
+        // Reserve space in new row to avoid reallocation later
+        w[currentRow].reserve(maxRowLength);
         w[currentRow].reserve(maxRowLength);
     }
 
@@ -49,7 +51,17 @@ template <class DataTy> class NPAdapter {
     void append(const std::vector<DataTy> &values) {
         if (currentRow >= w.size())
             return;
-        w[currentRow].insert(w[currentRow].end(), values.begin(), values.end());
+        auto &row = w[currentRow];
+        row.reserve(row.size() + values.size());
+        row.insert(row.end(), values.begin(), values.end());
+    }
+    /// Append values by moving into the current row (avoids element copies).
+    void append(std::vector<DataTy> &&values) {
+        if (currentRow >= w.size())
+            return;
+        auto &row = w[currentRow];
+        row.reserve(row.size() + values.size());
+        std::move(values.begin(), values.end(), std::back_inserter(row));
     }
 
     /// Append value to the current row.

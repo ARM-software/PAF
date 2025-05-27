@@ -29,7 +29,12 @@ using std::string;
 namespace PAF {
 
 string concat(std::initializer_list<string> strings) {
-    string str = "";
+    // Reserve total capacity to avoid multiple reallocations
+    size_t total = 0;
+    for (const auto &s : strings)
+        total += s.size();
+    string str;
+    str.reserve(total);
     for (const auto &s : strings)
         str += s;
     return str;
