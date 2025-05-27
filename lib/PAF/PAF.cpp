@@ -187,6 +187,7 @@ class WLabelCollector : ParseReceiver {
         : idxNav(IN), addresses(Addresses), intervals(IR), buffer(),
           labelMap(LabelMap), outLabels(OutLabels), window(N),
           verbose(verbose) {
+        buffer.reserve(2);
         assert(is_sorted(Addresses.begin(), Addresses.end()) &&
                "Addresses must be sorted");
     }
