@@ -85,8 +85,9 @@ class NPArrayBase {
     /// other information.
     NPArrayBase(const char *buf, size_t num_rows, size_t num_columns,
                 unsigned elt_size)
-        : data(new char[num_rows * num_columns * elt_size]), numRows(num_rows),
-          numColumns(num_columns), eltSize(elt_size), errstr(nullptr) {
+        : data(std::make_unique<char[]>(num_rows * num_columns * elt_size)),
+          numRows(num_rows), numColumns(num_columns), eltSize(elt_size),
+          errstr(nullptr) {
         if (buf)
             memcpy(data.get(), buf, num_rows * num_columns * elt_size);
     }

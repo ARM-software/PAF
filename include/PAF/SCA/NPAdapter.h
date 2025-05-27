@@ -68,7 +68,7 @@ template <class DataTy> class NPAdapter {
 
         if (w[num_traces - 1].empty())
             num_traces -= 1;
-        std::unique_ptr<DataTy[]> matrix(new DataTy[num_traces * maxRowLength]);
+        auto matrix = std::make_unique<DataTy[]>(num_traces * maxRowLength);
         PAF::SCA::NPArray<DataTy> npy(std::move(matrix), num_traces,
                                       maxRowLength);
         for (size_t row = 0; row < num_traces; row++)
