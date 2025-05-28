@@ -101,7 +101,7 @@ class MyHierVisitor : public Waveform::Visitor {
 
   public:
     MyHierVisitor(const Waveform &W, ostream &os)
-        : Waveform::Visitor(&W), os(os), depth(0) {}
+        : Waveform::Visitor(&W), os(os) {}
 
     void enterScope(const Waveform::Scope &scope) override {
         os << string(TAB * depth, ' ') << "o " << scope.getInstanceName()
@@ -128,7 +128,7 @@ class MyHierVisitor : public Waveform::Visitor {
 
   private:
     ostream &os;
-    unsigned depth;
+    unsigned depth{0};
 };
 } // namespace
 

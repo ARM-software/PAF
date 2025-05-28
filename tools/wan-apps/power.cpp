@@ -154,7 +154,7 @@ struct HammingVisitor : public Waveform::Visitor {
     HammingVisitor(const string &fileName,
                    const Waveform::Visitor::Options &options)
         : Waveform::Visitor(nullptr, options), powerTmp(), power(),
-          fileName(fileName), runInfo(nullptr) {}
+          fileName(fileName) {}
 
     HammingVisitor &setWaveform(const Waveform *wf, const RunInfo *ri) {
         w = wf;
@@ -248,7 +248,7 @@ struct HammingVisitor : public Waveform::Visitor {
     map<TimeTy, double> powerTmp;
     map<TimeTy, vector<double>> power;
     string fileName;
-    const RunInfo *runInfo;
+    const RunInfo *runInfo{nullptr};
 
   private:
     // Check our invariant: all records should have the same number of samples.

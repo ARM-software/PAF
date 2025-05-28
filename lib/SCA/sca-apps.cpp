@@ -114,7 +114,7 @@ void SCAApp::setup() {
 }
 
 OutputBase::OutputBase(const std::string &filename, bool append, bool binary)
-    : usingFile(filename.size() != 0), out(nullptr) {
+    : usingFile(filename.size() != 0) {
     if (usingFile) {
         auto openmode = ofstream::out;
         if (append)

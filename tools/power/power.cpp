@@ -75,7 +75,7 @@ class AnalysisRangeSpecifier {
   public:
     enum Kind { NOT_SET, FUNCTION, FUNCTION_MARKERS };
 
-    AnalysisRangeSpecifier() : kind(NOT_SET), function(), markers() {}
+    AnalysisRangeSpecifier() : function(), markers() {}
 
     void setFunction(const string &f) {
         kind = FUNCTION;
@@ -93,7 +93,7 @@ class AnalysisRangeSpecifier {
     const pair<string, string> &getMarkers() const { return markers; }
 
   private:
-    Kind kind;
+    Kind kind{NOT_SET};
     string function;
     pair<string, string> markers;
 };

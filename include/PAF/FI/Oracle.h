@@ -165,7 +165,7 @@ class Classifier {
     /// Construct a Classifier for symbol with <tt>ClassificationLocation</tt>
     /// K.
     Classifier(const std::string &symbol, Kind K)
-        : addressSet(false), address(0), symbolName(symbol), locKind(K) {}
+        : symbolName(symbol), locKind(K) {}
     /// Copy construct a Classifier.
     Classifier(const Classifier &) = default;
     /// Move construct a Classifier.
@@ -230,8 +230,8 @@ class Classifier {
 
   private:
     std::vector<ClassificationExpr> classificationExpressions;
-    bool addressSet;
-    uint64_t address; // The PC address at which to ask the Oracle.
+    bool addressSet{false};
+    uint64_t address{0}; // The PC address at which to ask the Oracle.
     std::string symbolName;
     Kind locKind;
 };

@@ -29,6 +29,7 @@
 #include "libtarmac/misc.hh"
 
 #include <iostream>
+#include <limits>
 #include <memory>
 #include <string>
 #include <vector>
@@ -44,7 +45,7 @@ namespace SCA {
 class TimingInfo {
   public:
     /// Construct an empty TimingInfo object.
-    TimingInfo() : pcCycle(), cmin(-1), cmax(0), currentCycle(0), first(true) {}
+    TimingInfo() : pcCycle() {}
     virtual ~TimingInfo();
 
     /// Save this TimingInfo to file filename.
@@ -76,12 +77,13 @@ class TimingInfo {
   protected:
     /// The sequence of (pc, cycle_count).
     std::vector<std::pair<Addr, unsigned>> pcCycle;
-    size_t cmin; ///< Minimum number of cycles.
-    size_t cmax; ///< Maximum number of cycles.
+    size_t cmin{
+        std::numeric_limits<size_t>::max()}; ///< Minimum number of cycles.
+    size_t cmax{0};                          ///< Maximum number of cycles.
 
   private:
-    size_t currentCycle;
-    bool first;
+    size_t currentCycle{0};
+    bool first{true};
 };
 
 /// The YAML Formatter class for TimingInfo.
@@ -291,7 +293,7 @@ class PowerAnalysisConfig {
                         std::unique_ptr<PowerDumper> &&dumper,
                         NoiseSource::Type noiseTy, double noiseLevel)
         : noiseSource(NoiseSource::getSource(noiseTy, noiseLevel)),
-          powerDumper(std::move(dumper)), powerModel(PwrModel), noise(true) {}
+          powerDumper(std::move(dumper)), powerModel(PwrModel) {}
 
     /// Set power model to use.
     PowerAnalysisConfig &set(PowerModel m) {
@@ -327,7 +329,7 @@ class PowerAnalysisConfig {
     std::unique_ptr<NoiseSource> noiseSource;
     std::unique_ptr<PowerDumper> powerDumper;
     PowerModel powerModel;
-    bool noise;
+    bool noise{true};
 };
 
 /// The PowerTrace class represents a unit of work: an ExecutionRange

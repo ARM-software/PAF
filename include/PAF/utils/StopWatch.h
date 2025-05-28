@@ -55,7 +55,7 @@ class StopWatchBase {
 class StopWatch : public StopWatchBase {
 
   public:
-    StopWatch() : StopWatchBase(), startTime(), stopTime(), running(false) {}
+    StopWatch() : StopWatchBase(), startTime(), stopTime() {}
 
     /// Start the stopwatch, recording the start time and return the time point
     /// which was captured.
@@ -85,7 +85,7 @@ class StopWatch : public StopWatchBase {
   private:
     StopWatchBase::TimePoint startTime;
     StopWatchBase::TimePoint stopTime;
-    bool running;
+    bool running{false};
 };
 
 /// AutoStopWatch implements a stopwatch that will start automatically when

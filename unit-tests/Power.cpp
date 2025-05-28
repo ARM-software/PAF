@@ -402,7 +402,7 @@ struct TestPowerDumper : public PowerDumper {
 class TestRegBankDumper : public RegBankDumper {
   public:
     TestRegBankDumper(bool enabled = false)
-        : RegBankDumper(enabled), regbank(), nr(0) {}
+        : RegBankDumper(enabled), regbank() {}
 
     void reset() {
         nr = 0;
@@ -467,14 +467,14 @@ class TestRegBankDumper : public RegBankDumper {
 
   private:
     vector<vector<uint64_t>> regbank;
-    size_t nr;
+    size_t nr{0};
 };
 
 // A mock for testing memory accesses traces.
 struct TestMemAccessesDumper : public MemoryAccessesDumper {
 
     TestMemAccessesDumper(bool enabled = false)
-        : MemoryAccessesDumper(enabled), lastAccesses(), accessesCount(0) {}
+        : MemoryAccessesDumper(enabled), lastAccesses() {}
 
     void dump(uint64_t pc, const vector<MemoryAccess> &MA) override {
         if (!MA.empty())
@@ -504,21 +504,21 @@ struct TestMemAccessesDumper : public MemoryAccessesDumper {
 
   private:
     vector<MemoryAccess> lastAccesses;
-    size_t accessesCount;
+    size_t accessesCount{0};
 };
 
 // A mock for testing instruction dumps.
 struct TestInstrDumper : public InstrDumper {
     TestInstrDumper(bool enabled = false, bool dumpMemAccess = false,
                     bool dumpRegBank = false)
-        : InstrDumper(enabled, dumpMemAccess, dumpRegBank), instrCount(0) {}
+        : InstrDumper(enabled, dumpMemAccess, dumpRegBank) {}
 
     size_t numInstructions() const { return instrCount; }
 
     void reset() { instrCount = 0; }
 
   private:
-    size_t instrCount;
+    size_t instrCount{0};
 
     void dumpImpl(const ReferenceInstruction &I,
                   const vector<uint64_t> *regs) override {
@@ -529,7 +529,7 @@ struct TestInstrDumper : public InstrDumper {
 class TestOracle : public PowerTrace::Oracle {
   public:
     TestOracle(const ReferenceInstruction *Inst, size_t N)
-        : PowerTrace::Oracle(), registers(), regbank(), nr(0), defaultValue(0) {
+        : PowerTrace::Oracle(), registers(), regbank() {
         // Gather how many registers we have in this instruction sequence.
         // And check time is strictly monotonically increasing.
         Time t;
@@ -596,8 +596,8 @@ class TestOracle : public PowerTrace::Oracle {
   private:
     map<string, unsigned> registers;
     map<Time, vector<uint64_t>> regbank;
-    size_t nr;
-    const uint64_t defaultValue;
+    size_t nr{0};
+    const uint64_t defaultValue{0};
 };
 
 static const array<ReferenceInstruction, 4> Insts{

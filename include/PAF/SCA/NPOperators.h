@@ -218,7 +218,7 @@ template <> class Location<false> {
 };
 template <> class Location<true> {
   public:
-    Location() : r(-1), c(-1) {}
+    Location() {}
     void reset() {
         r = -1;
         c = -1;
@@ -232,8 +232,8 @@ template <> class Location<true> {
     const size_t &col() const noexcept { return c; }
 
   private:
-    size_t r;
-    size_t c;
+    size_t r{std::numeric_limits<size_t>::max()};
+    size_t c{std::numeric_limits<size_t>::max()};
 };
 
 /// Function object to find the minimum value in an NPArray.
@@ -347,7 +347,7 @@ class Mean : public State<double> {
                   "Mean does not support location information");
 
   public:
-    Mean() : State<double>(0.0), n(0) {}
+    Mean() : State<double>(0.0) {}
 
     void reset() {
         State<Ty>::setValue(0.0);
@@ -363,7 +363,7 @@ class Mean : public State<double> {
     size_t count() const { return n; }
 
   protected:
-    size_t n; // Number of samples.
+    size_t n{0}; // Number of samples.
 };
 
 template <typename Ty, bool enableLocation = false>
@@ -372,7 +372,7 @@ class MeanWithVar : public Mean<Ty> {
                   "MeanWithVar does not support location information");
 
   public:
-    MeanWithVar() : Mean<Ty>(), v(0.0) {}
+    MeanWithVar() : Mean<Ty>() {}
 
     void reset() {
         Mean<Ty>::reset();
@@ -395,7 +395,7 @@ class MeanWithVar : public Mean<Ty> {
     double stddev() const { return std::sqrt(v / double(Mean<Ty>::count())); }
 
   private:
-    double v; // The variance
+    double v{0.0}; // The variance
 };
 
 } // namespace SCA

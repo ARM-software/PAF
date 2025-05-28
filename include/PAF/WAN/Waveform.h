@@ -933,9 +933,7 @@ class WaveformStatistics : public Waveform::Visitor {
     WaveformStatistics(const Waveform &W,
                        const Waveform::Visitor::Options &options =
                            Waveform::Visitor::Options())
-        : Waveform::Visitor(&W, options), aliases(), numSignals(0),
-          numAliases(0), numChanges(0), timingsMemSize(), signalsMemSize(0),
-          scopesMemSize(0) {}
+        : Waveform::Visitor(&W, options), aliases() {}
 
     void enterScope(const Waveform::Scope &scope) override;
     void leaveScope() override;
@@ -946,13 +944,14 @@ class WaveformStatistics : public Waveform::Visitor {
 
   private:
     std::set<std::size_t> aliases;
-    size_t numSignals;
-    size_t numAliases;
-    size_t numChanges;
-    size_t timingsMemSize; //< Size in Bytes of the timing indexes.
-    size_t
-        signalsMemSize;   //< Size in Bytes in memory of the Waveform structure.
-    size_t scopesMemSize; //< Size in Bytes in memory of the Scopes structure.
+    size_t numSignals{0};
+    size_t numAliases{0};
+    size_t numChanges{0};
+    size_t timingsMemSize{}; //< Size in Bytes of the timing indexes.
+    size_t signalsMemSize{
+        0}; //< Size in Bytes in memory of the Waveform structure.
+    size_t scopesMemSize{
+        0}; //< Size in Bytes in memory of the Scopes structure.
 };
 
 std::ostream &operator<<(std::ostream &os, Waveform::SignalDesc::Kind k);

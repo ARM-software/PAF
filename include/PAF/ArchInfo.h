@@ -71,8 +71,7 @@ class InstrInfo {
   public:
     enum InstructionKind { NO_KIND, LOAD, STORE, BRANCH, CALL };
 
-    InstrInfo()
-        : inputRegisters(), kind(InstructionKind::NO_KIND), addressingMode() {
+    InstrInfo() : inputRegisters(), addressingMode() {
         inputRegisters.reserve(4);
     }
     InstrInfo(const InstrInfo &) = default;
@@ -174,7 +173,7 @@ class InstrInfo {
     /// The raw list of implicit registers read.
     std::vector<unsigned> implicitInputRegisters;
     /// This instruction kind: load, store, branch, call, ...
-    InstructionKind kind;
+    InstructionKind kind{InstructionKind::NO_KIND};
     /// The addressing mode used by this load / store instruction.
     AddressingMode addressingMode;
 };

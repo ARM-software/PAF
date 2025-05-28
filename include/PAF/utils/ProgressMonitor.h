@@ -20,6 +20,7 @@
 
 #pragma once
 
+#include <limits>
 #include <ostream>
 #include <string>
 
@@ -34,8 +35,7 @@ class ProgressMonitor {
     /// of the task.
     ProgressMonitor(std::ostream &OS, const std::string &Title, size_t Total,
                     bool Visible = true)
-        : os(OS), title(Title), totalNumberOfSteps(Total), progress(0),
-          lastPercentageLogged(-1), visible(Visible) {
+        : os(OS), title(Title), totalNumberOfSteps(Total), visible(Visible) {
         display();
     }
 
@@ -71,9 +71,9 @@ class ProgressMonitor {
     /// The total number of steps expected to completion on this task.
     const size_t totalNumberOfSteps;
     /// How many steps have been performed since the beginning.
-    size_t progress;
+    size_t progress{0};
     /// The last percentage that was updated.
-    unsigned lastPercentageLogged;
+    unsigned lastPercentageLogged{std::numeric_limits<unsigned>::max()};
     /// Display the progress monitor iff true.
     bool visible;
 };

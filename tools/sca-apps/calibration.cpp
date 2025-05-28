@@ -34,12 +34,12 @@ using namespace PAF::SCA;
 template <typename Ty> struct MinMax {
     Ty minValue;
     Ty maxValue;
-    size_t minCnt;
-    size_t maxCnt;
+    size_t minCnt{0};
+    size_t maxCnt{0};
 
     MinMax()
         : minValue(numeric_limits<Ty>::max()),
-          maxValue(numeric_limits<Ty>::min()), minCnt(0), maxCnt(0) {}
+          maxValue(numeric_limits<Ty>::min()) {}
 
     void operator()(double v) {
         if (v > maxValue) {

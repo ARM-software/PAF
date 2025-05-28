@@ -96,7 +96,7 @@ class SignalDiff {
   public:
     SignalDiff(const DiffDataCollector &DDC1, const DiffDataCollector &DDC2,
                ostream &os, bool stopAtFirstDifference = false)
-        : ddC1(DDC1), ddC2(DDC2), uncomparable(false), differences() {
+        : ddC1(DDC1), ddC2(DDC2), differences() {
 
         const Waveform *W1 = DDC1.getWaveform();
         const Waveform *W2 = DDC2.getWaveform();
@@ -325,7 +325,7 @@ class SignalDiff {
   private:
     const DiffDataCollector &ddC1;
     const DiffDataCollector &ddC2;
-    bool uncomparable;
+    bool uncomparable{false};
     vector<Difference> differences;
 };
 

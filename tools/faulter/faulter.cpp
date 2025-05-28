@@ -213,8 +213,7 @@ class FaulterInjectionPlanner {
                             uint64_t ProgramEndAddress)
         : cpu(CPU), breakpoints(), successors(),
           campaign(Image, Tarmac, MaxTraceTime, ProgramEntryAddress & ~1UL,
-                   ProgramEndAddress & ~1UL),
-          instCnt(0) {}
+                   ProgramEndAddress & ~1UL) {}
     virtual ~FaulterInjectionPlanner() = default;
 
     virtual void operator()(const PAF::ReferenceInstruction &I) = 0;
@@ -284,7 +283,7 @@ class FaulterInjectionPlanner {
     BPCollector breakpoints;
     SuccessorCollector successors;
     InjectionCampaign campaign;
-    size_t instCnt;
+    size_t instCnt{0};
 };
 
 class InstructionSkipPlanner : public FaulterInjectionPlanner {

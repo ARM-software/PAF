@@ -126,7 +126,7 @@ void Classifier::dump(std::ostream &os) const {
 namespace {
 class ClassifierParser {
   public:
-    ClassifierParser(const string &spec) : spec(spec), pos(0) {}
+    ClassifierParser(const string &spec) : spec(spec) {}
 
     bool consume(const char kw[], unsigned len) {
         if (pos + len > spec.size())
@@ -157,7 +157,7 @@ class ClassifierParser {
 
   private:
     const string &spec;
-    size_t pos;
+    size_t pos{0};
 };
 } // namespace
 

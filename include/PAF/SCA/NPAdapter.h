@@ -34,8 +34,7 @@ template <class DataTy> class NPAdapter {
   public:
     /// Construct an NPYAdapter with num_rows rows.
     NPAdapter(size_t expected_num_rows)
-        : currentRow(0), maxRowLength(0),
-          w(expected_num_rows > 1 ? expected_num_rows : 1) {}
+        : w(expected_num_rows > 1 ? expected_num_rows : 1) {}
 
     /// Move to next row.
     void next() {
@@ -97,8 +96,8 @@ template <class DataTy> class NPAdapter {
     }
 
   private:
-    size_t currentRow;
-    size_t maxRowLength;
+    size_t currentRow{0};
+    size_t maxRowLength{0};
     std::vector<std::vector<DataTy>> w;
 };
 

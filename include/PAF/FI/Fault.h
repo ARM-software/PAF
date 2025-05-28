@@ -66,7 +66,7 @@ class FaultModelBase {
     /// Construct a FaultModelBase.
     FaultModelBase(unsigned long Time, uint64_t Address, uint32_t Instruction,
                    unsigned Width, const std::string &Disassembly)
-        : disassembly(Disassembly), id(0), time(Time), address(Address),
+        : disassembly(Disassembly), time(Time), address(Address),
           instruction(Instruction), width(Width), bpInfo(nullptr) {}
     /// Copy construct a FaultModelBase.
     FaultModelBase(const FaultModelBase &F)
@@ -96,7 +96,7 @@ class FaultModelBase {
 
   protected:
     std::string disassembly; ///< The original instruction, disassembled.
-    unsigned long id;        ///< Each fault gets a unique Id within a Campaign.
+    unsigned long id{0};     ///< Each fault gets a unique Id within a Campaign.
     unsigned long time;      ///< The time at which to inject a fault.
     uint64_t address;        ///< The address of the instruction.
     uint32_t instruction;    ///< The original instruction opcode.
