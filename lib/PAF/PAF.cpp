@@ -346,7 +346,7 @@ ExecutionRange MTAnalyzer::getFullExecutionRange() const {
     if (!find_buffer_limit(true, &finalNode))
         reporter->errx(EXIT_FAILURE,
                        "Unable to retrieve tarmac trace end node");
-    return ExecutionRange(TarmacSite(), finalNode);
+    return {TarmacSite(), finalNode};
 }
 
 vector<ExecutionRange>
@@ -512,7 +512,7 @@ MTAnalyzer::getLabelPairs(const string &StartLabel, const string &EndLabel,
 
     // Exit early if there is nothing to do.
     if (StartAddresses.size() == 0)
-        return vector<ExecutionRange>();
+        return {};
 
     sort(StartAddresses.begin(), StartAddresses.end());
     sort(EndAddresses.begin(), EndAddresses.end());

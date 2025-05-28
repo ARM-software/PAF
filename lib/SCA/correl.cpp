@@ -39,7 +39,7 @@ NPArray<double> correl(size_t b, size_t e, const NPArray<double> &traces,
            "Number of intermediate values does not match number of traces");
 
     if (b == e)
-        return NPArray<double>();
+        return {};
 
     const size_t nbtraces = traces.rows();
     const size_t nbsamples = e - b;

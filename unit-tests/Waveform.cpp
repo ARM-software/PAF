@@ -67,7 +67,7 @@ using FSTWaveFile = PAF::WAN::FSTWaveFile;
 
 namespace {
 pair<bool, SignalIdxTy> searchResult(bool res, SignalIdxTy Idx) {
-    return pair<bool, SignalIdxTy>(res, Idx);
+    return {res, Idx};
 }
 
 struct MyVisitor : public Waveform::Visitor {

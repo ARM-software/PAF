@@ -40,7 +40,7 @@ class WaveFileTest : public WaveFile {
     bool read(Waveform &W) override { return true; }
     bool write(const Waveform &W) override { return true; }
 
-    vector<TimeTy> getAllChangesTimes() override { return vector<TimeTy>(); }
+    vector<TimeTy> getAllChangesTimes() override { return {}; }
 };
 
 TEST(WaveFile, Basics) {

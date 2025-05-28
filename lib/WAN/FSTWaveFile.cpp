@@ -522,5 +522,5 @@ vector<TimeTy> FSTWaveFile::getAllChangesTimes() {
     if (!visitSignals(QTB))
         DIE("Error in reading signals !");
 
-    return vector<WAN::TimeTy>(QTB.times.begin(), QTB.times.end());
+    return {QTB.times.begin(), QTB.times.end()};
 }

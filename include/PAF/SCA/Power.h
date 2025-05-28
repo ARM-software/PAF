@@ -343,7 +343,7 @@ class PowerTrace {
         Oracle() = default;
         virtual ~Oracle() = default;
         virtual std::vector<uint64_t> getRegBankState(Time t) const {
-            return std::vector<uint64_t>();
+            return {};
         }
 
         virtual uint64_t getMemoryState(Addr address, size_t size,

@@ -564,7 +564,7 @@ class TestOracle : public PowerTrace::Oracle {
 
     std::vector<uint64_t> getRegBankState(Time t) const override {
         if (regbank.empty() || t < regbank.begin()->first)
-            return vector<uint64_t>(nr, defaultValue);
+            return {nr, defaultValue};
         const auto it = regbank.find(t);
         if (it == regbank.end())
             return regbank.rend()->second;

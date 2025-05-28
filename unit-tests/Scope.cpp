@@ -49,7 +49,7 @@ using TimeTy = PAF::WAN::TimeTy;
 #endif
 
 pair<bool, SignalIdxTy> searchResult(bool res, SignalIdxTy Idx) {
-    return pair<bool, SignalIdxTy>(res, Idx);
+    return {res, Idx};
 }
 
 TEST(Scope, Basics) {

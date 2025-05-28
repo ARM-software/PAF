@@ -127,14 +127,14 @@ Value AESSBox::eval() const {
     Value::ConcreteType idx = op->eval().getValue();
     assert(idx >= 0 && idx < AES_sbox.size() &&
            "unexpected AES SBox index value");
-    return Value(AES_sbox[idx], getType());
+    return {AES_sbox[idx], getType()};
 }
 
 Value AESISBox::eval() const {
     Value::ConcreteType idx = op->eval().getValue();
     assert(idx >= 0 && idx < AES_isbox.size() &&
            "unexpected AES ISBox index value");
-    return Value(AES_isbox[idx], getType());
+    return {AES_isbox[idx], getType()};
 }
 
 Value Lsl::eval() const {
@@ -144,7 +144,7 @@ Value Lsl::eval() const {
     assert(shAmount <= ValueType::getNumBits(getType()) &&
            "Can not shift by more than bits in the data type");
     assert(shAmount >= 0 && "Shift amount must be positive");
-    return Value(lhs->eval().getValue() << shAmount, lhs->getType());
+    return {lhs->eval().getValue() << shAmount, lhs->getType()};
 }
 
 Value Lsr::eval() const {
@@ -156,13 +156,15 @@ Value Lsr::eval() const {
            "Can not shift by more than bits in the data type");
     assert(shAmount >= 0 && "Shift amount must be positive");
     if (getType() == ValueType::UINT8)
-        return Value(uint8_t(val) >> shAmount, getType());
+        return {static_cast<Value::ConcreteType>(uint8_t(val) >> shAmount),
+                getType()};
     if (getType() == ValueType::UINT16)
-        return Value(uint16_t(val) >> shAmount, getType());
+        return {static_cast<Value::ConcreteType>(uint16_t(val) >> shAmount),
+                getType()};
     if (getType() == ValueType::UINT32)
-        return Value(uint32_t(val) >> shAmount, getType());
+        return {uint32_t(val) >> shAmount, getType()};
     assert(getType() == ValueType::UINT64 && "Expecting an UINT64 type here");
-    return Value(uint64_t(val) >> shAmount, getType());
+    return {uint64_t(val) >> shAmount, getType()};
 }
 
 Value Asr::eval() const {
@@ -174,13 +176,17 @@ Value Asr::eval() const {
            "Can not shift by more than bits in the data type");
     assert(shAmount >= 0 && "Shift amount must be positive");
     if (getType() == ValueType::UINT8)
-        return Value(int8_t(val) >> shAmount, getType());
+        return {static_cast<Value::ConcreteType>(int8_t(val) >> shAmount),
+                getType()};
     if (getType() == ValueType::UINT16)
-        return Value(int16_t(val) >> shAmount, getType());
+        return {static_cast<Value::ConcreteType>(int16_t(val) >> shAmount),
+                getType()};
     if (getType() == ValueType::UINT32)
-        return Value(int32_t(val) >> shAmount, getType());
+        return {static_cast<Value::ConcreteType>(int32_t(val) >> shAmount),
+                getType()};
     assert(getType() == ValueType::UINT64 && "Expecting an UINT64 type here");
-    return Value(int64_t(val) >> shAmount, getType());
+    return {static_cast<Value::ConcreteType>(int64_t(val) >> shAmount),
+            getType()};
 }
 
 } // namespace Expr

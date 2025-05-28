@@ -148,9 +148,9 @@ class ValueTy {
     explicit ValueTy(Logic::Ty v) : value(1, v) {}
 
     // Bus constructors
-    ValueTy(unsigned numBits, Logic::Ty v = Logic::Ty::UNKNOWN)
+    ValueTy(size_t numBits, Logic::Ty v = Logic::Ty::UNKNOWN)
         : value(numBits, v) {}
-    ValueTy(unsigned numBits, char c) : value(numBits, Logic::fromChar(c)) {}
+    ValueTy(size_t numBits, char c) : value(numBits, Logic::fromChar(c)) {}
 
     // A range constructor.
     template <typename InputIterator>
@@ -171,16 +171,16 @@ class ValueTy {
     ValueTy(ValueTy &&) = default;
 
     static ValueTy logic0(size_t numBits = 1) {
-        return ValueTy(numBits, Logic::Ty::LOGIC_0);
+        return {numBits, Logic::Ty::LOGIC_0};
     }
     static ValueTy logic1(size_t numBits = 1) {
-        return ValueTy(numBits, Logic::Ty::LOGIC_1);
+        return {numBits, Logic::Ty::LOGIC_1};
     }
     static ValueTy highZ(size_t numBits = 1) {
-        return ValueTy(numBits, Logic::Ty::HIGH_Z);
+        return {numBits, Logic::Ty::HIGH_Z};
     }
     static ValueTy unknown(size_t numBits = 1) {
-        return ValueTy(numBits, Logic::Ty::UNKNOWN);
+        return {numBits, Logic::Ty::UNKNOWN};
     }
 
     ValueTy &operator=(const ValueTy &) = default;
@@ -517,7 +517,7 @@ class Signal {
         ValueTy C(numBits);
         for (size_t i = 0; i < numBits; i++)
             C.set(value[packNum + i].get(packOffset), i);
-        return ChangeTy((*allTimes)[timeIdx[change]], std::move(C));
+        return {(*allTimes)[timeIdx[change]], std::move(C)};
     }
 
     ValueTy getValueChange(size_t change) const {
@@ -598,7 +598,7 @@ class Signal {
     ChangeBoundsTy getChangeTimeBoundsIdx(TimeTy t) const {
         size_t UpIdx = getChangeTimeUpIdx(t);
         size_t LowIdx = (UpIdx == 0) ? getNumChanges() : UpIdx - 1;
-        return ChangeBoundsTy(LowIdx, UpIdx);
+        return {LowIdx, UpIdx};
     }
 
     ValueTy getValueAtTime(TimeTy t) const {
@@ -715,8 +715,8 @@ class Signal {
         size_t idx;
     };
 
-    Iterator begin() const { return Iterator(this, 0); }
-    Iterator end() const { return Iterator(this, getNumChanges()); }
+    Iterator begin() const { return {this, 0}; }
+    Iterator end() const { return {this, getNumChanges()}; }
 
     size_t getObjectSize() const {
         return sizeof(*this) + timeIdx.size() * sizeof(timeIdx[0]) +

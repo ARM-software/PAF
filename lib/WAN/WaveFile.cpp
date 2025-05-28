@@ -80,7 +80,7 @@ Waveform WaveFile::read() {
 
 Waveform readAndMerge(const std::vector<std::string> &files) {
     if (files.empty())
-        return Waveform();
+        return {};
 
     // Collect all changes times.
     set<TimeTy> AllTimes;

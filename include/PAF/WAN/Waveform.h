@@ -172,15 +172,15 @@ class Waveform {
 
         static SignalDesc Register(const std::string &name, bool alias,
                                    SignalIdxTy idx) {
-            return SignalDesc(name, Kind::REGISTER, alias, idx);
+            return {name, Kind::REGISTER, alias, idx};
         }
         static SignalDesc Wire(const std::string &name, bool alias,
                                SignalIdxTy idx) {
-            return SignalDesc(name, Kind::WIRE, alias, idx);
+            return {name, Kind::WIRE, alias, idx};
         }
         static SignalDesc Integer(const std::string &name, bool alias,
                                   SignalIdxTy idx) {
-            return SignalDesc(name, Kind::INTEGER, alias, idx);
+            return {name, Kind::INTEGER, alias, idx};
         }
 
         const std::string &getName() const { return name; }
@@ -841,17 +841,11 @@ class Waveform {
     }
 
     using signals_iterator = SignalsIterator<Signal>;
-    signals_iterator begin() { return signals_iterator(&signals, 0); }
-    signals_iterator end() {
-        return signals_iterator(&signals, signals.size());
-    }
+    signals_iterator begin() { return {&signals, 0}; }
+    signals_iterator end() { return {&signals, signals.size()}; }
     using const_signals_iterator = SignalsIterator<Signal>;
-    const_signals_iterator begin() const {
-        return const_signals_iterator(&signals, 0);
-    }
-    const_signals_iterator end() const {
-        return const_signals_iterator(&signals, signals.size());
-    }
+    const_signals_iterator begin() const { return {&signals, 0}; }
+    const_signals_iterator end() const { return {&signals, signals.size()}; }
 
     using times_iterator = std::vector<WAN::TimeTy>::iterator;
     times_iterator timesBegin() { return allTimes.begin(); }

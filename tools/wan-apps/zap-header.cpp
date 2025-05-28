@@ -51,7 +51,7 @@ static string accessFstHeader(fstream &fst, const std::string &fileName,
     fst.write(ZapMessage.c_str(), ZapMessage.size());
 
     // Return the captured value.
-    return string(buf.data());
+    return {buf.data()};
 }
 
 int main(int argc, char *argv[]) {

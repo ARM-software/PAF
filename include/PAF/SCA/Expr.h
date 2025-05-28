@@ -77,15 +77,15 @@ class ValueType {
     std::string repr() const {
         switch (ty) {
         case ValueType::UNDEF:
-            return std::string("UNDEF");
+            return {"UNDEF"};
         case ValueType::UINT8:
-            return std::string("UINT8");
+            return {"UINT8"};
         case ValueType::UINT16:
-            return std::string("UINT16");
+            return {"UINT16"};
         case ValueType::UINT32:
-            return std::string("UINT32");
+            return {"UINT32"};
         case ValueType::UINT64:
-            return std::string("UINT64");
+            return {"UINT64"};
         }
     }
 
@@ -172,7 +172,7 @@ class Constant : public InputBase {
     ~Constant() override;
 
     /// Evaluate this expression's value.
-    Value eval() const override { return Value(val); }
+    Value eval() const override { return {val}; }
 
     /// Get a string representation of this Constant.
     std::string repr() const override;
@@ -196,7 +196,7 @@ class Input : public InputBase {
     ~Input() override;
 
     /// Evaluate this expression's value.
-    Value eval() const override { return Value(val); }
+    Value eval() const override { return {val}; }
 
     /// Get a string representation of this Input.
     std::string repr() const override {
@@ -314,7 +314,7 @@ class Not : public UnaryOp {
 
     /// Evaluate this expression's value.
     Value eval() const override {
-        return Value(~op->eval().getValue(), op->getType());
+        return {~op->eval().getValue(), op->getType()};
     }
 };
 
@@ -333,7 +333,7 @@ class Truncate : public UnaryOp {
     ~Truncate() override;
 
     /// Evaluate this expression's value.
-    Value eval() const override { return Value(op->eval().getValue(), vt); }
+    Value eval() const override { return {op->eval().getValue(), vt}; }
 
     /// Get the type of this expression.
     ValueType::Type getType() const override { return vt.getType(); }
@@ -420,8 +420,8 @@ class Xor : public BinaryOp {
 
     /// Evaluate this expression's value.
     Value eval() const override {
-        return Value(lhs->eval().getValue() ^ rhs->eval().getValue(),
-                     lhs->getType());
+        return {lhs->eval().getValue() ^ rhs->eval().getValue(),
+                lhs->getType()};
     }
 };
 
@@ -434,8 +434,8 @@ class Or : public BinaryOp {
 
     /// Evaluate this expression's value.
     Value eval() const override {
-        return Value(lhs->eval().getValue() | rhs->eval().getValue(),
-                     lhs->getType());
+        return {lhs->eval().getValue() | rhs->eval().getValue(),
+                lhs->getType()};
     }
 };
 
@@ -481,8 +481,8 @@ class And : public BinaryOp {
 
     /// Evaluate this expression's value.
     Value eval() const override {
-        return Value(lhs->eval().getValue() & rhs->eval().getValue(),
-                     lhs->getType());
+        return {lhs->eval().getValue() & rhs->eval().getValue(),
+                lhs->getType()};
     }
 };
 

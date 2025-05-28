@@ -227,7 +227,7 @@ class VCDParserQuick : public VCDParserBase {
             }
         }
         if (!ok)
-            return vector<TimeTy>();
+            return {};
 
         vector<TimeTy> AllTimes;
         while (readline()) {

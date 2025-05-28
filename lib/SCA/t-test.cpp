@@ -43,7 +43,7 @@ NPArray<double> t_test(size_t b, size_t e, const NPArray<double> &traces,
     assert(e <= traces.cols() && "Not that many samples in the trace");
 
     if (b == e)
-        return NPArray<double>();
+        return {};
 
     const size_t nbtraces = traces.rows();
     const size_t nbsamples = e - b;
@@ -102,7 +102,7 @@ NPArray<double> t_test(size_t b, size_t e, const NPArray<double> &group0,
     assert(group1.rows() > 1 && "group1 must have more than one trace");
 
     if (b == e)
-        return NPArray<double>();
+        return {};
 
     NPArray<double> variance0;
     NPArray<double> mean0 = group0.meanWithVar(
@@ -159,7 +159,7 @@ NPArray<double> t_test(size_t b, size_t e, const vector<double> &m0,
     assert(m0.size() >= e - b && "Number of means in m0 must match range");
 
     if (b == e)
-        return NPArray<double>();
+        return {};
 
     NPArray<double> tvalue(1, e - b);
     for (size_t s = b; s < e; s++)
@@ -179,7 +179,7 @@ NPArray<double> t_test(size_t b, size_t e, const vector<double> &m0,
     assert(m0.size() >= e - b && "Number of means in m0 must match range");
 
     if (b == e)
-        return NPArray<double>();
+        return {};
 
     NPArray<double> tvalue(1, e - b);
     for (size_t s = b; s < e; s++)
@@ -304,7 +304,7 @@ NPArray<double> perfect_t_test(size_t b, size_t e,
 
     // Return a somehow sensible result if we reach this case.
     if (group0Cnt <= 1 || group1Cnt <= 1)
-        return NPArray<double>();
+        return {};
 
     function<bool(size_t)> selectGroup0 = [&classifier](size_t s) {
         return classifier[s] == Classification::GROUP_0;

@@ -1283,9 +1283,8 @@ vector<V7MInfo::Register> V7MInfo::registersReadByInstr(const InstrInfo &II,
     vector<unsigned> regs(Uniquify ? II.getUniqueInputRegisters(Implicit)
                                    : II.getInputRegisters(Implicit));
 
-    return vector<V7MInfo::Register>(
-        reinterpret_cast<V7MInfo::Register *>(regs.data()),
-        reinterpret_cast<V7MInfo::Register *>(regs.data() + regs.size()));
+    return {reinterpret_cast<V7MInfo::Register *>(regs.data()),
+            reinterpret_cast<V7MInfo::Register *>(regs.data() + regs.size())};
 }
 
 // ===================================================================
