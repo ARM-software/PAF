@@ -27,7 +27,7 @@ namespace PAF {
 
 std::string concat(std::initializer_list<std::string> strings);
 
-template <typename Ty> std::string getAsString(Ty v) {
+template <typename Ty> std::string getAsString(const Ty &v) {
     std::ostringstream oss;
     oss << v;
     return oss.str();
