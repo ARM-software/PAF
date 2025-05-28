@@ -55,7 +55,7 @@ class StopWatchBase {
 class StopWatch : public StopWatchBase {
 
   public:
-    StopWatch() : StopWatchBase(), startTime(), stopTime() {}
+    StopWatch() : StopWatchBase() {}
 
     /// Start the stopwatch, recording the start time and return the time point
     /// which was captured.

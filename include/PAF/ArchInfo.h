@@ -71,9 +71,7 @@ class InstrInfo {
   public:
     enum InstructionKind { NO_KIND, LOAD, STORE, BRANCH, CALL };
 
-    InstrInfo() : inputRegisters(), addressingMode() {
-        inputRegisters.reserve(4);
-    }
+    InstrInfo() { inputRegisters.reserve(4); }
     InstrInfo(const InstrInfo &) = default;
     InstrInfo(InstrInfo &&) = default;
 

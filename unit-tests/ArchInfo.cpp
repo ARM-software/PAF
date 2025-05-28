@@ -233,10 +233,9 @@ template <typename AInfo, ISet mode, unsigned width> struct TRB {
   public:
     TRB(uint32_t opc, const char *dis)
         : inst(0, IE_EXECUTED, 1, mode, width, opc, dis, {}, {}),
-          kind(InstrInfo::NO_KIND), addresingMode() {}
+          kind(InstrInfo::NO_KIND) {}
     TRB(uint32_t opc, const char *dis, InstrInfo::InstructionKind K)
-        : inst(0, IE_EXECUTED, 1, mode, width, opc, dis, {}, {}), kind(K),
-          addresingMode() {}
+        : inst(0, IE_EXECUTED, 1, mode, width, opc, dis, {}, {}), kind(K) {}
     TRB(uint32_t opc, const char *dis, InstrInfo::InstructionKind K,
         AddressingMode::OffsetFormat Offset, AddressingMode::BaseUpdate Update)
         : inst(0, IE_EXECUTED, 1, mode, width, opc, dis, {}, {}), kind(K),

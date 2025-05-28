@@ -137,7 +137,7 @@ struct MemoryAccess : public Access {
     Addr addr;   ///< The access address.
 
     /// Uninitialized MemoryAccess constructor.
-    MemoryAccess() : Access(), size(), addr() {}
+    MemoryAccess() : size(), addr() {}
     /// MemoryAccess copy constructor.
     MemoryAccess(const MemoryAccess &) = default;
     /// Construct a MemoryAccess from a size, addr, value and direction.
@@ -197,7 +197,7 @@ struct RegisterAccess : public Access {
     std::string name; ///< Name of the register that was accessed.
 
     /// Uninitialized RegisterAccess constructor.
-    RegisterAccess() : Access() {}
+    RegisterAccess() {}
     /// Construct a RegisterAccess from a register name, a value and a
     /// direction.
     RegisterAccess(const std::string &name, unsigned long long value,
@@ -318,9 +318,9 @@ struct ReferenceInstruction {
 
     /// Constructor for a Tarmac parser.
     ReferenceInstruction(const InstructionEvent &ev)
-        : disassembly(trimSpacesAndComment(ev.disassembly)), memAccess(),
-          regAccess(), time(ev.time), pc(ev.pc), effect(ev.effect),
-          iset(ev.iset), width(ev.width), instruction(ev.instruction) {}
+        : disassembly(trimSpacesAndComment(ev.disassembly)), time(ev.time),
+          pc(ev.pc), effect(ev.effect), iset(ev.iset), width(ev.width),
+          instruction(ev.instruction) {}
 
     /// Copy assignment operator.
     ReferenceInstruction &operator=(const ReferenceInstruction &) = default;

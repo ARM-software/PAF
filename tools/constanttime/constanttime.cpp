@@ -39,7 +39,7 @@ namespace {
 
 class ReferenceTrace : public vector<PAF::ReferenceInstruction> {
   public:
-    ReferenceTrace() : vector<PAF::ReferenceInstruction>() {}
+    ReferenceTrace() {}
 
     void operator()(const PAF::ReferenceInstruction &I) { this->push_back(I); }
 

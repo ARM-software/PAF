@@ -148,7 +148,7 @@ class Classifier {
             CRASH,
             UNDECIDED
         };
-        ClassificationExpr(Kind K) : checkers(), exprKind(K) {}
+        ClassificationExpr(Kind K) : exprKind(K) {}
         ~ClassificationExpr() {
             for (auto &c : checkers)
                 delete c;
@@ -240,7 +240,7 @@ class Classifier {
 class Oracle {
   public:
     /// Default (empty) Oracle constructor.
-    Oracle() : classifiers() {}
+    Oracle() {}
     /// Copy constructor.
     Oracle(const Oracle &) = default;
     /// Move constructor.

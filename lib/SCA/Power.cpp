@@ -64,9 +64,8 @@ class PowerModelBase {
 
     PowerModelBase(const PAF::ArchInfo &CPU, const PowerTraceConfig &PTConfig,
                    PowerAnalysisConfig &PAConfig)
-        : cpu(CPU), PTConfig(PTConfig), PAConfig(PAConfig), memory(),
-          outputRegs(), inputRegs(0.0), pc(0.0), psr(0.0), instr(0.0),
-          cycles(1) {}
+        : cpu(CPU), PTConfig(PTConfig), PAConfig(PAConfig), inputRegs(0.0),
+          pc(0.0), psr(0.0), instr(0.0), cycles(1) {}
 
     unsigned getLastInstrCycles() const { return cycles; }
 
@@ -407,14 +406,12 @@ void YAMLTimingInfo::save(ostream &os) const {
 }
 
 CSVPowerDumper::CSVPowerDumper(const string &filename, bool detailed_output)
-    : PowerDumper(), FileStreamDumper(filename), sep(","),
-      detailedOutput(detailed_output) {
+    : FileStreamDumper(filename), sep(","), detailedOutput(detailed_output) {
     *this << std::fixed << std::setprecision(2);
 }
 
 CSVPowerDumper::CSVPowerDumper(ostream &s, bool detailed_output)
-    : PowerDumper(), FileStreamDumper(s), sep(","),
-      detailedOutput(detailed_output) {
+    : FileStreamDumper(s), sep(","), detailedOutput(detailed_output) {
     *this << std::fixed << std::setprecision(2);
 }
 

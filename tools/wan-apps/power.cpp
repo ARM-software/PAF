@@ -54,7 +54,7 @@ class RunInfo {
         Segment(size_t start, size_t end) : start(start), end(end) {}
     };
 
-    RunInfo(const string &filename = "") : segments(), fileName(filename) {
+    RunInfo(const string &filename = "") : fileName(filename) {
         if (filename.size() == 0)
             return;
 
@@ -153,8 +153,7 @@ struct HammingVisitor : public Waveform::Visitor {
 
     HammingVisitor(const string &fileName,
                    const Waveform::Visitor::Options &options)
-        : Waveform::Visitor(nullptr, options), powerTmp(), power(),
-          fileName(fileName) {}
+        : Waveform::Visitor(nullptr, options), fileName(fileName) {}
 
     HammingVisitor &setWaveform(const Waveform *wf, const RunInfo *ri) {
         w = wf;
@@ -383,8 +382,8 @@ class Analysis {
   public:
     enum Kind { HAMMING_WEIGHT = 0, HAMMING_DISTANCE, NUM_ANALYSIS };
 
-    Analysis() : HV(), fileName() {}
-    Analysis(const string &fileName) : HV(), fileName(fileName) {}
+    Analysis() {}
+    Analysis(const string &fileName) : fileName(fileName) {}
 
     bool create(Kind kind, const Waveform::Visitor::Options &options) {
         if (fileName.empty())
@@ -444,7 +443,7 @@ class Inputs {
         }
     };
 
-    Inputs() : inputs() {}
+    Inputs() {}
 
     bool empty() const { return inputs.empty(); }
 

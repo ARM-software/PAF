@@ -52,7 +52,7 @@ struct DiffDataCollector : public Waveform::Visitor {
 
     DiffDataCollector(const Waveform &W,
                       const Waveform::Visitor::Options &options)
-        : Waveform::Visitor(&W, options), map() {}
+        : Waveform::Visitor(&W, options) {}
 
     void enterScope(const Waveform::Scope &scope) override {}
     void leaveScope() override {}
@@ -96,7 +96,7 @@ class SignalDiff {
   public:
     SignalDiff(const DiffDataCollector &DDC1, const DiffDataCollector &DDC2,
                ostream &os, bool stopAtFirstDifference = false)
-        : ddC1(DDC1), ddC2(DDC2), differences() {
+        : ddC1(DDC1), ddC2(DDC2) {
 
         const Waveform *W1 = DDC1.getWaveform();
         const Waveform *W2 = DDC2.getWaveform();

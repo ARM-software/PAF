@@ -75,7 +75,7 @@ class AnalysisRangeSpecifier {
   public:
     enum Kind { NOT_SET, FUNCTION, FUNCTION_MARKERS };
 
-    AnalysisRangeSpecifier() : function(), markers() {}
+    AnalysisRangeSpecifier() {}
 
     void setFunction(const string &f) {
         kind = FUNCTION;

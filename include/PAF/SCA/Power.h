@@ -45,7 +45,7 @@ namespace SCA {
 class TimingInfo {
   public:
     /// Construct an empty TimingInfo object.
-    TimingInfo() : pcCycle() {}
+    TimingInfo() {}
     virtual ~TimingInfo();
 
     /// Save this TimingInfo to file filename.
@@ -89,7 +89,7 @@ class TimingInfo {
 /// The YAML Formatter class for TimingInfo.
 class YAMLTimingInfo : public TimingInfo {
   public:
-    YAMLTimingInfo() : TimingInfo() {}
+    YAMLTimingInfo() {}
 
     /// Save this TimingInfo to file os.
     void save(std::ostream &os) const override;
@@ -357,7 +357,7 @@ class PowerTrace {
     class MTAOracle : public Oracle {
       public:
         MTAOracle(const PAF::MTAnalyzer &MTA, const PAF::ArchInfo &CPU)
-            : Oracle(), analyzer(MTA), CPU(CPU) {}
+            : analyzer(MTA), CPU(CPU) {}
         std::vector<uint64_t> getRegBankState(Time t) const override {
             const unsigned NR = CPU.numRegisters();
             std::vector<uint64_t> regbankInitialState(NR);
@@ -389,7 +389,7 @@ class PowerTrace {
 
     /// Construct a PowerTrace.
     PowerTrace(const PowerTraceConfig &PTConfig, const PAF::ArchInfo &CPU)
-        : instructions(), PTConfig(PTConfig), CPU(CPU) {}
+        : PTConfig(PTConfig), CPU(CPU) {}
 
     /// Move construct a PowerTrace.
     PowerTrace(PowerTrace &&Other) noexcept

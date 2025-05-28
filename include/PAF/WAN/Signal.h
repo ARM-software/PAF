@@ -334,7 +334,7 @@ class Signal {
     Signal(const Signal &) = default;
     Signal(Signal &&) = default;
     Signal(const std::vector<TimeTy> &allTimes, unsigned numBits)
-        : timeIdx(), value(), allTimes(&allTimes), numBits(numBits) {}
+        : allTimes(&allTimes), numBits(numBits) {}
 
     Signal &operator=(const Signal &) = default;
     Signal &operator=(Signal &&) = default;

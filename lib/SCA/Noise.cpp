@@ -44,7 +44,7 @@ class NullNoise : public ConstantNoiseSource {
 
 class RandomNoiseSource : public NoiseSource {
   public:
-    RandomNoiseSource() : NoiseSource(), rndDevice(), twister(rndDevice()) {}
+    RandomNoiseSource() : twister(rndDevice()) {}
 
   protected:
     std::random_device rndDevice;
@@ -54,7 +54,7 @@ class RandomNoiseSource : public NoiseSource {
 class UniformNoise : public RandomNoiseSource {
   public:
     UniformNoise(double NoiseLevel)
-        : RandomNoiseSource(), noiseDist(-NoiseLevel / 2.0, NoiseLevel / 2.0) {}
+        : noiseDist(-NoiseLevel / 2.0, NoiseLevel / 2.0) {}
 
     double get() override { return noiseDist(twister); }
 
@@ -64,8 +64,7 @@ class UniformNoise : public RandomNoiseSource {
 
 class NormalNoise : public RandomNoiseSource {
   public:
-    NormalNoise(double NoiseLevel)
-        : RandomNoiseSource(), noiseDist(0.0, NoiseLevel / 2.0) {}
+    NormalNoise(double NoiseLevel) : noiseDist(0.0, NoiseLevel / 2.0) {}
 
     double get() override { return noiseDist(twister); }
 

@@ -728,8 +728,7 @@ struct VCDHierDumper : public Waveform::Visitor {
         return r->second;
     }
 
-    VCDHierDumper(ostream &O, const Waveform &W)
-        : Waveform::Visitor(&W), o(O), sigMap(), id() {
+    VCDHierDumper(ostream &O, const Waveform &W) : Waveform::Visitor(&W), o(O) {
         size_t n = W.getNumSignals();
         size_t num_chars = 0;
         while (n >= PRINTABLE_RANGE) {

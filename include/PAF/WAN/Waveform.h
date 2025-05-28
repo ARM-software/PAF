@@ -215,24 +215,21 @@ class Waveform {
         Scope(const std::string &fullScopeName, const std::string &scopeName,
               const std::string &instanceName, Kind kind)
             : fullScopeName(fullScopeName), scopeName(scopeName),
-              instanceName(instanceName), subScopes(), signals(), kind(kind),
-              root(false) {}
+              instanceName(instanceName), kind(kind), root(false) {}
         Scope(std::string &&FullScopeName, std::string &&ScopeName,
               std::string &&instanceName, Kind kind)
             : fullScopeName(std::move(FullScopeName)),
               scopeName(std::move(ScopeName)),
-              instanceName(std::move(instanceName)), subScopes(), signals(),
-              kind(kind), root(false) {}
+              instanceName(std::move(instanceName)), kind(kind), root(false) {}
         Scope()
             : fullScopeName("(root)"), scopeName("(root)"),
-              instanceName("(root)"), subScopes(), signals(),
-              kind(Kind::MODULE), root(true) {}
+              instanceName("(root)"), kind(Kind::MODULE), root(true) {}
 
         Scope(Scope &&) = default;
         Scope(const Scope &other)
             : fullScopeName(other.fullScopeName), scopeName(other.scopeName),
-              instanceName(other.instanceName), subScopes(), signals(),
-              kind(other.kind), root(other.root) {
+              instanceName(other.instanceName), kind(other.kind),
+              root(other.root) {
             subScopes.reserve(other.subScopes.size());
             for (const auto &s : other.subScopes)
                 subScopes.emplace_back(new Scope(*s.get()));
@@ -463,7 +460,7 @@ class Waveform {
               public:
                 Options(bool skipRegs = false, bool skipWires = false,
                         bool skipInts = false)
-                    : scopeFilters(), skipRegs(skipRegs), skipWires(skipWires),
+                    : skipRegs(skipRegs), skipWires(skipWires),
                       skipInts(skipInts) {}
 
                 // Add a filter to select the scopes to visit. The filter
@@ -558,19 +555,18 @@ class Waveform {
         bool root;
     };
 
-    Waveform() : fileName(), root(), allTimes(), signals() {}
-    Waveform(const std::string &FileName)
-        : fileName(FileName), root(), allTimes(), signals() {}
+    Waveform() {}
+    Waveform(const std::string &FileName) : fileName(FileName) {}
     Waveform(const std::string &FileName, uint64_t StartTime, uint64_t EndTime,
              signed char TimeScale)
         : fileName(FileName), startTime(StartTime), endTime(EndTime),
-          timeScale(TimeScale), root(), allTimes(), signals() {}
+          timeScale(TimeScale) {}
 
     Waveform(const Waveform &W)
         : fileName(W.fileName), version(W.version), date(W.date),
           comment(W.comment), startTime(W.startTime), endTime(W.endTime),
           timeZero(W.timeZero), timeScale(W.timeScale), root(W.root),
-          allTimes(W.allTimes), signals() {
+          allTimes(W.allTimes) {
         signals.reserve(W.signals.size());
         for (const auto &s : W) {
             signals.emplace_back(new Signal(s));
@@ -933,7 +929,7 @@ class WaveformStatistics : public Waveform::Visitor {
     WaveformStatistics(const Waveform &W,
                        const Waveform::Visitor::Options &options =
                            Waveform::Visitor::Options())
-        : Waveform::Visitor(&W, options), aliases() {}
+        : Waveform::Visitor(&W, options) {}
 
     void enterScope(const Waveform::Scope &scope) override;
     void leaveScope() override;

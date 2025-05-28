@@ -186,7 +186,7 @@ class Input : public InputBase {
   public:
     Input() = delete;
     /// Construct an unamed Input of type Ty and value Val.
-    Input(ValueType::Type Ty, uint64_t Val) : InputBase(Ty), name(), val(Val) {}
+    Input(ValueType::Type Ty, uint64_t Val) : InputBase(Ty), val(Val) {}
     /// Construct an Input named Name of type Ty and value Val.
     Input(const std::string &Name, ValueType::Type Ty, uint64_t Val)
         : InputBase(Ty), name(Name), val(Val) {}

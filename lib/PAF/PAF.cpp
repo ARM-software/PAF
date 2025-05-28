@@ -80,7 +80,7 @@ class LabeledStack {
         Element(ElementKind k, const TarmacSite &ts) : kind(k), site(ts) {}
     };
 
-    LabeledStack() : stack() {}
+    LabeledStack() {}
 
     bool empty() const { return stack.empty(); }
     size_t size() const { return stack.size(); }
@@ -116,7 +116,7 @@ class LabelCollector {
                    const std::vector<uint64_t> &EndAddresses,
                    bool verbose = false)
         : startAddresses(StartAddresses), endAddresses(EndAddresses),
-          labeledStack(), intervals(IR), verbose(verbose) {
+          intervals(IR), verbose(verbose) {
         assert(is_sorted(StartAddresses.begin(), StartAddresses.end()) &&
                "Start addresses must be sorted");
         assert(is_sorted(EndAddresses.begin(), EndAddresses.end()) &&
@@ -184,9 +184,8 @@ class WLabelCollector : ParseReceiver {
                     const map<uint64_t, string> &LabelMap,
                     vector<std::pair<uint64_t, string>> *OutLabels = nullptr,
                     bool verbose = false)
-        : idxNav(IN), addresses(Addresses), intervals(IR), buffer(),
-          labelMap(LabelMap), outLabels(OutLabels), window(N),
-          verbose(verbose) {
+        : idxNav(IN), addresses(Addresses), intervals(IR), labelMap(LabelMap),
+          outLabels(OutLabels), window(N), verbose(verbose) {
         buffer.reserve(2);
         assert(is_sorted(Addresses.begin(), Addresses.end()) &&
                "Addresses must be sorted");

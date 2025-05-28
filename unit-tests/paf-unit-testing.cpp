@@ -36,7 +36,7 @@ using std::unique_ptr;
 using std::vector;
 
 TestWithTemporaryFiles::TestWithTemporaryFiles(const char *tpl, unsigned num)
-    : tmpFileNames(), verbose(false), remove(true) {
+    : verbose(false), remove(true) {
     tmpFileNames.reserve(num + 1);
     string tmpTplStr = testing::TempDir() + tpl;
     unique_ptr<char[]> tmpTpl(new char[tmpTplStr.size() + 1]);

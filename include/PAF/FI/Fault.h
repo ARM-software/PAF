@@ -191,9 +191,8 @@ class InjectionCampaign {
                       const std::string &ReferenceTrace,
                       unsigned long MaxTraceTime, uint64_t ProgramEntryAddress,
                       uint64_t ProgramEndAddress)
-        : faults(), image(Image), referenceTrace(ReferenceTrace),
-          injectionRangeInformation(), maxTraceTime(MaxTraceTime),
-          programEntryAddress(ProgramEntryAddress),
+        : image(Image), referenceTrace(ReferenceTrace),
+          maxTraceTime(MaxTraceTime), programEntryAddress(ProgramEntryAddress),
           programEndAddress(ProgramEndAddress) {}
     InjectionCampaign() = delete;
     /// Copy construct an InjectionCampaign.

@@ -77,7 +77,7 @@ class BPCollector {
         void event(BPoint &B, const TextOnlyEvent &ev) {}
     };
 
-    BPCollector() : brkCnt() {}
+    BPCollector() {}
 
     void operator()(const BPoint &B) { add(B.addr); }
 
@@ -128,7 +128,7 @@ class SuccessorCollector {
         void event(Point &P, const TextOnlyEvent &ev) {}
     };
 
-    SuccessorCollector() : trace() {}
+    SuccessorCollector() {}
 
     void operator()(const Point &P) { trace.push_back(P); }
 
@@ -165,9 +165,8 @@ class CTFlatVisitor : public CallTreeVisitor {
   public:
     CTFlatVisitor(const CallTree &CT, const TarmacSite &TheFunctionEntry,
                   const TarmacSite &TheFunctionExit)
-        : CallTreeVisitor(CT), localInjectionRanges(),
-          theFunctionEntry(TheFunctionEntry), theFunctionExit(TheFunctionExit) {
-    }
+        : CallTreeVisitor(CT), theFunctionEntry(TheFunctionEntry),
+          theFunctionExit(TheFunctionExit) {}
 
     PAF::Intervals<TarmacSite> getInjectionRanges() {
         return localInjectionRanges;
@@ -211,7 +210,7 @@ class FaulterInjectionPlanner {
                             unsigned long MaxTraceTime,
                             uint64_t ProgramEntryAddress,
                             uint64_t ProgramEndAddress)
-        : cpu(CPU), breakpoints(), successors(),
+        : cpu(CPU),
           campaign(Image, Tarmac, MaxTraceTime, ProgramEntryAddress & ~1UL,
                    ProgramEndAddress & ~1UL) {}
     virtual ~FaulterInjectionPlanner() = default;

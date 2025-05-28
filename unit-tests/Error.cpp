@@ -40,8 +40,7 @@ class CoutCerrRedirect {
     ostringstream out;
     ostringstream err;
 
-    CoutCerrRedirect()
-        : out(), err(), ostrbuf(cout.rdbuf()), estrbuf(cerr.rdbuf()) {
+    CoutCerrRedirect() : ostrbuf(cout.rdbuf()), estrbuf(cerr.rdbuf()) {
         cout.rdbuf(out.rdbuf());
         cerr.rdbuf(err.rdbuf());
     }

@@ -44,9 +44,7 @@ using FstHandleMapTy = map<fstHandle, SignalIdxTy>;
 
 class ScopesBuilder : public FSTHierarchyVisitorBase {
   public:
-    ScopesBuilder(Waveform &W) : w(W), scopes() {
-        scopes.push_back(W.getRootScope());
-    }
+    ScopesBuilder(Waveform &W) : w(W) { scopes.push_back(W.getRootScope()); }
 
     bool onModule(const char *fullScopeName, const fstHier *h) override {
         const decltype(h->u.scope) *Scope =
@@ -281,7 +279,7 @@ struct FstBuilder : public Waveform::Visitor {
     }
 
     FstBuilder(const string &FileName, const Waveform &W)
-        : Waveform::Visitor(&W), idx2FstHandleMap(),
+        : Waveform::Visitor(&W),
           ctx(fstWriterCreate(FileName.c_str(), 1 /* use_compressed_hier */)) {
         if (!ctx)
             return;
@@ -501,7 +499,7 @@ bool FSTWaveFile::visitHierarchy(FSTHierarchyVisitorBase *V) const {
 }
 
 struct QuickTimeBuilder : public FSTWaveBuilderBase<QuickTimeBuilder> {
-    QuickTimeBuilder() : times() {}
+    QuickTimeBuilder() {}
 
     void process(uint64_t time, fstHandle facidx, const unsigned char *value) {
         times.insert(time);

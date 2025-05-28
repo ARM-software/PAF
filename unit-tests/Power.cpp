@@ -73,7 +73,7 @@ using PAF::SCA::YAMLTimingInfo;
 
 class TestTimingInfo : public TimingInfo {
   public:
-    TestTimingInfo() : TimingInfo() {}
+    TestTimingInfo() {}
     void save(std::ostream &os) const override {}
     size_t minimum() const { return cmin; }
     size_t maximum() const { return cmax; }
@@ -386,7 +386,7 @@ std::ostream &operator<<(std::ostream &os, const PowerFields &pf) {
 // A mock for testing power dumps.
 struct TestPowerDumper : public PowerDumper {
 
-    TestPowerDumper() : PowerDumper(), pwf() {}
+    TestPowerDumper() {}
 
     void dump(double t, double p, double i, double oreg, double ireg, double a,
               double d, const PAF::ReferenceInstruction *I) override {
@@ -401,8 +401,7 @@ struct TestPowerDumper : public PowerDumper {
 // A mock for testing register bank traces.
 class TestRegBankDumper : public RegBankDumper {
   public:
-    TestRegBankDumper(bool enabled = false)
-        : RegBankDumper(enabled), regbank() {}
+    TestRegBankDumper(bool enabled = false) : RegBankDumper(enabled) {}
 
     void reset() {
         nr = 0;
@@ -474,7 +473,7 @@ class TestRegBankDumper : public RegBankDumper {
 struct TestMemAccessesDumper : public MemoryAccessesDumper {
 
     TestMemAccessesDumper(bool enabled = false)
-        : MemoryAccessesDumper(enabled), lastAccesses() {}
+        : MemoryAccessesDumper(enabled) {}
 
     void dump(uint64_t pc, const vector<MemoryAccess> &MA) override {
         if (!MA.empty())
@@ -528,8 +527,7 @@ struct TestInstrDumper : public InstrDumper {
 
 class TestOracle : public PowerTrace::Oracle {
   public:
-    TestOracle(const ReferenceInstruction *Inst, size_t N)
-        : PowerTrace::Oracle(), registers(), regbank() {
+    TestOracle(const ReferenceInstruction *Inst, size_t N) {
         // Gather how many registers we have in this instruction sequence.
         // And check time is strictly monotonically increasing.
         Time t;
