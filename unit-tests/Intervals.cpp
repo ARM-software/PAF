@@ -196,7 +196,7 @@ TEST(Intervals, basic) {
     t.insert(TInterval(2, 3));
     t.insert(TInterval(0, 1));
     EXPECT_EQ(t.size(), 3);
-    TIntervals::const_iterator p = t.begin();
+    auto p = t.begin();
     for (unsigned i = 0; i < t.size(); i++, p++) {
         EXPECT_EQ(*p, TInterval(2 * i, 2 * i + 1));
     }

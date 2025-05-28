@@ -964,8 +964,7 @@ TEST(PowerTrace, base) {
                           make_unique<TestPowerDumper>(), NoiseSource::ZERO,
                           1.0);
     unique_ptr<ArchInfo> CPU = make_unique<PAF::V7MInfo>();
-    TestPowerDumper &TPD =
-        dynamic_cast<TestPowerDumper &>(PAConfig[0].getDumper());
+    auto &TPD = dynamic_cast<TestPowerDumper &>(PAConfig[0].getDumper());
     TestOracle oracle(&Insts[0], Insts.size());
 
     PowerTrace PT(PTC, *CPU);
@@ -1061,8 +1060,7 @@ TEST(PowerTrace, withNoise) {
     PAConfig.emplace_back(PowerAnalysisConfig::HAMMING_WEIGHT,
                           make_unique<TestPowerDumper>(), NoiseSource::CONSTANT,
                           2.0);
-    TestPowerDumper &TPD =
-        dynamic_cast<TestPowerDumper &>(PAConfig[0].getDumper());
+    auto &TPD = dynamic_cast<TestPowerDumper &>(PAConfig[0].getDumper());
     unique_ptr<ArchInfo> CPU = make_unique<PAF::V7MInfo>();
     TestOracle oracle(&Insts[0], Insts.size());
 
@@ -1091,8 +1089,7 @@ TEST(PowerTrace, HammingWeightWithConfig) {
     PAConfig.emplace_back(PowerAnalysisConfig::HAMMING_WEIGHT,
                           make_unique<TestPowerDumper>(), NoiseSource::ZERO,
                           1.0);
-    TestPowerDumper &TPD =
-        dynamic_cast<TestPowerDumper &>(PAConfig[0].getDumper());
+    auto &TPD = dynamic_cast<TestPowerDumper &>(PAConfig[0].getDumper());
     unique_ptr<ArchInfo> CPU = make_unique<PAF::V7MInfo>();
     TestOracle oracle(&Insts[0], Insts.size());
 
@@ -1348,8 +1345,7 @@ TEST(PowerTrace, HammingDistanceWithConfig) {
     PAConfig.emplace_back(PowerAnalysisConfig::HAMMING_DISTANCE,
                           make_unique<TestPowerDumper>(), NoiseSource::ZERO,
                           0.0);
-    TestPowerDumper &TPD =
-        dynamic_cast<TestPowerDumper &>(PAConfig[0].getDumper());
+    auto &TPD = dynamic_cast<TestPowerDumper &>(PAConfig[0].getDumper());
     unique_ptr<ArchInfo> CPU = make_unique<PAF::V7MInfo>();
     InstsStateOracle oracle;
 
@@ -1589,8 +1585,7 @@ TEST(PowerTrace, withConfigAndNoise) {
     PAConfig.emplace_back(PowerAnalysisConfig::HAMMING_WEIGHT,
                           make_unique<TestPowerDumper>(), NoiseSource::CONSTANT,
                           1.0);
-    TestPowerDumper &TPD =
-        dynamic_cast<TestPowerDumper &>(PAConfig[0].getDumper());
+    auto &TPD = dynamic_cast<TestPowerDumper &>(PAConfig[0].getDumper());
     PowerTraceConfig PTC(PowerTraceConfig::WITH_OPCODE);
     PowerTrace::Oracle oracle;
 
@@ -1646,10 +1641,8 @@ TEST(PowerTrace, multipleAnalyses) {
     for (auto &cfg : PAConfigs)
         cfg.setWithoutNoise();
     unique_ptr<ArchInfo> CPU = make_unique<PAF::V7MInfo>();
-    TestPowerDumper &TPDHW =
-        dynamic_cast<TestPowerDumper &>(PAConfigs[0].getDumper());
-    TestPowerDumper &TPDHD =
-        dynamic_cast<TestPowerDumper &>(PAConfigs[1].getDumper());
+    auto &TPDHW = dynamic_cast<TestPowerDumper &>(PAConfigs[0].getDumper());
+    auto &TPDHD = dynamic_cast<TestPowerDumper &>(PAConfigs[1].getDumper());
     InstsStateOracle oracle;
 
     PowerTrace PT(PTC, *CPU);

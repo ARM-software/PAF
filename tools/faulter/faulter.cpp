@@ -503,10 +503,8 @@ void Faulter::run(const InjectionRangeSpec &IRS, FaultModel Model,
 
         // Synthesize a name for describing an Interval.
         // Intervals and OutLabels are both sorted in time/
-        vector<std::pair<uint64_t, string>>::const_iterator it =
-            OutLabels.begin();
-        vector<std::pair<uint64_t, string>>::const_iterator ite =
-            OutLabels.end();
+        auto it = OutLabels.begin();
+        auto ite = OutLabels.end();
         for (const auto &er : ER) {
             string name("");
 

@@ -364,7 +364,7 @@ TEST(Waveform, iterators) {
         EXPECT_EQ(*t, times[i]);
 
     // const Times iterator
-    Waveform::const_times_iterator ct = W.timesBegin();
+    auto ct = W.timesBegin();
     for (size_t i = 0; i < times.size() && ct != W.timesEnd(); i++, ct++)
         EXPECT_EQ(*ct, times[i]);
 }
