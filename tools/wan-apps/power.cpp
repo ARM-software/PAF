@@ -391,10 +391,10 @@ class Analysis {
             return false;
         switch (kind) {
         case Kind::HAMMING_WEIGHT:
-            HV.reset(new HammingWeight(fileName, options));
+            HV = std::make_unique<HammingWeight>(fileName, options);
             return true;
         case Kind::HAMMING_DISTANCE:
-            HV.reset(new HammingDistance(fileName, options));
+            HV = std::make_unique<HammingDistance>(fileName, options);
             return true;
         case Kind::NUM_ANALYSIS:
             DIE("This Kind should not be used as an analysis");
