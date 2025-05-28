@@ -92,13 +92,13 @@ TEST(RegAccess, base) {
     EXPECT_EQ(d2.value, 1234);
 
     // Copy construct
-    RegisterAccess d3(d2);
+    const RegisterAccess d3(d2);
     EXPECT_EQ(d3.name, "r0");
     EXPECT_EQ(d3.access, Access::Type::READ);
     EXPECT_EQ(d3.value, 1234);
 
     // Copy assign
-    RegisterAccess d4 = d2;
+    const RegisterAccess d4 = d2;
     EXPECT_EQ(d4.name, "r0");
     EXPECT_EQ(d4.access, Access::Type::READ);
     EXPECT_EQ(d4.value, 1234);

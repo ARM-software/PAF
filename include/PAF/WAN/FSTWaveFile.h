@@ -33,7 +33,7 @@
 namespace PAF::WAN {
 
 struct FSTHierarchyVisitorBase {
-    ~FSTHierarchyVisitorBase();
+    ~FSTHierarchyVisitorBase() = default;
 
     static const char *varTypeToString(unsigned char T);
     static const char *varDirToString(unsigned char D);

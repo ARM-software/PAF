@@ -404,7 +404,7 @@ class Analysis {
     HammingVisitor &operator*() { return *HV; }
     HammingVisitor *operator->() { return HV.get(); }
 
-    const string &filename() const { return fileName; }
+    [[nodiscard]] const string &filename() const { return fileName; }
 
   private:
     unique_ptr<HammingVisitor> HV;

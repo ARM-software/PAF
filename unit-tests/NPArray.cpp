@@ -201,7 +201,7 @@ TEST(NPArray, base) {
     NPArray<uint32_t> vOther(v2_init, 4, 1);
 
     // Copy construct.
-    NPArray<uint32_t> v2(v1);
+    const NPArray<uint32_t> v2(v1);
     EXPECT_EQ(v2, v1);
 
     // Copy assign.
