@@ -186,9 +186,9 @@ class ValueTy {
     ValueTy &operator=(const ValueTy &) = default;
     ValueTy &operator=(ValueTy &&) = default;
 
-    unsigned size() const { return value.size(); }
-    bool isWire() const { return value.size() == 1; }
-    bool isBus() const { return value.size() > 1; }
+    [[nodiscard]] unsigned size() const { return value.size(); }
+    [[nodiscard]] bool isWire() const { return value.size() == 1; }
+    [[nodiscard]] bool isBus() const { return value.size() > 1; }
 
     bool operator==(const ValueTy &RHS) const {
         if (size() != RHS.size())
@@ -216,11 +216,11 @@ class ValueTy {
         return Str;
     }
 
-    Logic::Ty get() const {
+    [[nodiscard]] Logic::Ty get() const {
         assert(value.size() == 1 && "Bit index not specified.");
         return value[0];
     }
-    Logic::Ty get(size_t i) const {
+    [[nodiscard]] Logic::Ty get(size_t i) const {
         assert(i < size() && "Out of bound access in ValueTy get.");
         return value[i];
     }
@@ -255,7 +255,7 @@ class ValueTy {
         return *this;
     }
 
-    unsigned countOnes() const {
+    [[nodiscard]] unsigned countOnes() const {
         unsigned Cnt = 0;
         for (const auto &Bit : value)
             if (Bit == Logic::Ty::LOGIC_1)
@@ -298,7 +298,7 @@ class Signal {
         };
 
       public:
-        Ty raw() const { return value; }
+        [[nodiscard]] Ty raw() const { return value; }
         static constexpr size_t capacity() {
             return (sizeof(Ty) * 8) / Logic::encoding();
         }
@@ -320,7 +320,7 @@ class Signal {
             return insert(Logic::fromChar(c), offset);
         }
 
-        Logic::Ty get(size_t offset) const {
+        [[nodiscard]] Logic::Ty get(size_t offset) const {
             assert(offset < capacity() && "Out of pack access");
             return Logic::Ty((value >> shiftAmount(offset)) & MASK);
         }
@@ -339,9 +339,9 @@ class Signal {
     Signal &operator=(const Signal &) = default;
     Signal &operator=(Signal &&) = default;
 
-    bool empty() const { return timeIdx.size() == 0; }
-    size_t getNumBits() const { return numBits; }
-    size_t getNumChanges() const {
+    [[nodiscard]] bool empty() const { return timeIdx.size() == 0; }
+    [[nodiscard]] size_t getNumBits() const { return numBits; }
+    [[nodiscard]] size_t getNumChanges() const {
         assert(timeIdx.size() <= value.size() * Pack::capacity() / numBits &&
                "Time and Value size discrepancy");
         return timeIdx.size();
@@ -508,7 +508,7 @@ class Signal {
         return *this;
     }
 
-    ChangeTy getChange(size_t change) const {
+    [[nodiscard]] ChangeTy getChange(size_t change) const {
         assert(change < timeIdx.size() && "Not that many changes");
         assert(timeIdx.size() <= value.size() * Pack::capacity() / numBits &&
                "Time and Value size discrepancy");
@@ -520,7 +520,7 @@ class Signal {
         return {(*allTimes)[timeIdx[change]], std::move(C)};
     }
 
-    ValueTy getValueChange(size_t change) const {
+    [[nodiscard]] ValueTy getValueChange(size_t change) const {
         assert(change < timeIdx.size() && "Not that many changes");
         assert(timeIdx.size() <= value.size() * Pack::capacity() / numBits &&
                "Time and Value size discrepancy");
@@ -532,7 +532,7 @@ class Signal {
         return C;
     }
 
-    TimeTy getTimeChange(size_t change) const {
+    [[nodiscard]] TimeTy getTimeChange(size_t change) const {
         assert(change < timeIdx.size() && "Not that many changes");
         assert(timeIdx.size() <= value.size() * Pack::capacity() / numBits &&
                "Time and Value size discrepancy");
@@ -542,7 +542,7 @@ class Signal {
     // Get the index of the last change with a time lower or equal to t.
     // In other words, this returns the index of the change that sets the signal
     // value seen at time t.
-    size_t getChangeTimeLowIdx(TimeTy t) const {
+    [[nodiscard]] size_t getChangeTimeLowIdx(TimeTy t) const {
         size_t Idx = getChangeTimeUpIdx(t);
 
         if (Idx == 0)
@@ -551,7 +551,7 @@ class Signal {
         return Idx - 1;
     }
 
-    TimeTy getChangeTimeLow(TimeTy t) const {
+    [[nodiscard]] TimeTy getChangeTimeLow(TimeTy t) const {
         size_t Idx = getChangeTimeLowIdx(t);
         assert(Idx != getNumChanges() && "Out of bound access");
         return (*allTimes)[timeIdx[Idx]];
@@ -559,7 +559,7 @@ class Signal {
 
     // Get the first change index with a time strictly greater than t.
     // Returns NumChanges() if no such change exists.
-    size_t getChangeTimeUpIdx(TimeTy t) const {
+    [[nodiscard]] size_t getChangeTimeUpIdx(TimeTy t) const {
         // std::lower_bound returns the first element in the range that does not
         // compare less or equal to t.
         const auto Iter1 = std::lower_bound(
@@ -576,7 +576,7 @@ class Signal {
         ;
     }
 
-    TimeTy getChangeTimeUp(TimeTy t) const {
+    [[nodiscard]] TimeTy getChangeTimeUp(TimeTy t) const {
         size_t Idx = getChangeTimeUpIdx(t);
         assert(Idx != getNumChanges() && "Out of bound access");
         return (*allTimes)[timeIdx[Idx]];
@@ -595,13 +595,13 @@ class Signal {
     };
 
     // Get the change indexes bounding time t.
-    ChangeBoundsTy getChangeTimeBoundsIdx(TimeTy t) const {
+    [[nodiscard]] ChangeBoundsTy getChangeTimeBoundsIdx(TimeTy t) const {
         size_t UpIdx = getChangeTimeUpIdx(t);
         size_t LowIdx = (UpIdx == 0) ? getNumChanges() : UpIdx - 1;
         return {LowIdx, UpIdx};
     }
 
-    ValueTy getValueAtTime(TimeTy t) const {
+    [[nodiscard]] ValueTy getValueAtTime(TimeTy t) const {
         size_t Idx = getChangeTimeLowIdx(t);
         assert(Idx < getNumChanges() &&
                "No value exist for the requested time");
@@ -708,17 +708,19 @@ class Signal {
             return sig->getChange(idx + n);
         }
 
-        bool hasReachedEnd() const { return idx >= sig->getNumChanges(); }
+        [[nodiscard]] bool hasReachedEnd() const {
+            return idx >= sig->getNumChanges();
+        }
 
       private:
         const Signal *sig;
         size_t idx;
     };
 
-    Iterator begin() const { return {this, 0}; }
-    Iterator end() const { return {this, getNumChanges()}; }
+    [[nodiscard]] Iterator begin() const { return {this, 0}; }
+    [[nodiscard]] Iterator end() const { return {this, getNumChanges()}; }
 
-    size_t getObjectSize() const {
+    [[nodiscard]] size_t getObjectSize() const {
         return sizeof(*this) + timeIdx.size() * sizeof(timeIdx[0]) +
                value.size() * sizeof(value[0]);
     }

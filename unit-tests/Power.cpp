@@ -75,9 +75,11 @@ class TestTimingInfo : public TimingInfo {
   public:
     TestTimingInfo() {}
     void save(std::ostream &os) const override {}
-    size_t minimum() const { return cmin; }
-    size_t maximum() const { return cmax; }
-    const vector<pair<Addr, unsigned>> &locations() const { return pcCycle; }
+    [[nodiscard]] size_t minimum() const { return cmin; }
+    [[nodiscard]] size_t maximum() const { return cmax; }
+    [[nodiscard]] const vector<pair<Addr, unsigned>> &locations() const {
+        return pcCycle;
+    }
 };
 
 TEST(TimingInfo, Base) {
@@ -418,8 +420,8 @@ class TestRegBankDumper : public RegBankDumper {
         regbank.back().insert(regbank.back().end(), regs.begin(), regs.end());
     }
 
-    AssertionResult check(size_t trace, size_t idx,
-                          const vector<uint64_t> &ref) const {
+    [[nodiscard]] AssertionResult check(size_t trace, size_t idx,
+                                        const vector<uint64_t> &ref) const {
         if (trace >= regbank.size())
             return reportError("trace index out of bound");
         if (idx >= regbank[trace].size())
@@ -453,10 +455,10 @@ class TestRegBankDumper : public RegBankDumper {
         return AR;
     }
 
-    size_t numSnapshots() const {
+    [[nodiscard]] size_t numSnapshots() const {
         return regbank.empty() ? 0 : regbank.back().size() / nr;
     }
-    size_t numTraces() const { return regbank.size(); }
+    [[nodiscard]] size_t numTraces() const { return regbank.size(); }
 
     void dump() const {
         std::cout << "NR: " << nr << '\n';
@@ -481,15 +483,17 @@ struct TestMemAccessesDumper : public MemoryAccessesDumper {
         lastAccesses = MA;
     }
 
-    size_t lastAccessesSize() const { return lastAccesses.size(); }
-    size_t instrWithAccesses() const { return accessesCount; }
+    [[nodiscard]] size_t lastAccessesSize() const {
+        return lastAccesses.size();
+    }
+    [[nodiscard]] size_t instrWithAccesses() const { return accessesCount; }
 
     void reset() {
         accessesCount = 0;
         lastAccesses.clear();
     }
 
-    AssertionResult check(const vector<MemoryAccess> &MA) const {
+    [[nodiscard]] AssertionResult check(const vector<MemoryAccess> &MA) const {
         if (MA.size() != lastAccesses.size())
             return AssertionFailure() << "Memory accesses differ in size";
 
@@ -512,7 +516,7 @@ struct TestInstrDumper : public InstrDumper {
                     bool dumpRegBank = false)
         : InstrDumper(enabled, dumpMemAccess, dumpRegBank) {}
 
-    size_t numInstructions() const { return instrCount; }
+    [[nodiscard]] size_t numInstructions() const { return instrCount; }
 
     void reset() { instrCount = 0; }
 
@@ -560,7 +564,7 @@ class TestOracle : public PowerTrace::Oracle {
         }
     }
 
-    std::vector<uint64_t> getRegBankState(Time t) const override {
+    [[nodiscard]] std::vector<uint64_t> getRegBankState(Time t) const override {
         if (regbank.empty() || t < regbank.begin()->first)
             return {nr, defaultValue};
         const auto it = regbank.find(t);
@@ -569,7 +573,8 @@ class TestOracle : public PowerTrace::Oracle {
         return it->second;
     }
 
-    uint64_t getMemoryState(Addr address, size_t size, Time t) const override {
+    [[nodiscard]] uint64_t getMemoryState(Addr address, size_t size,
+                                          Time t) const override {
         assert(false &&
                "TestOracle does not yet have getMemoryState implementation");
         return 0;
@@ -1297,7 +1302,7 @@ class InstsStateOracle : public PowerTrace::Oracle {
     InstsStateOracle(size_t NR = 18, uint64_t v = 0)
         : regBankInitialState(NR, v) {}
 
-    std::vector<uint64_t> getRegBankState(Time t) const override {
+    [[nodiscard]] std::vector<uint64_t> getRegBankState(Time t) const override {
         return regBankInitialState;
     }
 
@@ -1313,11 +1318,12 @@ class Insts2StateOracle : public PowerTrace::Oracle {
     Insts2StateOracle(size_t NR = 18, uint64_t v = 0)
         : regBankInitialState(NR, v) {}
 
-    std::vector<uint64_t> getRegBankState(Time t) const override {
+    [[nodiscard]] std::vector<uint64_t> getRegBankState(Time t) const override {
         return regBankInitialState;
     }
 
-    uint64_t getMemoryState(Addr address, size_t size, Time t) const override {
+    [[nodiscard]] uint64_t getMemoryState(Addr address, size_t size,
+                                          Time t) const override {
         if (t == Insts2[3].time - 1 && address == 0xf939b3c)
             return 0x00cafe00;
         if (t == Insts2[6].time - 1 && address == 0xf939b40)

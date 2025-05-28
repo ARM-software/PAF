@@ -80,6 +80,8 @@ int main(int argc, char *argv[]) {
         reporter->errx(EXIT_FAILURE, "negative noise level is not supported");
     if (inputFileName.empty())
         reporter->errx(EXIT_FAILURE, "An input file name is required");
+    if (outputFileName.empty())
+        outputFileName = inputFileName;
 
     NPArray<double> inputNPY(inputFileName);
     if (!inputNPY.good())
@@ -103,11 +105,9 @@ int main(int argc, char *argv[]) {
             outputNPY(r, c) =
                 inputNPY(r % inputNPY.rows(), c % inputNPY.cols()) + NS->get();
 
-    // Overwrite the input file if no output file was specified.
-    if (outputFileName.empty())
-        outputNPY.save(inputFileName);
-    else
-        outputNPY.save(outputFileName);
+    if (!outputNPY.save(outputFileName))
+        reporter->errx(EXIT_FAILURE, "Error writing output to file: %s",
+                       outputFileName.c_str());
 
     return EXIT_SUCCESS;
 }

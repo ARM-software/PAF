@@ -67,7 +67,7 @@ class PowerModelBase {
         : cpu(CPU), PTConfig(PTConfig), PAConfig(PAConfig), inputRegs(0.0),
           pc(0.0), psr(0.0), instr(0.0), cycles(1) {}
 
-    unsigned getLastInstrCycles() const { return cycles; }
+    [[nodiscard]] unsigned getLastInstrCycles() const { return cycles; }
 
     virtual void add(const PAF::ReferenceInstruction &I) = 0;
 
@@ -242,7 +242,7 @@ class HammingDistancePM : public PowerModelBase {
             return p;
         }
 
-        size_t size() const { return state.size(); }
+        [[nodiscard]] size_t size() const { return state.size(); }
 
       private:
         vector<uint64_t> state;

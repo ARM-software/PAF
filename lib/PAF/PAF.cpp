@@ -82,8 +82,8 @@ class LabeledStack {
 
     LabeledStack() {}
 
-    bool empty() const { return stack.empty(); }
-    size_t size() const { return stack.size(); }
+    [[nodiscard]] bool empty() const { return stack.empty(); }
+    [[nodiscard]] size_t size() const { return stack.size(); }
 
     TarmacSite pop() {
         assert(!stack.empty() && "Empty labeledStack");
@@ -92,7 +92,7 @@ class LabeledStack {
         return ts;
     }
 
-    const Element &top() const {
+    [[nodiscard]] const Element &top() const {
         assert(!stack.empty() && "Empty labeledStack");
         return stack.back();
     }

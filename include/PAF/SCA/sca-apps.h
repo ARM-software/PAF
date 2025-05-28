@@ -69,7 +69,7 @@ class OutputBase {
                               bool append = true);
 
     /// Are we emitting to a file ?
-    bool isFile() const { return usingFile; }
+    [[nodiscard]] bool isFile() const { return usingFile; }
 
     /// Flush the output stream.
     void flush();
@@ -98,28 +98,32 @@ class SCAApp : public Argparse {
     void setup();
 
     /// Get this application's verbosity level.
-    unsigned const verbosity() const { return verbosityLevel; }
+    [[nodiscard]] unsigned const verbosity() const { return verbosityLevel; }
     /// Is this application verbose at all ?
-    bool verbose() const { return verbosityLevel > 0; }
+    [[nodiscard]] bool verbose() const { return verbosityLevel > 0; }
 
     /// Get this application's output filename.
-    const std::string &outputFilename() const { return outputFile; }
+    [[nodiscard]] const std::string &outputFilename() const {
+        return outputFile;
+    }
     /// Get this application's output type.
-    OutputBase::OutputType outputType() const { return outputFormat; }
+    [[nodiscard]] OutputBase::OutputType outputType() const {
+        return outputFormat;
+    }
     /// Does this application want to append data to its output ?
-    bool append() const { return appendToOutput; }
+    [[nodiscard]] bool append() const { return appendToOutput; }
 
     /// Get the sample number where computations have to start.
-    size_t sampleStart() const { return startSample; }
+    [[nodiscard]] size_t sampleStart() const { return startSample; }
     /// Get the sample number where computations have to stop.
-    size_t sampleEnd() const { return startSample + nbSamples; }
+    [[nodiscard]] size_t sampleEnd() const { return startSample + nbSamples; }
     /// Get the number of samples that have to be processed.
-    size_t numSamples() const { return nbSamples; }
+    [[nodiscard]] size_t numSamples() const { return nbSamples; }
 
     /// Get the decimation period.
-    size_t decimationPeriod() const { return period; }
+    [[nodiscard]] size_t decimationPeriod() const { return period; }
     /// Get the decimation offset.
-    size_t decimationOffset() const { return offset; }
+    [[nodiscard]] size_t decimationOffset() const { return offset; }
 
     /// Write a sequence of values to this application's output file.
     void output(const NPArray<double> &values) {
@@ -139,7 +143,7 @@ class SCAApp : public Argparse {
     }
 
     /// Do we assume perfect inputs ?
-    bool isPerfect() const { return perfect; }
+    [[nodiscard]] bool isPerfect() const { return perfect; }
 
   private:
     unsigned verbosityLevel = 0;

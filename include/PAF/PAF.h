@@ -370,7 +370,7 @@ struct ReferenceInstruction {
     }
 
     /// Was this instruction executed ?
-    bool executed() const { return effect == IE_EXECUTED; }
+    [[nodiscard]] bool executed() const { return effect == IE_EXECUTED; }
 
     /// Dump this instruction in a human readable form to OS.
     void dump(std::ostream &OS) const;

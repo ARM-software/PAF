@@ -87,10 +87,12 @@ class AnalysisRangeSpecifier {
         markers = make_pair(startf, endf);
     }
 
-    Kind getKind() const { return kind; }
+    [[nodiscard]] Kind getKind() const { return kind; }
 
-    const string &getFunctionName() const { return function; }
-    const pair<string, string> &getMarkers() const { return markers; }
+    [[nodiscard]] const string &getFunctionName() const { return function; }
+    [[nodiscard]] const pair<string, string> &getMarkers() const {
+        return markers;
+    }
 
   private:
     Kind kind{NOT_SET};

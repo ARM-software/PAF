@@ -164,7 +164,10 @@ class NPYPowerDumper : public PowerDumper, public FilenameDumper {
     }
 
     /// Destruct this NPYPowerDumper.
-    ~NPYPowerDumper() override { npyA.save(filename); };
+    ~NPYPowerDumper() override {
+        // Intentionally ignore the return value.
+        static_cast<void>(npyA.save(filename));
+    }
 
   private:
     NPAdapter<double> npyA;
@@ -226,52 +229,52 @@ class PowerTraceConfig {
     }
 
     /// Query if a specific selection bit is set.
-    bool has(Selection s) const { return config & s; }
+    [[nodiscard]] bool has(Selection s) const { return config & s; }
 
     /// Does this config have no power source set ?
-    bool withNone() const { return config == 0; }
+    [[nodiscard]] bool withNone() const { return config == 0; }
     /// Does this config include the PC contribution ?
-    bool withPC() const { return has(WITH_PC); }
+    [[nodiscard]] bool withPC() const { return has(WITH_PC); }
     /// Does this config include the instructions' encoding contribution ?
-    bool withOpcode() const { return has(WITH_OPCODE); }
+    [[nodiscard]] bool withOpcode() const { return has(WITH_OPCODE); }
     /// Does this config include the memory accesses address contribution ?
-    bool withMemAddress() const { return has(WITH_MEM_ADDRESS); }
+    [[nodiscard]] bool withMemAddress() const { return has(WITH_MEM_ADDRESS); }
     /// Does this config include the memory accesses data contribution ?
-    bool withMemData() const { return has(WITH_MEM_DATA); }
+    [[nodiscard]] bool withMemData() const { return has(WITH_MEM_DATA); }
     /// Does this config include the instructions' input operands contribution ?
-    bool withInstructionsInputs() const {
+    [[nodiscard]] bool withInstructionsInputs() const {
         return has(WITH_INSTRUCTIONS_INPUTS);
     }
     /// Does this config include the instructions' output operands contribution
     /// ?
-    bool withInstructionsOutputs() const {
+    [[nodiscard]] bool withInstructionsOutputs() const {
         return has(WITH_INSTRUCTIONS_OUTPUTS);
     }
     /// Does this config include load to load transitions ?
-    bool withLoadToLoadTransitions() const {
+    [[nodiscard]] bool withLoadToLoadTransitions() const {
         return has(WITH_LOAD_TO_LOAD_TRANSITIONS);
     }
     /// Does this config include store to store transitions ?
-    bool withStoreToStoreTransitions() const {
+    [[nodiscard]] bool withStoreToStoreTransitions() const {
         return has(WITH_STORE_TO_STORE_TRANSITIONS);
     }
     /// Does this config include consecutive memory accesses (load or store)
     /// transitions ?
-    bool withLastMemoryAccessTransitions() const {
+    [[nodiscard]] bool withLastMemoryAccessTransitions() const {
         return has(WITH_LAST_MEMORY_ACCESSES_TRANSITIONS);
     }
     /// Does this config include memory update transitions ?
-    bool withMemoryUpdateTransitions() const {
+    [[nodiscard]] bool withMemoryUpdateTransitions() const {
         return has(WITH_MEMORY_UPDATE_TRANSITIONS);
     }
     /// Does this config include any memory transition ?
-    bool withMemoryAccessTransitions() const {
+    [[nodiscard]] bool withMemoryAccessTransitions() const {
         return (config & WITH_LOAD_TO_LOAD_TRANSITIONS) ||
                (config & WITH_STORE_TO_STORE_TRANSITIONS) ||
                (config & WITH_LAST_MEMORY_ACCESSES_TRANSITIONS);
     }
     /// Does this config have all power sources set ?
-    bool withAll() const { return config == WITH_ALL; }
+    [[nodiscard]] bool withAll() const { return config == WITH_ALL; }
 
   private:
     unsigned config;
@@ -301,14 +304,18 @@ class PowerAnalysisConfig {
         return *this;
     }
     /// Get the power model to use.
-    PowerModel getPowerModel() const { return powerModel; }
+    [[nodiscard]] PowerModel getPowerModel() const { return powerModel; }
     /// Will the power analysis use the Hamming weight model ?
-    bool isHammingWeight() const { return powerModel == HAMMING_WEIGHT; }
+    [[nodiscard]] bool isHammingWeight() const {
+        return powerModel == HAMMING_WEIGHT;
+    }
     /// Will the power analysis use the Hamming distance model ?
-    bool isHammingDistance() const { return powerModel == HAMMING_DISTANCE; }
+    [[nodiscard]] bool isHammingDistance() const {
+        return powerModel == HAMMING_DISTANCE;
+    }
 
     /// Should noise be added to the synthetic power trace ?
-    bool addNoise() const { return noise; }
+    [[nodiscard]] bool addNoise() const { return noise; }
 
     /// Disable adding noise to the synthetic power trace.
     PowerAnalysisConfig &setWithoutNoise() {
@@ -321,7 +328,7 @@ class PowerAnalysisConfig {
         return *this;
     }
     /// Get some noise to add to the computed power.
-    double getNoise() const { return noiseSource->get(); }
+    [[nodiscard]] double getNoise() const { return noiseSource->get(); }
 
     PowerDumper &getDumper() { return *powerDumper; }
 
@@ -344,12 +351,13 @@ class PowerTrace {
       public:
         Oracle() = default;
         virtual ~Oracle() = default;
-        virtual std::vector<uint64_t> getRegBankState(Time t) const {
+        [[nodiscard]] virtual std::vector<uint64_t>
+        getRegBankState(Time t) const {
             return {};
         }
 
-        virtual uint64_t getMemoryState(Addr address, size_t size,
-                                        Time t) const {
+        [[nodiscard]] virtual uint64_t getMemoryState(Addr address, size_t size,
+                                                      Time t) const {
             return 0;
         }
     };
@@ -358,7 +366,8 @@ class PowerTrace {
       public:
         MTAOracle(const PAF::MTAnalyzer &MTA, const PAF::ArchInfo &CPU)
             : analyzer(MTA), CPU(CPU) {}
-        std::vector<uint64_t> getRegBankState(Time t) const override {
+        [[nodiscard]] std::vector<uint64_t>
+        getRegBankState(Time t) const override {
             const unsigned NR = CPU.numRegisters();
             std::vector<uint64_t> regbankInitialState(NR);
             for (unsigned r = 0; r < NR; r++)
@@ -366,8 +375,8 @@ class PowerTrace {
                     analyzer.getRegisterValueAtTime(CPU.registerName(r), t);
             return regbankInitialState;
         }
-        uint64_t getMemoryState(Addr address, size_t size,
-                                Time t) const override {
+        [[nodiscard]] uint64_t getMemoryState(Addr address, size_t size,
+                                              Time t) const override {
             std::vector<uint8_t> mem =
                 analyzer.getMemoryValueAtTime(address, size, t);
 
@@ -400,7 +409,7 @@ class PowerTrace {
     void add(const PAF::ReferenceInstruction &I) { instructions.push_back(I); }
 
     /// Get this power trace size in number of instructions.
-    size_t size() const { return instructions.size(); }
+    [[nodiscard]] size_t size() const { return instructions.size(); }
 
     /// Get the i-th instruction in this trace.
     const PAF::ReferenceInstruction &operator[](size_t i) const {
@@ -415,7 +424,7 @@ class PowerTrace {
                  MemoryAccessesDumper &MADumper, InstrDumper &IDumper);
 
     /// Get this PowerTrace ArchInfo.
-    const PAF::ArchInfo &getArchInfo() const { return CPU; }
+    [[nodiscard]] const PAF::ArchInfo &getArchInfo() const { return CPU; }
 
   private:
     std::vector<PAF::ReferenceInstruction> instructions;

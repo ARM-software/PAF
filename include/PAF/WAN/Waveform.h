@@ -183,20 +183,22 @@ class Waveform {
             return {name, Kind::INTEGER, alias, idx};
         }
 
-        const std::string &getName() const { return name; }
-        Kind getKind() const { return kind; }
+        [[nodiscard]] const std::string &getName() const { return name; }
+        [[nodiscard]] Kind getKind() const { return kind; }
 
-        bool isRegister() const { return kind == Kind::REGISTER; }
-        bool isWire() const { return kind == Kind::WIRE; }
-        bool isInteger() const { return kind == Kind::INTEGER; }
+        [[nodiscard]] bool isRegister() const { return kind == Kind::REGISTER; }
+        [[nodiscard]] bool isWire() const { return kind == Kind::WIRE; }
+        [[nodiscard]] bool isInteger() const { return kind == Kind::INTEGER; }
 
-        bool isAlias() const { return alias; }
+        [[nodiscard]] bool isAlias() const { return alias; }
 
-        SignalIdxTy getIdx() const { return idx; }
+        [[nodiscard]] SignalIdxTy getIdx() const { return idx; }
 
         void dump(std::ostream &os) const;
 
-        size_t getObjectSize() const { return sizeof(*this) + name.size(); }
+        [[nodiscard]] size_t getObjectSize() const {
+            return sizeof(*this) + name.size();
+        }
 
       private:
         std::string name;
@@ -256,24 +258,34 @@ class Waveform {
             return *this;
         }
 
-        bool isRoot() const { return root; }
-        const std::string &getScopeName() const { return scopeName; }
-        const std::string &getFullScopeName() const { return fullScopeName; }
-        const std::string &getInstanceName() const { return instanceName; }
+        [[nodiscard]] bool isRoot() const { return root; }
+        [[nodiscard]] const std::string &getScopeName() const {
+            return scopeName;
+        }
+        [[nodiscard]] const std::string &getFullScopeName() const {
+            return fullScopeName;
+        }
+        [[nodiscard]] const std::string &getInstanceName() const {
+            return instanceName;
+        }
 
-        bool isModule() const { return kind == Kind::MODULE; }
-        bool isTask() const { return kind == Kind::TASK; }
-        bool isFunction() const { return kind == Kind::FUNCTION; }
-        bool isBlock() const { return kind == Kind::BLOCK; }
-        Kind getKind() const { return kind; }
+        [[nodiscard]] bool isModule() const { return kind == Kind::MODULE; }
+        [[nodiscard]] bool isTask() const { return kind == Kind::TASK; }
+        [[nodiscard]] bool isFunction() const { return kind == Kind::FUNCTION; }
+        [[nodiscard]] bool isBlock() const { return kind == Kind::BLOCK; }
+        [[nodiscard]] Kind getKind() const { return kind; }
 
-        std::size_t getNumSubScopes() const { return subScopes.size(); }
-        std::size_t getNumSignals() const { return signals.size(); }
+        [[nodiscard]] std::size_t getNumSubScopes() const {
+            return subScopes.size();
+        }
+        [[nodiscard]] std::size_t getNumSignals() const {
+            return signals.size();
+        }
 
-        bool hasSubScopes() const { return !subScopes.empty(); }
-        bool hasSignals() const { return !signals.empty(); }
+        [[nodiscard]] bool hasSubScopes() const { return !subScopes.empty(); }
+        [[nodiscard]] bool hasSignals() const { return !signals.empty(); }
 
-        bool hasSubScope(const std::string &subScopeName) const {
+        [[nodiscard]] bool hasSubScope(const std::string &subScopeName) const {
             for (const auto &s : subScopes)
                 if (s->instanceName == subScopeName)
                     return true;
@@ -285,7 +297,7 @@ class Waveform {
                     return std::make_pair(true, s.get());
             return std::make_pair(false, nullptr);
         }
-        bool hasSignal(const std::string &signalName) const {
+        [[nodiscard]] bool hasSignal(const std::string &signalName) const {
             for (const auto &s : signals)
                 if (s->getName() == signalName)
                     return true;
@@ -323,7 +335,7 @@ class Waveform {
             }
         }
 
-        size_t getObjectSize() const {
+        [[nodiscard]] size_t getObjectSize() const {
             size_t size = sizeof(*this);
             size += fullScopeName.size();
             size += scopeName.size();
@@ -407,19 +419,22 @@ class Waveform {
                 new SignalDesc(std::move(signalName), kind, alias, idx));
         }
 
-        const SignalDesc &getSignalDesc(const std::string &signalName) const {
+        [[nodiscard]] const SignalDesc &
+        getSignalDesc(const std::string &signalName) const {
             for (const auto &s : signals)
                 if (s->getName() == signalName)
                     return *s.get();
             DIE("Signal does not exist");
         }
 
-        SignalIdxTy getSignalIdx(const std::string &signalName) const {
+        [[nodiscard]] SignalIdxTy
+        getSignalIdx(const std::string &signalName) const {
             return getSignalDesc(signalName).getIdx();
         }
 
-        const SignalDesc *findSignalDesc(const std::string &FSN,
-                                         const std::string &signalName) const {
+        [[nodiscard]] const SignalDesc *
+        findSignalDesc(const std::string &FSN,
+                       const std::string &signalName) const {
             if (fullScopeName == FSN) {
                 // Yay, we are in the right scope !
                 for (const auto &s : signals)
@@ -438,7 +453,7 @@ class Waveform {
             return nullptr;
         }
 
-        std::pair<bool, SignalIdxTy>
+        [[nodiscard]] std::pair<bool, SignalIdxTy>
         findSignalIdx(const std::string &FSN,
                       const std::string &signalName) const {
             if (const SignalDesc *SD = findSignalDesc(FSN, signalName))
@@ -484,7 +499,7 @@ class Waveform {
                 }
 
                 /// Returns true iff Signal \p S shall be skipped.
-                bool skip(const SignalDesc &SDesc) const {
+                [[nodiscard]] bool skip(const SignalDesc &SDesc) const {
                     switch (SDesc.getKind()) {
                     case SignalDesc::Kind::REGISTER:
                         return skipRegs;
@@ -495,12 +510,12 @@ class Waveform {
                     }
                 }
 
-                bool isAllSkipped() const {
+                [[nodiscard]] bool isAllSkipped() const {
                     return skipRegs && skipWires && skipInts;
                 }
 
                 /// Returns false iff Scope \p scope shall be visited.
-                FilterAction filter(const Scope &scope) const;
+                [[nodiscard]] FilterAction filter(const Scope &scope) const;
 
               private:
                 std::vector<std::string> scopeFilters;
@@ -515,7 +530,7 @@ class Waveform {
             Visitor(const Options &options = Options()) : options(options) {}
 
             Options &getOptions() { return options; }
-            const Options &getOptions() const { return options; }
+            [[nodiscard]] const Options &getOptions() const { return options; }
 
             virtual ~Visitor() = default;
             virtual void enterScope(const Scope &scope) = 0;
@@ -618,19 +633,19 @@ class Waveform {
         return *this;
     }
 
-    bool hasVersion() const { return !version.empty(); }
-    bool hasDate() const { return !date.empty(); }
-    bool hasComment() const { return !comment.empty(); }
+    [[nodiscard]] bool hasVersion() const { return !version.empty(); }
+    [[nodiscard]] bool hasDate() const { return !date.empty(); }
+    [[nodiscard]] bool hasComment() const { return !comment.empty(); }
 
-    const std::string &getFileName() const { return fileName; }
-    const std::string &getVersion() const { return version; }
-    const std::string &getDate() const { return date; }
-    const std::string &getComment() const { return comment; }
-    std::size_t getNumSignals() const { return signals.size(); }
-    uint64_t getStartTime() const { return startTime; }
-    uint64_t getEndTime() const { return endTime; }
-    int64_t getTimeZero() const { return timeZero; }
-    signed char getTimeScale() const { return timeScale; }
+    [[nodiscard]] const std::string &getFileName() const { return fileName; }
+    [[nodiscard]] const std::string &getVersion() const { return version; }
+    [[nodiscard]] const std::string &getDate() const { return date; }
+    [[nodiscard]] const std::string &getComment() const { return comment; }
+    [[nodiscard]] std::size_t getNumSignals() const { return signals.size(); }
+    [[nodiscard]] uint64_t getStartTime() const { return startTime; }
+    [[nodiscard]] uint64_t getEndTime() const { return endTime; }
+    [[nodiscard]] int64_t getTimeZero() const { return timeZero; }
+    [[nodiscard]] signed char getTimeScale() const { return timeScale; }
     signed char getTimeScale(std::string &ts) const;
 
     Waveform &setVersion(const std::string &v) {
@@ -785,14 +800,15 @@ class Waveform {
                          SignalDesc::Kind::INTEGER, idx);
     }
 
-    std::pair<bool, SignalIdxTy>
+    [[nodiscard]] std::pair<bool, SignalIdxTy>
     findSignalIdx(const std::string &fullScopeName,
                   const std::string &signalName) const {
         return root.findSignalIdx(fullScopeName, signalName);
     }
 
-    const SignalDesc *findSignalDesc(const std::string &fullScopeName,
-                                     const std::string &signalName) const {
+    [[nodiscard]] const SignalDesc *
+    findSignalDesc(const std::string &fullScopeName,
+                   const std::string &signalName) const {
         return root.findSignalDesc(fullScopeName, signalName);
     }
 
@@ -840,15 +856,21 @@ class Waveform {
     signals_iterator begin() { return {&signals, 0}; }
     signals_iterator end() { return {&signals, signals.size()}; }
     using const_signals_iterator = SignalsIterator<Signal>;
-    const_signals_iterator begin() const { return {&signals, 0}; }
-    const_signals_iterator end() const { return {&signals, signals.size()}; }
+    [[nodiscard]] const_signals_iterator begin() const { return {&signals, 0}; }
+    [[nodiscard]] const_signals_iterator end() const {
+        return {&signals, signals.size()};
+    }
 
     using times_iterator = std::vector<WAN::TimeTy>::iterator;
     times_iterator timesBegin() { return allTimes.begin(); }
     times_iterator timesEnd() { return allTimes.end(); }
     using const_times_iterator = std::vector<WAN::TimeTy>::const_iterator;
-    const_times_iterator timesBegin() const { return allTimes.begin(); }
-    const_times_iterator timesEnd() const { return allTimes.end(); }
+    [[nodiscard]] const_times_iterator timesBegin() const {
+        return allTimes.begin();
+    }
+    [[nodiscard]] const_times_iterator timesEnd() const {
+        return allTimes.end();
+    }
 
     /// Waveform visitor base class.
     class Visitor : public Scope::Visitor {
@@ -856,7 +878,7 @@ class Waveform {
         Visitor(const Waveform *W, const Options &options = Options())
             : Scope::Visitor(options), w(W) {}
 
-        const Waveform *getWaveform() const { return w; }
+        [[nodiscard]] const Waveform *getWaveform() const { return w; }
 
       protected:
         const Waveform *w;
@@ -866,7 +888,7 @@ class Waveform {
         root.accept(V, Visitor::FilterAction::ENTER_SCOPE_ONLY);
     }
 
-    size_t getObjectSize() const {
+    [[nodiscard]] size_t getObjectSize() const {
         size_t size = sizeof(*this);
         size += fileName.size();
         size += version.size();

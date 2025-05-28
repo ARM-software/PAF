@@ -247,7 +247,7 @@ template <typename AInfo, ISet mode, unsigned width> struct TRB {
         AddressingMode::OffsetFormat Offset)
         : TRB(opc, dis, K, Offset, AddressingMode::BaseUpdate::OFFSET) {}
 
-    AssertionResult
+    [[nodiscard]] AssertionResult
     check(size_t testNum,
           const vector<typename AInfo::Register> &expectedInputRegs,
           const vector<typename AInfo::Register> &expectedImplicitInputRegs)
@@ -319,8 +319,9 @@ template <typename AInfo, ISet mode, unsigned width> struct TRB {
         return AssertionSuccess();
     }
 
-    bool checkRegisters(const vector<typename AInfo::Register> &expected,
-                        const vector<typename AInfo::Register> &actual) const {
+    [[nodiscard]] bool
+    checkRegisters(const vector<typename AInfo::Register> &expected,
+                   const vector<typename AInfo::Register> &actual) const {
 
         if (actual.size() != expected.size())
             return false;
@@ -371,7 +372,7 @@ template <typename TRBTy, typename RegisterTy> struct TestInput {
               std::initializer_list<RegisterTy> inputRegisters)
         : trb(trb), inputRegisters(inputRegisters), implicitInputRegisters() {}
 
-    AssertionResult check(size_t testNum) const {
+    [[nodiscard]] AssertionResult check(size_t testNum) const {
         return trb.check(testNum, inputRegisters, implicitInputRegisters);
     }
 

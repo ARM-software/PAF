@@ -54,7 +54,7 @@ class Dumper {
     virtual ~Dumper() = default;
 
     /// Is dumping enabled ?
-    bool enabled() const { return enable; }
+    [[nodiscard]] bool enabled() const { return enable; }
 
   private:
     /// Enable dumping or not.
@@ -135,7 +135,7 @@ class YAMLDumper : public FileStreamDumper {
     }
 
     /// Get the YAML header to emit.
-    const char *getHeader() const { return header; }
+    [[nodiscard]] const char *getHeader() const { return header; }
 
   private:
     /// YAML header to use.
@@ -179,8 +179,10 @@ class NPYRegBankDumper : public RegBankDumper, public FilenameDumper {
 
     /// Destruct this NPYRegBankDumper, saving the NPY file along the way.
     ~NPYRegBankDumper() override {
-        if (enabled())
-            npyA.save(filename);
+        if (enabled()) {
+          // Intentionally ignore the return value.
+          static_cast<void>(npyA.save(filename));
+        }
     }
 
   private:

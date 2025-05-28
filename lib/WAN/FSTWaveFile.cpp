@@ -160,7 +160,9 @@ class ScopesBuilder : public FSTHierarchyVisitorBase {
         return true;
     }
 
-    const FstHandleMapTy &getFstHandles() const { return fstHandles; }
+    [[nodiscard]] const FstHandleMapTy &getFstHandles() const {
+        return fstHandles;
+    }
 
   private:
     Waveform &w;

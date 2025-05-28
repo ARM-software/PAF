@@ -43,7 +43,7 @@ template <typename Ty> class Context {
         return *this;
     }
 
-    bool hasVariable(const std::string &name) const {
+    [[nodiscard]] bool hasVariable(const std::string &name) const {
         return variables.count(name);
     }
 
@@ -125,7 +125,7 @@ template <typename Ty> class Parser : public ParserBase {
 
     /// Parse the string given as argument and construct its corresponding Expr,
     /// using a new parser but with the current context.
-    Expr *parse(const std::string &str) const {
+    [[nodiscard]] Expr *parse(const std::string &str) const {
         return Parser(context, str).parse();
     }
 

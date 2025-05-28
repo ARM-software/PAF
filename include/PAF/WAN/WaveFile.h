@@ -48,10 +48,10 @@ class WaveFile {
     static FileFormat getFileFormat(const std::string &filename);
 
     /// Get this WaveFile format.
-    FileFormat getFileFormat() const { return fileFmt; }
+    [[nodiscard]] FileFormat getFileFormat() const { return fileFmt; }
 
     /// Get this WaveFile filename.
-    const std::string &getFileName() const { return fileName; }
+    [[nodiscard]] const std::string &getFileName() const { return fileName; }
 
     /// Convenience method to automatically detect the wavefile format and read
     /// it for read / write.

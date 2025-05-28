@@ -106,7 +106,8 @@ TEST_WITH_TEMP_FILES(NPArrayBaseF, "test-NPArrayBase.npy.XXXXXX", 2);
 TEST_F(NPArrayBaseF, readFromFile) {
     const uint32_t init[] = {0, 1, 2, 3, 4, 5, 6, 7};
     NPArrayBase a(reinterpret_cast<const char *>(init), 2, 4, sizeof(init[0]));
-    a.save(getTemporaryFilename(), NPArrayBase::getEltTyDescr<uint32_t>());
+    ASSERT_TRUE(
+        a.save(getTemporaryFilename(), NPArrayBase::getEltTyDescr<uint32_t>()));
 
     NPArrayBase b(getTemporaryFilename(),
                   NPArrayBase::getEltTyDescr<uint32_t>());
@@ -946,16 +947,16 @@ void testConcatenateFromFiles(const string &filename0,
     const Ty init3[] = {0, 1, 2, 3, 4, 5, 6, 7, 10, 11, 12, 13, 14, 15, 16, 17};
 
     // Single row extensions.
-    NPArray<Ty>(init1, 1, 8).save(files[0]);
-    NPArray<Ty>(init2, 1, 8).save(files[1]);
+    ASSERT_TRUE(NPArray<Ty>(init1, 1, 8).save(files[0]));
+    ASSERT_TRUE(NPArray<Ty>(init2, 1, 8).save(files[1]));
     NPArray<Ty> M(files, NPArrayBase::ROW);
     EXPECT_TRUE(M.good());
     EXPECT_EQ(M.rows(), 1);
     EXPECT_EQ(M.cols(), 16);
     EXPECT_EQ(M, NPArray<Ty>(init3, 1, 16));
 
-    NPArray<Ty>(init1, 1, 8).save(files[0]);
-    NPArray<Ty>(init2, 1, 8).save(files[1]);
+    ASSERT_TRUE(NPArray<Ty>(init1, 1, 8).save(files[0]));
+    ASSERT_TRUE(NPArray<Ty>(init2, 1, 8).save(files[1]));
     M = NPArray<Ty>(files, NPArrayBase::COLUMN);
     EXPECT_TRUE(M.good());
     EXPECT_EQ(M.rows(), 2);
@@ -963,8 +964,8 @@ void testConcatenateFromFiles(const string &filename0,
     EXPECT_EQ(M, NPArray<Ty>(init3, 2, 8));
 
     // Single column extensions.
-    NPArray<Ty>(init1, 8, 1).save(files[0]);
-    NPArray<Ty>(init2, 8, 1).save(files[1]);
+    ASSERT_TRUE(NPArray<Ty>(init1, 8, 1).save(files[0]));
+    ASSERT_TRUE(NPArray<Ty>(init2, 8, 1).save(files[1]));
     M = NPArray<Ty>(files, NPArrayBase::COLUMN);
     EXPECT_TRUE(M.good());
     EXPECT_EQ(M.rows(), 16);
@@ -973,8 +974,8 @@ void testConcatenateFromFiles(const string &filename0,
 
     const Ty init3r[] = {0, 10, 1, 11, 2, 12, 3, 13,
                          4, 14, 5, 15, 6, 16, 7, 17};
-    NPArray<Ty>(init1, 8, 1).save(files[0]);
-    NPArray<Ty>(init2, 8, 1).save(files[1]);
+    ASSERT_TRUE(NPArray<Ty>(init1, 8, 1).save(files[0]));
+    ASSERT_TRUE(NPArray<Ty>(init2, 8, 1).save(files[1]));
     M = NPArray<Ty>(files, NPArrayBase::ROW);
     EXPECT_TRUE(M.good());
     EXPECT_EQ(M.rows(), 8);
@@ -984,8 +985,8 @@ void testConcatenateFromFiles(const string &filename0,
     // Matrix extensions on the row axis
     const Ty init3m[] = {0, 1, 2, 3, 10, 11, 12, 13,
                          4, 5, 6, 7, 14, 15, 16, 17};
-    NPArray<Ty>(init1, 2, 4).save(files[0]);
-    NPArray<Ty>(init2, 2, 4).save(files[1]);
+    ASSERT_TRUE(NPArray<Ty>(init1, 2, 4).save(files[0]));
+    ASSERT_TRUE(NPArray<Ty>(init2, 2, 4).save(files[1]));
     M = NPArray<Ty>(files, NPArrayBase::ROW);
     EXPECT_TRUE(M.good());
     EXPECT_EQ(M.rows(), 2);
@@ -993,8 +994,8 @@ void testConcatenateFromFiles(const string &filename0,
     EXPECT_EQ(M, NPArray<Ty>(init3m, 2, 8));
 
     // Matrix extension on the column axis
-    NPArray<Ty>(init1, 2, 4).save(files[0]);
-    NPArray<Ty>(init2, 2, 4).save(files[1]);
+    ASSERT_TRUE(NPArray<Ty>(init1, 2, 4).save(files[0]));
+    ASSERT_TRUE(NPArray<Ty>(init2, 2, 4).save(files[1]));
     M = NPArray<Ty>(files, NPArrayBase::COLUMN);
     EXPECT_TRUE(M.good());
     EXPECT_EQ(M.rows(), 4);
@@ -1147,7 +1148,7 @@ void testReadAs(const string &filename) {
     const fromTy init1[] = {0, 1, 2, 3, 4, 5, 6, 7};
     const toTy init2[] = {0, 1, 2, 3, 4, 5, 6, 7};
 
-    NPArray<fromTy>(init1, 2, 4).save(filename);
+    ASSERT_TRUE(NPArray<fromTy>(init1, 2, 4).save(filename));
     const NPArray<toTy> Exp(init2, 2, 4);
 
     NPArray<toTy> T = NPArray<toTy>::readAs(filename);
@@ -1280,7 +1281,7 @@ TEST_F(NPArrayF, saveAndRestore) {
     // Save NPArray.
     const int64_t MI64_init[] = {0, 1, 2, 3, 4, 5, 6, 7, 8};
     NPArray<int64_t> a(MI64_init, 3, 3);
-    a.save(getTemporaryFilename());
+    EXPECT_TRUE(a.save(getTemporaryFilename()));
 
     // Read NPArray
     NPArray<int64_t> b(getTemporaryFilename());
@@ -1292,7 +1293,7 @@ TEST_F(NPArrayF, saveAndRestore) {
 TEST_F(NPArrayF, readFromFile) {
     const uint32_t init[] = {0, 1, 2, 3, 4, 5, 6, 7};
     NPArray<uint32_t> a(init, 2, 4);
-    a.save(getTemporaryFilename());
+    ASSERT_TRUE(a.save(getTemporaryFilename()));
 
     NPArray<uint32_t> b(getTemporaryFilename());
     EXPECT_TRUE(a.good());
@@ -1823,7 +1824,7 @@ struct EltWiseOpCheckerBase {
         checkImpl(lhs, rhs, exp);
     }
 
-    bool check() const {
+    [[nodiscard]] bool check() const {
         // Check matrix Op matrix -> matrix
         check(aM, bM, eMOpM);
         // Check matrix Op | -> matrix
@@ -2276,7 +2277,7 @@ template <typename Ty, size_t rows, size_t cols> class SumChecker {
                "expected cols means size mismatch");
     }
 
-    Ty expected(typename NPArray<Ty>::Axis axis, size_t i) const {
+    [[nodiscard]] Ty expected(typename NPArray<Ty>::Axis axis, size_t i) const {
         switch (axis) {
         case NPArray<Ty>::ROW:
             assert(i < rows && "exp mean row access out of bounds");
@@ -2432,7 +2433,8 @@ template <typename Ty, size_t rows, size_t cols> class MeanChecker {
     }
 
     enum Metric { MEAN, VAR1, VAR0, STDDEV };
-    Ty expected(Metric M, typename NPArray<Ty>::Axis axis, size_t i) const {
+    [[nodiscard]] Ty expected(Metric M, typename NPArray<Ty>::Axis axis,
+                              size_t i) const {
         switch (axis) {
         case NPArray<Ty>::ROW:
             assert(i < rows && "exp mean row access out of bounds");

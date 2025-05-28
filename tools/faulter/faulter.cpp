@@ -81,7 +81,7 @@ class BPCollector {
 
     void operator()(const BPoint &B) { add(B.addr); }
 
-    unsigned count(uint64_t addr) const {
+    [[nodiscard]] unsigned count(uint64_t addr) const {
         auto it = brkCnt.find(addr);
         if (it != brkCnt.end())
             return it->second;

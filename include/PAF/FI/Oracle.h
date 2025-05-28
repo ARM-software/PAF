@@ -177,13 +177,15 @@ class Classifier {
     Classifier &operator=(Classifier &&) = default;
 
     /// Get the ClassificationLocation.
-    Kind getKind() const { return locKind; }
+    [[nodiscard]] Kind getKind() const { return locKind; }
 
     /// Get the symbol name for this ClassificationLocation.
-    const std::string &getSymbolName() const { return symbolName; }
+    [[nodiscard]] const std::string &getSymbolName() const {
+        return symbolName;
+    }
 
     /// Does this Classifier have already an address set ?
-    bool hasAddress() const { return addressSet; }
+    [[nodiscard]] bool hasAddress() const { return addressSet; }
 
     /// Set the address for this Classifier.
     Classifier &setAddress(uint64_t addr) {
@@ -223,7 +225,9 @@ class Classifier {
     }
 
     /// Query if our sequence of <tt>ClassificationExpressions</tt> is empty.
-    bool empty() const { return classificationExpressions.empty(); }
+    [[nodiscard]] bool empty() const {
+        return classificationExpressions.empty();
+    }
 
     /// Dump this Classifier to os.
     void dump(std::ostream &os) const;
@@ -255,20 +259,20 @@ class Oracle {
     bool parse(const std::string &spec);
 
     /// Does this Oracle have any <tt>classifier</tt> ?
-    bool empty() const { return classifiers.empty(); }
+    [[nodiscard]] bool empty() const { return classifiers.empty(); }
     /// How many <tt>classifiers</tt> does this Oracle have ?
-    unsigned size() const { return classifiers.size(); }
+    [[nodiscard]] unsigned size() const { return classifiers.size(); }
 
     /// Get an iterator to the first <tt>Classifier</tt>.
     std::vector<Classifier>::iterator begin() { return classifiers.begin(); }
     /// Get a past-the-end iterator to this Oracle's <tt>Classifiers</tt>.
     std::vector<Classifier>::iterator end() { return classifiers.end(); }
     /// Get an iterator to the first <tt>Classifier</tt>.
-    std::vector<Classifier>::const_iterator begin() const {
+    [[nodiscard]] std::vector<Classifier>::const_iterator begin() const {
         return classifiers.begin();
     }
     /// Get a past-the-end iterator to this Oracle's <tt>Classifier</tt>.
-    std::vector<Classifier>::const_iterator end() const {
+    [[nodiscard]] std::vector<Classifier>::const_iterator end() const {
         return classifiers.end();
     }
 

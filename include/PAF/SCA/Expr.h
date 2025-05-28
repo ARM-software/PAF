@@ -52,7 +52,7 @@ class ValueType {
     }
 
     /// Get the type represented by this ValueType.
-    Type getType() const { return ty; }
+    [[nodiscard]] Type getType() const { return ty; }
 
     /// Get he number of bits in type Ty.
     static size_t getNumBits(Type Ty) {
@@ -71,10 +71,10 @@ class ValueType {
     }
 
     /// Get the number of bits in this type.
-    size_t getNumBits() const { return getNumBits(ty); }
+    [[nodiscard]] size_t getNumBits() const { return getNumBits(ty); }
 
     /// Get a string representation of this ValueType.
-    std::string repr() const {
+    [[nodiscard]] std::string repr() const {
         switch (ty) {
         case ValueType::UNDEF:
             return {"UNDEF"};
@@ -123,10 +123,10 @@ class Value {
     virtual ~Value();
 
     /// Get the actual value.
-    ConcreteType getValue() const { return val; }
+    [[nodiscard]] ConcreteType getValue() const { return val; }
 
     /// Get a string representing this value.
-    std::string repr() const { return std::to_string(val); }
+    [[nodiscard]] std::string repr() const { return std::to_string(val); }
 
   private:
     ConcreteType val;
@@ -142,13 +142,13 @@ class Expr {
     virtual ~Expr();
 
     /// Evaluate this expression's value.
-    virtual Value eval() const = 0;
+    [[nodiscard]] virtual Value eval() const = 0;
 
     /// Get the type of this expression.
-    virtual ValueType::Type getType() const = 0;
+    [[nodiscard]] virtual ValueType::Type getType() const = 0;
 
     /// Get a string representing this expression.
-    virtual std::string repr() const = 0;
+    [[nodiscard]] virtual std::string repr() const = 0;
 };
 
 /// InputBase is a base class to represent all inputs of an expression.
@@ -160,7 +160,9 @@ class InputBase : public Expr, public ValueType {
     ~InputBase() override;
 
     /// Get the type of this expression.
-    ValueType::Type getType() const override { return ValueType::getType(); }
+    [[nodiscard]] ValueType::Type getType() const override {
+        return ValueType::getType();
+    }
 };
 
 /// Implementation for Constant values (which are considered as Inputs).
@@ -172,10 +174,10 @@ class Constant : public InputBase {
     ~Constant() override;
 
     /// Evaluate this expression's value.
-    Value eval() const override { return {val}; }
+    [[nodiscard]] Value eval() const override { return {val}; }
 
     /// Get a string representation of this Constant.
-    std::string repr() const override;
+    [[nodiscard]] std::string repr() const override;
 
   private:
     const Value val;
@@ -196,10 +198,10 @@ class Input : public InputBase {
     ~Input() override;
 
     /// Evaluate this expression's value.
-    Value eval() const override { return {val}; }
+    [[nodiscard]] Value eval() const override { return {val}; }
 
     /// Get a string representation of this Input.
-    std::string repr() const override {
+    [[nodiscard]] std::string repr() const override {
         if (name.empty())
             return val.repr();
         return name + '(' + val.repr() + ')';
@@ -255,18 +257,18 @@ template <class DataTy> class NPInput : public InputBase {
     ~NPInput() override = default;
 
     /// Get the type of this NPInput.
-    ValueType::Type getType() const override {
+    [[nodiscard]] ValueType::Type getType() const override {
         return NPInputTraits<NPArray<DataTy>>::getType();
     }
 
     /// Get this NPInput's value from the associated NPArray.
-    PAF::SCA::Expr::Value eval() const override {
+    [[nodiscard]] PAF::SCA::Expr::Value eval() const override {
         return PAF::SCA::Expr::Value(row[index],
                                      NPInputTraits<NPArray<DataTy>>::getType());
     }
 
     /// Get a string representation of this NPInput.
-    std::string repr() const override {
+    [[nodiscard]] std::string repr() const override {
         std::string s = std::to_string(row[index]);
         if (name.empty())
             return s;
@@ -292,13 +294,15 @@ class UnaryOp : public Expr {
     ~UnaryOp() override;
 
     /// Get the type of this expression.
-    ValueType::Type getType() const override {
+    [[nodiscard]] ValueType::Type getType() const override {
         assert(op && "Invalid UnaryOp");
         return op->getType();
     }
 
     /// Get a string representation of the Unary operator.
-    std::string repr() const override { return opStr + '(' + op->repr() + ')'; }
+    [[nodiscard]] std::string repr() const override {
+        return opStr + '(' + op->repr() + ')';
+    }
 
   protected:
     std::unique_ptr<Expr> op; ///< The UnaryOp operand.
@@ -313,7 +317,7 @@ class Not : public UnaryOp {
     ~Not() override;
 
     /// Evaluate this expression's value.
-    Value eval() const override {
+    [[nodiscard]] Value eval() const override {
         return {~op->eval().getValue(), op->getType()};
     }
 };
@@ -333,10 +337,12 @@ class Truncate : public UnaryOp {
     ~Truncate() override;
 
     /// Evaluate this expression's value.
-    Value eval() const override { return {op->eval().getValue(), vt}; }
+    [[nodiscard]] Value eval() const override { return {op->eval().getValue(), vt}; }
 
     /// Get the type of this expression.
-    ValueType::Type getType() const override { return vt.getType(); }
+    [[nodiscard]] ValueType::Type getType() const override {
+        return vt.getType();
+    }
 
   private:
     /// The ValueType to truncate to.
@@ -353,7 +359,9 @@ class AESOp : public UnaryOp {
     ~AESOp() override;
 
     /// Get the type of this expression.
-    ValueType::Type getType() const override { return ValueType::UINT8; }
+    [[nodiscard]] ValueType::Type getType() const override {
+        return ValueType::UINT8;
+    }
 };
 
 /// The AES SBox operator.
@@ -363,7 +371,7 @@ class AESSBox : public AESOp {
     ~AESSBox() override;
 
     /// Evaluate this expression's value.
-    Value eval() const override;
+    [[nodiscard]] Value eval() const override;
 };
 
 /// The AES Inverted SBox operator.
@@ -373,7 +381,7 @@ class AESISBox : public AESOp {
     ~AESISBox() override;
 
     /// Evaluate this expression's value.
-    Value eval() const override;
+    [[nodiscard]] Value eval() const override;
 };
 
 /// Common base class for Binary operators.
@@ -395,13 +403,13 @@ class BinaryOp : public Expr {
     ~BinaryOp() override;
 
     /// Get the type of this expression.
-    ValueType::Type getType() const override {
+    [[nodiscard]] ValueType::Type getType() const override {
         assert(lhs && "Invalid BinaryOp LHS");
         return lhs->getType();
     }
 
     /// Get a string representation of this expression.
-    std::string repr() const override {
+    [[nodiscard]] std::string repr() const override {
         return opStr + "(" + lhs->repr() + "," + rhs->repr() + ")";
     }
 
@@ -419,7 +427,7 @@ class Xor : public BinaryOp {
     ~Xor() override;
 
     /// Evaluate this expression's value.
-    Value eval() const override {
+    [[nodiscard]] Value eval() const override {
         return {lhs->eval().getValue() ^ rhs->eval().getValue(),
                 lhs->getType()};
     }
@@ -433,7 +441,7 @@ class Or : public BinaryOp {
     ~Or() override;
 
     /// Evaluate this expression's value.
-    Value eval() const override {
+    [[nodiscard]] Value eval() const override {
         return {lhs->eval().getValue() | rhs->eval().getValue(),
                 lhs->getType()};
     }
@@ -447,7 +455,7 @@ class Lsl : public BinaryOp {
     ~Lsl() override;
 
     /// Evaluate this expression's value.
-    Value eval() const override;
+    [[nodiscard]] Value eval() const override;
 };
 
 /// Arithmetic shift right
@@ -458,7 +466,7 @@ class Asr : public BinaryOp {
     ~Asr() override;
 
     /// Evaluate this expression's value.
-    Value eval() const override;
+    [[nodiscard]] Value eval() const override;
 };
 
 /// Logical shift right
@@ -469,7 +477,7 @@ class Lsr : public BinaryOp {
     ~Lsr() override;
 
     /// Evaluate this expression's value.
-    Value eval() const override;
+    [[nodiscard]] Value eval() const override;
 };
 
 /// Bitwise AND operator implementation.
@@ -480,7 +488,7 @@ class And : public BinaryOp {
     ~And() override;
 
     /// Evaluate this expression's value.
-    Value eval() const override {
+    [[nodiscard]] Value eval() const override {
         return {lhs->eval().getValue() & rhs->eval().getValue(),
                 lhs->getType()};
     }

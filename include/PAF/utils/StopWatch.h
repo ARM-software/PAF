@@ -35,7 +35,7 @@ class StopWatchBase {
     using Duration = std::chrono::duration<double>;
 
     /// Get the current time.
-    TimePoint now() const { return Clock::now(); }
+    [[nodiscard]] TimePoint now() const { return Clock::now(); }
 
     /// Compute the duration in seconds between 2 time points.
     static double elapsed(TimePoint t1, TimePoint t2) {
@@ -46,7 +46,7 @@ class StopWatchBase {
     }
 
     /// Get the units (seconds, milliseconds, ...) used by this stopwatch.
-    const char *units() const { return " seconds"; }
+    [[nodiscard]] const char *units() const { return " seconds"; }
 };
 
 /// StopWatch implements a stopwatch where the user is in charge of starting
@@ -73,11 +73,11 @@ class StopWatch : public StopWatchBase {
     }
 
     /// Is this StopWatch running ?
-    bool isRunning() const { return running; }
+    [[nodiscard]] bool isRunning() const { return running; }
 
     /// Get the elapsed time since the StopWatch was started if it is still
     /// running, or return the stop tile - start time that was captured.
-    double elapsed() const {
+    [[nodiscard]] double elapsed() const {
         return running ? StopWatchBase::elapsed(now(), startTime)
                        : StopWatchBase::elapsed(stopTime, startTime);
     }

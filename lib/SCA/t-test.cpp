@@ -202,7 +202,7 @@ class PerfectStats {
     PerfectStats() : cnt({0}) {}
 
     void incr(TT t) { cnt[t] += 1; }
-    size_t count(TT t) const { return cnt[t]; }
+    [[nodiscard]] size_t count(TT t) const { return cnt[t]; }
 
     void dump(ostream &os, size_t ntg0, size_t ntg1) const {
         size_t ns = 0;

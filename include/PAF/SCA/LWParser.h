@@ -62,7 +62,7 @@ class LWParser {
     }
 
     /// Get the character at the current position.
-    char peek() const noexcept {
+    [[nodiscard]] char peek() const noexcept {
         assert(!end() && "Can not peek out of bounds character");
         return buf[pos];
     }
@@ -105,21 +105,21 @@ class LWParser {
                                  char closing) noexcept;
 
     /// Get the cursor position in the buffer.
-    size_t position() const noexcept { return pos; }
+    [[nodiscard]] size_t position() const noexcept { return pos; }
 
     /// Get the buffer content, from the current position to the end of the
     /// buffer.
-    std::string buffer() const noexcept {
+    [[nodiscard]] std::string buffer() const noexcept {
         assert(pos <= buf.size() && "Out of bounds position in the buffer");
         return buf.substr(pos);
     }
 
     /// Have we reached the end of the buffer ?
-    bool end() const noexcept { return pos >= buf.size(); }
+    [[nodiscard]] bool end() const noexcept { return pos >= buf.size(); }
 
     /// Get the remaining count of characters left to parse in the internal
     /// buffer.
-    size_t count() const noexcept {
+    [[nodiscard]] size_t count() const noexcept {
         if (end())
             return 0;
         return buf.size() - pos;

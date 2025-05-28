@@ -68,16 +68,18 @@ TEST(Fault, FaultModelBase) {
             : FaultModelBase(Time, Address, Instruction, Width, Disassembly) {}
         FaultModelTest(const FaultModelTest &fm) = default;
         ~FaultModelTest() override = default;
-        const char *getFaultModelName() const override {
+        [[nodiscard]] const char *getFaultModelName() const override {
             return "FaultModelTest";
         }
 
-        unsigned long getTime() const { return time; }
-        uint64_t getAddress() const { return address; }
-        uint32_t getInstruction() const { return instruction; }
-        unsigned getWidth() const { return width; }
-        const string &getDisassembly() const { return disassembly; }
-        unsigned long getId() const { return id; }
+        [[nodiscard]] unsigned long getTime() const { return time; }
+        [[nodiscard]] uint64_t getAddress() const { return address; }
+        [[nodiscard]] uint32_t getInstruction() const { return instruction; }
+        [[nodiscard]] unsigned getWidth() const { return width; }
+        [[nodiscard]] const string &getDisassembly() const {
+            return disassembly;
+        }
+        [[nodiscard]] unsigned long getId() const { return id; }
 
         void dump(std::ostream &os) const override { FaultModelBase::dump(os); }
     };

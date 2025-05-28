@@ -79,7 +79,7 @@ class FaultModelBase {
     virtual ~FaultModelBase();
 
     /// Get the fault model name used for this fault.
-    virtual const char *getFaultModelName() const = 0;
+    [[nodiscard]] virtual const char *getFaultModelName() const = 0;
 
     /// Set this fault's Id.
     void setId(unsigned long i) { id = i; }
@@ -89,7 +89,7 @@ class FaultModelBase {
         bpInfo = std::make_unique<BreakPoint>(Addr, Cnt);
     }
     /// Does this fault have its BreakPoint information set ?
-    bool hasBreakpoint() const { return bpInfo != nullptr; }
+    [[nodiscard]] bool hasBreakpoint() const { return bpInfo != nullptr; }
 
     /// Dump this fault to os.
     virtual void dump(std::ostream &os) const;
@@ -117,7 +117,9 @@ class InstructionSkip : public FaultModelBase {
     ~InstructionSkip() override;
 
     /// Get the fault model name used for this fault.
-    const char *getFaultModelName() const override { return "InstructionSkip"; }
+    [[nodiscard]] const char *getFaultModelName() const override {
+        return "InstructionSkip";
+    }
 
     /// Dump this fault to os.
     void dump(std::ostream &os) const override;
@@ -144,7 +146,9 @@ class CorruptRegDef : public FaultModelBase {
     ~CorruptRegDef() override;
 
     /// Get the fault model name used for this fault.
-    const char *getFaultModelName() const override { return "CorruptRegDef"; }
+    [[nodiscard]] const char *getFaultModelName() const override {
+        return "CorruptRegDef";
+    }
 
     /// Dump this fault to os.
     void dump(std::ostream &os) const override;

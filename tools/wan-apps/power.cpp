@@ -85,8 +85,8 @@ class RunInfo {
         }
     }
 
-    bool empty() const { return segments.empty(); }
-    size_t size() const {
+    [[nodiscard]] bool empty() const { return segments.empty(); }
+    [[nodiscard]] size_t size() const {
         // No segment is like having a single segment (the complete trace).
         return segments.size() == 0 ? 1 : segments.size();
     }
@@ -97,7 +97,7 @@ class RunInfo {
             os << " - " << ci.start << " - " << ci.end << '\n';
     }
 
-    pair<bool, Segment> getSegment(size_t time) const {
+    [[nodiscard]] pair<bool, Segment> getSegment(size_t time) const {
         // If we have no segments at all (no run.info), then consider the
         // complete trace.
         if (segments.size() == 0)
@@ -112,7 +112,7 @@ class RunInfo {
         return make_pair(false, Segment());
     }
 
-    size_t getSegmentNum(size_t time) const {
+    [[nodiscard]] size_t getSegmentNum(size_t time) const {
         // No segment at all, consider the whole trace as a segment.
         if (segments.size() == 0)
             return 0;
@@ -124,7 +124,7 @@ class RunInfo {
         DIE("time is not part of segment");
     }
 
-    size_t getDuration() const {
+    [[nodiscard]] size_t getDuration() const {
         // No segment at all, consider the whole trace as a segment.
         if (segments.size() == 0)
             return 0;
@@ -132,7 +132,7 @@ class RunInfo {
         return segments[0].end - segments[0].start;
     }
 
-    bool checkDuration(size_t d) const {
+    [[nodiscard]] bool checkDuration(size_t d) const {
         for (const auto &segment : segments)
             if (segment.end - segment.start != d)
                 return false;
@@ -230,17 +230,14 @@ struct HammingVisitor : public Waveform::Visitor {
                 p += PowerNoiseDist(MT);
     }
 
-    void dump(size_t period, size_t offset) const {
+    [[nodiscard]] bool dump(size_t period, size_t offset) const {
         check();
         switch (getFileFormat()) {
         case FileFormat::CSV:
-            dumpAsCSV(period, offset);
-            break;
+            return dumpAsCSV(period, offset);
         case FileFormat::NPY:
-            dumpAsNPY(period, offset);
-            break;
+            return dumpAsNPY(period, offset);
         }
-        return;
     }
 
   protected:
@@ -264,7 +261,7 @@ struct HammingVisitor : public Waveform::Visitor {
 
     enum class FileFormat : uint8_t { CSV, NPY };
 
-    FileFormat getFileFormat() const {
+    [[nodiscard]] FileFormat getFileFormat() const {
         if (fileName == "-")
             return FileFormat::CSV;
         size_t pos = fileName.find_last_of('.');
@@ -280,7 +277,7 @@ struct HammingVisitor : public Waveform::Visitor {
                 "'. Use .npy or .csv");
     }
 
-    void dumpAsCSV(size_t period, size_t offset) const {
+    [[nodiscard]] bool dumpAsCSV(size_t period, size_t offset) const {
         ostream *os;
         ofstream *ofs = nullptr;
 
@@ -310,9 +307,11 @@ struct HammingVisitor : public Waveform::Visitor {
             ofs->close();
             delete ofs;
         }
+
+        return true;
     }
 
-    void dumpAsNPY(size_t period, size_t offset) const {
+    [[nodiscard]] bool dumpAsNPY(size_t period, size_t offset) const {
         const size_t numCols = power.size() / period;
         const size_t numRows = power.cbegin()->second.size();
         NPArray<double> npy(numRows, numCols);
@@ -326,7 +325,7 @@ struct HammingVisitor : public Waveform::Visitor {
             col += 1;
         }
 
-        npy.save(fileName);
+        return npy.save(fileName);
     }
 };
 
@@ -405,6 +404,8 @@ class Analysis {
     HammingVisitor &operator*() { return *HV; }
     HammingVisitor *operator->() { return HV.get(); }
 
+    const string &filename() const { return fileName; }
+
   private:
     unique_ptr<HammingVisitor> HV;
     string fileName;
@@ -418,9 +419,9 @@ class Inputs {
         Input(vector<string> &&inputFiles, string &&CycleInfo)
             : inputFiles(std::move(inputFiles)), cycleInfo(std::move(CycleInfo)) {}
 
-        bool hasCycleInfo() const { return cycleInfo.size(); }
+        [[nodiscard]] bool hasCycleInfo() const { return cycleInfo.size(); }
 
-        Waveform getWaveform() const {
+        [[nodiscard]] Waveform getWaveform() const {
             if (inputFiles.size() == 1)
                 return WaveFile::get(inputFiles[0], /* write: */ false)->read();
             return PAF::WAN::readAndMerge(inputFiles);
@@ -445,10 +446,14 @@ class Inputs {
 
     Inputs() {}
 
-    bool empty() const { return inputs.empty(); }
+    [[nodiscard]] bool empty() const { return inputs.empty(); }
 
-    vector<Input>::const_iterator begin() const { return inputs.begin(); }
-    vector<Input>::const_iterator end() const { return inputs.end(); }
+    [[nodiscard]] vector<Input>::const_iterator begin() const {
+        return inputs.begin();
+    }
+    [[nodiscard]] vector<Input>::const_iterator end() const {
+        return inputs.end();
+    }
 
     void parse(const string &s) {
         string runInfo;
@@ -609,7 +614,10 @@ int main(int argc, char *argv[]) {
         if (analysis) {
             if (addNoise)
                 analysis->addNoise();
-            analysis->dump(period, offset);
+            if (!analysis->dump(period, offset)) {
+                DIE("Error writing analysis results to ",
+                    analysis.filename().c_str());
+            }
         }
 
     return 0;

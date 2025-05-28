@@ -71,11 +71,11 @@ template <class DataTy> class NPAdapter {
     }
 
     /// Save this into filename in the NPY format.
-    void save(const std::string &filename) const {
+    [[nodiscard]] bool save(const std::string &filename) const {
         // Last trace may be empty and shall be skipped.
         size_t num_traces = w.size();
         if (num_traces == 0)
-            return; // Nothing to save !
+            return true; // Nothing to save !
 
         if (w[num_traces - 1].empty())
             num_traces -= 1;
@@ -92,7 +92,7 @@ template <class DataTy> class NPAdapter {
                 std::fill(dest + len, dest + maxRowLength, DataTy{});
         }
         PAF::SCA::NPArray<DataTy> npy(std::move(matrix), num_traces, maxRowLength);
-        npy.save(filename);
+        return npy.save(filename);
     }
 
   private:

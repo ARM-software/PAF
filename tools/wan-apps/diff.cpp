@@ -88,7 +88,7 @@ class SignalDiff {
         const MySignalDesc &sigDesc1;
         const MySignalDesc &sigDesc2;
 
-        string getFullSignalName() const {
+        [[nodiscard]] string getFullSignalName() const {
             return fullScopeName + '/' + signalName;
         }
     };
@@ -143,7 +143,7 @@ class SignalDiff {
         }
     }
 
-    bool isUncomparable() const { return uncomparable; }
+    [[nodiscard]] bool isUncomparable() const { return uncomparable; }
 
     operator bool() const { return !uncomparable && !differences.empty(); }
 

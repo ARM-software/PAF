@@ -201,7 +201,7 @@ template <typename Ty> class State : public NPCollector {
     State(const Ty &v) : v(v) {}
 
     // FIXME: we should be able to return a const Ty &
-    Ty value() const { return v; }
+    [[nodiscard]] Ty value() const { return v; }
 
   protected:
     void setValue(const Ty &s) { v = s; }
@@ -228,8 +228,8 @@ template <> class Location<true> {
         c = col;
     }
 
-    const size_t &row() const noexcept { return r; }
-    const size_t &col() const noexcept { return c; }
+    [[nodiscard]] const size_t &row() const noexcept { return r; }
+    [[nodiscard]] const size_t &col() const noexcept { return c; }
 
   private:
     size_t r{std::numeric_limits<size_t>::max()};
@@ -360,7 +360,7 @@ class Mean : public State<double> {
         State<Ty>::setValue(State<Ty>::value() + delta1 / double(n));
     }
 
-    size_t count() const { return n; }
+    [[nodiscard]] size_t count() const { return n; }
 
   protected:
     size_t n{0}; // Number of samples.
@@ -388,11 +388,13 @@ class MeanWithVar : public Mean<Ty> {
         v += delta1 * delta2;
     }
 
-    double var(unsigned ddof = 0) const {
+    [[nodiscard]] double var(unsigned ddof = 0) const {
         return v / double(Mean<Ty>::count() - ddof);
     }
 
-    double stddev() const { return std::sqrt(v / double(Mean<Ty>::count())); }
+    [[nodiscard]] double stddev() const {
+        return std::sqrt(v / double(Mean<Ty>::count()));
+    }
 
   private:
     double v{0.0}; // The variance

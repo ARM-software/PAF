@@ -92,7 +92,7 @@ template <class BuilderTy> struct FSTWaveBuilderBase {
         auto *B = static_cast<BuilderTy *>(user_callback_data_pointer);
         B->process(time, facidx, value);
     }
-    fstHandle getHandle() const {
+    [[nodiscard]] fstHandle getHandle() const {
         // For now we are interested in all signals, but we could use this to
         // only select some signals of interest.
         return -1;

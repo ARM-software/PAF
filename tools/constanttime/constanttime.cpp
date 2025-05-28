@@ -86,7 +86,7 @@ class TraceComparator {
         instr++;
     }
 
-    bool hasErrors() const { return errors != 0; }
+    [[nodiscard]] bool hasErrors() const { return errors != 0; }
 
   private:
     const ReferenceTrace &ref;

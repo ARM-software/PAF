@@ -46,11 +46,13 @@ class ProgressMonitor {
     }
 
     /// Get the expected total number of steps to completion.
-    size_t total() const { return totalNumberOfSteps; }
+    [[nodiscard]] size_t total() const { return totalNumberOfSteps; }
     /// Get the number of steps already completed.
-    size_t count() const { return progress; }
+    [[nodiscard]] size_t count() const { return progress; }
     /// Get the number of steps remaining to completion.
-    size_t remaining() const { return totalNumberOfSteps - progress; }
+    [[nodiscard]] size_t remaining() const {
+        return totalNumberOfSteps - progress;
+    }
 
   private:
     /// Display progresses on OS if the changes are big enough.

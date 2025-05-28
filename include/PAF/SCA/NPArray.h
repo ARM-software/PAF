@@ -177,22 +177,24 @@ class NPArrayBase {
     }
 
     /// Get the number of rows.
-    size_t rows() const noexcept { return numRows; }
+    [[nodiscard]] size_t rows() const noexcept { return numRows; }
 
     /// Get the number of columns.
-    size_t cols() const noexcept { return numColumns; }
+    [[nodiscard]] size_t cols() const noexcept { return numColumns; }
 
     /// Get the number of elements.
-    size_t size() const noexcept { return numRows * numColumns; }
+    [[nodiscard]] size_t size() const noexcept { return numRows * numColumns; }
 
     /// Get the underlying element size in bytes.
-    unsigned elementSize() const noexcept { return eltSize; }
+    [[nodiscard]] unsigned elementSize() const noexcept { return eltSize; }
 
     /// Get the status of this NPArray.
-    bool good() const noexcept { return errstr == nullptr; }
+    [[nodiscard]] bool good() const noexcept { return errstr == nullptr; }
 
     /// Is this NPArray empty ?
-    bool empty() const noexcept { return numRows == 0 || numColumns == 0; }
+    [[nodiscard]] bool empty() const noexcept {
+        return numRows == 0 || numColumns == 0;
+    }
 
     /// Insert (uninitialized) rows at position row.
     NPArrayBase &insertRows(size_t row, size_t rows);
@@ -235,7 +237,7 @@ class NPArrayBase {
 
     /// Get a string describing the last error (if any).
     /// Especially useful when initializing from a file.
-    const char *error() const noexcept { return errstr; }
+    [[nodiscard]] const char *error() const noexcept { return errstr; }
 
     /// Get information from the file header.
     static bool getInformation(std::ifstream &ifs, unsigned &major,
@@ -253,7 +255,8 @@ class NPArrayBase {
     bool save(const char *filename, const std::string &descr) const;
 
     /// Save to file \p filename (std::string edition)
-    bool save(const std::string &filename, const std::string &descr) const;
+    [[nodiscard]] bool save(const std::string &filename,
+                            const std::string &descr) const;
 
     /// Save to output file stream \p os.
     bool save(std::ofstream &os, const std::string &descr) const;
@@ -261,7 +264,8 @@ class NPArrayBase {
   protected:
     /// Get a pointer to type Ty to the array (const version).
     template <class Ty>
-    const Ty *getAs(const size_t &row, const size_t &col) const noexcept {
+    [[nodiscard]] const Ty *getAs(const size_t &row,
+                                  const size_t &col) const noexcept {
         assert(row < rows() && "Row is out-of-range");
         assert(col < cols() && "Col is out-of-range");
         const Ty *p = reinterpret_cast<Ty *>(data.get());
@@ -279,7 +283,7 @@ class NPArrayBase {
 
     /// Get a pointer to type Ty to the array using linear addressing (const version).
     template <class Ty>
-    const Ty *getAs(const size_t &idx) const noexcept {
+    [[nodiscard]] const Ty *getAs(const size_t &idx) const noexcept {
         assert(idx < size() && "idx is out-of-range");
         const Ty *p = reinterpret_cast<Ty *>(data.get());
         return &p[idx];
@@ -657,7 +661,8 @@ template <class Ty> class NPArray : public NPArrayBase {
     /// Get a new NPArray, generated from the rows (resp. columns, according to
     /// \p axis ) matching \p indices , in the order where the indices were
     /// supplied.
-    NPArray extract(Axis axis, const std::vector<size_t> &indices) const {
+    [[nodiscard]] NPArray extract(Axis axis,
+                                  const std::vector<size_t> &indices) const {
         if (indices.empty())
             return NPArray();
         switch (axis) {
@@ -742,7 +747,7 @@ template <class Ty> class NPArray : public NPArrayBase {
     }
 
     /// Save to file \p filename in NPY format.
-    bool save(const std::string &filename) const {
+    [[nodiscard]] bool save(const std::string &filename) const {
         return save(filename.c_str());
     }
 
@@ -845,21 +850,21 @@ template <class Ty> class NPArray : public NPArrayBase {
         }
 
         /// Get the first element in the current row (const version).
-        const typename NPArrayTy::DataTy *begin() const noexcept {
+        [[nodiscard]] const typename NPArrayTy::DataTy *begin() const noexcept {
             return &(*nparray)(row, 0);
         }
         /// Get the past-the-end element in the current row (const version).
-        const typename NPArrayTy::DataTy *end() const noexcept {
+        [[nodiscard]] const typename NPArrayTy::DataTy *end() const noexcept {
             const typename NPArrayTy::DataTy *e =
                 &(*nparray)(row, nparray->cols() - 1);
             return e + 1;
         }
 
         /// Get the number of elements in this row.
-        size_t size() const noexcept { return nparray->cols(); }
+        [[nodiscard]] size_t size() const noexcept { return nparray->cols(); }
 
         /// Is this row empty ?
-        bool empty() const noexcept { return nparray->empty(); }
+        [[nodiscard]] bool empty() const noexcept { return nparray->empty(); }
 
       private:
         NPArrayTy *nparray; ///< The NPArray this row refers to.
@@ -877,12 +882,14 @@ template <class Ty> class NPArray : public NPArrayBase {
     Row end() noexcept { return Row(*this, rows()); }
 
     /// Get the first row from this NPArray (const version).
-    const_Row cbegin(size_t i = 0) const noexcept {
+    [[nodiscard]] const_Row cbegin(size_t i = 0) const noexcept {
         return const_Row(*this, i);
     }
 
     /// Get a past-the-end row for this NPArray (const version).
-    const_Row cend() const noexcept { return const_Row(*this, rows()); }
+    [[nodiscard]] const_Row cend() const noexcept {
+        return const_Row(*this, rows());
+    }
 
     /// \defgroup Predicates Predicate operations on NParrays
     /// @{
@@ -900,7 +907,7 @@ template <class Ty> class NPArray : public NPArrayBase {
     /// Test if all elements in row \p i or column \p i satisfy predicate
     /// \p pred.
     template <class predicate>
-    bool all(const predicate &pred, Axis axis, size_t i) const {
+    [[nodiscard]] bool all(const predicate &pred, Axis axis, size_t i) const {
         switch (axis) {
         case ROW:
             assert(i <= rows() &&
@@ -922,7 +929,8 @@ template <class Ty> class NPArray : public NPArrayBase {
     /// Test if all elements in the range [ \p begin , \p end ( on \p axis
     /// satisfy predicate \p pred.
     template <class predicate>
-    bool all(const predicate &pred, Axis axis, size_t begin, size_t end) const {
+    [[nodiscard]] bool all(const predicate &pred, Axis axis, size_t begin,
+                           size_t end) const {
         assert(begin <= end && "range's end needs to be strictly greater "
                                "than begin in NPArray::all");
         if (begin >= end)
@@ -954,7 +962,8 @@ template <class Ty> class NPArray : public NPArrayBase {
     }
 
     /// Test if any of the elements in this NPArray satisfy predicate \p pred.
-    template <class predicate> bool any(const predicate &pred) const {
+    template <class predicate>
+    [[nodiscard]] bool any(const predicate &pred) const {
         if (empty())
             return false;
         for (size_t row = 0; row < rows(); row++)
@@ -967,7 +976,7 @@ template <class Ty> class NPArray : public NPArrayBase {
     /// Test if any of the elements in row \p i or column \p i satisfy predicate
     /// \p pred.
     template <class predicate>
-    bool any(const predicate &pred, Axis axis, size_t i) const {
+    [[nodiscard]] bool any(const predicate &pred, Axis axis, size_t i) const {
         switch (axis) {
         case ROW:
             assert(i <= rows() &&
@@ -989,7 +998,8 @@ template <class Ty> class NPArray : public NPArrayBase {
     /// Test if any of the elements in the range [ \p begin , \p end ( on \p
     /// axis satisfy predicate \p pred.
     template <class predicate>
-    bool any(const predicate &pred, Axis axis, size_t begin, size_t end) const {
+    [[nodiscard]] bool any(const predicate &pred, Axis axis, size_t begin,
+                           size_t end) const {
         assert(begin <= end && "range's end needs to be strictly greater "
                                "than begin in NPArray::all");
         if (begin >= end)
@@ -1021,7 +1031,8 @@ template <class Ty> class NPArray : public NPArrayBase {
     }
 
     /// Test if none of the elements in this NPArray satisfy predicate \p pred.
-    template <class predicate> bool none(const predicate &pred) const {
+    template <class predicate>
+    [[nodiscard]] bool none(const predicate &pred) const {
         if (empty())
             return false;
         for (size_t row = 0; row < rows(); row++)
@@ -1034,7 +1045,7 @@ template <class Ty> class NPArray : public NPArrayBase {
     /// Test if none of the elements in row \p i or column \p i satisfy
     /// predicate \p pred.
     template <class predicate>
-    bool none(const predicate &pred, Axis axis, size_t i) const {
+    [[nodiscard]] bool none(const predicate &pred, Axis axis, size_t i) const {
         switch (axis) {
         case ROW:
             assert(i <= rows() &&
@@ -1056,8 +1067,8 @@ template <class Ty> class NPArray : public NPArrayBase {
     /// Test if none of the elements in the range [ \p begin , \p end ( on \p
     /// axis satisfy predicate \p pred.
     template <class predicate>
-    bool none(const predicate &pred, Axis axis, size_t begin,
-              size_t end) const {
+    [[nodiscard]] bool none(const predicate &pred, Axis axis, size_t begin,
+                            size_t end) const {
         assert(begin <= end && "range's end needs to be strictly greater "
                                "than begin in NPArray::none");
         if (begin >= end)
@@ -1090,7 +1101,8 @@ template <class Ty> class NPArray : public NPArrayBase {
 
     /// Count how many of the elements in this NPArray satisfy predicate \p
     /// pred.
-    template <class predicate> size_t count(const predicate &pred) const {
+    template <class predicate>
+    [[nodiscard]] size_t count(const predicate &pred) const {
         size_t cnt = 0;
         if (empty())
             return cnt;
@@ -1104,7 +1116,8 @@ template <class Ty> class NPArray : public NPArrayBase {
     /// Count how many of the elements in row \p i or column \p i satisfy
     /// predicate \p pred.
     template <class predicate>
-    size_t count(const predicate &pred, Axis axis, size_t i) const {
+    [[nodiscard]] size_t count(const predicate &pred, Axis axis,
+                               size_t i) const {
         size_t cnt = 0;
         switch (axis) {
         case ROW:
@@ -1127,8 +1140,8 @@ template <class Ty> class NPArray : public NPArrayBase {
     /// Count how many of the elements in the range [ \p begin , \p end ( on \p
     /// axis satisfy predicate \p pred.
     template <class predicate>
-    size_t count(const predicate &pred, Axis axis, size_t begin,
-                 size_t end) const {
+    [[nodiscard]] size_t count(const predicate &pred, Axis axis, size_t begin,
+                               size_t end) const {
         assert(begin <= end && "range's end needs to be strictly greater "
                                "than begin in NPArray::count");
         size_t cnt = 0;
@@ -1171,12 +1184,14 @@ template <class Ty> class NPArray : public NPArrayBase {
     /// NPArray and returns it.
     template <template <typename, bool> class collectorOp,
               bool enableLocation = false>
-    std::enable_if_t<
-        isNPCollector<Ty, collectorOp, enableLocation>() &&
-            std::is_copy_constructible<collectorOp<Ty, enableLocation>>(),
-        collectorOp<
-            Ty, enableLocation>> foreach (const collectorOp<Ty, enableLocation>
-                                              &collectOp) const {
+    [[nodiscard]] [[nodiscard]] [[nodiscard]] [[nodiscard]] [[nodiscard]] [[nodiscard]] [[nodiscard]] [[nodiscard]] std::
+        enable_if_t<
+            isNPCollector<Ty, collectorOp, enableLocation>() &&
+                std::is_copy_constructible<collectorOp<Ty, enableLocation>>(),
+            collectorOp<
+                Ty, enableLocation>> foreach (const collectorOp<Ty,
+                                                                enableLocation>
+                                                  &collectOp) const {
         collectorOp<Ty, enableLocation> op(collectOp);
         for (size_t row = 0; row < rows(); row++)
             for (size_t col = 0; col < cols(); col++)
@@ -1189,13 +1204,15 @@ template <class Ty> class NPArray : public NPArrayBase {
     /// it.
     template <template <typename, bool> class collectorOp,
               bool enableLocation = false>
-    std::enable_if_t<
-        isNPCollector<Ty, collectorOp, enableLocation>() &&
-            std::is_copy_constructible<collectorOp<Ty, enableLocation>>(),
-        collectorOp<
-            Ty, enableLocation>> foreach (const collectorOp<Ty, enableLocation>
-                                              &collectOp,
-                                          Axis axis, size_t i) const {
+    [[nodiscard]] [[nodiscard]] [[nodiscard]] [[nodiscard]] [[nodiscard]] [[nodiscard]] [[nodiscard]] [[nodiscard]] std::
+        enable_if_t<
+            isNPCollector<Ty, collectorOp, enableLocation>() &&
+                std::is_copy_constructible<collectorOp<Ty, enableLocation>>(),
+            collectorOp<
+                Ty, enableLocation>> foreach (const collectorOp<Ty,
+                                                                enableLocation>
+                                                  &collectOp,
+                                              Axis axis, size_t i) const {
         collectorOp<Ty, enableLocation> op(collectOp);
         switch (axis) {
         case ROW:
@@ -1220,14 +1237,16 @@ template <class Ty> class NPArray : public NPArrayBase {
     /// specified by \p axis) of the NPArray and returns it.
     template <template <typename, bool> class collectorOp,
               bool enableLocation = false>
-    std::enable_if_t<
-        isNPCollector<Ty, collectorOp, enableLocation>() &&
-            std::is_copy_constructible<collectorOp<Ty, enableLocation>>(),
-        collectorOp<
-            Ty, enableLocation>> foreach (const collectorOp<Ty, enableLocation>
-                                              &collectOp,
-                                          Axis axis, size_t begin,
-                                          size_t end) const {
+    [[nodiscard]] [[nodiscard]] [[nodiscard]] [[nodiscard]] [[nodiscard]] [[nodiscard]] [[nodiscard]] [[nodiscard]] std::
+        enable_if_t<
+            isNPCollector<Ty, collectorOp, enableLocation>() &&
+                std::is_copy_constructible<collectorOp<Ty, enableLocation>>(),
+            collectorOp<
+                Ty, enableLocation>> foreach (const collectorOp<Ty,
+                                                                enableLocation>
+                                                  &collectOp,
+                                              Axis axis, size_t begin,
+                                              size_t end) const {
         assert(begin <= end && "begin index must be lower or equal to end "
                                "index in NPArray::foreach");
         collectorOp<Ty, enableLocation> op(collectOp);
@@ -1536,7 +1555,7 @@ template <class Ty> class NPArray : public NPArrayBase {
     /// range of \p collectorOp.
     template <template <typename, bool> class collectorOp,
               bool enableLocation = false>
-    std::enable_if_t<
+    [[nodiscard]] std::enable_if_t<
         isNPCollector<Ty, collectorOp, enableLocation>() &&
             std::is_copy_constructible<collectorOp<Ty, enableLocation>>(),
         std::vector<collectorOp<Ty, enableLocation>>>
@@ -1574,7 +1593,7 @@ template <class Ty> class NPArray : public NPArrayBase {
     /// \p collectorOp.
     template <template <typename, bool> class collectorOp,
               bool enableLocation = false>
-    std::enable_if_t<
+    [[nodiscard]] [[nodiscard]] [[nodiscard]] std::enable_if_t<
         isNPCollector<Ty, collectorOp>() &&
             std::is_copy_constructible<collectorOp<Ty, enableLocation>>() &&
             std::is_same<void, typename NPOperatorTraits<
@@ -1604,7 +1623,7 @@ template <class Ty> class NPArray : public NPArrayBase {
     /// \p axis (row / column) \p i and returns its value.
     template <template <typename, bool> class collectorOp,
               bool enableLocation = false>
-    std::enable_if_t<
+    [[nodiscard]] [[nodiscard]] std::enable_if_t<
         isNPCollector<Ty, collectorOp, enableLocation>(),
         typename NPOperatorTraits<Ty, collectorOp, enableLocation>::valueType>
     fold(const collectorOp<Ty, enableLocation> &op, Axis axis, size_t i) const {
@@ -1616,9 +1635,10 @@ template <class Ty> class NPArray : public NPArrayBase {
     /// computed values.
     template <template <typename, bool> class collectorOp,
               bool enableLocation = false>
-    std::enable_if_t<isNPCollector<Ty, collectorOp, enableLocation>(),
-                     NPArray<typename NPOperatorTraits<
-                         Ty, collectorOp, enableLocation>::valueType>>
+    [[nodiscard]] [[nodiscard]] std::enable_if_t<
+        isNPCollector<Ty, collectorOp, enableLocation>(),
+        NPArray<typename NPOperatorTraits<Ty, collectorOp,
+                                          enableLocation>::valueType>>
     fold(const collectorOp<Ty, enableLocation> &op, Axis axis, size_t begin,
          size_t end) const {
         return extract(foldOp(op, axis, begin, end));
@@ -1629,37 +1649,45 @@ template <class Ty> class NPArray : public NPArrayBase {
     /// computed values.
     template <template <typename, bool> class collectorOp,
               bool enableLocation = false>
-    std::enable_if_t<isNPCollector<Ty, collectorOp, enableLocation>(),
-                     NPArray<typename NPOperatorTraits<
-                         Ty, collectorOp, enableLocation>::valueType>>
+    [[nodiscard]] [[nodiscard]] std::enable_if_t<
+        isNPCollector<Ty, collectorOp, enableLocation>(),
+        NPArray<typename NPOperatorTraits<Ty, collectorOp,
+                                          enableLocation>::valueType>>
     fold(const collectorOp<Ty, enableLocation> &op, Axis axis) const {
         return extract(foldOp(op, axis));
     }
 
     /// Sum elements in an NPArray in row \p i or column \p i.
-    Ty sum(Axis axis, size_t i) const {
+    [[nodiscard]] Ty sum(Axis axis, size_t i) const {
         return fold(Accumulate<Ty>(), axis, i);
     }
 
     /// Sum elements in an NPArray on a range of rows or columns.
-    NPArray<Ty> sum(Axis axis, size_t begin, size_t end) const {
+    [[nodiscard]] NPArray<Ty> sum(Axis axis, size_t begin, size_t end) const {
         return fold(Accumulate<Ty>(), axis, begin, end);
     }
 
     /// Sum elements in an NPArray along an \p axis --- for all rows/cols on
     /// that axis.
-    NPArray<Ty> sum(Axis axis) const { return fold(Accumulate<Ty>(), axis); }
+    [[nodiscard]] NPArray<Ty> sum(Axis axis) const {
+        return fold(Accumulate<Ty>(), axis);
+    }
 
     /// Compute the mean on row \p i or column \p i.
-    double mean(Axis axis, size_t i) const { return fold(Mean<Ty>(), axis, i); }
+    [[nodiscard]] double mean(Axis axis, size_t i) const {
+        return fold(Mean<Ty>(), axis, i);
+    }
 
     /// Compute the mean on a range of rows or on a range of columns.
-    NPArray<double> mean(Axis axis, size_t begin, size_t end) const {
+    [[nodiscard]] NPArray<double> mean(Axis axis, size_t begin,
+                                       size_t end) const {
         return fold(Mean<Ty>(), axis, begin, end);
     }
 
     /// Compute the mean on all rows or all columns.
-    NPArray<double> mean(Axis axis) const { return fold(Mean<Ty>(), axis); }
+    [[nodiscard]] NPArray<double> mean(Axis axis) const {
+        return fold(Mean<Ty>(), axis);
+    }
 
     /// Compute the mean on row \p i or column \p i. It also computes the
     /// variance (taking \p ddof into account) and the standard deviation.
@@ -1728,14 +1756,16 @@ template <class Ty> class NPArray : public NPArrayBase {
 
     /// A convenience shorthand for in-class operations (const
     /// version).
-    Ty at(size_t row, size_t col) const { return (*this)(row, col); }
+    [[nodiscard]] Ty at(size_t row, size_t col) const {
+        return (*this)(row, col);
+    }
 
     /// A convenience shorthand for in-class operations using linear addressing.
     Ty &at(size_t idx) { return *getAs<Ty>(idx); }
 
     /// A convenience shorthand for in-class operations using linear addressing
     /// (const version).
-    const Ty &at(size_t idx) const { return *getAs<Ty>(idx); }
+    [[nodiscard]] const Ty &at(size_t idx) const { return *getAs<Ty>(idx); }
 };
 
 /// Convert the type of the \p src NPArray elements from \p fromTy to \p newTy.

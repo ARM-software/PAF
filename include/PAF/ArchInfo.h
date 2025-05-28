@@ -53,7 +53,9 @@ struct AddressingMode {
     AddressingMode(OffsetFormat Offset, BaseUpdate Update)
         : offset(Offset), update(Update) {}
 
-    bool isValid() const { return offset != OffsetFormat::NO_ACCESS; }
+    [[nodiscard]] bool isValid() const {
+        return offset != OffsetFormat::NO_ACCESS;
+    }
 
     bool operator==(const AddressingMode &Other) const {
         return offset == Other.offset && update == Other.update;
@@ -79,19 +81,25 @@ class InstrInfo {
     InstrInfo &operator=(InstrInfo &&) = default;
 
     /// Has this instruction no kind ?
-    bool hasNoKind() const { return kind == InstructionKind::NO_KIND; }
+    [[nodiscard]] bool hasNoKind() const {
+        return kind == InstructionKind::NO_KIND;
+    }
     /// Is this instruction a load instruction ?
-    bool isLoad() const { return kind == InstructionKind::LOAD; }
+    [[nodiscard]] bool isLoad() const { return kind == InstructionKind::LOAD; }
     /// Is this instruction a store instruction ?
-    bool isStore() const { return kind == InstructionKind::STORE; }
+    [[nodiscard]] bool isStore() const {
+        return kind == InstructionKind::STORE;
+    }
     /// Is this instruction a memory access instruction, i.e a load or a store ?
-    bool isMemoryAccess() const { return isLoad() || isStore(); }
+    [[nodiscard]] bool isMemoryAccess() const { return isLoad() || isStore(); }
     /// Is this instruction a branch instruction ?
-    bool isBranch() const { return kind == InstructionKind::BRANCH; }
+    [[nodiscard]] bool isBranch() const {
+        return kind == InstructionKind::BRANCH;
+    }
     /// Is this instruction a call instruction ?
-    bool isCall() const { return kind == InstructionKind::CALL; }
+    [[nodiscard]] bool isCall() const { return kind == InstructionKind::CALL; }
     /// Get this instruction's Kind directly.
-    InstructionKind getKind() const { return kind; }
+    [[nodiscard]] InstructionKind getKind() const { return kind; }
 
     /// Set this instruction as a load instruction.
     InstrInfo &setLoad(AddressingMode::OffsetFormat Offset,
@@ -146,24 +154,28 @@ class InstrInfo {
     }
 
     /// Get the raw list of registers read by this instruction, in asm order.
-    const std::vector<unsigned> &getInputRegisters(bool implicit) const {
+    [[nodiscard]] const std::vector<unsigned> &
+    getInputRegisters(bool implicit) const {
         return implicit ? implicitInputRegisters : inputRegisters;
     }
 
     /// Get a list of unique registers read by this instruction. Order is
     /// unspecified.
-    std::vector<unsigned> getUniqueInputRegisters(bool implicit) const;
+    [[nodiscard]] std::vector<unsigned>
+    getUniqueInputRegisters(bool implicit) const;
 
     /// Get this instruction addressing mode.
     /// Note: this is only valid for instructions that accesses memory.
-    const AddressingMode &getAddressingMode() const {
+    [[nodiscard]] const AddressingMode &getAddressingMode() const {
         assert(isMemoryAccess() && "Only instructions that access memory have "
                                    "a valid addressing mode");
         return addressingMode;
     }
 
     /// Does this instruction have a valid addressing mode ?
-    bool hasValidAddressingMode() const { return addressingMode.isValid(); }
+    [[nodiscard]] bool hasValidAddressingMode() const {
+        return addressingMode.isValid();
+    }
 
   private:
     /// The raw list of registers read.
@@ -184,10 +196,11 @@ class ArchInfo {
     virtual ~ArchInfo() = default;
 
     /// Get a nop instruction of the specified size (in bytes).
-    virtual uint32_t getNOP(unsigned InstrSize) const = 0;
+    [[nodiscard]] virtual uint32_t getNOP(unsigned InstrSize) const = 0;
 
     /// Is I a branch instruction ?
-    virtual bool isBranch(const ReferenceInstruction &I) const = 0;
+    [[nodiscard]] virtual bool
+    isBranch(const ReferenceInstruction &I) const = 0;
 
     /// Get an estimated cycle count for instruction I.
     ///
@@ -197,31 +210,33 @@ class ArchInfo {
               const ReferenceInstruction *Next = nullptr) const = 0;
 
     /// How many registers does this processor have ?
-    virtual unsigned numRegisters() const = 0;
+    [[nodiscard]] virtual unsigned numRegisters() const = 0;
 
     /// Get this register name.
-    virtual const char *registerName(unsigned reg) const = 0;
+    [[nodiscard]] virtual const char *registerName(unsigned reg) const = 0;
     /// Get this register id.
-    virtual unsigned registerId(std::string name) const = 0;
+    [[nodiscard]] virtual unsigned registerId(std::string name) const = 0;
 
     /// Is register named reg a status register for this CPU ?
-    virtual bool isStatusRegister(const std::string &reg) const = 0;
+    [[nodiscard]] virtual bool
+    isStatusRegister(const std::string &reg) const = 0;
 
     /// Get the InstrAttributes for instruction I.
-    virtual InstrInfo getInstrInfo(const ReferenceInstruction &I) const = 0;
+    [[nodiscard]] virtual InstrInfo
+    getInstrInfo(const ReferenceInstruction &I) const = 0;
 
     /// Describe this ArchInfo.
-    virtual const char *description() const = 0;
+    [[nodiscard]] virtual const char *description() const = 0;
 };
 
 /// Architectural information for ARMv7-M.
 class V7MInfo : public ArchInfo {
   public:
     /// Get a nop instruction of the specified size (in bytes).
-    uint32_t getNOP(unsigned InstrSize) const override;
+    [[nodiscard]] uint32_t getNOP(unsigned InstrSize) const override;
 
     /// Is I a branch instruction ?
-    bool isBranch(const ReferenceInstruction &I) const override;
+    [[nodiscard]] bool isBranch(const ReferenceInstruction &I) const override;
 
     /// Get an estimated cycle count for instruction I.
     unsigned
@@ -229,7 +244,7 @@ class V7MInfo : public ArchInfo {
               const ReferenceInstruction *Next = nullptr) const override;
 
     /// Is register named reg a status register for this CPU ?
-    bool isStatusRegister(const std::string &reg) const override;
+    [[nodiscard]] bool isStatusRegister(const std::string &reg) const override;
 
     /// ARMv7-M available registers.
     enum class Register {
@@ -255,14 +270,14 @@ class V7MInfo : public ArchInfo {
     };
 
     /// How many registers does this architecture have ?
-    unsigned numRegisters() const override {
+    [[nodiscard]] unsigned numRegisters() const override {
         return unsigned(Register::NUM_REGISTERS);
     }
 
     /// Get this register name.
-    const char *registerName(unsigned reg) const override;
+    [[nodiscard]] const char *registerName(unsigned reg) const override;
     /// Get this register id.
-    unsigned registerId(std::string name) const override;
+    [[nodiscard]] unsigned registerId(std::string name) const override;
 
     /// Get this register name.
     static const char *name(Register reg);
@@ -270,7 +285,8 @@ class V7MInfo : public ArchInfo {
     /// Get the InstrAttributes for instruction I (static edition).
     static InstrInfo instrInfo(const ReferenceInstruction &I);
     /// Get the InstrAttributes for instruction I.
-    InstrInfo getInstrInfo(const ReferenceInstruction &I) const override {
+    [[nodiscard]] InstrInfo
+    getInstrInfo(const ReferenceInstruction &I) const override {
         return V7MInfo::instrInfo(I);
     }
 
@@ -280,17 +296,19 @@ class V7MInfo : public ArchInfo {
                                                       bool Uniquify = true);
 
     /// Describe this ArchInfo.
-    const char *description() const override { return "Arm V7M ISA"; }
+    [[nodiscard]] const char *description() const override {
+        return "Arm V7M ISA";
+    }
 };
 
 /// Architectural information for ARMv8-A.
 class V8AInfo : public ArchInfo {
   public:
     /// Get a nop instruction of the specified size (in bytes).
-    uint32_t getNOP(unsigned InstrSize) const override;
+    [[nodiscard]] uint32_t getNOP(unsigned InstrSize) const override;
 
     /// Is I a branch instruction ?
-    bool isBranch(const ReferenceInstruction &I) const override;
+    [[nodiscard]] bool isBranch(const ReferenceInstruction &I) const override;
 
     /// Get an estimated cycle count for instruction I.
     unsigned
@@ -298,24 +316,25 @@ class V8AInfo : public ArchInfo {
               const ReferenceInstruction *Next = nullptr) const override;
 
     /// Is register named reg a status register for this CPU ?
-    bool isStatusRegister(const std::string &reg) const override;
+    [[nodiscard]] bool isStatusRegister(const std::string &reg) const override;
 
     /// ARMv8-A available registers.
     enum class Register { NUM_REGISTERS = 0 };
 
     /// How many registers does this architecture have ?
-    unsigned numRegisters() const override;
+    [[nodiscard]] unsigned numRegisters() const override;
     /// Get this register name.
-    const char *registerName(unsigned reg) const override;
+    [[nodiscard]] const char *registerName(unsigned reg) const override;
     /// Get this register id.
-    unsigned registerId(std::string name) const override;
+    [[nodiscard]] unsigned registerId(std::string name) const override;
     /// Get this register name.
     static const char *name(Register reg);
 
     /// Get the InstrAttributes for instruction I (static edition).
     static InstrInfo instrInfo(const ReferenceInstruction &I);
     /// Get the InstrAttributes for instruction I.
-    InstrInfo getInstrInfo(const ReferenceInstruction &I) const override {
+    [[nodiscard]] InstrInfo
+    getInstrInfo(const ReferenceInstruction &I) const override {
         return V8AInfo::instrInfo(I);
     }
 
@@ -325,7 +344,9 @@ class V8AInfo : public ArchInfo {
                                                       bool Uniquify = true);
 
     /// Describe this ArchInfo.
-    const char *description() const override { return "Arm V8A ISA"; }
+    [[nodiscard]] const char *description() const override {
+        return "Arm V8A ISA";
+    }
 };
 
 std::unique_ptr<ArchInfo> getCPU(const IndexReader &index);

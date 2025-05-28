@@ -69,21 +69,25 @@ template <typename Ty> class Interval {
     Interval &operator=(const Interval &) = default;
 
     /// Get the Interval Begin.
-    const Ty &beginValue() const { return lowEnd; }
+    [[nodiscard]] const Ty &beginValue() const { return lowEnd; }
     /// Get the Interval End.
-    const Ty &endValue() const { return highEnd; }
+    [[nodiscard]] const Ty &endValue() const { return highEnd; }
 
     /// Get the Interval Begin value.
-    typename Traits::ValueTy begin() const { return Traits::value(lowEnd); }
+    [[nodiscard]] typename Traits::ValueTy begin() const {
+        return Traits::value(lowEnd);
+    }
     /// Get the Interval End value.
-    typename Traits::ValueTy end() const { return Traits::value(highEnd); }
+    [[nodiscard]] typename Traits::ValueTy end() const {
+        return Traits::value(highEnd);
+    }
 
     /// Get this Interval size, defined as <tt>End - Begin</tt>.
-    size_t size() const {
+    [[nodiscard]] size_t size() const {
         return Traits::value(highEnd) - Traits::value(lowEnd);
     }
     /// Is this Interval empty, i.e. <tt>End == Begin</tt>.
-    bool empty() const {
+    [[nodiscard]] bool empty() const {
         return Traits::value(highEnd) == Traits::value(lowEnd);
     }
 
@@ -100,7 +104,7 @@ template <typename Ty> class Interval {
     }
 
     /// Do this Interval and I intersect ?
-    bool intersect(const Interval &I) const {
+    [[nodiscard]] bool intersect(const Interval &I) const {
         return !(Traits::value(I.lowEnd) > Traits::value(highEnd) ||
                  Traits::value(lowEnd) > Traits::value(I.highEnd));
     }
@@ -182,9 +186,9 @@ template <typename Ty> class Intervals {
     }
 
     /// How many Interval elements do we have ?
-    size_t size() const { return content.size(); }
+    [[nodiscard]] size_t size() const { return content.size(); }
     /// Do we have Interval elements at all ?
-    bool empty() const { return content.empty(); }
+    [[nodiscard]] bool empty() const { return content.empty(); }
 
     /// Iterator on the Interval elements in this Intervals.
     using iterator = typename std::list<Interval<Ty>>::iterator;
@@ -196,9 +200,9 @@ template <typename Ty> class Intervals {
     /// Iterator (const version) on the Interval elements in this Intervals.
     using const_iterator = typename std::list<Interval<Ty>>::const_iterator;
     /// Get an iterator to the first Interval of this Intervals.
-    const_iterator begin() const { return content.begin(); }
+    [[nodiscard]] const_iterator begin() const { return content.begin(); }
     /// Get a past-the-end iterator to this object's Interval.
-    const_iterator end() const { return content.end(); }
+    [[nodiscard]] const_iterator end() const { return content.end(); }
 
     /// Insert an interval into Intervals.
     ///
