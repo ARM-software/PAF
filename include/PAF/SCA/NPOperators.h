@@ -43,19 +43,18 @@ struct NPBinaryOperator : public NPOperator {};
 
 template <typename DataTy, template <typename> class operation>
 constexpr bool isNPUnaryOperator() {
-    return std::is_base_of<NPUnaryOperator, operation<DataTy>>::value;
+    return std::is_base_of_v<NPUnaryOperator, operation<DataTy>>;
 }
 
 template <typename DataTy, template <typename> class operation>
 constexpr bool isNPBinaryOperator() {
-    return std::is_base_of<NPBinaryOperator, operation<DataTy>>::value;
+    return std::is_base_of_v<NPBinaryOperator, operation<DataTy>>;
 }
 
 template <typename DataTy, template <typename, bool> class operation,
           bool enableLocation = false>
 constexpr bool isNPCollector() {
-    return std::is_base_of<NPCollector,
-                           operation<DataTy, enableLocation>>::value;
+    return std::is_base_of_v<NPCollector, operation<DataTy, enableLocation>>;
 }
 
 template <typename DataTy, template <typename, bool> class operation,
@@ -122,12 +121,12 @@ template <typename Ty> struct GreaterOrEqual : public NPPredicate {
 template <typename Ty> class Abs : public NPUnaryOperator {
   public:
     template <typename T = Ty>
-    constexpr std::enable_if_t<std::is_unsigned<T>::value, Ty>
+    constexpr std::enable_if_t<std::is_unsigned_v<T>, Ty>
     operator()(const Ty &v) const noexcept {
         return v;
     }
     template <typename T = Ty>
-    constexpr std::enable_if_t<std::is_signed<T>::value, Ty>
+    constexpr std::enable_if_t<std::is_signed_v<T>, Ty>
     operator()(const Ty &v) const {
         return std::abs(v);
     }
@@ -185,12 +184,12 @@ template <typename Ty> class Substract : public NPBinaryOperator {
 template <typename Ty> class AbsDiff : public NPBinaryOperator {
   public:
     template <typename T = Ty>
-    constexpr std::enable_if_t<std::is_signed<T>::value, Ty>
+    constexpr std::enable_if_t<std::is_signed_v<T>, Ty>
     operator()(const Ty &a, const Ty &b) const noexcept {
         return Abs<Ty>()(a - b);
     }
     template <typename T = Ty>
-    constexpr std::enable_if_t<std::is_unsigned<T>::value, Ty>
+    constexpr std::enable_if_t<std::is_unsigned_v<T>, Ty>
     operator()(const Ty &a, const Ty &b) const noexcept {
         return a > b ? a - b : b - a;
     }

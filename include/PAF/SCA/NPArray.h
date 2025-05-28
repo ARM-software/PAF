@@ -788,7 +788,7 @@ template <class Ty> class NPArray : public NPArrayBase {
 
         /// Get the ith element in this Row.
         template <class T = NPArrayTy>
-        std::enable_if_t<!std::is_const<T>::value, typename NPArrayTy::DataTy> &
+        std::enable_if_t<!std::is_const_v<T>, typename NPArrayTy::DataTy> &
         operator[](size_t ith) noexcept {
             assert(row < nparray->rows() &&
                    "NPArray::Row out of bound row access");
@@ -832,13 +832,13 @@ template <class Ty> class NPArray : public NPArrayBase {
 
         /// Get the first element in the current row.
         template <class T = NPArrayTy>
-        std::enable_if_t<!std::is_const<T>::value, typename T::DataTy> *
+        std::enable_if_t<!std::is_const_v<T>, typename T::DataTy> *
         begin() noexcept {
             return &(*nparray)(row, 0);
         }
         /// Get the past-the-end element in the current row.
         template <class T = NPArrayTy>
-        std::enable_if_t<!std::is_const<T>::value, typename T::DataTy> *
+        std::enable_if_t<!std::is_const_v<T>, typename T::DataTy> *
         end() noexcept {
             typename T::DataTy *e = &(*nparray)(row, nparray->cols() - 1);
             return e + 1;

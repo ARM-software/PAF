@@ -1363,8 +1363,7 @@ TEST(NPArray, RowIterator) {
             EXPECT_EQ(e, MI64_init[i++]);
 }
 
-template <typename Ty>
-std::enable_if_t<std::is_integral<Ty>::value> absCheck() {
+template <typename Ty> std::enable_if_t<std::is_integral_v<Ty>> absCheck() {
     const Ty init[] = {0, 1, 2, 3, 4, 5};
     NPArray<Ty> a(init, 3, 2);
     NPArray<Ty> b(init, 3, 2);
@@ -1388,7 +1387,7 @@ std::enable_if_t<std::is_integral<Ty>::value> absCheck() {
 }
 
 template <typename Ty>
-std::enable_if_t<std::is_floating_point<Ty>::value> absCheck() {
+std::enable_if_t<std::is_floating_point_v<Ty>> absCheck() {
     const Ty init[] = {0.0, -1.0, -2.0, -3.0, -4.0, 5.0};
     const Ty expect[] = {0.0, 1.0, 2.0, 3.0, 4.0, 5.0};
 
