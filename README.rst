@@ -1,5 +1,5 @@
 ..
-  SPDX-FileCopyrightText: <text>Copyright 2021,2022,2024 Arm Limited and/or its
+  SPDX-FileCopyrightText: <text>Copyright 2021,2022,2024,2025 Arm Limited and/or its
   affiliates <open-source-office@arm.com></text>
   SPDX-License-Identifier: Apache-2.0
 
@@ -50,7 +50,7 @@ code bases against those threats.
 Requirements
 ============
 
-To build PAF from source, you will need a C++ compiler compatible with C++14,
+To build PAF from source, you will need a C++ compiler compatible with C++17,
 and `CMake <https://cmake.org/>`_.
 
 A significant number of the PAF tools assumes that you at least have access to
