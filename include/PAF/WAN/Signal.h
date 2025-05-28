@@ -608,9 +608,14 @@ class Signal {
         return getValueChange(Idx);
     }
 
-    class Iterator
-        : public std::iterator<std::random_access_iterator_tag, ChangeTy> {
+    class Iterator {
       public:
+        using iterator_category = std::random_access_iterator_tag;
+        using value_type = ChangeTy;
+        using difference_type = ChangeTy;
+        using pointer = ChangeTy *;
+        using reference = ChangeTy &;
+
         Iterator(const Signal *Sig, size_t Idx) : sig(Sig), idx(Idx) {}
         Iterator(const Iterator &it) : sig(it.sig), idx(it.idx) {}
 

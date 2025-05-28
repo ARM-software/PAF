@@ -40,10 +40,14 @@ class Waveform {
 
     /// This adaptor template class is used to provide an iterator which unwraps
     /// the unique_ptr pointer used in the Waveform's containers.
-    template <typename SignalTy>
-    struct SignalsIterator
-        : public std::iterator<std::random_access_iterator_tag, SignalTy> {
+    template <typename SignalTy> struct SignalsIterator {
       public:
+        using iterator_category = std::random_access_iterator_tag;
+        using value_type = SignalTy;
+        using difference_type = SignalTy;
+        using pointer = SignalTy *;
+        using reference = SignalTy &;
+
         SignalsIterator(const std::vector<std::unique_ptr<Signal>> *signals,
                         size_t idx)
             : signals(signals), idx(idx) {}
