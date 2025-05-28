@@ -27,8 +27,7 @@
 using std::sqrt;
 using std::vector;
 
-namespace PAF {
-namespace SCA {
+namespace PAF::SCA {
 NPArray<double> correl(size_t b, size_t e, const NPArray<double> &traces,
                        const NPArray<double> &ival) {
 
@@ -70,5 +69,4 @@ NPArray<double> correl(size_t b, size_t e, const NPArray<double> &traces,
     return cvalue;
 }
 
-} // namespace SCA
-} // namespace PAF
+} // namespace PAF::SCA

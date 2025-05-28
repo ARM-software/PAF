@@ -27,9 +27,7 @@
 using std::array;
 using std::string;
 
-namespace PAF {
-namespace SCA {
-namespace Expr {
+namespace PAF::SCA::Expr {
 
 Value::~Value() = default;
 Expr::~Expr() = default;
@@ -189,6 +187,4 @@ Value Asr::eval() const {
             getType()};
 }
 
-} // namespace Expr
-} // namespace SCA
-} // namespace PAF
+} // namespace PAF::SCA::Expr

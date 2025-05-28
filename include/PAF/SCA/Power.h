@@ -34,8 +34,7 @@
 #include <string>
 #include <vector>
 
-namespace PAF {
-namespace SCA {
+namespace PAF::SCA {
 
 /// TimingInfo is a class used for emitting timing information.
 ///
@@ -447,5 +446,4 @@ class PowerAnalyzer : public PAF::MTAnalyzer {
                              const PAF::ExecutionRange &ER);
 };
 
-} // namespace SCA
-} // namespace PAF
+} // namespace PAF::SCA

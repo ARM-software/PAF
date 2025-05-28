@@ -33,8 +33,7 @@ using std::set;
 using std::string;
 using std::unique_ptr;
 
-namespace PAF {
-namespace WAN {
+namespace PAF::WAN {
 
 WaveFile::~WaveFile() = default;
 
@@ -100,5 +99,4 @@ Waveform readAndMerge(const std::vector<std::string> &files) {
     return WMain;
 }
 
-} // namespace WAN
-} // namespace PAF
+} // namespace PAF::WAN

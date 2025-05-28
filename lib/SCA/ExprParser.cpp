@@ -26,9 +26,7 @@
 using std::locale;
 using std::string;
 
-namespace PAF {
-namespace SCA {
-namespace Expr {
+namespace PAF::SCA::Expr {
 
 /// An integer type specifier: u8, u16, u32, u64.
 bool ParserBase::parseTypeSpecifier(ValueType::Type &VT) {
@@ -113,6 +111,4 @@ ParserBase::OperatorTy ParserBase::getOperator(const string &str) {
     return OperatorTy::UNKNOWN;
 }
 
-} // namespace Expr
-} // namespace SCA
-} // namespace PAF
+} // namespace PAF::SCA::Expr

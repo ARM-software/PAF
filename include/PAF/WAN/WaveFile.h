@@ -28,8 +28,7 @@
 #include <string>
 #include <vector>
 
-namespace PAF {
-namespace WAN {
+namespace PAF::WAN {
 
 /// WaveFile is a base class for the different file formats supported by WAN:
 /// vcd, fst, ...
@@ -78,6 +77,4 @@ class WaveFile {
 
 Waveform readAndMerge(const std::vector<std::string> &files);
 
-} // namespace WAN
-
-} // namespace PAF
+} // namespace PAF::WAN

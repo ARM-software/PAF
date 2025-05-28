@@ -21,8 +21,7 @@
 #include "PAF/SCA/Dumper.h"
 #include "PAF/PAF.h"
 
-namespace PAF {
-namespace SCA {
+namespace PAF::SCA {
 
 YAMLMemoryAccessesDumper::YAMLMemoryAccessesDumper(const std::string &filename)
     : MemoryAccessesDumper(!filename.empty()),
@@ -129,5 +128,4 @@ void YAMLInstrDumper::dumpImpl(const ReferenceInstruction &I,
     *this << "}\n";
 }
 
-} // namespace SCA
-} // namespace PAF
+} // namespace PAF::SCA

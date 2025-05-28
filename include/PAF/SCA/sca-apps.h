@@ -31,8 +31,7 @@
 #include <string>
 #include <type_traits>
 
-namespace PAF {
-namespace SCA {
+namespace PAF::SCA {
 
 /// OutputBase is an abstract base class to model all output formats used by
 /// the SCA applications: gnuplot or python.
@@ -258,5 +257,4 @@ NPArray<Ty> readNumpyPowerFile(const std::string &filename, bool convert,
     return NPArray<Ty>();
 }
 
-} // namespace SCA
-} // namespace PAF
+} // namespace PAF::SCA

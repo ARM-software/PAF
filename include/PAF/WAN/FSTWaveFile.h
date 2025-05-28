@@ -30,8 +30,7 @@
 #include <string>
 #include <vector>
 
-namespace PAF {
-namespace WAN {
+namespace PAF::WAN {
 
 struct FSTHierarchyVisitorBase {
     ~FSTHierarchyVisitorBase();
@@ -146,6 +145,4 @@ class FSTWaveFile : public WaveFile {
     void *f = nullptr;
 };
 
-} // namespace WAN
-
-} // namespace PAF
+} // namespace PAF::WAN

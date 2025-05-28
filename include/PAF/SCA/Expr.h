@@ -30,9 +30,7 @@
 #include <memory>
 #include <string>
 
-namespace PAF {
-namespace SCA {
-namespace Expr {
+namespace PAF::SCA::Expr {
 
 /// The ValueType class models the type of a value.
 class ValueType {
@@ -494,6 +492,4 @@ class And : public BinaryOp {
     }
 };
 
-} // namespace Expr
-} // namespace SCA
-} // namespace PAF
+} // namespace PAF::SCA::Expr

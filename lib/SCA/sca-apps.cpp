@@ -39,8 +39,7 @@ using std::stoull;
 using std::string;
 using std::vector;
 
-namespace PAF {
-namespace SCA {
+namespace PAF::SCA {
 
 SCAApp::SCAApp(const char *appname, int argc, char *argv[])
     : Argparse(appname, argc, argv) {
@@ -265,5 +264,4 @@ OutputBase *OutputBase::create(OutputType ty, const std::string &filename,
     }
 }
 
-} // namespace SCA
-} // namespace PAF
+} // namespace PAF::SCA

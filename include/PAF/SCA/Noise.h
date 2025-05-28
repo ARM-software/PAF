@@ -22,8 +22,7 @@
 
 #include <memory>
 
-namespace PAF {
-namespace SCA {
+namespace PAF::SCA {
 
 /// This class models a noise source. This is the base class for all suported
 /// noise sources, and it provides a static factory method to get one of the
@@ -59,5 +58,4 @@ class NoiseSource {
     static std::unique_ptr<NoiseSource> getSource(Type, double noiseLevel);
 };
 
-} // namespace SCA
-} // namespace PAF
+} // namespace PAF::SCA

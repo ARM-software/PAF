@@ -26,8 +26,7 @@
 #include "PAF/PAF.h"
 #include "PAF/SCA/NPAdapter.h"
 
-namespace PAF {
-namespace SCA {
+namespace PAF::SCA {
 
 /// Dumper is an base class for emitting some kind of trace.
 class Dumper {
@@ -293,5 +292,4 @@ class YAMLInstrDumper : public InstrDumper, public YAMLDumper {
                   const std::vector<uint64_t> *regs) override;
 };
 
-} // namespace SCA
-} // namespace PAF
+} // namespace PAF::SCA

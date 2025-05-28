@@ -25,8 +25,7 @@
 
 using std::fabs;
 
-namespace PAF {
-namespace SCA {
+namespace PAF::SCA {
 
 double find_max(const NPArray<double>::const_Row &row, size_t *index,
                 size_t decimate, size_t offset) {
@@ -51,5 +50,4 @@ double find_max(const NPArray<double>::const_Row &row, size_t *index,
     return max_v;
 }
 
-} // namespace SCA
-} // namespace PAF
+} // namespace PAF::SCA

@@ -22,8 +22,7 @@
 
 using std::string;
 
-namespace PAF {
-namespace SCA {
+namespace PAF::SCA {
 
 bool LWParser::parse(std::string &id) noexcept {
     if (end())
@@ -152,5 +151,4 @@ bool LWParser::getParenthesizedSubExpr(std::string &subexpr, char opening,
 
     return false;
 }
-} // namespace SCA
-} // namespace PAF
+} // namespace PAF::SCA

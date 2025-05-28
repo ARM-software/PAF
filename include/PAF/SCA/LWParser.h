@@ -23,8 +23,7 @@
 #include <cassert>
 #include <string>
 
-namespace PAF {
-namespace SCA {
+namespace PAF::SCA {
 /// The LWParser class provides simple low-level parser routines that can be
 /// used to create a more complex recursive descent parser.
 class LWParser {
@@ -137,5 +136,4 @@ class LWParser {
     size_t pos;
 };
 
-} // namespace SCA
-} // namespace PAF
+} // namespace PAF::SCA

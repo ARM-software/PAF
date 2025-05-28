@@ -27,8 +27,7 @@
 #include <string>
 #include <vector>
 
-namespace PAF {
-namespace WAN {
+namespace PAF::WAN {
 
 /// The VCDWaveFile class is an abstraction of the VCD file format.
 class VCDWaveFile : public WaveFile {
@@ -55,6 +54,4 @@ class VCDWaveFile : public WaveFile {
     static std::string formatValueChange(const std::string &s);
 };
 
-} // namespace WAN
-
-} // namespace PAF
+} // namespace PAF::WAN

@@ -167,8 +167,7 @@ string shape(size_t rows, size_t cols) {
 }
 } // namespace
 
-namespace PAF {
-namespace SCA {
+namespace PAF::SCA {
 
 template <> const char *NPArrayBase::getEltTyDescr<uint8_t>() { return "u1"; }
 template <> const char *NPArrayBase::getEltTyDescr<uint16_t>() { return "u2"; }
@@ -593,5 +592,4 @@ NPArrayBase &NPArrayBase::extend(const NPArrayBase &other, Axis axis) {
     return *this;
 }
 
-} // namespace SCA
-} // namespace PAF
+} // namespace PAF::SCA

@@ -29,9 +29,7 @@
 #include <string>
 #include <vector>
 
-namespace PAF {
-namespace SCA {
-namespace Expr {
+namespace PAF::SCA::Expr {
 
 template <typename Ty> class Context {
   public:
@@ -242,6 +240,4 @@ template <typename Ty> class Parser : public ParserBase {
     }
 };
 
-} // namespace Expr
-} // namespace SCA
-} // namespace PAF
+} // namespace PAF::SCA::Expr

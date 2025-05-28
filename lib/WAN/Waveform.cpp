@@ -28,8 +28,7 @@
 
 using std::string;
 
-namespace PAF {
-namespace WAN {
+namespace PAF::WAN {
 
 void Waveform::SignalDesc::dump(std::ostream &os) const {
     os << "Name: " << name << ", Kind: " << kind;
@@ -169,6 +168,4 @@ std::ostream &operator<<(std::ostream &os, Waveform::SignalDesc::Kind k) {
     }
 }
 
-} // namespace WAN
-
-} // namespace PAF
+} // namespace PAF::WAN

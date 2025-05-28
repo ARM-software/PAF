@@ -26,8 +26,7 @@
 #include <ostream>
 #include <vector>
 
-namespace PAF {
-namespace SCA {
+namespace PAF::SCA {
 
 /// Compute the hamming weight of \p val, masked with \p mask.
 template <class Ty>
@@ -124,5 +123,4 @@ NPArray<double> perfect_t_test(size_t b, size_t e,
 /// \p e, on \p traces using the \p ival intermediate values.
 NPArray<double> correl(size_t b, size_t e, const NPArray<double> &traces,
                        const NPArray<double> &ival);
-} // namespace SCA
-} // namespace PAF
+} // namespace PAF::SCA

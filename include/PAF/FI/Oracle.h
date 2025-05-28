@@ -25,8 +25,7 @@
 #include <string>
 #include <vector>
 
-namespace PAF {
-namespace FI {
+namespace PAF::FI {
 
 /** \class Oracle
 
@@ -287,5 +286,4 @@ class Oracle {
     std::vector<Classifier> classifiers;
 };
 
-} // namespace FI
-} // namespace PAF
+} // namespace PAF::FI

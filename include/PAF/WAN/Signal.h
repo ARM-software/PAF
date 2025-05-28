@@ -32,8 +32,7 @@
 #include <string>
 #include <vector>
 
-namespace PAF {
-namespace WAN {
+namespace PAF::WAN {
 
 using TimeTy = uint64_t;
 using SignalIdxTy = uint32_t;
@@ -768,6 +767,4 @@ inline std::ostream &operator<<(std::ostream &os, const Signal::ChangeTy &c) {
     return os;
 }
 
-} // namespace WAN
-
-} // namespace PAF
+} // namespace PAF::WAN

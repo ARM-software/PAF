@@ -32,8 +32,7 @@ using std::ostream;
 using std::sqrt;
 using std::vector;
 
-namespace PAF {
-namespace SCA {
+namespace PAF::SCA {
 
 /// Welsh t-test with one group of traces and a classification array.
 NPArray<double> t_test(size_t b, size_t e, const NPArray<double> &traces,
@@ -370,5 +369,4 @@ NPArray<double> perfect_t_test(size_t b, size_t e,
     return tt;
 }
 
-} // namespace SCA
-} // namespace PAF
+} // namespace PAF::SCA

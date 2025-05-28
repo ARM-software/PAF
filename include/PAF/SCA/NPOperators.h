@@ -25,8 +25,7 @@
 #include <limits>
 #include <type_traits>
 
-namespace PAF {
-namespace SCA {
+namespace PAF::SCA {
 
 struct NPOperator {};
 
@@ -400,5 +399,4 @@ class MeanWithVar : public Mean<Ty> {
     double v{0.0}; // The variance
 };
 
-} // namespace SCA
-} // namespace PAF
+} // namespace PAF::SCA

@@ -22,8 +22,7 @@
 
 #include <random>
 
-namespace PAF {
-namespace SCA {
+namespace PAF::SCA {
 
 class ConstantNoiseSource : public NoiseSource {
   public:
@@ -90,5 +89,4 @@ std::unique_ptr<NoiseSource> NoiseSource::getSource(Type noiseTy,
     }
 }
 
-} // namespace SCA
-} // namespace PAF
+} // namespace PAF::SCA

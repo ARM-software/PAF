@@ -28,8 +28,7 @@
 #include <string>
 #include <vector>
 
-namespace PAF {
-namespace FI {
+namespace PAF::FI {
 
 /// The BreakPoint class represents breakpoints.
 ///
@@ -240,5 +239,4 @@ class InjectionCampaign {
     Oracle theOracle; ///< The oracles to run to classify faults.
 };
 
-} // namespace FI
-} // namespace PAF
+} // namespace PAF::FI

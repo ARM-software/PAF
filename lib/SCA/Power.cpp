@@ -375,8 +375,7 @@ class HammingDistancePM : public PowerModelBase {
 
 } // namespace
 
-namespace PAF {
-namespace SCA {
+namespace PAF::SCA {
 
 TimingInfo::~TimingInfo() = default;
 
@@ -613,5 +612,4 @@ PowerTrace PowerAnalyzer::getPowerTrace(const PowerTraceConfig &PTConfig,
     return PT;
 }
 
-} // namespace SCA
-} // namespace PAF
+} // namespace PAF::SCA

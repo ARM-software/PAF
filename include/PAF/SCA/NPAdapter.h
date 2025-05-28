@@ -23,8 +23,7 @@
 #include "PAF/SCA/NPArray.h"
 #include <algorithm>
 
-namespace PAF {
-namespace SCA {
+namespace PAF::SCA {
 
 /// NPAdapter is a wrapper that allows to build a 2-dimension array, without
 /// knowing a priori the dimensions' size, and to save it in NPY format. It is
@@ -101,5 +100,4 @@ template <class DataTy> class NPAdapter {
     std::vector<std::vector<DataTy>> w;
 };
 
-} // namespace SCA
-} // namespace PAF
+} // namespace PAF::SCA

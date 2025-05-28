@@ -34,8 +34,7 @@
 #include <type_traits>
 #include <vector>
 
-namespace PAF {
-namespace SCA {
+namespace PAF::SCA {
 
 /// NPArrayBase is the base class for all NPArray objects. It collects
 /// attributes and methods which are independent of the actual array element
@@ -2070,5 +2069,4 @@ NPArray<Ty> concatenate(const NPArray<Ty> &npy1, const NPArray<Ty> &npy2,
     return tmp.extend(npy2, axis);
 }
 
-} // namespace SCA
-} // namespace PAF
+} // namespace PAF::SCA

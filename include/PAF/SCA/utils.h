@@ -22,13 +22,11 @@
 
 #include "PAF/SCA/NPArray.h"
 
-namespace PAF {
-namespace SCA {
+namespace PAF::SCA {
 
 // Returns the maximum value in data[0:n( and update index with the offset
 // where it was found in the array.
 double find_max(const NPArray<double>::const_Row &row, size_t *index,
                 size_t decimate = 1, size_t offset = 0);
 
-} // namespace SCA
-} // namespace PAF
+} // namespace PAF::SCA

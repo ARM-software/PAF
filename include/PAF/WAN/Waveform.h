@@ -33,8 +33,7 @@
 #include <utility>
 #include <vector>
 
-namespace PAF {
-namespace WAN {
+namespace PAF::WAN {
 
 class Waveform {
 
@@ -974,6 +973,4 @@ class WaveformStatistics : public Waveform::Visitor {
 
 std::ostream &operator<<(std::ostream &os, Waveform::SignalDesc::Kind k);
 
-} // namespace WAN
-
-} // namespace PAF
+} // namespace PAF::WAN
