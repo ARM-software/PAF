@@ -75,17 +75,13 @@ std::unique_ptr<NoiseSource> NoiseSource::getSource(Type noiseTy,
                                                     double noiseLevel) {
     switch (noiseTy) {
     case NoiseSource::ZERO:
-        return std::unique_ptr<PAF::SCA::NoiseSource>(
-            new PAF::SCA::NullNoise());
+        return std::make_unique<NullNoise>();
     case NoiseSource::CONSTANT:
-        return std::unique_ptr<PAF::SCA::NoiseSource>(
-            new PAF::SCA::ConstantNoiseSource(noiseLevel));
+        return std::make_unique<ConstantNoiseSource>(noiseLevel);
     case NoiseSource::UNIFORM:
-        return std::unique_ptr<PAF::SCA::NoiseSource>(
-            new PAF::SCA::UniformNoise(noiseLevel));
+        return std::make_unique<UniformNoise>(noiseLevel);
     case NoiseSource::NORMAL:
-        return std::unique_ptr<PAF::SCA::NoiseSource>(
-            new PAF::SCA::NormalNoise(noiseLevel));
+        return std::make_unique<NormalNoise>(noiseLevel);
     }
 }
 
