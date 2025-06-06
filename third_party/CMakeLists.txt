@@ -54,7 +54,7 @@ ExternalProject_Add(tarmac-trace-utilities
 ExternalProject_Add(googletest
   PREFIX "external"
   GIT_REPOSITORY "https://github.com/google/googletest"
-  GIT_TAG "v1.14.0"
+  GIT_TAG "v1.17.0"
   GIT_SHALLOW TRUE
   CMAKE_ARGS ${EXTERNAL_PROJECT_CMAKE_ARGS}
 )
