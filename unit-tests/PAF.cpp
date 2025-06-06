@@ -26,6 +26,7 @@
 #include "gtest/gtest.h"
 
 #include <array>
+#include <libtarmac/index.hh>
 #include <sstream>
 #include <string>
 #include <vector>
@@ -553,7 +554,8 @@ TEST(MTAnalyzer, base) {
     TracePair Inputs = makeTracePair(SAMPLES_SRC_DIR "instances-v7m.trace",
                                      "instances-v7m.trace.index");
     // TODO: do not always rebuild it ?
-    run_indexer(Inputs, IndexerParams(), /* big_endian */ false);
+    run_indexer(Inputs, IndexerParams(), IndexerDiagnostics(),
+                ParseParams(/* big_endian */ false));
     TestMTAnalyzer T(Inputs, SAMPLES_SRC_DIR "instances-v7m.elf");
 
     // getInstances test.
@@ -607,7 +609,8 @@ TEST(MTAnalyzer, labels) {
     TracePair Inputs = makeTracePair(SAMPLES_SRC_DIR "labels-v7m.trace",
                                      "labels-v7m.trace.index");
     // TODO: do not always rebuild it ?
-    run_indexer(Inputs, IndexerParams(), /* big_endian */ false);
+    run_indexer(Inputs, IndexerParams(), IndexerDiagnostics(),
+                ParseParams(/* big_endian */ false));
     TestMTAnalyzer T(Inputs, SAMPLES_SRC_DIR "labels-v7m.elf");
 
     // getLabelPairs test.
@@ -632,7 +635,8 @@ TEST(MTAnalyzer, markers) {
     TracePair Inputs = makeTracePair(SAMPLES_SRC_DIR "markers-v7m.trace",
                                      "markers-v7m.trace.index");
     // TODO: do not always rebuild it ?
-    run_indexer(Inputs, IndexerParams(), /* big_endian */ false);
+    run_indexer(Inputs, IndexerParams(), IndexerDiagnostics(),
+                ParseParams(/* big_endian */ false));
     TestMTAnalyzer T(Inputs, SAMPLES_SRC_DIR "markers-v7m.elf");
 
     // getBetweenFunctionMarkers test.
