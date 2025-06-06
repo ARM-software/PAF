@@ -21,7 +21,10 @@
 #pragma once
 
 #include "PAF/SCA/NPArray.h"
+
 #include <algorithm>
+#include <string_view>
+#include <vector>
 
 namespace PAF::SCA {
 
@@ -70,7 +73,7 @@ template <class DataTy> class NPAdapter {
     }
 
     /// Save this into filename in the NPY format.
-    [[nodiscard]] bool save(const std::string &filename) const {
+    [[nodiscard]] bool save(std::string_view filename) const {
         // Last trace may be empty and shall be skipped.
         size_t num_traces = w.size();
         if (num_traces == 0)

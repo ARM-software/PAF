@@ -26,6 +26,7 @@
 #include <cstdint>
 #include <memory>
 #include <string>
+#include <string_view>
 #include <vector>
 
 namespace PAF::WAN {
@@ -38,13 +39,13 @@ class WaveFile {
 
     WaveFile() = delete;
     WaveFile(const WaveFile &) = delete;
-    WaveFile(const std::string &filename, FileFormat Fmt)
+    WaveFile(std::string_view filename, FileFormat Fmt)
         : fileName(filename), fileFmt(Fmt) {}
 
     virtual ~WaveFile();
 
     /// Get WaveFile format for filename.
-    static FileFormat getFileFormat(const std::string &filename);
+    static FileFormat getFileFormat(std::string_view filename);
 
     /// Get this WaveFile format.
     [[nodiscard]] FileFormat getFileFormat() const { return fileFmt; }
@@ -54,7 +55,7 @@ class WaveFile {
 
     /// Convenience method to automatically detect the wavefile format and read
     /// it for read / write.
-    static std::unique_ptr<WaveFile> get(const std::string &filename,
+    static std::unique_ptr<WaveFile> get(std::string_view filename,
                                          bool write);
 
     /// Convenience method to read from a single input file.

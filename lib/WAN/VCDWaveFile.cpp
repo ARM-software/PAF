@@ -42,6 +42,7 @@ using std::log10;
 using std::ostream;
 using std::size_t;
 using std::string;
+using std::string_view;
 using std::unordered_map;
 using std::vector;
 
@@ -783,7 +784,7 @@ struct VCDHierDumper : public Waveform::Visitor {
 };
 } // namespace
 
-string VCDWaveFile::formatValueChange(const string &s) {
+string VCDWaveFile::formatValueChange(string_view s) {
     // Count leading zeroes
     size_t leadingZeroes = 0;
     while (s.size() - leadingZeroes > 1 && s[leadingZeroes] == '0')
@@ -832,10 +833,12 @@ bool VCDWaveFile::write(const Waveform &W) {
                     DIE("VCD signal id not found");
                 size_t ChangeIdx = ChangeIndexes[Idx];
                 if (W[Idx].getNumBits() == 1)
-                    F << formatValueChange(W[Idx].getChange(ChangeIdx).value);
+                    F << formatValueChange(
+                        string(W[Idx].getChange(ChangeIdx).value));
                 else
                     F << 'b'
-                      << formatValueChange(W[Idx].getChange(ChangeIdx).value)
+                      << formatValueChange(
+                             string(W[Idx].getChange(ChangeIdx).value))
                       << ' ';
                 F << r->second << '\n';
                 ChangeIndexes[Idx] += 1;
@@ -853,11 +856,11 @@ bool VCDWaveFile::write(const Waveform &W) {
                         DIE("VCD signal id not found");
                     if (W[Idx].getNumBits() == 1) {
                         F << formatValueChange(
-                            W[Idx].getChange(ChangeIdx).value);
+                            string(W[Idx].getChange(ChangeIdx).value));
                     } else {
                         F << 'b'
                           << formatValueChange(
-                                 W[Idx].getChange(ChangeIdx).value)
+                                 string(W[Idx].getChange(ChangeIdx).value))
                           << ' ';
                     }
                     F << r->second << '\n';

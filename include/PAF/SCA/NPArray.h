@@ -31,6 +31,7 @@
 #include <memory>
 #include <ostream>
 #include <string>
+#include <string_view>
 #include <type_traits>
 #include <vector>
 
@@ -60,7 +61,11 @@ class NPArrayBase {
     ///
     /// This method will assess if the on-disk storage matches the
     /// element type.
-    NPArrayBase(const std::string &filename, const char *expectedEltTy,
+    /// Construct an NPArrayBase from file filename.
+    ///
+    /// This method will assess if the on-disk storage matches the
+    /// element type.
+    NPArrayBase(std::string_view filename, const char *expectedEltTy,
                 size_t maxNumRows = -1);
 
     /// Construct an NPArrayBase from several filenames.
@@ -250,12 +255,9 @@ class NPArrayBase {
                                size_t &num_columns, std::string &elt_ty,
                                size_t &elt_size, const char **errstr = nullptr);
 
-    /// Save to file \p filename.
-    bool save(const char *filename, const std::string &descr) const;
-
-    /// Save to file \p filename (std::string edition)
-    [[nodiscard]] bool save(const std::string &filename,
-                            const std::string &descr) const;
+    /// Save to file \p filename with descriptor \p descr.
+    [[nodiscard]] bool save(std::string_view filename,
+                            std::string_view descr) const;
 
     /// Save to output file stream \p os.
     bool save(std::ofstream &os, const std::string &descr) const;
@@ -336,8 +338,8 @@ template <class Ty> class NPArray : public NPArrayBase {
     NPArray() : NPArrayBase(sizeof(Ty)) {}
 
     /// Construct an NPArray from data stored in file \p filename.
-    NPArray(const std::string &filename, size_t maxNumRows = -1)
-        : NPArrayBase(filename, getEltTyDescr<Ty>(), maxNumRows) {}
+    NPArray(std::string_view filename, size_t maxNumRows = -1)
+        : NPArrayBase(std::string(filename), getEltTyDescr<Ty>(), maxNumRows) {}
 
     /// Construct an NPArray from multiple files, concatenating the Matrices
     /// along \p axis.
@@ -741,13 +743,8 @@ template <class Ty> class NPArray : public NPArrayBase {
     }
 
     /// Save to file \p filename in NPY format.
-    bool save(const char *filename) const {
+    [[nodiscard]] bool  save(std::string_view filename) const {
         return this->NPArrayBase::save(filename, descr());
-    }
-
-    /// Save to file \p filename in NPY format.
-    [[nodiscard]] bool save(const std::string &filename) const {
-        return save(filename.c_str());
     }
 
     /// Save to output file stream \p os in NPY format.

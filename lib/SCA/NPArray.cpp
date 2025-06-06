@@ -30,6 +30,7 @@ using std::array;
 using std::ifstream;
 using std::ofstream;
 using std::string;
+using std::string_view;
 using std::to_string;
 using std::unique_ptr;
 using std::vector;
@@ -372,22 +373,12 @@ bool NPArrayBase::save(ofstream &os, const string &descr) const {
     return true;
 }
 
-bool NPArrayBase::save(const char *filename, const string &descr) const {
-    ofstream ofs(filename, ofstream::binary);
-
+// Save to file by name and descriptor (string_view overload)
+bool NPArrayBase::save(string_view filename, string_view descr) const {
+    std::ofstream ofs(std::string(filename), ofstream::binary);
     if (!ofs)
         return false;
-
-    return save(ofs, descr);
-}
-
-bool NPArrayBase::save(const string &filename, const string &descr) const {
-    ofstream ofs(filename, ofstream::binary);
-
-    if (!ofs)
-        return false;
-
-    return save(ofs, descr);
+    return save(ofs, std::string(descr));
 }
 
 NPArrayBase::NPArrayBase(const std::vector<std::string> &filenames, Axis axis,
@@ -420,10 +411,10 @@ NPArrayBase::NPArrayBase(const std::vector<std::string> &filenames, Axis axis,
     }
 }
 
-NPArrayBase::NPArrayBase(const string &filename, const char *expectedEltTy,
+NPArrayBase::NPArrayBase(string_view filename, const char *expectedEltTy,
                          size_t maxNumRows)
     : NPArrayBase() {
-    ifstream ifs(filename, ifstream::binary);
+    ifstream ifs(string(filename), ifstream::binary);
     if (!ifs) {
         errstr = "error opening file";
         return;

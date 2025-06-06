@@ -36,6 +36,7 @@ using std::cerr;
 using std::map;
 using std::set;
 using std::string;
+using std::string_view;
 using std::vector;
 
 namespace {
@@ -357,7 +358,7 @@ bool FSTHierarchyVisitorBase::onUnknownVarType(const char *fullScopeName,
     return false;
 }
 
-FSTWaveFile::FSTWaveFile(const string &filename, bool write)
+FSTWaveFile::FSTWaveFile(string_view filename, bool write)
     : WaveFile(filename, WaveFile::FileFormat::FST), openedForWrite(write),
       f(write ? fstWriterCreate(fileName.c_str(), 1)
               : fstReaderOpen(fileName.c_str())) {}

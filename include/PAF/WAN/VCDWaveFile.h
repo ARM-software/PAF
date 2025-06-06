@@ -25,6 +25,7 @@
 #include "PAF/WAN/Waveform.h"
 
 #include <string>
+#include <string_view>
 #include <vector>
 
 namespace PAF::WAN {
@@ -34,7 +35,7 @@ class VCDWaveFile : public WaveFile {
   public:
     VCDWaveFile() = delete;
     VCDWaveFile(const VCDWaveFile &) = delete;
-    VCDWaveFile(const std::string &filename)
+    VCDWaveFile(std::string_view filename)
         : WaveFile(filename, WaveFile::FileFormat::VCD) {}
 
     /// Convenience method to read from a single input file.
@@ -51,7 +52,7 @@ class VCDWaveFile : public WaveFile {
 
     /// Format the ValueChange string \p s for emitting in a VCD file by
     /// stripping leading zeroes and lowercasing the string.
-    static std::string formatValueChange(const std::string &s);
+    static std::string formatValueChange(std::string_view s);
 };
 
 } // namespace PAF::WAN

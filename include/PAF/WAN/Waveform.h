@@ -30,6 +30,7 @@
 #include <ostream>
 #include <set>
 #include <string>
+#include <string_view>
 #include <utility>
 #include <vector>
 
@@ -155,7 +156,7 @@ class Waveform {
       public:
         enum class Kind : uint8_t { REGISTER, WIRE, INTEGER };
 
-        SignalDesc(const std::string &name, Kind kind, bool alias,
+        SignalDesc(std::string_view name, Kind kind, bool alias,
                    SignalIdxTy idx)
             : name(name), idx(idx), kind(kind), alias(alias) {}
 
@@ -169,15 +170,15 @@ class Waveform {
         SignalDesc &operator=(const SignalDesc &) = default;
         SignalDesc &operator=(SignalDesc &&) = default;
 
-        static SignalDesc Register(const std::string &name, bool alias,
+        static SignalDesc Register(std::string_view name, bool alias,
                                    SignalIdxTy idx) {
             return {name, Kind::REGISTER, alias, idx};
         }
-        static SignalDesc Wire(const std::string &name, bool alias,
+        static SignalDesc Wire(std::string_view name, bool alias,
                                SignalIdxTy idx) {
             return {name, Kind::WIRE, alias, idx};
         }
-        static SignalDesc Integer(const std::string &name, bool alias,
+        static SignalDesc Integer(std::string_view name, bool alias,
                                   SignalIdxTy idx) {
             return {name, Kind::INTEGER, alias, idx};
         }
@@ -213,15 +214,11 @@ class Waveform {
       public:
         enum class Kind : uint8_t { MODULE, FUNCTION, TASK, BLOCK };
 
-        Scope(const std::string &fullScopeName, const std::string &scopeName,
-              const std::string &instanceName, Kind kind)
+        Scope(std::string_view fullScopeName, std::string_view scopeName,
+              std::string_view instanceName, Kind kind)
             : fullScopeName(fullScopeName), scopeName(scopeName),
               instanceName(instanceName), kind(kind), root(false) {}
-        Scope(std::string &&FullScopeName, std::string &&ScopeName,
-              std::string &&instanceName, Kind kind)
-            : fullScopeName(std::move(FullScopeName)),
-              scopeName(std::move(ScopeName)),
-              instanceName(std::move(instanceName)), kind(kind), root(false) {}
+
         Scope()
             : fullScopeName("(root)"), scopeName("(root)"),
               instanceName("(root)"), kind(Kind::MODULE), root(true) {}
@@ -570,8 +567,10 @@ class Waveform {
     };
 
     Waveform() {}
-    Waveform(const std::string &FileName) : fileName(FileName) {}
-    Waveform(const std::string &FileName, uint64_t StartTime, uint64_t EndTime,
+    Waveform(std::string_view FileName) : fileName(FileName) {}
+    Waveform(std::string_view FileName,
+             uint64_t StartTime,
+             uint64_t EndTime,
              signed char TimeScale)
         : fileName(FileName), startTime(StartTime), endTime(EndTime),
           timeScale(TimeScale) {}

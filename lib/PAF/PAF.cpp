@@ -34,7 +34,7 @@ using std::string;
 using std::vector;
 
 namespace {
-template <class T> string trimDisassembly(const T &str) {
+string trimDisassembly(std::string_view str) {
     string s(str);
 
     // Remove the comment if any
@@ -284,12 +284,8 @@ class WLabelCollector : ParseReceiver {
 
 namespace PAF {
 
-string trimSpacesAndComment(const string &str) {
-    return trimDisassembly<string>(str);
-}
-
-string trimSpacesAndComment(const char *str) {
-    return trimDisassembly<const char *>(str);
+std::string trimSpacesAndComment(std::string_view str) {
+    return trimDisassembly(str);
 }
 
 void dump(ostream &os, const TarmacSite &S) {

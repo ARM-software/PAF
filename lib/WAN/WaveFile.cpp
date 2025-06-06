@@ -38,11 +38,11 @@ namespace PAF::WAN {
 WaveFile::~WaveFile() = default;
 
 // Guess the file format by looking at the file suffix.
-WaveFile::FileFormat WaveFile::getFileFormat(const string &filename) {
-    size_t pos = filename.find_last_of('.');
-    if (pos == string::npos)
+WaveFile::FileFormat WaveFile::getFileFormat(std::string_view filename) {
+    auto pos = filename.find_last_of('.');
+    if (pos == std::string_view::npos)
         return WaveFile::FileFormat::UNKNOWN;
-    string suffix = filename.substr(pos);
+    std::string_view suffix = filename.substr(pos);
     if (suffix == ".vcd")
         return WaveFile::FileFormat::VCD;
     if (suffix == ".fst")
@@ -50,7 +50,7 @@ WaveFile::FileFormat WaveFile::getFileFormat(const string &filename) {
     return WaveFile::FileFormat::UNKNOWN;
 }
 
-unique_ptr<WaveFile> WaveFile::get(const string &filename, bool write) {
+unique_ptr<WaveFile> WaveFile::get(std::string_view filename, bool write) {
     unique_ptr<WaveFile> F;
     switch (WaveFile::getFileFormat(filename)) {
     case WaveFile::FileFormat::VCD:

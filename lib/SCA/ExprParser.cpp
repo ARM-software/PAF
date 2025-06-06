@@ -71,39 +71,39 @@ Constant *ParserBase::parseLiteral() {
     return nullptr;
 }
 
-ParserBase::OperatorTy ParserBase::getOperator(const string &str) {
+ParserBase::OperatorTy ParserBase::getOperator(std::string_view str) {
     locale loc;
 
     struct M {
-        const string str;
+        std::string_view str;
         OperatorTy op;
-        M(const char *str, OperatorTy op) : str(str), op(op) {}
+        constexpr M(const char *s, OperatorTy o) : str(s), op(o) {}
     };
 
-    for (const auto &o : {
-             // clang-format off
-                M{"not", OperatorTy::NOT},
-                M{"trunc8", OperatorTy::TRUNC8},
-                M{"trunc16", OperatorTy::TRUNC16},
-                M{"trunc32", OperatorTy::TRUNC32},
-                M{"aes_sbox", OperatorTy::AES_SBOX},
-                M{"aes_isbox", OperatorTy::AES_ISBOX},
-                M{"or", OperatorTy::OR},
-                M{"and", OperatorTy::AND},
-                M{"xor", OperatorTy::XOR},
-                M{"lsl", OperatorTy::LSL},
-                M{"lsr", OperatorTy::LSR},
-                M{"asr", OperatorTy::ASR},
-             // clang-format on
-         }) {
+    static const constexpr M ops[] = {
+        {"not", OperatorTy::NOT},
+        {"trunc8", OperatorTy::TRUNC8},
+        {"trunc16", OperatorTy::TRUNC16},
+        {"trunc32", OperatorTy::TRUNC32},
+        {"aes_sbox", OperatorTy::AES_SBOX},
+        {"aes_isbox", OperatorTy::AES_ISBOX},
+        {"or", OperatorTy::OR},
+        {"and", OperatorTy::AND},
+        {"xor", OperatorTy::XOR},
+        {"lsl", OperatorTy::LSL},
+        {"lsr", OperatorTy::LSR},
+        {"asr", OperatorTy::ASR},
+    };
+    for (const auto &o : ops) {
         if (str.size() != o.str.size())
             continue;
         bool matched = true;
-        for (string::size_type i = 0; i < str.length(); i++)
-            if (tolower(str[i], loc) != o.str[i]) {
+        for (size_t i = 0; i < str.size(); ++i) {
+            if (std::tolower(str[i], loc) != o.str[i]) {
                 matched = false;
                 break;
             }
+        }
         if (matched)
             return o.op;
     }

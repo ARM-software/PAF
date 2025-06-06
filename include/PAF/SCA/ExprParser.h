@@ -27,6 +27,7 @@
 #include <map>
 #include <memory>
 #include <string>
+#include <string_view>
 #include <vector>
 
 namespace PAF::SCA::Expr {
@@ -36,18 +37,19 @@ template <typename Ty> class Context {
     using NPArrayConstRow = typename PAF::SCA::NPArray<Ty>::const_Row;
     Context() : variables() {}
 
-    Context &addVariable(const std::string &name, const NPArrayConstRow &row) {
-        variables.insert(std::make_pair(name, row));
+    Context &addVariable(std::string_view name, const NPArrayConstRow &row) {
+        variables.emplace(std::string(name), row);
         return *this;
     }
 
-    [[nodiscard]] bool hasVariable(const std::string &name) const {
-        return variables.count(name);
+    [[nodiscard]] bool hasVariable(std::string_view name) const {
+        return variables.count(std::string(name));
     }
 
-    NPArrayConstRow &getVariable(const std::string &name) {
-        assert(hasVariable(name) && "variable not found in context");
-        return variables.find(name)->second;
+    NPArrayConstRow &getVariable(std::string_view name) {
+        std::string key{name};
+        assert(hasVariable(key) && "variable not found in context");
+        return variables.find(key)->second;
     }
 
     void incr() {
@@ -89,7 +91,7 @@ class ParserBase : public LWParser {
         ASR,
         UNKNOWN
     };
-    OperatorTy getOperator(const std::string &str);
+    OperatorTy getOperator(std::string_view str);
 };
 
 template <typename Ty> class Parser : public ParserBase {
@@ -123,8 +125,8 @@ template <typename Ty> class Parser : public ParserBase {
 
     /// Parse the string given as argument and construct its corresponding Expr,
     /// using a new parser but with the current context.
-    [[nodiscard]] Expr *parse(const std::string &str) const {
-        return Parser(context, str).parse();
+    [[nodiscard]] Expr *parse(std::string_view str) const {
+        return Parser(context, std::string(str)).parse();
     }
 
   private:

@@ -31,12 +31,13 @@
 #include <map>
 #include <memory>
 #include <string>
+#include <string_view>
 #include <vector>
 
 namespace PAF {
 
-std::string trimSpacesAndComment(const std::string &str);
-std::string trimSpacesAndComment(const char *str);
+// Trim spaces and comments from input; accepts string or C-string.
+std::string trimSpacesAndComment(std::string_view str);
 
 /// Dump TarmacSite S to os.
 void dump(std::ostream &os, const TarmacSite &S);

@@ -27,7 +27,7 @@
 #include "fstapi.h"
 
 #include <cstdint>
-#include <string>
+#include <string_view>
 #include <vector>
 
 namespace PAF::WAN {
@@ -106,7 +106,7 @@ class FSTWaveFile : public WaveFile {
   public:
     FSTWaveFile() = delete;
     FSTWaveFile(const FSTWaveFile &) = delete;
-    FSTWaveFile(const std::string &filename, bool write);
+    FSTWaveFile(std::string_view filename, bool write);
 
     ~FSTWaveFile() override;
 

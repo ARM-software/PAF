@@ -155,15 +155,10 @@ class ValueTy {
     template <typename InputIterator>
     ValueTy(InputIterator Begin, InputIterator Last) : value(Begin, Last) {}
 
-    explicit ValueTy(const char *str) : value(strlen(str)) {
-        size_t N = value.size();
-        for (unsigned i = N; i != 0; i--)
-            value[N - i] = Logic::fromChar(str[i - 1]);
-    }
-    explicit ValueTy(const std::string &str) : value(str.size()) {
-        size_t N = value.size();
-        for (unsigned i = N; i != 0; i--)
-            value[N - i] = Logic::fromChar(str[i - 1]);
+    // Construct from a string view, interpreting characters in reverse order
+    explicit ValueTy(std::string_view str) : value(str.size()) {
+        for (size_t i = 0, n = str.size(); i < n; ++i)
+            value[i] = Logic::fromChar(str[n - 1 - i]);
     }
 
     ValueTy(const ValueTy &) = default;
