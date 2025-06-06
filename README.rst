@@ -146,15 +146,15 @@ The third party software required by PAF is:
 Other third party software that can optionally be used by PAF with PAF's
 configure and build system:
 
-- `GTKWave <https://github.com/gtkwave/gtkwave>`_ : PAF uses the `fstapi` to
-  have support for `fst` files, as shipped by ``GTKWave`` in the ``src/helpers/fst``
+- `GTKWave <https://github.com/gtkwave/gtkwave>`_ : PAF uses the ``fstapi`` to
+  have support for ``fst`` files, as shipped by ``GTKWave`` in the ``src/helpers/fst``
   folder. Quoting GTKWave's `LICENSE.txt` file::
 
     the dumpfile processing source code in ``src/helpers`` is licensed under the MIT
     license in order to facilitate greater re-use.
 
   The default is for CMake to use the `fstapi`. This can however be disabled by passing
-  at configure time `-DWITH_GTKWAVE_FST_SUPPORT:BOOL=OFF` to drop `fst` file
+  at configure time ``-DWITH_GTKWAVE_FST_SUPPORT:BOOL=OFF`` to drop `fst` file
   format support.
 
 Security
