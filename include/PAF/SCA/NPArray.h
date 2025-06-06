@@ -94,11 +94,11 @@ class NPArrayBase {
     /// Construct an NPArray base from a vector<vector<Ty>>.
     template <typename Ty>
     NPArrayBase(const std::vector<std::vector<Ty>> &matrix)
-        : data(nullptr), numRows(matrix.size()), numColumns(0),
-          eltSize(sizeof(Ty)), errstr(nullptr) {
+        : numRows(matrix.size()), numColumns(0), eltSize(sizeof(Ty)),
+          errstr(nullptr) {
         for (const auto &row : matrix)
             numColumns = std::max(numColumns, row.size());
-        data.reset(new char[numRows * numColumns * eltSize]);
+        data = std::make_unique<char[]>(numRows * numColumns * eltSize);
         for (size_t row = 0; row < numRows; row++)
             memcpy(data.get() + row * numColumns * eltSize, matrix[row].data(),
                    matrix[row].size() * eltSize);
@@ -106,9 +106,9 @@ class NPArrayBase {
 
     /// Copy construct an NPArrayBase.
     NPArrayBase(const NPArrayBase &Other)
-        : data(new char[Other.size() * Other.elementSize()]),
-          numRows(Other.rows()), numColumns(Other.cols()),
+        : numRows(Other.rows()), numColumns(Other.cols()),
           eltSize(Other.elementSize()), errstr(Other.error()) {
+        data = std::make_unique<char[]>(Other.size() * Other.elementSize());
         memcpy(data.get(), Other.data.get(), numRows * numColumns * eltSize);
     }
 
