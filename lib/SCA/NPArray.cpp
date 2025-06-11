@@ -331,7 +331,7 @@ bool NPArrayBase::getInformation(ifstream &ifs, size_t &num_rows,
     return true;
 }
 
-bool NPArrayBase::save(ofstream &os, const string &descr) const {
+bool NPArrayBase::save(ofstream &os, string_view descr) const {
     if (!os)
         return false;
 
@@ -347,7 +347,8 @@ bool NPArrayBase::save(ofstream &os, const string &descr) const {
         header += '|';
     else
         header += native_endianness();
-    header += descr + "\',";
+    header += descr;
+    header += "\',";
     header += " 'fortran_order': False,";
     header += " 'shape': ";
     header += shape(rows(), cols());

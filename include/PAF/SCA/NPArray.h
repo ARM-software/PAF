@@ -260,7 +260,7 @@ class NPArrayBase {
                             std::string_view descr) const;
 
     /// Save to output file stream \p os.
-    bool save(std::ofstream &os, const std::string &descr) const;
+    [[nodiscard]] bool save(std::ofstream &os, std::string_view descr) const;
 
   protected:
     /// Get a pointer to type Ty to the array (const version).
