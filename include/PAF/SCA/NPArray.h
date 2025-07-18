@@ -1180,14 +1180,12 @@ template <class Ty> class NPArray : public NPArrayBase {
     /// NPArray and returns it.
     template <template <typename, bool> class collectorOp,
               bool enableLocation = false>
-    [[nodiscard]] [[nodiscard]] [[nodiscard]] [[nodiscard]] [[nodiscard]] [[nodiscard]] [[nodiscard]] [[nodiscard]] std::
-        enable_if_t<
-            isNPCollector<Ty, collectorOp, enableLocation>() &&
-                std::is_copy_constructible<collectorOp<Ty, enableLocation>>(),
-            collectorOp<
-                Ty, enableLocation>> foreach (const collectorOp<Ty,
-                                                                enableLocation>
-                                                  &collectOp) const {
+    [[nodiscard]] std::enable_if_t<
+        isNPCollector<Ty, collectorOp, enableLocation>() &&
+            std::is_copy_constructible<collectorOp<Ty, enableLocation>>(),
+        collectorOp<
+            Ty, enableLocation>> foreach (const collectorOp<Ty, enableLocation>
+                                              &collectOp) const {
         collectorOp<Ty, enableLocation> op(collectOp);
         for (size_t row = 0; row < rows(); row++)
             for (size_t col = 0; col < cols(); col++)
@@ -1200,15 +1198,13 @@ template <class Ty> class NPArray : public NPArrayBase {
     /// it.
     template <template <typename, bool> class collectorOp,
               bool enableLocation = false>
-    [[nodiscard]] [[nodiscard]] [[nodiscard]] [[nodiscard]] [[nodiscard]] [[nodiscard]] [[nodiscard]] [[nodiscard]] std::
-        enable_if_t<
-            isNPCollector<Ty, collectorOp, enableLocation>() &&
-                std::is_copy_constructible<collectorOp<Ty, enableLocation>>(),
-            collectorOp<
-                Ty, enableLocation>> foreach (const collectorOp<Ty,
-                                                                enableLocation>
-                                                  &collectOp,
-                                              Axis axis, size_t i) const {
+    [[nodiscard]] std::enable_if_t<
+        isNPCollector<Ty, collectorOp, enableLocation>() &&
+            std::is_copy_constructible<collectorOp<Ty, enableLocation>>(),
+        collectorOp<
+            Ty, enableLocation>> foreach (const collectorOp<Ty, enableLocation>
+                                              &collectOp,
+                                          Axis axis, size_t i) const {
         collectorOp<Ty, enableLocation> op(collectOp);
         switch (axis) {
         case ROW:
@@ -1233,16 +1229,14 @@ template <class Ty> class NPArray : public NPArrayBase {
     /// specified by \p axis) of the NPArray and returns it.
     template <template <typename, bool> class collectorOp,
               bool enableLocation = false>
-    [[nodiscard]] [[nodiscard]] [[nodiscard]] [[nodiscard]] [[nodiscard]] [[nodiscard]] [[nodiscard]] [[nodiscard]] std::
-        enable_if_t<
-            isNPCollector<Ty, collectorOp, enableLocation>() &&
-                std::is_copy_constructible<collectorOp<Ty, enableLocation>>(),
-            collectorOp<
-                Ty, enableLocation>> foreach (const collectorOp<Ty,
-                                                                enableLocation>
-                                                  &collectOp,
-                                              Axis axis, size_t begin,
-                                              size_t end) const {
+    [[nodiscard]] std::enable_if_t<
+        isNPCollector<Ty, collectorOp, enableLocation>() &&
+            std::is_copy_constructible<collectorOp<Ty, enableLocation>>(),
+        collectorOp<
+            Ty, enableLocation>> foreach (const collectorOp<Ty, enableLocation>
+                                              &collectOp,
+                                          Axis axis, size_t begin,
+                                          size_t end) const {
         assert(begin <= end && "begin index must be lower or equal to end "
                                "index in NPArray::foreach");
         collectorOp<Ty, enableLocation> op(collectOp);
@@ -1589,7 +1583,7 @@ template <class Ty> class NPArray : public NPArrayBase {
     /// \p collectorOp.
     template <template <typename, bool> class collectorOp,
               bool enableLocation = false>
-    [[nodiscard]] [[nodiscard]] [[nodiscard]] std::enable_if_t<
+    [[nodiscard]] std::enable_if_t<
         isNPCollector<Ty, collectorOp>() &&
             std::is_copy_constructible<collectorOp<Ty, enableLocation>>() &&
             std::is_same<void, typename NPOperatorTraits<
@@ -1619,7 +1613,7 @@ template <class Ty> class NPArray : public NPArrayBase {
     /// \p axis (row / column) \p i and returns its value.
     template <template <typename, bool> class collectorOp,
               bool enableLocation = false>
-    [[nodiscard]] [[nodiscard]] std::enable_if_t<
+    [[nodiscard]] std::enable_if_t<
         isNPCollector<Ty, collectorOp, enableLocation>(),
         typename NPOperatorTraits<Ty, collectorOp, enableLocation>::valueType>
     fold(const collectorOp<Ty, enableLocation> &op, Axis axis, size_t i) const {
@@ -1631,7 +1625,7 @@ template <class Ty> class NPArray : public NPArrayBase {
     /// computed values.
     template <template <typename, bool> class collectorOp,
               bool enableLocation = false>
-    [[nodiscard]] [[nodiscard]] std::enable_if_t<
+    [[nodiscard]] std::enable_if_t<
         isNPCollector<Ty, collectorOp, enableLocation>(),
         NPArray<typename NPOperatorTraits<Ty, collectorOp,
                                           enableLocation>::valueType>>
@@ -1645,7 +1639,7 @@ template <class Ty> class NPArray : public NPArrayBase {
     /// computed values.
     template <template <typename, bool> class collectorOp,
               bool enableLocation = false>
-    [[nodiscard]] [[nodiscard]] std::enable_if_t<
+    [[nodiscard]] std::enable_if_t<
         isNPCollector<Ty, collectorOp, enableLocation>(),
         NPArray<typename NPOperatorTraits<Ty, collectorOp,
                                           enableLocation>::valueType>>

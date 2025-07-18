@@ -36,6 +36,7 @@
 #include <iostream>
 #include <map>
 #include <memory>
+#include <fstream>
 #include <sstream>
 #include <string>
 #include <vector>
@@ -953,6 +954,31 @@ TEST(PowerAnalysisConfig, base) {
     EXPECT_EQ(PACHD.getPowerModel(), PowerAnalysisConfig::HAMMING_WEIGHT);
 }
 
+TEST(PowerTrace, Oracle) {
+    PAF::SCA::PowerTrace::Oracle oracle;
+    EXPECT_EQ(oracle.getMemoryState(0x1234, 4, 5), 0ull);
+}
+
+TEST_WITH_TEMP_FILE(PowerTraceTarmac, "test-MTAOracle-XXXXXX");
+TEST_F(PowerTraceTarmac, MTAOracle) {
+    std::ofstream O(getTemporaryFilename());
+    O << "1 clk IT (1) 00008000 2000 T thread : MOVS     r0,#0x0\n";
+    O << "1 clk R r0 00000000\n";
+    O << "1 clk R cpsr 01000000\n";
+    O << "2 clk IT (2) 00008000 2101 T thread : MOVS     r1,#0x1\n";
+    O << "2 clk R r0 00000001\n";
+    O << "2 clk R cpsr 01000000\n";
+    O.close();
+
+    PowerTraceConfig PTC;
+    unique_ptr<ArchInfo> CPU = make_unique<PAF::V7MInfo>();
+    PowerTrace PT(PTC, *CPU);
+    for (const auto &I : Insts) {
+        PT.add(I);
+    }
+    EXPECT_EQ(PT.size(), Insts.size());
+}
+
 TEST(PowerTrace, base) {
     TestRegBankDumper TRBD(true);
     TestMemAccessesDumper TMAD(true);
@@ -1667,3 +1693,82 @@ TEST(PowerTrace, multipleAnalyses) {
 
     // Test regbank, memaccesses, instr and timing.
 }
+
+#if 0
+// Additional tests for PowerTrace::Oracle and PowerTrace::MTAOracle
+namespace {
+// Helper to build a TracePair pointing to existing sample files in build/unit-tests
+// Helper to build a TracePair pointing to tarmac and index files
+static ::TracePair makeTracePairLocal(const std::string &tarmac,
+                                      const std::string &index) {
+    ::TracePair TP;
+    TP.tarmac_filename = tarmac;
+    TP.index_on_disk = true;
+    TP.index_filename = index;
+    TP.memory_index = nullptr;
+    return TP;
+}
+
+// Fake MTAnalyzer overriding register and memory queries
+class FakeMTA : public PAF::MTAnalyzer {
+  public:
+    FakeMTA()
+        : MTAnalyzer(tracePair,
+                     std::string(SAMPLES_SRC_DIR) + "instances-v7m.elf"),
+          tracePair(makeTracePairLocal(
+              std::string(SAMPLES_SRC_DIR) + "instances-v7m.trace",
+              std::string(SAMPLES_SRC_DIR) + "instances-v7m.trace.index")) {
+        // Copy index file to working dir for MTAnalyzer
+        std::ifstream in(std::string(SAMPLES_SRC_DIR) +
+                             "instances-v7m.trace.index",
+                         std::ios::binary);
+        std::ofstream out("instances-v7m.trace.index", std::ios::binary);
+        out << in.rdbuf();
+        run_indexer(tracePair, IndexerParams(), IndexerDiagnostics(),
+                    ParseParams(/*big_endian=*/false));
+    }
+
+  private:
+    ::TracePair tracePair;
+    uint64_t getRegisterValueAtTime(const std::string &reg, Time t) const {
+        // return reg index + time for r0..r9
+        if (reg.size() > 1 && reg[0] == 'r' && reg[1] >= '0' && reg[1] <= '9') {
+            unsigned idx = std::stoul(reg.substr(1));
+            return idx + t;
+        }
+        // default for other regs
+        return 1000 + t;
+    }
+    std::vector<uint8_t> getMemoryValueAtTime(uint64_t address,
+                                              size_t num_bytes, Time t) const {
+        std::vector<uint8_t> m(num_bytes);
+        for (size_t i = 0; i < num_bytes; ++i)
+            m[i] = static_cast<uint8_t>(address + i + t);
+        return m;
+    }
+};
+} // namespace
+
+TEST(MTAOracle, GetRegBankState) {
+    FakeMTA mta;
+    PAF::V7MInfo cpu;
+    PAF::SCA::PowerTrace::MTAOracle oracle(mta, cpu);
+    auto regs = oracle.getRegBankState(10);
+    ASSERT_GE(regs.size(), size_t(4));
+    EXPECT_EQ(regs[0], 0 + 10);
+    EXPECT_EQ(regs[1], 1 + 10);
+    EXPECT_EQ(regs[2], 2 + 10);
+    EXPECT_EQ(regs[3], 3 + 10);
+}
+
+TEST(MTAOracle, GetMemoryState) {
+    FakeMTA mta;
+    PAF::V7MInfo cpu;
+    PAF::SCA::PowerTrace::MTAOracle oracle(mta, cpu);
+    // prepare a 2-byte pattern: byte0 = addr+0+t, byte1 = addr+1+t
+    uint64_t v = oracle.getMemoryState(0x10, 2, 3);
+    // little-endian: v = (mem[1] << 1) | mem[0]
+    uint64_t exp = (uint64_t((0x10 + 1 + 3)) << 1) | (0x10 + 0 + 3);
+    EXPECT_EQ(v, exp);
+}
+#endif
