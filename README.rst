@@ -85,7 +85,7 @@ a ``compile_commands.json`` file looks like:
          -DCMAKE_EXPORT_COMPILE_COMMANDS:BOOL=ON
   $ ln -s build/compile_commands.json .
   $ ninja -C build/
-  $ ninja -C build/ test
+  $ ninja -C build/ check
 
 Testing
 =======
