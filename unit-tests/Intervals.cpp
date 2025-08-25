@@ -265,3 +265,12 @@ TEST(Intervals, basic) {
     EXPECT_EQ(*p++, TInterval(5, 40));
     EXPECT_EQ(*p, TInterval(50, 60));
 }
+
+TEST(Intervals, clear) {
+    TIntervals t;
+    t.insert(1, 2);
+    t.insert(3, 4);
+    EXPECT_FALSE(t.empty());
+    t.clear();
+    EXPECT_TRUE(t.empty());
+}

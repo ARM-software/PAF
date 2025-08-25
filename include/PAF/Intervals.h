@@ -249,6 +249,9 @@ template <typename Ty> class Intervals {
     /// This keeps the list of interval sorted AND merges overlapping intervals
     void insert(const Ty &B, const Ty &E) { insert(Interval<Ty>(B, E)); }
 
+    /// Clear all intervals.
+    void clear() { content.clear(); }
+
   private:
     std::list<Interval<Ty>> content;
 };
