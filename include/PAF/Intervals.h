@@ -193,9 +193,9 @@ template <typename Ty> class Intervals {
     /// Iterator on the Interval elements in this Intervals.
     using iterator = typename std::list<Interval<Ty>>::iterator;
     /// Get an iterator to the first Interval of this Intervals.
-    iterator begin() { return content.begin(); }
+    [[nodiscard]] iterator begin() { return content.begin(); }
     /// Get a past-the-end iterator to this object's Interval.
-    iterator end() { return content.end(); }
+    [[nodiscard]] iterator end() { return content.end(); }
 
     /// Iterator (const version) on the Interval elements in this Intervals.
     using const_iterator = typename std::list<Interval<Ty>>::const_iterator;
