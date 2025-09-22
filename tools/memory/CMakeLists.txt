@@ -1,5 +1,5 @@
-# SPDX-FileCopyrightText: <text>Copyright 2021,2022,2024 Arm Limited and/or its
-# affiliates <open-source-office@arm.com></text>
+# SPDX-FileCopyrightText: <text>Copyright 2025 Arm Limited and/or its affiliates
+# <open-source-office@arm.com></text>
 # SPDX-License-Identifier: Apache-2.0
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -16,11 +16,8 @@
 #
 # This file is part of PAF, the Physical Attack Framework.
 
-add_subdirectory(faulter)
-add_subdirectory(constanttime)
-add_subdirectory(memory)
-add_subdirectory(power)
-add_subdirectory(run-model)
-add_subdirectory(sca-apps)
-add_subdirectory(wan-apps)
-add_subdirectory(check-attributes)
+add_paf_executable(memory-accesses
+  SOURCES memory-accesses.cpp
+  LIBRARIES paf
+  OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin"
+  )
