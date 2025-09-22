@@ -103,10 +103,16 @@ template <typename Ty> class Interval {
                Traits::value(highEnd) != Traits::value(rhs.highEnd);
     }
 
-    /// Do this Interval and I intersect ?
+    /// Does this Interval and I intersect ?
     [[nodiscard]] bool intersect(const Interval &I) const {
         return !(Traits::value(I.lowEnd) > Traits::value(highEnd) ||
                  Traits::value(lowEnd) > Traits::value(I.highEnd));
+    }
+
+    /// Does this Interval contain I ?
+    [[nodiscard]] bool contains(const Interval &I) const {
+        return !(Traits::value(I.lowEnd) < Traits::value(lowEnd) ||
+                 Traits::value(I.highEnd) > Traits::value(highEnd));
     }
 
     /// Merge I into this Interval.
@@ -251,6 +257,22 @@ template <typename Ty> class Intervals {
 
     /// Clear all intervals.
     void clear() { content.clear(); }
+
+    /// Returns true iff there exist an Interval in this Intervals that contains I.
+    [[nodiscard]] bool contains(const Interval<Ty> &I) const {
+        for (const auto &e : content) {
+            // Intervals are sorted in ascending order, so skip all those that
+            // obviously can not intersect.
+            if (e.end() < I.begin())
+                continue;
+            if (e.begin() > I.end())
+                return false;
+            // There is some overlap, check if e contains I.
+            if (e.contains(I))
+                return true;
+        }
+        return false;
+    }
 
   private:
     std::list<Interval<Ty>> content;

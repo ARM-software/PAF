@@ -144,6 +144,22 @@ TEST(Interval, basic) {
               TInterval(1, 5));
 }
 
+TEST(Interval, contain) {
+    const TInterval I(5, 10);
+    EXPECT_FALSE(I.contains(TInterval(13, 14)));
+    EXPECT_FALSE(I.contains(TInterval(10, 14)));
+    EXPECT_FALSE(I.contains(TInterval(8, 14)));
+
+    EXPECT_FALSE(I.contains(TInterval(1, 3)));
+    EXPECT_FALSE(I.contains(TInterval(1, 5)));
+    EXPECT_FALSE(I.contains(TInterval(3, 8)));
+
+    EXPECT_TRUE(I.contains(TInterval(6, 10)));
+    EXPECT_TRUE(I.contains(TInterval(5, 9)));
+    EXPECT_TRUE(I.contains(TInterval(7, 8)));
+    EXPECT_TRUE(I.contains(I));
+}
+
 TEST(Intervals, basic) {
     // Check size.
     EXPECT_EQ(TIntervals().size(), 0);
@@ -273,4 +289,45 @@ TEST(Intervals, clear) {
     EXPECT_FALSE(t.empty());
     t.clear();
     EXPECT_TRUE(t.empty());
+}
+
+TEST(Intervals, contain) {
+    TIntervals t;
+    t.insert(10, 20);
+    t.insert(30, 40);
+
+    EXPECT_FALSE(t.contains(TInterval(5, 9)));
+    EXPECT_FALSE(t.contains(TInterval(5, 10)));
+    EXPECT_FALSE(t.contains(TInterval(5, 15)));
+    EXPECT_FALSE(t.contains(TInterval(5, 20)));
+    EXPECT_FALSE(t.contains(TInterval(5, 25)));
+    EXPECT_FALSE(t.contains(TInterval(5, 30)));
+    EXPECT_FALSE(t.contains(TInterval(5, 35)));
+    EXPECT_FALSE(t.contains(TInterval(5, 40)));
+    EXPECT_FALSE(t.contains(TInterval(5, 45)));
+
+    EXPECT_FALSE(t.contains(TInterval(15, 25)));
+    EXPECT_FALSE(t.contains(TInterval(15, 30)));
+    EXPECT_FALSE(t.contains(TInterval(15, 35)));
+    EXPECT_FALSE(t.contains(TInterval(15, 40)));
+    EXPECT_FALSE(t.contains(TInterval(15, 45)));
+
+    EXPECT_FALSE(t.contains(TInterval(25, 30)));
+    EXPECT_FALSE(t.contains(TInterval(25, 35)));
+    EXPECT_FALSE(t.contains(TInterval(25, 40)));
+    EXPECT_FALSE(t.contains(TInterval(25, 45)));
+
+    EXPECT_FALSE(t.contains(TInterval(35, 45)));
+    EXPECT_FALSE(t.contains(TInterval(40, 45)));
+    EXPECT_FALSE(t.contains(TInterval(45, 50)));
+
+    EXPECT_TRUE(t.contains(TInterval(10, 20)));
+    EXPECT_TRUE(t.contains(TInterval(12, 18)));
+    EXPECT_TRUE(t.contains(TInterval(10, 15)));
+    EXPECT_TRUE(t.contains(TInterval(15, 20)));
+
+    EXPECT_TRUE(t.contains(TInterval(30, 40)));
+    EXPECT_TRUE(t.contains(TInterval(32, 38)));
+    EXPECT_TRUE(t.contains(TInterval(32, 40)));
+    EXPECT_TRUE(t.contains(TInterval(30, 38)));
 }
