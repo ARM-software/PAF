@@ -1,6 +1,6 @@
 /*
- * SPDX-FileCopyrightText: <text>Copyright 2021,2022,2024 Arm Limited and/or its
- * affiliates <open-source-office@arm.com></text>
+ * SPDX-FileCopyrightText: <text>Copyright 2021,2022,2024, 2025 Arm Limited
+ * and/or its affiliates <open-source-office@arm.com></text>
  * SPDX-License-Identifier: Apache-2.0
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -577,15 +577,16 @@ class FromStreamBuilder : public ParseReceiver, public EventHandlerTy {
 };
 
 /// MTAnalyzer is a base class for all Tarmac analysis classes.
-class MTAnalyzer : public IndexNavigator {
+class MTAnalyzer {
 
   public:
     MTAnalyzer() = delete;
     MTAnalyzer(const MTAnalyzer &) = delete;
-    /// Construct a MTAnalyzer from a trace and an image.
-    MTAnalyzer(const TracePair &trace, const std::string &image_filename,
-               unsigned verbosity = 0)
-        : IndexNavigator(trace, image_filename), verbosityLevel(verbosity) {}
+
+    /// Construct a MTAnalyzer. Use a shared reference so multiple analyzers can
+    /// live at the same time.
+    MTAnalyzer(const IndexNavigator &indexNavigator, unsigned verbosity = 0)
+        : indexNavigator(indexNavigator), verbosityLevel(verbosity) {}
 
     unsigned verbosity() const { return verbosityLevel; }
     bool verbose() const { return verbosityLevel > 0; }
@@ -638,9 +639,18 @@ class MTAnalyzer : public IndexNavigator {
     /// invalidated.
     const CallTree &getCallTree() const {
         if (!callTree)
-            callTree = std::make_unique<CallTree>(*this);
+            callTree = std::make_unique<CallTree>(indexNavigator);
         return *callTree;
     }
+
+    /// Returns true if the underlying trace is big-endian.
+    [[nodiscard]]
+    bool isBigEndian() const {
+        return indexNavigator.index.isBigEndian();
+    }
+
+  protected:
+    const IndexNavigator &indexNavigator;
 
   private:
     mutable std::unique_ptr<CallTree> callTree;

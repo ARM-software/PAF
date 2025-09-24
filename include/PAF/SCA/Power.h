@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: <text>Copyright 2021-2024 Arm Limited and/or its
+ * SPDX-FileCopyrightText: <text>Copyright 2021-2024,2025 Arm Limited and/or its
  * affiliates <open-source-office@arm.com></text>
  * SPDX-License-Identifier: Apache-2.0
  *
@@ -382,7 +382,7 @@ class PowerTrace {
             uint64_t v = 0;
             for (size_t b = 0; b < size; b++) {
                 v <<= 1;
-                if (analyzer.index.isBigEndian())
+                if (analyzer.isBigEndian())
                     v |= mem[b];
                 else
                     v |= mem[size - 1 - b];
@@ -437,8 +437,7 @@ class PowerAnalyzer : public PAF::MTAnalyzer {
   public:
     PowerAnalyzer(const PowerAnalyzer &) = delete;
     /// PowerAnalyzer constructor.
-    PowerAnalyzer(const TracePair &trace, const std::string &image_filename)
-        : MTAnalyzer(trace, image_filename) {}
+    PowerAnalyzer(const IndexNavigator &IN) : MTAnalyzer(IN) {}
 
     /// Get a PowerTrace from the analyzer.
     PowerTrace getPowerTrace(const PowerTraceConfig &PTConfig,

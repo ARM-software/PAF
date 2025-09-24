@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: <text>Copyright 2021-2024 Arm Limited and/or its
+ * SPDX-FileCopyrightText: <text>Copyright 2021-2025 Arm Limited and/or its
  * affiliates <open-source-office@arm.com></text>
  * SPDX-License-Identifier: Apache-2.0
  *
@@ -35,13 +35,20 @@ using std::ostream;
 using std::string;
 using std::vector;
 
+using PAF::ExecutionRange;
+using PAF::FromTraceBuilder;
+using PAF::MemoryAccess;
+using PAF::MTAnalyzer;
+using PAF::ReferenceInstruction;
+using PAF::ReferenceInstructionBuilder;
+
 namespace {
 
-class ReferenceTrace : public vector<PAF::ReferenceInstruction> {
+class ReferenceTrace : public vector<ReferenceInstruction> {
   public:
     ReferenceTrace() {}
 
-    void operator()(const PAF::ReferenceInstruction &I) { this->push_back(I); }
+    void operator()(const ReferenceInstruction &I) { this->push_back(I); }
 
     void dump(ostream &os) {
         for (const auto &I : *this) {
@@ -51,7 +58,7 @@ class ReferenceTrace : public vector<PAF::ReferenceInstruction> {
             os << '\t';
             os << I.disassembly;
             os << '\t';
-            for (const PAF::MemoryAccess &M : I.memAccess) {
+            for (const MemoryAccess &M : I.memAccess) {
                 os << ' ';
                 M.dump(os);
             }
@@ -73,7 +80,7 @@ class TraceComparator {
           ignoreMemoryAccessDifferences(IgnoreMemoryAccessDifferences),
           controlFlowDivergence(false) {}
 
-    void operator()(const PAF::ReferenceInstruction &I) {
+    void operator()(const ReferenceInstruction &I) {
         if (instr >= ref.size()) {
             errors++;
             return;
@@ -96,8 +103,7 @@ class TraceComparator {
     const bool ignoreMemoryAccessDifferences;
     bool controlFlowDivergence;
 
-    bool cmpRI(const PAF::ReferenceInstruction &I,
-               const PAF::ReferenceInstruction &O) {
+    bool cmpRI(const ReferenceInstruction &I, const ReferenceInstruction &O) {
         if (I.pc == O.pc && I.iset == O.iset && I.width == O.width &&
             I.instruction == O.instruction) {
             if (!ignoreConditionalExecutionDifferences)
@@ -116,8 +122,8 @@ class TraceComparator {
         return false;
     }
 
-    static void dumpDiff(ostream &os, const PAF::ReferenceInstruction &I,
-                         const PAF::ReferenceInstruction &O) {
+    static void dumpDiff(ostream &os, const ReferenceInstruction &I,
+                         const ReferenceInstruction &O) {
         os << "   o ";
         I.dump(os);
         os << " (reference)\n";
@@ -128,34 +134,33 @@ class TraceComparator {
     }
 };
 
-class CTAnalyzer : public PAF::MTAnalyzer {
+class CTAnalyzer : public MTAnalyzer {
 
   public:
     CTAnalyzer(const CTAnalyzer &) = delete;
-    CTAnalyzer(const TracePair &trace, const string &image_filename,
+    CTAnalyzer(const IndexNavigator &IN,
                bool IgnoreConditionalExecutionDifferences,
                bool IgnoreMemoryAccessDifferences)
-        : MTAnalyzer(trace, image_filename),
-          ignoreConditionalExecutionDifferences(
-              IgnoreConditionalExecutionDifferences),
+        : MTAnalyzer(IN), ignoreConditionalExecutionDifferences(
+                              IgnoreConditionalExecutionDifferences),
           ignoreMemoryAccessDifferences(IgnoreMemoryAccessDifferences) {}
 
-    ReferenceTrace getReferenceTrace(const PAF::ExecutionRange &ER) {
+    ReferenceTrace getReferenceTrace(const ExecutionRange &ER) {
         ReferenceTrace RT;
-        PAF::FromTraceBuilder<PAF::ReferenceInstruction,
-                              PAF::ReferenceInstructionBuilder, ReferenceTrace>
-            FTB(*this);
+        FromTraceBuilder<ReferenceInstruction, ReferenceInstructionBuilder,
+                         ReferenceTrace>
+            FTB(indexNavigator);
         FTB.build(ER, RT);
         return RT;
     }
 
-    bool check(const ReferenceTrace &Ref, const PAF::ExecutionRange &ER) {
+    bool check(const ReferenceTrace &Ref, const ExecutionRange &ER) {
 
         TraceComparator TraceCmp(Ref, ignoreConditionalExecutionDifferences,
                                  ignoreMemoryAccessDifferences);
-        PAF::FromTraceBuilder<PAF::ReferenceInstruction,
-                              PAF::ReferenceInstructionBuilder, TraceComparator>
-            FTB(*this);
+        FromTraceBuilder<ReferenceInstruction, ReferenceInstructionBuilder,
+                         TraceComparator>
+            FTB(indexNavigator);
         FTB.build(ER, TraceCmp);
 
         return TraceCmp.hasErrors();
@@ -198,11 +203,11 @@ int main(int argc, char **argv) {
             cout << "Running analysis on trace '" << trace.tarmac_filename
                  << "'\n";
         }
-        CTAnalyzer CTA(trace, tu.image_filename,
-                       IgnoreConditionalExecutionDifferences,
+        IndexNavigator IN(trace, tu.image_filename);
+        CTAnalyzer CTA(IN, IgnoreConditionalExecutionDifferences,
                        IgnoreMemoryAccessDifferences);
 
-        vector<PAF::ExecutionRange> Functions = CTA.getInstances(FunctionName);
+        vector<ExecutionRange> Functions = CTA.getInstances(FunctionName);
 
         // Some sanity checks.
         if (Functions.size() == 0)
@@ -210,7 +215,7 @@ int main(int argc, char **argv) {
                            "Function '%s' was not found in the trace",
                            FunctionName.c_str());
 
-        for (const PAF::ExecutionRange &ER : Functions) {
+        for (const ExecutionRange &ER : Functions) {
             // Build the reference trace if we do not already have one. This
             // effectively means we are using the first function instance found
             // in the first trace file.

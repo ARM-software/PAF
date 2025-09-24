@@ -1,6 +1,6 @@
 /*
- * SPDX-FileCopyrightText: <text>Copyright 2021,2022,2024 Arm Limited and/or its
- * affiliates <open-source-office@arm.com></text>
+ * SPDX-FileCopyrightText: <text>Copyright 2021,2022,2024,2025 Arm Limited
+ * and/or its affiliates <open-source-office@arm.com></text>
  * SPDX-License-Identifier: Apache-2.0
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -31,10 +31,18 @@ using std::hex;
 using std::map;
 using std::ostream;
 using std::string;
+using std::string_view;
 using std::vector;
 
+using PAF::CSOfInterest;
+using PAF::ExecsOfInterest;
+using PAF::FromTraceBuilder;
+using PAF::Intervals;
+using PAF::ReferenceInstruction;
+using PAF::ReferenceInstructionBuilder;
+
 namespace {
-string trimDisassembly(std::string_view str) {
+string trimDisassembly(string_view str) {
     string s(str);
 
     // Remove the comment if any
@@ -111,10 +119,9 @@ class LabeledStack {
 class LabelCollector {
 
   public:
-    LabelCollector(PAF::Intervals<TarmacSite> &IR,
-                   const std::vector<uint64_t> &StartAddresses,
-                   const std::vector<uint64_t> &EndAddresses,
-                   bool verbose = false)
+    LabelCollector(Intervals<TarmacSite> &IR,
+                   const vector<uint64_t> &StartAddresses,
+                   const vector<uint64_t> &EndAddresses, bool verbose = false)
         : startAddresses(StartAddresses), endAddresses(EndAddresses),
           intervals(IR), verbose(verbose) {
         assert(is_sorted(StartAddresses.begin(), StartAddresses.end()) &&
@@ -170,7 +177,7 @@ class LabelCollector {
     const vector<uint64_t> &startAddresses;
     const vector<uint64_t> &endAddresses;
     LabeledStack labeledStack;
-    PAF::Intervals<TarmacSite> &intervals;
+    Intervals<TarmacSite> &intervals;
     bool verbose;
 };
 
@@ -179,8 +186,8 @@ class LabelCollector {
 class WLabelCollector : ParseReceiver {
 
   public:
-    WLabelCollector(PAF::Intervals<TarmacSite> &IR, const IndexNavigator &IN,
-                    unsigned N, const std::vector<uint64_t> &Addresses,
+    WLabelCollector(Intervals<TarmacSite> &IR, const IndexNavigator &IN,
+                    unsigned N, const vector<uint64_t> &Addresses,
                     const map<uint64_t, string> &LabelMap,
                     vector<std::pair<uint64_t, string>> *OutLabels = nullptr,
                     bool verbose = false)
@@ -219,7 +226,7 @@ class WLabelCollector : ParseReceiver {
                     break;
                 }
             }
-            std::vector<string> Lines = idxNav.index.get_trace_lines(StartSOP);
+            vector<string> Lines = idxNav.index.get_trace_lines(StartSOP);
             for (const string &line : Lines)
                 try {
                     TLP.parse(line);
@@ -272,7 +279,7 @@ class WLabelCollector : ParseReceiver {
   private:
     const IndexNavigator &idxNav;
     const vector<uint64_t> &addresses;
-    PAF::Intervals<TarmacSite> &intervals;
+    Intervals<TarmacSite> &intervals;
     vector<TarmacSite> buffer;
     const map<uint64_t, string> &labelMap;
     vector<std::pair<uint64_t, string>> *outLabels;
@@ -284,9 +291,7 @@ class WLabelCollector : ParseReceiver {
 
 namespace PAF {
 
-std::string trimSpacesAndComment(std::string_view str) {
-    return trimDisassembly(str);
-}
+string trimSpacesAndComment(string_view str) { return trimDisassembly(str); }
 
 void dump(ostream &os, const TarmacSite &S) {
     os << "t:" << S.time << " l:" << S.tarmac_line << " pc=0x" << hex << S.addr
@@ -338,7 +343,7 @@ void ReferenceInstruction::dump(ostream &OS) const {
 
 ExecutionRange MTAnalyzer::getFullExecutionRange() const {
     SeqOrderPayload finalNode;
-    if (!find_buffer_limit(true, &finalNode))
+    if (!indexNavigator.find_buffer_limit(true, &finalNode))
         reporter->errx(EXIT_FAILURE,
                        "Unable to retrieve tarmac trace end node");
     return {TarmacSite(), finalNode};
@@ -346,20 +351,20 @@ ExecutionRange MTAnalyzer::getFullExecutionRange() const {
 
 vector<ExecutionRange>
 MTAnalyzer::getInstances(const string &FunctionName) const {
-    if (!has_image())
+    if (!indexNavigator.has_image())
         reporter->errx(EXIT_FAILURE,
                        "No image, function '%s' can not be looked up",
                        FunctionName.c_str());
 
     uint64_t symb_addr;
     size_t symb_size;
-    if (!lookup_symbol(FunctionName, symb_addr, symb_size))
+    if (!indexNavigator.lookup_symbol(FunctionName, symb_addr, symb_size))
         reporter->errx(EXIT_FAILURE, "Symbol for function '%s' not found",
                        FunctionName.c_str());
 
     const CallTree &CT = getCallTree();
     vector<ExecutionRange> Functions;
-    PAF::ExecsOfInterest EOI(CT, Functions, symb_addr);
+    ExecsOfInterest EOI(CT, Functions, symb_addr);
     CT.visit(EOI);
 
     return Functions;
@@ -367,20 +372,20 @@ MTAnalyzer::getInstances(const string &FunctionName) const {
 
 vector<ExecutionRange>
 MTAnalyzer::getCallSitesTo(const string &FunctionName) const {
-    if (!has_image())
+    if (!indexNavigator.has_image())
         reporter->errx(EXIT_FAILURE,
                        "No image, function '%s' can not be looked up",
                        FunctionName.c_str());
 
     uint64_t symb_addr;
     size_t symb_size; // Unused.
-    if (!lookup_symbol(FunctionName, symb_addr, symb_size))
+    if (!indexNavigator.lookup_symbol(FunctionName, symb_addr, symb_size))
         reporter->errx(EXIT_FAILURE, "Symbol for function '%s' not found",
                        FunctionName.c_str());
 
     const CallTree &CT = getCallTree();
     vector<ExecutionRange> CS;
-    PAF::CSOfInterest CSOI(CT, CS, symb_addr);
+    CSOfInterest CSOI(CT, CS, symb_addr);
     CT.visit(CSOI);
 
     return CS;
@@ -389,7 +394,7 @@ MTAnalyzer::getCallSitesTo(const string &FunctionName) const {
 vector<ExecutionRange>
 MTAnalyzer::getBetweenFunctionMarkers(const string &StartFunctionName,
                                       const string &EndFunctionName) const {
-    if (!has_image())
+    if (!indexNavigator.has_image())
         reporter->errx(
             EXIT_FAILURE,
             "No image, function markers '%s' and '%s' can not be looked up",
@@ -397,10 +402,12 @@ MTAnalyzer::getBetweenFunctionMarkers(const string &StartFunctionName,
 
     uint64_t start_symb_addr, end_symb_addr;
     size_t symb_size; // Unused.
-    if (!lookup_symbol(StartFunctionName, start_symb_addr, symb_size))
+    if (!indexNavigator.lookup_symbol(StartFunctionName, start_symb_addr,
+                                      symb_size))
         reporter->errx(EXIT_FAILURE, "Symbol for function '%s' not found",
                        StartFunctionName.c_str());
-    if (!lookup_symbol(EndFunctionName, end_symb_addr, symb_size))
+    if (!indexNavigator.lookup_symbol(EndFunctionName, end_symb_addr,
+                                      symb_size))
         reporter->errx(EXIT_FAILURE, "Symbol for function '%s' not found",
                        EndFunctionName.c_str());
 
@@ -408,12 +415,12 @@ MTAnalyzer::getBetweenFunctionMarkers(const string &StartFunctionName,
 
     // Get all StartSites.
     vector<ExecutionRange> SS;
-    PAF::CSOfInterest SSOI(CT, SS, start_symb_addr);
+    CSOfInterest SSOI(CT, SS, start_symb_addr);
     CT.visit(SSOI);
 
     // Get All EndSites.
     vector<ExecutionRange> ES;
-    PAF::CSOfInterest ESOI(CT, ES, end_symb_addr);
+    CSOfInterest ESOI(CT, ES, end_symb_addr);
     CT.visit(ESOI);
 
     if (verbose()) {
@@ -432,7 +439,7 @@ MTAnalyzer::getBetweenFunctionMarkers(const string &StartFunctionName,
                        EndFunctionName.c_str(), ES.size());
 
     // Match the Start / End markers.
-    PAF::Intervals<TarmacSite> IR;
+    Intervals<TarmacSite> IR;
     LabeledStack LS;
     std::reverse(ES.begin(), ES.end());
     std::reverse(SS.begin(), SS.end());
@@ -460,14 +467,14 @@ MTAnalyzer::getBetweenFunctionMarkers(const string &StartFunctionName,
 vector<ExecutionRange>
 MTAnalyzer::getLabelPairs(const string &StartLabel, const string &EndLabel,
                           map<uint64_t, string> *LabelMap) const {
-    if (!has_image())
+    if (!indexNavigator.has_image())
         reporter->errx(EXIT_FAILURE,
                        "No image, labels '%s' and '%s' can not be looked up",
                        StartLabel.c_str(), EndLabel.c_str());
 
     vector<uint64_t> StartAddresses;
     const auto start_symbs =
-        get_image()->find_all_symbols_starting_with(StartLabel);
+        indexNavigator.get_image()->find_all_symbols_starting_with(StartLabel);
     for (const auto s : start_symbs) {
         StartAddresses.push_back(s->addr);
         if (LabelMap)
@@ -483,7 +490,7 @@ MTAnalyzer::getLabelPairs(const string &StartLabel, const string &EndLabel,
 
     vector<uint64_t> EndAddresses;
     const auto end_symbs =
-        get_image()->find_all_symbols_starting_with(EndLabel);
+        indexNavigator.get_image()->find_all_symbols_starting_with(EndLabel);
     for (const auto s : end_symbs) {
         EndAddresses.push_back(s->addr);
         if (LabelMap)
@@ -495,7 +502,7 @@ MTAnalyzer::getLabelPairs(const string &StartLabel, const string &EndLabel,
         }
     }
     if (EndAddresses.size() == 0 && verbose())
-        std::cout << "No EndAddresses found...\n";
+        cout << "No EndAddresses found...\n";
 
     // Enforce invariant that we have pairs...
     if (StartAddresses.size() != EndAddresses.size())
@@ -512,10 +519,10 @@ MTAnalyzer::getLabelPairs(const string &StartLabel, const string &EndLabel,
     sort(StartAddresses.begin(), StartAddresses.end());
     sort(EndAddresses.begin(), EndAddresses.end());
 
-    PAF::Intervals<TarmacSite> IR;
+    Intervals<TarmacSite> IR;
     LabelCollector Labels(IR, StartAddresses, EndAddresses, verbose());
-    PAF::FromTraceBuilder<TarmacSite, LabelEventHandler, LabelCollector> LC(
-        *this);
+    FromTraceBuilder<TarmacSite, LabelEventHandler, LabelCollector> LC(
+        indexNavigator);
     LC.build(getFullExecutionRange(), Labels);
 
     vector<ExecutionRange> result;
@@ -528,13 +535,14 @@ MTAnalyzer::getLabelPairs(const string &StartLabel, const string &EndLabel,
 vector<ExecutionRange>
 MTAnalyzer::getWLabels(const vector<string> &labels, unsigned N,
                        vector<std::pair<uint64_t, string>> *OutLabels) const {
-    if (!has_image())
+    if (!indexNavigator.has_image())
         reporter->errx(EXIT_FAILURE, "No image, symbols can not be looked up");
 
     map<uint64_t, string> LabelMap;
     vector<uint64_t> Addresses;
     for (const auto &label : labels) {
-        const auto symbs = get_image()->find_all_symbols_starting_with(label);
+        const auto symbs =
+            indexNavigator.get_image()->find_all_symbols_starting_with(label);
         for (const auto s : symbs) {
             Addresses.push_back(s->addr);
             LabelMap.insert(std::pair<uint64_t, string>(s->addr, s->getName()));
@@ -546,11 +554,11 @@ MTAnalyzer::getWLabels(const vector<string> &labels, unsigned N,
     }
     sort(Addresses.begin(), Addresses.end());
 
-    PAF::Intervals<TarmacSite> IR;
-    WLabelCollector Labels(IR, *this, N, Addresses, LabelMap, OutLabels,
-                           verbose());
-    PAF::FromTraceBuilder<TarmacSite, LabelEventHandler, WLabelCollector> WLC(
-        *this);
+    Intervals<TarmacSite> IR;
+    WLabelCollector Labels(IR, indexNavigator, N, Addresses, LabelMap,
+                           OutLabels, verbose());
+    FromTraceBuilder<TarmacSite, LabelEventHandler, WLabelCollector> WLC(
+        indexNavigator);
     WLC.build(getFullExecutionRange(), Labels);
 
     // Some Interval may have been merged, so check an invariant:
@@ -568,7 +576,7 @@ MTAnalyzer::getWLabels(const vector<string> &labels, unsigned N,
 
 uint64_t MTAnalyzer::getRegisterValueAtTime(const string &reg, Time t) const {
     SeqOrderPayload SOP;
-    if (!node_at_time(t, &SOP))
+    if (!indexNavigator.node_at_time(t, &SOP))
         reporter->errx(1, "Can not find node at time %d in this trace", t);
 
     if (reg == "pc")
@@ -578,7 +586,8 @@ uint64_t MTAnalyzer::getRegisterValueAtTime(const string &reg, Time t) const {
     if (!lookup_reg_name(r, reg))
         reporter->errx(1, "Can not find register '%s'", reg.c_str());
 
-    std::pair<bool, uint64_t> res = get_reg_value(SOP.memory_root, r);
+    std::pair<bool, uint64_t> res =
+        indexNavigator.get_reg_value(SOP.memory_root, r);
     if (!res.first)
         reporter->errx(EXIT_FAILURE, "Unable to get register value for '%s'",
                        reg.c_str());
@@ -590,12 +599,13 @@ vector<uint8_t> MTAnalyzer::getMemoryValueAtTime(uint64_t address,
                                                  size_t num_bytes,
                                                  Time t) const {
     SeqOrderPayload SOP;
-    if (!node_at_time(t, &SOP))
+    if (!indexNavigator.node_at_time(t, &SOP))
         reporter->errx(1, "Can not find node at time %d in this trace", t);
 
     vector<uint8_t> def(num_bytes);
     vector<uint8_t> result(num_bytes);
-    getmem(SOP.memory_root, 'm', address, num_bytes, &result[0], &def[0]);
+    indexNavigator.getmem(SOP.memory_root, 'm', address, num_bytes, &result[0],
+                          &def[0]);
 
     for (size_t i = 0; i < num_bytes; i++)
         if (!def[i])
@@ -607,7 +617,7 @@ vector<uint8_t> MTAnalyzer::getMemoryValueAtTime(uint64_t address,
 
 bool MTAnalyzer::getInstructionAtTime(ReferenceInstruction &I, Time t) const {
     SeqOrderPayload SOP;
-    if (!node_at_time(t, &SOP))
+    if (!indexNavigator.node_at_time(t, &SOP))
         reporter->errx(1, "Can not find node at time %d in this trace", t);
 
     struct Collect {
@@ -616,9 +626,8 @@ bool MTAnalyzer::getInstructionAtTime(ReferenceInstruction &I, Time t) const {
         void operator()(const ReferenceInstruction &I) { instr = I; }
     } C(I);
 
-    PAF::FromTraceBuilder<PAF::ReferenceInstruction,
-                          PAF::ReferenceInstructionBuilder, Collect>
-        FTB(*this);
+    FromTraceBuilder<ReferenceInstruction, ReferenceInstructionBuilder, Collect>
+        FTB(indexNavigator);
     TarmacSite ts(0, t, 0, 0);
     FTB.build(ExecutionRange(ts, ts), C);
 

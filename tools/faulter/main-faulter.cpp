@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: <text>Copyright 2021-2024 Arm Limited and/or its
+ * SPDX-FileCopyrightText: <text>Copyright 2021-2025 Arm Limited and/or its
  * affiliates <open-source-office@arm.com></text>
  * SPDX-License-Identifier: Apache-2.0
  *
@@ -26,10 +26,12 @@
 
 #include <cstdlib>
 #include <iostream>
+#include <libtarmac/index.hh>
 #include <string>
 #include <vector>
 
 using std::cout;
+using std::ostream;
 using std::string;
 using std::vector;
 
@@ -119,24 +121,24 @@ unsigned add_window_labels(InjectionRangeSpec &IRS, const string &arg) {
     return cnt;
 }
 
-void dump(std::ostream &os, const FunctionSpec &FS) {
+void dump(ostream &os, const FunctionSpec &FS) {
     for (const auto &f : FS) {
-        cout << ' ' << f.first;
+        os << ' ' << f.first;
         if (!f.second.empty()) {
-            cout << '@';
+            os << '@';
             const char *sep = "";
             for (const auto &i : f.second) {
-                cout << sep << i;
+                os << sep << i;
                 sep = ",";
             }
         }
     }
 }
 
-void dump(std::ostream &os, const vector<string> &labels) {
+void dump(ostream &os, const vector<string> &labels) {
     const char *sep = " ";
     for (const auto &l : labels) {
-        cout << sep << l;
+        os << sep << l;
         sep = ", ";
     }
 }
@@ -294,7 +296,8 @@ int main(int argc, char **argv) {
     }
 
     // The real workload.
-    Faulter F(tu.trace, tu.image_filename, tu.is_verbose(), campaign_filename);
+    IndexNavigator IN(tu.trace, tu.image_filename);
+    Faulter F(IN, tu.is_verbose(), campaign_filename);
     F.run(IRS, fault_model, oracle_spec);
 
     return 0;

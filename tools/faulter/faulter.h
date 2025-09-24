@@ -1,6 +1,6 @@
 /*
- * SPDX-FileCopyrightText: <text>Copyright 2021,2022,2024 Arm Limited and/or its
- * affiliates <open-source-office@arm.com></text>
+ * SPDX-FileCopyrightText: <text>Copyright 2021,2022,2024,2025 Arm Limited
+ * and/or its affiliates <open-source-office@arm.com></text>
  * SPDX-License-Identifier: Apache-2.0
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -31,10 +31,10 @@
 // injection.
 class FunctionSpec {
   public:
-    FunctionSpec() : functions() {}
+    FunctionSpec() {}
 
-    size_t size() const { return functions.size(); }
-    bool empty() const { return functions.empty(); }
+    [[nodiscard]] size_t size() const { return functions.size(); }
+    [[nodiscard]] bool empty() const { return functions.empty(); }
 
     using iterator = std::map<std::string, std::set<unsigned>>::iterator;
     using const_iterator =
@@ -42,8 +42,8 @@ class FunctionSpec {
 
     iterator begin() { return functions.begin(); }
     iterator end() { return functions.end(); }
-    const_iterator begin() const { return functions.begin(); }
-    const_iterator end() const { return functions.end(); }
+    [[nodiscard]] const_iterator begin() const { return functions.begin(); }
+    [[nodiscard]] const_iterator end() const { return functions.end(); }
 
     bool invocation(const std::string &name, unsigned num) const {
         const auto it = functions.find(name);
@@ -103,10 +103,9 @@ class Faulter : public PAF::MTAnalyzer {
   public:
     enum class FaultModel : uint8_t { INSTRUCTION_SKIP, CORRUPT_REG_DEF };
 
-    Faulter(const TracePair &trace, const std::string &image_filename,
-            bool verbose, const std::string &campaign_filename = "")
-        : PAF::MTAnalyzer(trace, image_filename, verbose),
-          campaignFilename(campaign_filename) {}
+    Faulter(const IndexNavigator &IN, bool verbose,
+            const std::string &campaign_filename = "")
+        : PAF::MTAnalyzer(IN, verbose), campaignFilename(campaign_filename) {}
 
     void run(const InjectionRangeSpec &IRS, FaultModel Model,
              const std::string &oracleSpec);

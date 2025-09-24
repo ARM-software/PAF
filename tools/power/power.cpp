@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: <text>Copyright 2021-2024 Arm Limited and/or its
+ * SPDX-FileCopyrightText: <text>Copyright 2021-2025 Arm Limited and/or its
  * affiliates <open-source-office@arm.com></text>
  * SPDX-License-Identifier: Apache-2.0
  *
@@ -49,6 +49,7 @@ using std::string;
 using std::unique_ptr;
 using std::vector;
 
+using PAF::ExecutionRange;
 using PAF::split;
 using PAF::SCA::CSVPowerDumper;
 using PAF::SCA::InstrDumper;
@@ -361,9 +362,10 @@ int main(int argc, char **argv) {
         if (tu.is_verbose())
             cout << "Running analysis on trace '" << trace.tarmac_filename
                  << "'\n";
-        PowerAnalyzer PA(trace, tu.image_filename);
+        IndexNavigator IN(trace, tu.image_filename);
+        PowerAnalyzer PA(IN);
 
-        vector<PAF::ExecutionRange> ERS;
+        vector<ExecutionRange> ERS;
         switch (ARS.getKind()) {
         case AnalysisRangeSpecifier::FUNCTION:
             ERS = PA.getInstances(ARS.getFunctionName());
@@ -384,7 +386,7 @@ int main(int argc, char **argv) {
             reporter->errx(EXIT_FAILURE,
                            "Analysis range not found in the trace file");
 
-        unique_ptr<PAF::ArchInfo> CPU(PAF::getCPU(PA.index));
+        unique_ptr<PAF::ArchInfo> CPU(PAF::getCPU(IN.index));
 
         // Create the least powerful Oracle that is required.
         unique_ptr<PowerTrace::Oracle> oracle(
@@ -393,7 +395,7 @@ int main(int argc, char **argv) {
                 ? make_unique<PowerTrace::MTAOracle>(PA, *CPU)
                 : make_unique<PowerTrace::Oracle>());
 
-        for (const PAF::ExecutionRange &er : ERS) {
+        for (const ExecutionRange &er : ERS) {
 
             if (tu.is_verbose()) {
                 cout << " - Building power trace from " << er.begin.time
@@ -406,7 +408,7 @@ int main(int argc, char **argv) {
             PowerTrace PTrace = PA.getPowerTrace(PTConfig, *CPU, er);
             PTrace.analyze(PAConfigs, *oracle, *timing, *RBDumper, *MADumper,
                            *IDumper);
-            for (auto &cfg: PAConfigs)
+            for (auto &cfg : PAConfigs)
                 cfg.getDumper().nextTrace();
             timing->nextTrace();
             RBDumper->nextTrace();

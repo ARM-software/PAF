@@ -1,6 +1,6 @@
 /*
- * SPDX-FileCopyrightText: <text>Copyright 2021,2022,2024 Arm Limited and/or its
- * affiliates <open-source-office@arm.com></text>
+ * SPDX-FileCopyrightText: <text>Copyright 2021,2022,2024,2025 Arm Limited
+ * and/or its affiliates <open-source-office@arm.com></text>
  * SPDX-License-Identifier: Apache-2.0
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -48,6 +48,12 @@ using std::string;
 using std::unique_ptr;
 using std::vector;
 
+using PAF::ArchInfo;
+using PAF::ExecutionRange;
+using PAF::FromTraceBuilder;
+using PAF::Intervals;
+using PAF::ReferenceInstruction;
+using PAF::ReferenceInstructionBuilder;
 using PAF::FI::Classifier;
 using PAF::FI::CorruptRegDef;
 using PAF::FI::InjectionCampaign;
@@ -157,7 +163,7 @@ class SuccessorCollector {
 // This call tree visitor will capture the Intervals spent in function starting
 // at a specific time, excluding calls to sub-functions.
 class CTFlatVisitor : public CallTreeVisitor {
-    PAF::Intervals<TarmacSite> localInjectionRanges;
+    Intervals<TarmacSite> localInjectionRanges;
     const TarmacSite theFunctionEntry;
     const TarmacSite theFunctionExit;
     TarmacSite startCaptureSite;
@@ -168,9 +174,7 @@ class CTFlatVisitor : public CallTreeVisitor {
         : CallTreeVisitor(CT), theFunctionEntry(TheFunctionEntry),
           theFunctionExit(TheFunctionExit) {}
 
-    PAF::Intervals<TarmacSite> getInjectionRanges() {
-        return localInjectionRanges;
-    }
+    Intervals<TarmacSite> getInjectionRanges() { return localInjectionRanges; }
 
     void onFunctionEntry(const TarmacSite &function_entry,
                          const TarmacSite &function_exit) {
@@ -206,8 +210,7 @@ class CTFlatVisitor : public CallTreeVisitor {
 class FaulterInjectionPlanner {
   public:
     FaulterInjectionPlanner(const string &Image, const string &Tarmac,
-                            const PAF::ArchInfo &CPU,
-                            unsigned long MaxTraceTime,
+                            const ArchInfo &CPU, unsigned long MaxTraceTime,
                             uint64_t ProgramEntryAddress,
                             uint64_t ProgramEndAddress)
         : cpu(CPU),
@@ -215,28 +218,27 @@ class FaulterInjectionPlanner {
                    ProgramEndAddress & ~1UL) {}
     virtual ~FaulterInjectionPlanner() = default;
 
-    virtual void operator()(const PAF::ReferenceInstruction &I) = 0;
+    virtual void operator()(const ReferenceInstruction &I) = 0;
 
     // Prepare Successors and Breakpoint information.
-    void setup(IndexNavigator &IN, const TarmacSite &start,
+    void setup(const IndexNavigator &IN, const TarmacSite &start,
                const TarmacSite &end) {
         // Collect the list of all addresses we have visited upto
         // (excluded) the interval start, including the number of times
         // they were visited. This will be used as the starting
         // point for breakpoint count.
         breakpoints.clear();
-        PAF::FromTraceBuilder<BPCollector::BPoint, BPCollector::EventHandler,
-                              BPCollector>
+        FromTraceBuilder<BPCollector::BPoint, BPCollector::EventHandler,
+                         BPCollector>
             BPC(IN);
-        BPC.build(PAF::ExecutionRange(TarmacSite(), start), breakpoints, 0, -1);
+        BPC.build(ExecutionRange(TarmacSite(), start), breakpoints, 0, -1);
 
         // Collect all instructions successors.
         successors.clear();
-        PAF::FromTraceBuilder<SuccessorCollector::Point,
-                              SuccessorCollector::EventHandler,
-                              SuccessorCollector>
+        FromTraceBuilder<SuccessorCollector::Point,
+                         SuccessorCollector::EventHandler, SuccessorCollector>
             SB(IN);
-        SB.build(PAF::ExecutionRange(start, end), successors, 0, 1);
+        SB.build(ExecutionRange(start, end), successors, 0, 1);
     }
 
     // Add a simple Oracle for now : check the function return value.
@@ -245,7 +247,7 @@ class FaulterInjectionPlanner {
         return *this;
     }
 
-    FaulterInjectionPlanner &addInjectionRangeInfo(const std::string &Name,
+    FaulterInjectionPlanner &addInjectionRangeInfo(const string &Name,
                                                    unsigned long StartTime,
                                                    unsigned long EndTime,
                                                    uint64_t StartAddress,
@@ -256,7 +258,7 @@ class FaulterInjectionPlanner {
     }
 
     FaulterInjectionPlanner &
-    addInjectionRangeInfo(const std::string &Name, unsigned long StartTime,
+    addInjectionRangeInfo(const string &Name, unsigned long StartTime,
                           unsigned long EndTime, uint64_t StartAddress,
                           uint64_t EndAddress, uint64_t CallAddress,
                           uint64_t ResumeAddress) {
@@ -274,11 +276,11 @@ class FaulterInjectionPlanner {
 
     static std::unique_ptr<FaulterInjectionPlanner>
     get(Faulter::FaultModel Model, const string &Image, const string &Tarmac,
-        const PAF::ArchInfo &CPU, unsigned long MaxTraceTime,
+        const ArchInfo &CPU, unsigned long MaxTraceTime,
         uint64_t ProgramEntryAddress, uint64_t ProgramEndAddress);
 
   protected:
-    const PAF::ArchInfo &cpu;
+    const ArchInfo &cpu;
     BPCollector breakpoints;
     SuccessorCollector successors;
     InjectionCampaign campaign;
@@ -288,13 +290,13 @@ class FaulterInjectionPlanner {
 class InstructionSkipPlanner : public FaulterInjectionPlanner {
   public:
     InstructionSkipPlanner(const string &Image, const string &Tarmac,
-                           const PAF::ArchInfo &CPU, unsigned long MaxTraceTime,
+                           const ArchInfo &CPU, unsigned long MaxTraceTime,
                            uint64_t ProgramEntryAddress,
                            uint64_t ProgramEndAddress)
         : FaulterInjectionPlanner(Image, Tarmac, CPU, MaxTraceTime,
                                   ProgramEntryAddress, ProgramEndAddress) {}
 
-    void operator()(const PAF::ReferenceInstruction &I) override {
+    void operator()(const ReferenceInstruction &I) override {
         auto *theFault = new InstructionSkip(
             I.time, I.pc, I.instruction, cpu.getNOP(I.width), I.width, I.effect,
             PAF::trimSpacesAndComment(I.disassembly));
@@ -307,13 +309,13 @@ class InstructionSkipPlanner : public FaulterInjectionPlanner {
 class CorruptRegDefPlanner : public FaulterInjectionPlanner {
   public:
     CorruptRegDefPlanner(const string &Image, const string &Tarmac,
-                         const PAF::ArchInfo &CPU, unsigned long MaxTraceTime,
+                         const ArchInfo &CPU, unsigned long MaxTraceTime,
                          uint64_t ProgramEntryAddress,
                          uint64_t ProgramEndAddress)
         : FaulterInjectionPlanner(Image, Tarmac, CPU, MaxTraceTime,
                                   ProgramEntryAddress, ProgramEndAddress) {}
 
-    void operator()(const PAF::ReferenceInstruction &I) override {
+    void operator()(const ReferenceInstruction &I) override {
         // The CorruptRegDef fault model corrupts the output registers of an
         // instruction: this requires to break at the next intruction, once
         // the instruction to fault has been executed.
@@ -339,7 +341,7 @@ class CorruptRegDefPlanner : public FaulterInjectionPlanner {
 
 std::unique_ptr<FaulterInjectionPlanner> FaulterInjectionPlanner::get(
     Faulter::FaultModel Model, const string &Image, const string &Tarmac,
-    const PAF::ArchInfo &CPU, unsigned long MaxTraceTime,
+    const ArchInfo &CPU, unsigned long MaxTraceTime,
     uint64_t ProgramEntryAddress, uint64_t ProgramEndAddress) {
 
     switch (Model) {
@@ -357,22 +359,23 @@ std::unique_ptr<FaulterInjectionPlanner> FaulterInjectionPlanner::get(
 
 void Faulter::run(const InjectionRangeSpec &IRS, FaultModel Model,
                   const string &oracleSpec) {
-    if (!has_image()) {
+    if (!indexNavigator.has_image()) {
         reporter->warn("No image, no function can not be looked up by name.");
         return;
     }
 
-    const unique_ptr<PAF::ArchInfo> CPU = PAF::getCPU(index);
-    CallTree CT(*this);
+    const unique_ptr<ArchInfo> CPU = PAF::getCPU(indexNavigator.index);
+    CallTree CT(indexNavigator);
 
     // Create our FaultInjectionPlanner.
     std::unique_ptr<FaulterInjectionPlanner> FIP = FaulterInjectionPlanner::get(
-        Model, get_image()->get_filename(), get_tarmac_filename(), *CPU.get(),
+        Model, indexNavigator.get_image()->get_filename(),
+        indexNavigator.get_tarmac_filename(), *CPU.get(),
         CT.getFunctionExit().time, CT.getFunctionEntry().addr,
         CT.getFunctionExit().addr);
 
     // Build the intervals where faults have to be injected.
-    vector<PAF::ExecutionRange> ER;
+    vector<ExecutionRange> ER;
 
     switch (IRS.kind) {
     case InjectionRangeSpec::NOT_SET:
@@ -382,13 +385,13 @@ void Faulter::run(const InjectionRangeSpec &IRS, FaultModel Model,
     case InjectionRangeSpec::FUNCTIONS: {
         // Some function calls might be calling others from the list, so ensure
         // a proper merging of the ExecutionRanges.
-        PAF::Intervals<TarmacSite> IR;
+        Intervals<TarmacSite> IR;
 
         for (const auto &S : IRS.included) {
             const string function_name = S.first;
 
             // Use local ExecutionRanges so as not to pollute the global one.
-            vector<PAF::ExecutionRange> LER = getInstances(function_name);
+            vector<ExecutionRange> LER = getInstances(function_name);
 
             if (LER.size() == 0) {
                 reporter->warn("Function '%s' was not found in the trace",
@@ -421,13 +424,13 @@ void Faulter::run(const InjectionRangeSpec &IRS, FaultModel Model,
     } break;
 
     case InjectionRangeSpec::FLAT_FUNCTIONS: {
-        PAF::Intervals<TarmacSite> IR;
+        Intervals<TarmacSite> IR;
 
         for (const auto &S : IRS.includedFlat) {
             const string function_name = S.first;
 
             // Use local ExecutionRanges so as not to pollute the global one.
-            vector<PAF::ExecutionRange> LER = getInstances(function_name);
+            vector<ExecutionRange> LER = getInstances(function_name);
 
             if (LER.size() == 0) {
                 reporter->warn("Function '%s' was not found in the trace",
@@ -535,13 +538,13 @@ void Faulter::run(const InjectionRangeSpec &IRS, FaultModel Model,
             cout << '\n';
         }
 
-        FIP->setup(*this, er.begin, er.end);
+        FIP->setup(indexNavigator, er.begin, er.end);
 
         // Inject the faults.
-        PAF::FromTraceBuilder<PAF::ReferenceInstruction,
-                              PAF::ReferenceInstructionBuilder, decltype(*FIP)>
-            FTP(*this);
-        FTP.build(PAF::ExecutionRange(er.begin, er.end), *FIP);
+        FromTraceBuilder<ReferenceInstruction, ReferenceInstructionBuilder,
+                         decltype(*FIP)>
+            FTP(indexNavigator);
+        FTP.build(ExecutionRange(er.begin, er.end), *FIP);
     }
 
     // Build the Oracle we got from the command line and add it to the Campaign.
@@ -556,7 +559,7 @@ void Faulter::run(const InjectionRangeSpec &IRS, FaultModel Model,
     for (auto &C : O) {
         if (!C.hasAddress()) {
             const string &CSymbName = C.getSymbolName();
-            vector<PAF::ExecutionRange> COI;
+            vector<ExecutionRange> COI;
             switch (C.getKind()) {
             case Classifier::Kind::CALL_SITE:
             case Classifier::Kind::RESUME_SITE:
@@ -588,7 +591,8 @@ void Faulter::run(const InjectionRangeSpec &IRS, FaultModel Model,
                 if (COI.size() == 0) {
                     uint64_t CSymbAddr;
                     size_t CSymbSize;
-                    if (!lookup_symbol(CSymbName, CSymbAddr, CSymbSize))
+                    if (!indexNavigator.lookup_symbol(CSymbName, CSymbAddr,
+                                                      CSymbSize))
                         reporter->errx(
                             EXIT_FAILURE,
                             "Symbol for Classifier at location '%s' not found",

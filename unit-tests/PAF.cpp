@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: <text>Copyright 2021-2024 Arm Limited and/or its
+ * SPDX-FileCopyrightText: <text>Copyright 2021-2025 Arm Limited and/or its
  * affiliates <open-source-office@arm.com></text>
  * SPDX-License-Identifier: Apache-2.0
  *
@@ -522,9 +522,8 @@ struct TestMTAnalyzer : public PAF::MTAnalyzer {
 
     TestMTAnalyzer(const TestMTAnalyzer &) = delete;
 
-    TestMTAnalyzer(const TracePair &trace, const std::string &image_filename,
-                   unsigned verbosity = 0)
-        : MTAnalyzer(trace, image_filename, verbosity) {}
+    TestMTAnalyzer(const IndexNavigator &IN, unsigned verbosity = 0)
+        : MTAnalyzer(IN, verbosity) {}
 
     void operator()(PAF::ReferenceInstruction &I) { instructions.push_back(I); }
 
@@ -532,7 +531,7 @@ struct TestMTAnalyzer : public PAF::MTAnalyzer {
         instructions.clear();
         PAF::FromTraceBuilder<PAF::ReferenceInstruction,
                               PAF::ReferenceInstructionBuilder, TestMTAnalyzer>
-            FTB(*this);
+            FTB(indexNavigator);
         FTB.build(ER, *this);
     }
 
@@ -556,15 +555,16 @@ TEST(MTAnalyzer, base) {
     // TODO: do not always rebuild it ?
     run_indexer(Inputs, IndexerParams(), IndexerDiagnostics(),
                 ParseParams(/* big_endian */ false));
-    TestMTAnalyzer T(Inputs, SAMPLES_SRC_DIR "instances-v7m.elf");
+    IndexNavigator IN(Inputs, SAMPLES_SRC_DIR "instances-v7m.elf");
+    TestMTAnalyzer T(IN);
 
     // getInstances test.
-    vector<PAF::ExecutionRange> Instances = T.getInstances("foo");
+    vector<ExecutionRange> Instances = T.getInstances("foo");
     EXPECT_EQ(Instances.size(), 4);
 
     uint64_t symb_addr;
     size_t symb_size;
-    EXPECT_TRUE(T.lookup_symbol("glob", symb_addr, symb_size));
+    EXPECT_TRUE(IN.lookup_symbol("glob", symb_addr, symb_size));
     EXPECT_EQ(symb_size, 4);
 
     const array<uint64_t, 4> valExp = {125, 125, 126, 134};
@@ -585,7 +585,7 @@ TEST(MTAnalyzer, base) {
     }
 
     // getFullExecutionRange test.
-    PAF::ExecutionRange FER = T.getFullExecutionRange();
+    ExecutionRange FER = T.getFullExecutionRange();
     EXPECT_EQ(FER.begin.time, 0);
     EXPECT_EQ(FER.begin.tarmac_line, 0);
     EXPECT_EQ(FER.begin.addr, 0);
@@ -595,7 +595,7 @@ TEST(MTAnalyzer, base) {
     EXPECT_EQ(LastInstruction.disassembly, "BKPT #0xab");
 
     // GetCallSites.
-    vector<PAF::ExecutionRange> CallSites = T.getCallSitesTo("foo");
+    vector<ExecutionRange> CallSites = T.getCallSitesTo("foo");
     EXPECT_EQ(CallSites.size(), 4);
     for (const auto &cs : CallSites) {
         ReferenceInstruction CallInstr;
@@ -611,15 +611,16 @@ TEST(MTAnalyzer, labels) {
     // TODO: do not always rebuild it ?
     run_indexer(Inputs, IndexerParams(), IndexerDiagnostics(),
                 ParseParams(/* big_endian */ false));
-    TestMTAnalyzer T(Inputs, SAMPLES_SRC_DIR "labels-v7m.elf");
+    IndexNavigator IN(Inputs, SAMPLES_SRC_DIR "labels-v7m.elf");
+    TestMTAnalyzer T(IN);
 
     // getLabelPairs test.
-    vector<PAF::ExecutionRange> LabelPairs =
+    vector<ExecutionRange> LabelPairs =
         T.getLabelPairs("MYLABEL_START", "MYLABEL_END");
     EXPECT_EQ(LabelPairs.size(), 4);
 
     // getWLabels test.
-    vector<PAF::ExecutionRange> WLabels = T.getWLabels({"MYWLABEL"}, 1);
+    vector<ExecutionRange> WLabels = T.getWLabels({"MYWLABEL"}, 1);
     EXPECT_EQ(WLabels.size(), 4);
     for (const auto &cs : WLabels) {
         ReferenceInstruction WStartInstr, WEndInstr;
@@ -637,10 +638,11 @@ TEST(MTAnalyzer, markers) {
     // TODO: do not always rebuild it ?
     run_indexer(Inputs, IndexerParams(), IndexerDiagnostics(),
                 ParseParams(/* big_endian */ false));
-    TestMTAnalyzer T(Inputs, SAMPLES_SRC_DIR "markers-v7m.elf");
+    IndexNavigator IN(Inputs, SAMPLES_SRC_DIR "markers-v7m.elf");
+    TestMTAnalyzer T(IN);
 
     // getBetweenFunctionMarkers test.
-    vector<PAF::ExecutionRange> Markers =
+    vector<ExecutionRange> Markers =
         T.getBetweenFunctionMarkers("marker_start", "marker_end");
     EXPECT_EQ(Markers.size(), 4);
     for (const auto &m : Markers) {

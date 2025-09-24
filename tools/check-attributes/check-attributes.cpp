@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: <text>Copyright 2021-2024 Arm Limited and/or its
+ * SPDX-FileCopyrightText: <text>Copyright 2021-2025 Arm Limited and/or its
  * affiliates <open-source-office@arm.com></text>
  * SPDX-License-Identifier: Apache-2.0
  *
@@ -29,6 +29,7 @@
 
 #include <cstdlib>
 #include <iostream>
+#include <libtarmac/index.hh>
 #include <memory>
 #include <string>
 #include <vector>
@@ -41,8 +42,11 @@ using std::vector;
 
 using PAF::ArchInfo;
 using PAF::ExecutionRange;
+using PAF::FromTraceBuilder;
 using PAF::InstrInfo;
 using PAF::MTAnalyzer;
+using PAF::ReferenceInstruction;
+using PAF::ReferenceInstructionBuilder;
 
 unique_ptr<Reporter> reporter = make_cli_reporter();
 
@@ -50,8 +54,8 @@ namespace {
 class AttributeChecker : public MTAnalyzer {
   public:
     AttributeChecker(const AttributeChecker &) = delete;
-    AttributeChecker(const TracePair &trace, const std::string &image_filename)
-        : MTAnalyzer(trace, image_filename), cpu(PAF::getCPU(index)) {}
+    AttributeChecker(const IndexNavigator &IN)
+        : MTAnalyzer(IN), cpu(PAF::getCPU(IN.index)) {}
 
     void check(const ExecutionRange &ER) {
         struct ACCont {
@@ -62,15 +66,14 @@ class AttributeChecker : public MTAnalyzer {
 
             ACCont(MTAnalyzer &MTA, ArchInfo &CPU) : analyzer(MTA), cpu(CPU) {}
 
-            void reportError(const PAF::ReferenceInstruction &I,
-                             const char *msg) {
+            void reportError(const ReferenceInstruction &I, const char *msg) {
                 errors += 1;
                 cout << "At time " << I.time << ", instruction '"
                      << I.disassembly << "' (0x" << std::hex << I.instruction
                      << std::dec << ") " << msg << '\n';
             }
 
-            void operator()(PAF::ReferenceInstruction &I) {
+            void operator()(ReferenceInstruction &I) {
                 instructions += 1;
                 const InstrInfo II = cpu.getInstrInfo(I);
                 // Check attributes here.
@@ -99,9 +102,9 @@ class AttributeChecker : public MTAnalyzer {
         };
 
         ACCont ACC(*this, *cpu.get());
-        PAF::FromTraceBuilder<PAF::ReferenceInstruction,
-                              PAF::ReferenceInstructionBuilder, ACCont>
-            FTB(*this);
+        FromTraceBuilder<ReferenceInstruction, ReferenceInstructionBuilder,
+                         ACCont>
+            FTB(indexNavigator);
         FTB.build(ER, ACC);
 
         errorCnt += ACC.errors;
@@ -135,7 +138,8 @@ int main(int argc, char **argv) {
         cout << "Running attributes check on '" << tu.trace.tarmac_filename
              << "'\n";
 
-    AttributeChecker AC(tu.trace, tu.image_filename);
+    IndexNavigator IN(tu.trace, tu.image_filename);
+    AttributeChecker AC(IN);
 
     vector<ExecutionRange> Ranges;
     if (!FunctionName.empty())
@@ -144,10 +148,10 @@ int main(int argc, char **argv) {
         SeqOrderPayload SOPEnd, SOPStart;
         unsigned line = 0;
         // Skip first lines which have an invalid PC.
-        while (AC.node_at_line(line + 1, &SOPStart) &&
+        while (IN.node_at_line(line + 1, &SOPStart) &&
                SOPStart.pc == KNOWN_INVALID_PC)
             line++;
-        AC.find_buffer_limit(true, &SOPEnd);
+        IN.find_buffer_limit(true, &SOPEnd);
 
         Ranges.emplace_back(SOPStart, SOPEnd);
     }

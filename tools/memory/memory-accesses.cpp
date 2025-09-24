@@ -25,6 +25,7 @@
 #include "libtarmac/argparse.hh"
 #include "libtarmac/reporter.hh"
 #include "libtarmac/tarmacutil.hh"
+#include <libtarmac/index.hh>
 
 #include <cstdlib>
 #include <iostream>
@@ -120,11 +121,11 @@ class MemInstrBuilder {
   public:
     /// Handler for instruction events.
     void event(ReferenceInstruction &Instr, const InstructionEvent &ev) {
-        Instr = PAF::ReferenceInstruction(ev);
+        Instr = ReferenceInstruction(ev);
     }
     /// Handler for memory events.
     void event(ReferenceInstruction &Instr, const MemoryEvent &ev) {
-        Instr.add(PAF::MemoryAccess(ev));
+        Instr.add(MemoryAccess(ev));
     }
     /// Handler for register events.
     void event(ReferenceInstruction &Instr, const RegisterEvent &ev) {}
@@ -136,21 +137,20 @@ class MemAnalyzer : public PAF::MTAnalyzer {
 
   public:
     MemAnalyzer(const MemAnalyzer &) = delete;
-    MemAnalyzer(const TracePair &trace, const string &image_filename)
-        : MTAnalyzer(trace, image_filename) {}
+    MemAnalyzer(IndexNavigator &index, unsigned verbosity = 0)
+        : MTAnalyzer(index, verbosity) {}
 
     unsigned analyze(const PAF::ExecutionRange &ER, bool checkMemoryReads,
                      bool dumpInfo) {
         vector<Segment> segments;
-        if (auto image = get_image(); image)
+        if (auto image = indexNavigator.get_image(); image)
             segments = image->get_segments();
 
         AccessedMemory writtenMemory;
         MemoryAccesses MA(writtenMemory, segments, this->verbose(),
                           checkMemoryReads);
-        PAF::FromTraceBuilder<ReferenceInstruction, MemInstrBuilder,
-                              MemoryAccesses>
-            FTB(*this);
+        FromTraceBuilder<ReferenceInstruction, MemInstrBuilder, MemoryAccesses>
+            FTB(indexNavigator);
         FTB.build(ER, MA);
 
         if (dumpInfo) {
@@ -218,7 +218,8 @@ int main(int argc, char **argv) {
             cout << "Running analysis on trace '" << trace.tarmac_filename
                  << "'\n";
         }
-        MemAnalyzer MA(trace, tu.image_filename);
+        IndexNavigator IN(trace, tu.image_filename);
+        MemAnalyzer MA(IN, tu.is_verbose() ? 1 : 0);
 
         PAF::ExecutionRange FullRange = MA.getFullExecutionRange();
 
