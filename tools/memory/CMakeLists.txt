@@ -21,3 +21,9 @@ add_paf_executable(memory-accesses
   LIBRARIES paf
   OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin"
   )
+
+add_paf_executable(memory-state
+  SOURCES memory-state.cpp
+  LIBRARIES paf
+  OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin"
+  )

@@ -29,21 +29,27 @@
 #include <iostream>
 #include <iterator>
 #include <list>
+#include <type_traits>
 
 namespace PAF {
 
 /// Trait for Interval.
 template <class Ty> struct IntervalTraits {
     /// Getter for the Begin or the End of an Interval.
-    static constexpr Ty value(const Ty &v) { return v; }
+    static constexpr const Ty &value(const Ty &v) { return v; }
+    /// Setter for the Begin or the End of an Interval.
+    static constexpr Ty &value(Ty &v) { return v; }
     /// Get the type of the Interval Start or End.
     using ValueTy = Ty;
 };
 
 /// Specialization of IntervalTraits for the very commonly used TarmacSite.
 template <> struct IntervalTraits<TarmacSite> {
-    static constexpr uint64_t value(const TarmacSite &ts) { return ts.time; }
-    using ValueTy = uint64_t;
+    /// Getter for the Begin or the End of a TarmacSite Interval.
+    static constexpr const Time &value(const TarmacSite &ts) { return ts.time; }
+    /// Setter for the Begin or the End of a TarmacSite Interval.
+    static constexpr Time &value(TarmacSite &ts) { return ts.time; }
+    using ValueTy = Time;
 };
 
 /// The interval class represent an interval, i.e. a pair of [start,end] with
@@ -68,10 +74,15 @@ template <typename Ty> class Interval {
     /// Copy assign an Interval.
     Interval &operator=(const Interval &) = default;
 
-    /// Get the Interval Begin.
+    /// Get the Interval Begin (const edition).
     [[nodiscard]] const Ty &beginValue() const { return lowEnd; }
-    /// Get the Interval End.
+    /// Get the Interval End (const edition).
     [[nodiscard]] const Ty &endValue() const { return highEnd; }
+
+    /// Get the Interval Begin.
+    [[nodiscard]] Ty &beginValue() { return lowEnd; }
+    /// Get the Interval End.
+    [[nodiscard]] Ty &endValue() { return highEnd; }
 
     /// Get the Interval Begin value.
     [[nodiscard]] typename Traits::ValueTy begin() const {
@@ -210,6 +221,11 @@ template <typename Ty> class Intervals {
     /// Get a past-the-end iterator to this object's Interval.
     [[nodiscard]] const_iterator end() const { return content.end(); }
 
+    /// Get the last Interval of this Intervals. Undefined if empty.
+    [[nodiscard]] Interval<Ty> &last() { return content.back(); }
+    /// Get the last Interval of this Intervals. Undefined if empty.
+    [[nodiscard]] const Interval<Ty> &last() const { return content.back(); }
+
     /// Insert an interval into Intervals.
     ///
     /// \note
@@ -272,6 +288,30 @@ template <typename Ty> class Intervals {
                 return true;
         }
         return false;
+    }
+
+    /// Merge adjacent intervals in this Intervals. This method is only enabled
+    /// for integral types because integers are adjacent if they differ by 1,
+    /// whereas this is much less simple to define adjacency for floating point
+    /// types for example.
+    template <typename T = Ty>
+    typename std::enable_if_t<std::is_integral_v<T>, void>
+    mergeAdjacentIntervals() {
+        if (content.size() < 2)
+            return;
+
+        auto p = content.begin();
+        auto n = std::next(p);
+        while (n != content.end()) {
+            if (p->endValue() + 1 >= n->beginValue()) {
+                p->endValue() += 1;
+                p->merge(*n);
+                n = content.erase(n);
+            } else {
+                p = n;
+                n = std::next(n);
+            }
+        }
     }
 
   private:

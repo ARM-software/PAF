@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: <text>Copyright 2021,2022,2023 Arm Limited and/or its
+ * SPDX-FileCopyrightText: <text>Copyright 2021-2023, 2025 Arm Limited and/or its
  * affiliates <open-source-office@arm.com></text>
  * SPDX-License-Identifier: Apache-2.0
  *
@@ -291,6 +291,16 @@ TEST(Intervals, clear) {
     EXPECT_TRUE(t.empty());
 }
 
+TEST(Intervals, last) {
+    TIntervals t;
+    t.insert(3, 4);
+    EXPECT_EQ(t.last(), TInterval(3, 4));
+    t.insert(5, 6);
+    EXPECT_EQ(t.last(), TInterval(5, 6));
+    t.insert(1, 2);
+    EXPECT_EQ(t.last(), TInterval(5, 6));
+}
+
 TEST(Intervals, contain) {
     TIntervals t;
     t.insert(10, 20);
@@ -330,4 +340,39 @@ TEST(Intervals, contain) {
     EXPECT_TRUE(t.contains(TInterval(32, 38)));
     EXPECT_TRUE(t.contains(TInterval(32, 40)));
     EXPECT_TRUE(t.contains(TInterval(30, 38)));
+}
+
+TEST(Intervals, mergeAdjacentIntervals) {
+    TIntervals t;
+    t.insert(1, 2);
+    t.insert(3, 4);
+    t.insert(6, 7);
+    t.insert(8, 9);
+    t.insert(12, 13);
+
+    EXPECT_EQ(t.size(), 5);
+    t.mergeAdjacentIntervals();
+    EXPECT_EQ(t.size(), 3);
+
+    t.insert(2, 3);
+    EXPECT_EQ(t.size(), 3);
+    t.mergeAdjacentIntervals();
+    EXPECT_EQ(t.size(), 3);
+
+    t.insert(5, 6);
+    EXPECT_EQ(t.size(), 3);
+    t.mergeAdjacentIntervals();
+    EXPECT_EQ(t.size(), 2);
+
+    t.insert(4, 5);
+    EXPECT_EQ(t.size(), 2);
+    t.mergeAdjacentIntervals();
+    EXPECT_EQ(t.size(), 2);
+
+    t.insert(10, 11);
+    EXPECT_EQ(t.size(), 3);
+    t.mergeAdjacentIntervals();
+    EXPECT_EQ(t.size(), 1);
+
+    EXPECT_EQ(*t.begin(), TInterval(1, 13));
 }

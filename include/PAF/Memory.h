@@ -20,44 +20,57 @@
 
 #pragma once
 
+#include "PAF/PAF.h"
 #include "PAF/Intervals.h"
 
 #include "libtarmac/misc.hh"
 
+#include <vector>
+#include <functional>
+#include <ostream>
+
 namespace PAF {
 
-/// The AccessedMemory class holds the information about all memory locations
-/// that have been accessed. It has been designed with write access in mind, but
-/// can hold any kind of access.
-class AccessedMemory {
+/// The MemoryState class models the memory state at a given time. It uses
+/// information (and guesses) about memory accesses from the tarmac trace as
+/// well as information from the memory segments initialized from the ELF image
+/// to build a representation of the memory state.
+class MemoryState : public MTAnalyzer {
+
   public:
     using Interval = PAF::Interval<Addr>;
-    using iterator = PAF::Intervals<Addr>::iterator;
-    using const_iterator = PAF::Intervals<Addr>::const_iterator;
+    using Intervals = PAF::Intervals<Addr>;
 
-    void add(const Interval &I) { intervals.insert(I); }
+    MemoryState(const MemoryState &) = delete;
+    MemoryState(const IndexNavigator &IN, unsigned verbosity);
 
-    void reset() { intervals.clear(); }
+    /// Build the memory state at time t.
+    void build(Time t);
 
-    [[nodiscard]] size_t size() const { return intervals.size(); }
-    [[nodiscard]] bool empty() const { return intervals.empty(); }
+    /// Dump the memory state to os.
+    void dump(std::ostream &os) const;
 
-    [[nodiscard]] iterator begin() { return intervals.begin(); }
-    [[nodiscard]] iterator end() { return intervals.end(); }
-    [[nodiscard]] const_iterator begin() const { return intervals.begin(); }
-    [[nodiscard]] const_iterator end() const { return intervals.end(); }
+    /// The Action type is used when visiting memory intervals. It is a function
+    /// that takes an Interval and its content as a vector of bytes.
+    using Action =
+        std::function<void(const Interval &, const std::vector<uint8_t> &)>;
 
-    [[nodiscard]] bool contains(const Interval &I) const {
-        return intervals.contains(I);
-    }
-
-    static Interval makeInterval(Addr address, size_t size,
-                                 bool openEnd = false) {
-        return {address, openEnd ? address + size : address + size - 1};
-    }
+    /// Visit all memory intervals in the memory state. If \p full is true,
+    /// also visit the segments initialized from the ELF image. For each
+    /// interval, call fn with the interval and its content.
+    void visit(bool full, Action fn) const;
 
   private:
-    PAF::Intervals<Addr> intervals;
+    /// Read-only segments initialized from the ELF image.
+    const Intervals readonlyInitialized;
+    /// Writable segments initialized from the ELF image.
+    const Intervals writableInitialized;
+    /// Other segments that were accessed during execution.
+    Intervals accessedMemory;
+    /// The time at which the memory state was built.
+    Time currentTime = 0;
+
+    void MPLVisitor(const MemoryPayload &MP, OFF_T nodeof);
 };
 
 } // namespace PAF

@@ -1,4 +1,4 @@
-# SPDX-FileCopyrightText: <text>Copyright 2021,2022,2024 Arm Limited and/or its
+# SPDX-FileCopyrightText: <text>Copyright 2021,2022,2024,2025 Arm Limited and/or its
 # affiliates <open-source-office@arm.com></text>
 # SPDX-License-Identifier: Apache-2.0
 #
@@ -19,6 +19,7 @@
 set(LIBPAF_PUBLIC_HEADERS
       ${CMAKE_SOURCE_DIR}/include/PAF/ArchInfo.h
       ${CMAKE_SOURCE_DIR}/include/PAF/Intervals.h
+      ${CMAKE_SOURCE_DIR}/include/PAF/Memory.h
       ${CMAKE_SOURCE_DIR}/include/PAF/PAF.h
       ${CMAKE_SOURCE_DIR}/include/PAF/Error.h
       ${CMAKE_SOURCE_DIR}/include/PAF/utils/Misc.h
@@ -28,6 +29,7 @@ set(LIBPAF_PUBLIC_HEADERS
 set(LIBPAF_SOURCES
   ArchInfo.cpp
   Error.cpp
+  Memory.cpp
   Misc.cpp
   PAF.cpp)
 
