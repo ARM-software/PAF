@@ -23,8 +23,9 @@
 #include "PAF/PAF.h"
 #include "PAF/SCA/Dumper.h"
 #include "PAF/SCA/NPArray.h"
-
 #include "PAF/SCA/Noise.h"
+#include "PAF/State.h"
+
 #include "libtarmac/parser.hh"
 #include "paf-unit-testing.h"
 
@@ -53,6 +54,7 @@ using std::vector;
 
 using PAF::ArchInfo;
 using PAF::MemoryAccess;
+using PAF::MemoryState;
 using PAF::ReferenceInstruction;
 using PAF::RegisterAccess;
 using PAF::SCA::CSVPowerDumper;
@@ -342,11 +344,12 @@ struct PowerFields {
     double ireg;
     double addr;
     double data;
+    double mstate;
     const PAF::ReferenceInstruction *inst;
     PowerFields(double t, double p, double i, double oreg, double ireg,
-                double a, double d, const PAF::ReferenceInstruction *I)
+                double a, double d, double ms, const PAF::ReferenceInstruction *I)
         : total(t), pc(p), instr(i), oreg(oreg), ireg(ireg), addr(a), data(d),
-          inst(I) {}
+          mstate(ms), inst(I) {}
 
     // Compare the power fields (and ignore the Instruction it refers to)
     bool operator==(const PowerFields &Other) const {
@@ -359,7 +362,8 @@ struct PowerFields {
 
         return same_instr && total == Other.total && pc == Other.pc &&
                instr == Other.instr && oreg == Other.oreg &&
-               ireg == Other.ireg && addr == Other.addr && data == Other.data;
+               ireg == Other.ireg && addr == Other.addr && data == Other.data &&
+               mstate == Other.mstate;
     }
     bool operator!=(const PowerFields &Other) const {
         return !(*this == Other);
@@ -369,7 +373,8 @@ struct PowerFields {
         return std::fabs(LHS.total - RHS.total) + std::fabs(LHS.pc - RHS.pc) +
                std::fabs(LHS.instr - RHS.instr) +
                std::fabs(LHS.oreg - RHS.oreg) + std::fabs(LHS.ireg - RHS.ireg) +
-               std::fabs(LHS.addr - RHS.addr) + std::fabs(LHS.data - RHS.data);
+               std::fabs(LHS.addr - RHS.addr) + std::fabs(LHS.data - RHS.data) +
+               std::fabs(LHS.mstate - RHS.mstate);
     }
 };
 
@@ -382,6 +387,7 @@ std::ostream &operator<<(std::ostream &os, const PowerFields &pf) {
     os << pf.ireg << ", ";
     os << pf.addr << ", ";
     os << pf.data << ", ";
+    os << pf.mstate << ", ";
     os << (uintptr_t)pf.inst << ")";
     return os;
 }
@@ -392,8 +398,8 @@ struct TestPowerDumper : public PowerDumper {
     TestPowerDumper() {}
 
     void dump(double t, double p, double i, double oreg, double ireg, double a,
-              double d, const PAF::ReferenceInstruction *I) override {
-        pwf.emplace_back(t, p, i, oreg, ireg, a, d, I);
+              double d, double ms, const PAF::ReferenceInstruction *I) override {
+        pwf.emplace_back(t, p, i, oreg, ireg, a, d, ms, I);
     }
 
     void reset() { pwf.clear(); }
@@ -565,7 +571,7 @@ class TestOracle : public PowerTrace::Oracle {
         }
     }
 
-    [[nodiscard]] std::vector<uint64_t> getRegBankState(Time t) const override {
+    [[nodiscard]] std::vector<uint64_t> getRegBankState(Time t) override {
         if (regbank.empty() || t < regbank.begin()->first)
             return {nr, defaultValue};
         const auto it = regbank.find(t);
@@ -574,10 +580,9 @@ class TestOracle : public PowerTrace::Oracle {
         return it->second;
     }
 
-    [[nodiscard]] uint64_t getMemoryState(Addr address, size_t size,
-                                          Time t) const override {
-        assert(false &&
-               "TestOracle does not yet have getMemoryState implementation");
+    [[nodiscard]] uint64_t getMemoryValue(Time t, Addr address,
+                                          size_t size) override {
+        // TODO: implement a memory model.
         return 0;
     }
 
@@ -650,28 +655,27 @@ TEST(PowerDumper, base) {
     TestPowerDumper TPD;
 
     TPD.preDump();
-    TPD.dump(1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, &Insts[0]);
+    TPD.dump(1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 0.0, &Insts[0]);
     TPD.postDump();
     TPD.nextTrace();
 
     EXPECT_EQ(TPD.pwf.size(), 1);
     EXPECT_EQ(TPD.pwf[0],
-              PowerFields(1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, &Insts[0]));
+              PowerFields(1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 0.0, &Insts[0]));
 }
 
 TEST(CSVPowerDumper, base) {
     std::ostringstream s;
     CSVPowerDumper CPD1(s, false);
     CPD1.preDump();
-    EXPECT_EQ(
-        s.str(),
-        "\"Total\",\"PC\",\"Instr\",\"ORegs\",\"IRegs\",\"Addr\",\"Data\"\n");
+    EXPECT_EQ(s.str(), "\"Total\",\"PC\",\"Instr\",\"ORegs\",\"IRegs\","
+                       "\"Addr\",\"Data\",\"MemState\"\n");
     s.str("");
-    CPD1.dump(1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, &Insts[0]);
-    EXPECT_EQ(s.str(), "1.00,2.00,3.00,4.00,5.00,6.00,7.00\n");
+    CPD1.dump(1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.00, 0.0, &Insts[0]);
+    EXPECT_EQ(s.str(), "1.00,2.00,3.00,4.00,5.00,6.00,7.00,0.00\n");
     s.str("");
-    CPD1.dump(2.0, 4.0, 6.0, 8.0, 10.0, 12.0, 14.0, &Insts[2]);
-    EXPECT_EQ(s.str(), "2.00,4.00,6.00,8.00,10.00,12.00,14.00\n");
+    CPD1.dump(2.0, 4.0, 6.0, 8.0, 10.0, 12.0, 14.0, 0.0, &Insts[2]);
+    EXPECT_EQ(s.str(), "2.00,4.00,6.00,8.00,10.00,12.00,14.00,0.00\n");
     s.str("");
     CPD1.postDump();
     CPD1.nextTrace();
@@ -683,18 +687,18 @@ TEST(CSVPowerDumper, base) {
     EXPECT_EQ(
         s.str(),
         "\"Total\",\"PC\",\"Instr\",\"ORegs\",\"IRegs\",\"Addr\",\"Data\","
-        "\"Time\",\"PC\",\"Instr\",\"Exe\",\"Asm\",\"Memory "
+        "\"MemState\",\"Time\",\"PC\",\"Instr\",\"Exe\",\"Asm\",\"Memory "
         "accesses\",\"Register accesses\"\n");
     s.str("");
-    CPD2.dump(1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, &Insts[0]);
+    CPD2.dump(1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 0.0, &Insts[0]);
     EXPECT_EQ(
         s.str(),
-        "1.00,2.00,3.00,4.00,5.00,6.00,7.00,27,0x89bc,0x2105,\"X\",\"MOVS "
+        "1.00,2.00,3.00,4.00,5.00,6.00,7.00,0.00,27,0x89bc,0x2105,\"X\",\"MOVS "
         "r1,#5\",\"\",\"W(0x5)@r1 W(0x21000000)@cpsr\"\n");
     s.str("");
-    CPD2.dump(2.0, 4.0, 6.0, 8.0, 10.0, 12.0, 14.0, &Insts[2]);
+    CPD2.dump(2.0, 4.0, 6.0, 8.0, 10.0, 12.0, 14.0, 0.0, &Insts[2]);
     EXPECT_EQ(s.str(),
-              "2.00,4.00,6.00,8.00,10.00,12.00,14.00,29,0x8326,0xe9425504,"
+              "2.00,4.00,6.00,8.00,10.00,12.00,14.00,0.00,29,0x8326,0xe9425504,"
               "\"X\",\"STRD r5,r1,[r2,#-0x10]\",\"W4(0x5)@0x21afc "
               "W4(0x5)@0x21b00\",\"\"\n");
     s.str("");
@@ -710,12 +714,12 @@ TEST_F(NPYPowerDumperF, base) {
     {
         NPYPowerDumper NPD(getTemporaryFilename(), 2);
         NPD.preDump();
-        NPD.dump(1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, &Insts[0]);
+        NPD.dump(1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 0.0, &Insts[0]);
         NPD.postDump();
         NPD.nextTrace();
 
         NPD.preDump();
-        NPD.dump(2.0, 4.0, 6.0, 8.0, 10.0, 12.0, 14.0, &Insts[0]);
+        NPD.dump(2.0, 4.0, 6.0, 8.0, 10.0, 12.0, 14.0, 0.0, &Insts[0]);
         NPD.postDump();
         NPD.nextTrace();
     }
@@ -795,6 +799,7 @@ TEST(PowerTraceConfig, base) {
     EXPECT_FALSE(PTC.withLastMemoryAccessTransitions());
     EXPECT_FALSE(PTC.withMemoryUpdateTransitions());
     EXPECT_FALSE(PTC.withMemoryAccessTransitions());
+    EXPECT_FALSE(PTC.withMemoryState());
 
     PTC.set(PowerTraceConfig::WITH_PC);
     EXPECT_TRUE(PTC.withPC());
@@ -808,6 +813,7 @@ TEST(PowerTraceConfig, base) {
     EXPECT_FALSE(PTC.withLastMemoryAccessTransitions());
     EXPECT_FALSE(PTC.withMemoryUpdateTransitions());
     EXPECT_FALSE(PTC.withMemoryAccessTransitions());
+    EXPECT_FALSE(PTC.withMemoryState());
 
     PTC.set(PowerTraceConfig::WITH_OPCODE);
     EXPECT_TRUE(PTC.withPC());
@@ -821,6 +827,7 @@ TEST(PowerTraceConfig, base) {
     EXPECT_FALSE(PTC.withLastMemoryAccessTransitions());
     EXPECT_FALSE(PTC.withMemoryUpdateTransitions());
     EXPECT_FALSE(PTC.withMemoryAccessTransitions());
+    EXPECT_FALSE(PTC.withMemoryState());
 
     PTC.set(PowerTraceConfig::WITH_MEM_ADDRESS);
     EXPECT_TRUE(PTC.withPC());
@@ -834,6 +841,7 @@ TEST(PowerTraceConfig, base) {
     EXPECT_FALSE(PTC.withLastMemoryAccessTransitions());
     EXPECT_FALSE(PTC.withMemoryUpdateTransitions());
     EXPECT_FALSE(PTC.withMemoryAccessTransitions());
+    EXPECT_FALSE(PTC.withMemoryState());
 
     PTC.set(PowerTraceConfig::WITH_MEM_DATA);
     EXPECT_TRUE(PTC.withPC());
@@ -847,6 +855,7 @@ TEST(PowerTraceConfig, base) {
     EXPECT_FALSE(PTC.withLastMemoryAccessTransitions());
     EXPECT_FALSE(PTC.withMemoryUpdateTransitions());
     EXPECT_FALSE(PTC.withMemoryAccessTransitions());
+    EXPECT_FALSE(PTC.withMemoryState());
 
     PTC.set(PowerTraceConfig::WITH_INSTRUCTIONS_INPUTS);
     EXPECT_TRUE(PTC.withPC());
@@ -860,6 +869,7 @@ TEST(PowerTraceConfig, base) {
     EXPECT_FALSE(PTC.withLastMemoryAccessTransitions());
     EXPECT_FALSE(PTC.withMemoryUpdateTransitions());
     EXPECT_FALSE(PTC.withMemoryAccessTransitions());
+    EXPECT_FALSE(PTC.withMemoryState());
 
     PTC.set(PowerTraceConfig::WITH_INSTRUCTIONS_OUTPUTS);
     EXPECT_TRUE(PTC.withPC());
@@ -873,6 +883,7 @@ TEST(PowerTraceConfig, base) {
     EXPECT_FALSE(PTC.withLastMemoryAccessTransitions());
     EXPECT_FALSE(PTC.withMemoryUpdateTransitions());
     EXPECT_FALSE(PTC.withMemoryAccessTransitions());
+    EXPECT_FALSE(PTC.withMemoryState());
 
     PTC.set(PowerTraceConfig::WITH_LOAD_TO_LOAD_TRANSITIONS);
     EXPECT_TRUE(PTC.withPC());
@@ -886,6 +897,7 @@ TEST(PowerTraceConfig, base) {
     EXPECT_FALSE(PTC.withLastMemoryAccessTransitions());
     EXPECT_FALSE(PTC.withMemoryUpdateTransitions());
     EXPECT_TRUE(PTC.withMemoryAccessTransitions());
+    EXPECT_FALSE(PTC.withMemoryState());
 
     PTC.set(PowerTraceConfig::WITH_STORE_TO_STORE_TRANSITIONS);
     EXPECT_TRUE(PTC.withPC());
@@ -899,6 +911,7 @@ TEST(PowerTraceConfig, base) {
     EXPECT_FALSE(PTC.withLastMemoryAccessTransitions());
     EXPECT_FALSE(PTC.withMemoryUpdateTransitions());
     EXPECT_TRUE(PTC.withMemoryAccessTransitions());
+    EXPECT_FALSE(PTC.withMemoryState());
 
     PTC.set(PowerTraceConfig::WITH_LAST_MEMORY_ACCESSES_TRANSITIONS);
     EXPECT_TRUE(PTC.withPC());
@@ -912,6 +925,7 @@ TEST(PowerTraceConfig, base) {
     EXPECT_TRUE(PTC.withLastMemoryAccessTransitions());
     EXPECT_FALSE(PTC.withMemoryUpdateTransitions());
     EXPECT_TRUE(PTC.withMemoryAccessTransitions());
+    EXPECT_FALSE(PTC.withMemoryState());
 
     PTC.set(PowerTraceConfig::WITH_MEMORY_UPDATE_TRANSITIONS);
     EXPECT_TRUE(PTC.withPC());
@@ -925,6 +939,21 @@ TEST(PowerTraceConfig, base) {
     EXPECT_TRUE(PTC.withLastMemoryAccessTransitions());
     EXPECT_TRUE(PTC.withMemoryUpdateTransitions());
     EXPECT_TRUE(PTC.withMemoryAccessTransitions());
+    EXPECT_FALSE(PTC.withMemoryState());
+
+    PTC.set(PowerTraceConfig::WITH_MEMORY_STATE);
+    EXPECT_TRUE(PTC.withPC());
+    EXPECT_TRUE(PTC.withOpcode());
+    EXPECT_TRUE(PTC.withMemAddress());
+    EXPECT_TRUE(PTC.withMemData());
+    EXPECT_TRUE(PTC.withInstructionsInputs());
+    EXPECT_TRUE(PTC.withInstructionsOutputs());
+    EXPECT_TRUE(PTC.withLoadToLoadTransitions());
+    EXPECT_TRUE(PTC.withStoreToStoreTransitions());
+    EXPECT_TRUE(PTC.withLastMemoryAccessTransitions());
+    EXPECT_TRUE(PTC.withMemoryUpdateTransitions());
+    EXPECT_TRUE(PTC.withMemoryAccessTransitions());
+    EXPECT_TRUE(PTC.withMemoryState());
 }
 
 TEST(PowerAnalysisConfig, base) {
@@ -956,7 +985,7 @@ TEST(PowerAnalysisConfig, base) {
 
 TEST(PowerTrace, Oracle) {
     PAF::SCA::PowerTrace::Oracle oracle;
-    EXPECT_EQ(oracle.getMemoryState(0x1234, 4, 5), 0ull);
+    EXPECT_EQ(oracle.getMemoryValue(0x1234, 4, 5), 0ull);
 }
 
 TEST_WITH_TEMP_FILE(PowerTraceTarmac, "test-MTAOracle-XXXXXX");
@@ -1000,7 +1029,7 @@ TEST(PowerTrace, base) {
     EXPECT_EQ(PT[0], Insts[0]);
     PT.analyze(PAConfig, oracle, TTI, TRBD, TMAD, TID);
     EXPECT_EQ(TPD.pwf.size(), 1);
-    EXPECT_EQ(TPD.pwf[0], PowerFields(17, 8, 4, 4, 0, 0, 0, &Insts[0]));
+    EXPECT_EQ(TPD.pwf[0], PowerFields(17, 8, 4, 4, 0, 0, 0, 0, &Insts[0]));
     EXPECT_EQ(TRBD.numTraces(), 1);
     EXPECT_EQ(TRBD.numSnapshots(), 1);
     EXPECT_TRUE(TRBD.check(0, 0, {5, 0x21000000, 0, 0, 0}));
@@ -1018,8 +1047,8 @@ TEST(PowerTrace, base) {
     EXPECT_EQ(PT[1], Insts[1]);
     PT.analyze(PAConfig, oracle, TTI, TRBD, TMAD, TID);
     EXPECT_EQ(TPD.pwf.size(), 2);
-    EXPECT_EQ(TPD.pwf[0], PowerFields(17, 8, 4, 4, 0, 0, 0, &Insts[0]));
-    EXPECT_EQ(TPD.pwf[1], PowerFields(22, 9, 5, 2, 2, 0, 0, &Insts[1]));
+    EXPECT_EQ(TPD.pwf[0], PowerFields(17, 8, 4, 4, 0, 0, 0, 0, &Insts[0]));
+    EXPECT_EQ(TPD.pwf[1], PowerFields(22, 9, 5, 2, 2, 0, 0, 0, &Insts[1]));
     EXPECT_EQ(TRBD.numTraces(), 1);
     EXPECT_EQ(TRBD.numSnapshots(), 2);
     EXPECT_TRUE(TRBD.check(0, 0, {5, 0x21000000, 0, 0, 0}));
@@ -1042,12 +1071,12 @@ TEST(PowerTrace, base) {
     PT.analyze(PAConfig, oracle, TTI, TRBD, TMAD, TID);
     EXPECT_EQ(TPD.pwf.size(),
               4 + 2); // 4 instructions, 2 extra cycles for LDRD and STRD.
-    EXPECT_EQ(TPD.pwf[0], PowerFields(17, 8, 4, 4, 0, 0, 0, &Insts[0]));
-    EXPECT_EQ(TPD.pwf[1], PowerFields(22, 9, 5, 2, 2, 0, 0, &Insts[1]));
-    EXPECT_EQ(TPD.pwf[2], PowerFields(34, 6, 12, 0, 0, 10, 2, &Insts[2]));
-    EXPECT_EQ(TPD.pwf[3], PowerFields(28, 6, 12, 0, 0, 5, 2, nullptr));
-    EXPECT_EQ(TPD.pwf[4], PowerFields(40, 6, 14, 2, 0, 10, 2, &Insts[3]));
-    EXPECT_EQ(TPD.pwf[5], PowerFields(65.6, 6, 14, 9, 0, 8, 9, nullptr));
+    EXPECT_EQ(TPD.pwf[0], PowerFields(17, 8, 4, 4, 0, 0, 0, 0, &Insts[0]));
+    EXPECT_EQ(TPD.pwf[1], PowerFields(22, 9, 5, 2, 2, 0, 0, 0, &Insts[1]));
+    EXPECT_EQ(TPD.pwf[2], PowerFields(38, 6, 12, 0, 0, 10, 2, 4, &Insts[2]));
+    EXPECT_EQ(TPD.pwf[3], PowerFields(32, 6, 12, 0, 0, 5, 2, 4, nullptr));
+    EXPECT_EQ(TPD.pwf[4], PowerFields(44, 6, 14, 2, 0, 10, 2, 4, &Insts[3]));
+    EXPECT_EQ(TPD.pwf[5], PowerFields(69.6, 6, 14, 9, 0, 8, 9, 4,nullptr));
     EXPECT_EQ(TRBD.numTraces(), 1);
     EXPECT_EQ(TRBD.numSnapshots(), 4);
     EXPECT_TRUE(TRBD.check(0, 0, {5, 0x21000000, 0, 0, 0}));
@@ -1067,13 +1096,13 @@ TEST(PowerTrace, base) {
     PT2.add(Insts[0]);
     PT2.analyze(PAConfig, oracle, TTI, TRBD, TMAD, TID);
     EXPECT_EQ(TPD.pwf.size(), 7);
-    EXPECT_EQ(TPD.pwf[0], PowerFields(17, 8, 4, 4, 0, 0, 0, &Insts[0]));
-    EXPECT_EQ(TPD.pwf[1], PowerFields(22, 9, 5, 2, 2, 0, 0, &Insts[1]));
-    EXPECT_EQ(TPD.pwf[2], PowerFields(34, 6, 12, 0, 0, 10, 2, &Insts[2]));
-    EXPECT_EQ(TPD.pwf[3], PowerFields(28, 6, 12, 0, 0, 5, 2, nullptr));
-    EXPECT_EQ(TPD.pwf[4], PowerFields(40, 6, 14, 2, 0, 10, 2, &Insts[3]));
-    EXPECT_EQ(TPD.pwf[5], PowerFields(65.6, 6, 14, 9, 0, 8, 9, nullptr));
-    EXPECT_EQ(TPD.pwf[6], PowerFields(17, 8, 4, 4, 0, 0, 0, &Insts[0]));
+    EXPECT_EQ(TPD.pwf[0], PowerFields(17, 8, 4, 4, 0, 0, 0, 0, &Insts[0]));
+    EXPECT_EQ(TPD.pwf[1], PowerFields(22, 9, 5, 2, 2, 0, 0, 0, &Insts[1]));
+    EXPECT_EQ(TPD.pwf[2], PowerFields(38, 6, 12, 0, 0, 10, 2, 4, &Insts[2]));
+    EXPECT_EQ(TPD.pwf[3], PowerFields(32, 6, 12, 0, 0, 5, 2, 4, nullptr));
+    EXPECT_EQ(TPD.pwf[4], PowerFields(44, 6, 14, 2, 0, 10, 2, 4, &Insts[3]));
+    EXPECT_EQ(TPD.pwf[5], PowerFields(69.6, 6, 14, 9, 0, 8, 9, 4, nullptr));
+    EXPECT_EQ(TPD.pwf[6], PowerFields(21, 8, 4, 4, 0, 0, 0, 4, &Insts[0]));
 }
 
 TEST(PowerTrace, withNoise) {
@@ -1128,12 +1157,12 @@ TEST(PowerTrace, HammingWeightWithConfig) {
     PT1.analyze(PAConfig, oracle, TTI, TRBD, TMAD, TID);
     EXPECT_EQ(TPD.pwf.size(),
               6); // 4 instructions, 2 extra cycles.
-    EXPECT_EQ(TPD.pwf[0], PowerFields(8, 8, 0, 0, 0, 0, 0, &Insts[0]));
-    EXPECT_EQ(TPD.pwf[1], PowerFields(9, 9, 0, 0, 0, 0, 0, &Insts[1]));
-    EXPECT_EQ(TPD.pwf[2], PowerFields(6, 6, 0, 0, 0, 0, 0, &Insts[2]));
-    EXPECT_EQ(TPD.pwf[3], PowerFields(6, 6, 0, 0, 0, 0, 0, nullptr));
-    EXPECT_EQ(TPD.pwf[4], PowerFields(6, 6, 0, 0, 0, 0, 0, &Insts[3]));
-    EXPECT_EQ(TPD.pwf[5], PowerFields(6, 6, 0, 0, 0, 0, 0, nullptr));
+    EXPECT_EQ(TPD.pwf[0], PowerFields(8, 8, 0, 0, 0, 0, 0, 0, &Insts[0]));
+    EXPECT_EQ(TPD.pwf[1], PowerFields(9, 9, 0, 0, 0, 0, 0, 0, &Insts[1]));
+    EXPECT_EQ(TPD.pwf[2], PowerFields(6, 6, 0, 0, 0, 0, 0, 0, &Insts[2]));
+    EXPECT_EQ(TPD.pwf[3], PowerFields(6, 6, 0, 0, 0, 0, 0, 0, nullptr));
+    EXPECT_EQ(TPD.pwf[4], PowerFields(6, 6, 0, 0, 0, 0, 0, 0, &Insts[3]));
+    EXPECT_EQ(TPD.pwf[5], PowerFields(6, 6, 0, 0, 0, 0, 0, 0, nullptr));
     EXPECT_EQ(TRBD.numTraces(), 1);
     EXPECT_EQ(TRBD.numSnapshots(), 4);
     EXPECT_TRUE(TRBD.check(0, 0, {5, 0x21000000, 0, 0, 0}));
@@ -1158,12 +1187,12 @@ TEST(PowerTrace, HammingWeightWithConfig) {
     PT2.analyze(PAConfig, oracle, TTI, TRBD, TMAD, TID);
     EXPECT_EQ(TPD.pwf.size(),
               6); // 4 instructions, 2 extra cycles.
-    EXPECT_EQ(TPD.pwf[0], PowerFields(0, 0, 0, 0, 0, 0, 0, &Insts[0]));
-    EXPECT_EQ(TPD.pwf[1], PowerFields(0, 0, 0, 0, 0, 0, 0, &Insts[1]));
-    EXPECT_EQ(TPD.pwf[2], PowerFields(12, 0, 0, 0, 0, 10, 0, &Insts[2]));
-    EXPECT_EQ(TPD.pwf[3], PowerFields(6, 0, 0, 0, 0, 5, 0, nullptr));
-    EXPECT_EQ(TPD.pwf[4], PowerFields(12, 0, 0, 0, 0, 10, 0, &Insts[3]));
-    EXPECT_EQ(TPD.pwf[5], PowerFields(9.6, 0, 0, 0, 0, 8, 0, nullptr));
+    EXPECT_EQ(TPD.pwf[0], PowerFields(0, 0, 0, 0, 0, 0, 0, 0, &Insts[0]));
+    EXPECT_EQ(TPD.pwf[1], PowerFields(0, 0, 0, 0, 0, 0, 0, 0, &Insts[1]));
+    EXPECT_EQ(TPD.pwf[2], PowerFields(12, 0, 0, 0, 0, 10, 0, 0, &Insts[2]));
+    EXPECT_EQ(TPD.pwf[3], PowerFields(6, 0, 0, 0, 0, 5, 0, 0, nullptr));
+    EXPECT_EQ(TPD.pwf[4], PowerFields(12, 0, 0, 0, 0, 10, 0, 0, &Insts[3]));
+    EXPECT_EQ(TPD.pwf[5], PowerFields(9.6, 0, 0, 0, 0, 8, 0, 0, nullptr));
 
     TPD.reset();
     TRBD.reset();
@@ -1178,12 +1207,12 @@ TEST(PowerTrace, HammingWeightWithConfig) {
     PT3.analyze(PAConfig, oracle, TTI, TRBD, TMAD, TID);
     EXPECT_EQ(TPD.pwf.size(),
               6); // 4 instructions, 2 extra cycles.
-    EXPECT_EQ(TPD.pwf[0], PowerFields(0, 0, 0, 0, 0, 0, 0, &Insts[0]));
-    EXPECT_EQ(TPD.pwf[1], PowerFields(0, 0, 0, 0, 0, 0, 0, &Insts[1]));
-    EXPECT_EQ(TPD.pwf[2], PowerFields(4, 0, 0, 0, 0, 0, 2, &Insts[2]));
-    EXPECT_EQ(TPD.pwf[3], PowerFields(4, 0, 0, 0, 0, 0, 2, nullptr));
-    EXPECT_EQ(TPD.pwf[4], PowerFields(4, 0, 0, 0, 0, 0, 2, &Insts[3]));
-    EXPECT_EQ(TPD.pwf[5], PowerFields(18, 0, 0, 0, 0, 0, 9, nullptr));
+    EXPECT_EQ(TPD.pwf[0], PowerFields(0, 0, 0, 0, 0, 0, 0, 0, &Insts[0]));
+    EXPECT_EQ(TPD.pwf[1], PowerFields(0, 0, 0, 0, 0, 0, 0, 0, &Insts[1]));
+    EXPECT_EQ(TPD.pwf[2], PowerFields(4, 0, 0, 0, 0, 0, 2, 0, &Insts[2]));
+    EXPECT_EQ(TPD.pwf[3], PowerFields(4, 0, 0, 0, 0, 0, 2, 0, nullptr));
+    EXPECT_EQ(TPD.pwf[4], PowerFields(4, 0, 0, 0, 0, 0, 2, 0, &Insts[3]));
+    EXPECT_EQ(TPD.pwf[5], PowerFields(18, 0, 0, 0, 0, 0, 9, 0, nullptr));
 
     TPD.reset();
     TRBD.reset();
@@ -1198,12 +1227,12 @@ TEST(PowerTrace, HammingWeightWithConfig) {
     PT4.analyze(PAConfig, oracle, TTI, TRBD, TMAD, TID);
     EXPECT_EQ(TPD.pwf.size(),
               6); // 4 instructions, 2 extra cycles.
-    EXPECT_EQ(TPD.pwf[0], PowerFields(4, 0, 4, 0, 0, 0, 0, &Insts[0]));
-    EXPECT_EQ(TPD.pwf[1], PowerFields(5, 0, 5, 0, 0, 0, 0, &Insts[1]));
-    EXPECT_EQ(TPD.pwf[2], PowerFields(12, 0, 12, 0, 0, 0, 0, &Insts[2]));
-    EXPECT_EQ(TPD.pwf[3], PowerFields(12, 0, 12, 0, 0, 0, 0, nullptr));
-    EXPECT_EQ(TPD.pwf[4], PowerFields(14, 0, 14, 0, 0, 0, 0, &Insts[3]));
-    EXPECT_EQ(TPD.pwf[5], PowerFields(14, 0, 14, 0, 0, 0, 0, nullptr));
+    EXPECT_EQ(TPD.pwf[0], PowerFields(4, 0, 4, 0, 0, 0, 0, 0, &Insts[0]));
+    EXPECT_EQ(TPD.pwf[1], PowerFields(5, 0, 5, 0, 0, 0, 0, 0, &Insts[1]));
+    EXPECT_EQ(TPD.pwf[2], PowerFields(12, 0, 12, 0, 0, 0, 0, 0, &Insts[2]));
+    EXPECT_EQ(TPD.pwf[3], PowerFields(12, 0, 12, 0, 0, 0, 0, 0, nullptr));
+    EXPECT_EQ(TPD.pwf[4], PowerFields(14, 0, 14, 0, 0, 0, 0, 0, &Insts[3]));
+    EXPECT_EQ(TPD.pwf[5], PowerFields(14, 0, 14, 0, 0, 0, 0, 0, nullptr));
 
     TPD.reset();
     TRBD.reset();
@@ -1218,12 +1247,12 @@ TEST(PowerTrace, HammingWeightWithConfig) {
     PT5.analyze(PAConfig, oracle, TTI, TRBD, TMAD, TID);
     EXPECT_EQ(TPD.pwf.size(),
               6); // 4 instructions, 2 extra cycles.
-    EXPECT_EQ(TPD.pwf[0], PowerFields(0, 0, 0, 0, 0, 0, 0, &Insts[0]));
-    EXPECT_EQ(TPD.pwf[1], PowerFields(4, 0, 0, 0, 2, 0, 0, &Insts[1]));
-    EXPECT_EQ(TPD.pwf[2], PowerFields(0, 0, 0, 0, 0, 0, 0, &Insts[2]));
-    EXPECT_EQ(TPD.pwf[3], PowerFields(0, 0, 0, 0, 0, 0, 0, nullptr));
-    EXPECT_EQ(TPD.pwf[4], PowerFields(0, 0, 0, 0, 0, 0, 0, &Insts[3]));
-    EXPECT_EQ(TPD.pwf[5], PowerFields(0, 0, 0, 0, 0, 0, 0, nullptr));
+    EXPECT_EQ(TPD.pwf[0], PowerFields(0, 0, 0, 0, 0, 0, 0, 0, &Insts[0]));
+    EXPECT_EQ(TPD.pwf[1], PowerFields(4, 0, 0, 0, 2, 0, 0, 0, &Insts[1]));
+    EXPECT_EQ(TPD.pwf[2], PowerFields(0, 0, 0, 0, 0, 0, 0, 0, &Insts[2]));
+    EXPECT_EQ(TPD.pwf[3], PowerFields(0, 0, 0, 0, 0, 0, 0, 0, nullptr));
+    EXPECT_EQ(TPD.pwf[4], PowerFields(0, 0, 0, 0, 0, 0, 0, 0, &Insts[3]));
+    EXPECT_EQ(TPD.pwf[5], PowerFields(0, 0, 0, 0, 0, 0, 0, 0, nullptr));
 
     TPD.reset();
     TRBD.reset();
@@ -1238,12 +1267,12 @@ TEST(PowerTrace, HammingWeightWithConfig) {
     PT6.analyze(PAConfig, oracle, TTI, TRBD, TMAD, TID);
     EXPECT_EQ(TPD.pwf.size(),
               6); // 4 instructions, 2 extra cycles.
-    EXPECT_EQ(TPD.pwf[0], PowerFields(5, 0, 0, 4, 0, 0, 0, &Insts[0]));
-    EXPECT_EQ(TPD.pwf[1], PowerFields(4, 0, 0, 2, 0, 0, 0, &Insts[1]));
-    EXPECT_EQ(TPD.pwf[2], PowerFields(0, 0, 0, 0, 0, 0, 0, &Insts[2]));
-    EXPECT_EQ(TPD.pwf[3], PowerFields(0, 0, 0, 0, 0, 0, 0, nullptr));
-    EXPECT_EQ(TPD.pwf[4], PowerFields(4, 0, 0, 2, 0, 0, 0, &Insts[3]));
-    EXPECT_EQ(TPD.pwf[5], PowerFields(18, 0, 0, 9, 0, 0, 0, nullptr));
+    EXPECT_EQ(TPD.pwf[0], PowerFields(5, 0, 0, 4, 0, 0, 0, 0, &Insts[0]));
+    EXPECT_EQ(TPD.pwf[1], PowerFields(4, 0, 0, 2, 0, 0, 0, 0, &Insts[1]));
+    EXPECT_EQ(TPD.pwf[2], PowerFields(0, 0, 0, 0, 0, 0, 0, 0, &Insts[2]));
+    EXPECT_EQ(TPD.pwf[3], PowerFields(0, 0, 0, 0, 0, 0, 0, 0, nullptr));
+    EXPECT_EQ(TPD.pwf[4], PowerFields(4, 0, 0, 2, 0, 0, 0, 0, &Insts[3]));
+    EXPECT_EQ(TPD.pwf[5], PowerFields(18, 0, 0, 9, 0, 0, 0, 0, nullptr));
 }
 
 // clang-format off
@@ -1325,7 +1354,7 @@ class InstsStateOracle : public PowerTrace::Oracle {
     InstsStateOracle(size_t NR = 18, uint64_t v = 0)
         : regBankInitialState(NR, v) {}
 
-    [[nodiscard]] std::vector<uint64_t> getRegBankState(Time t) const override {
+    [[nodiscard]] std::vector<uint64_t> getRegBankState(Time t) override {
         return regBankInitialState;
     }
 
@@ -1341,12 +1370,12 @@ class Insts2StateOracle : public PowerTrace::Oracle {
     Insts2StateOracle(size_t NR = 18, uint64_t v = 0)
         : regBankInitialState(NR, v) {}
 
-    [[nodiscard]] std::vector<uint64_t> getRegBankState(Time t) const override {
+    [[nodiscard]] std::vector<uint64_t> getRegBankState(Time t) override {
         return regBankInitialState;
     }
 
-    [[nodiscard]] uint64_t getMemoryState(Addr address, size_t size,
-                                          Time t) const override {
+    [[nodiscard]] uint64_t getMemoryValue(Time t, Addr address,
+                                          size_t size) override {
         if (t == Insts2[3].time - 1 && address == 0xf939b3c)
             return 0x00cafe00;
         if (t == Insts2[6].time - 1 && address == 0xf939b40)
@@ -1386,12 +1415,12 @@ TEST(PowerTrace, HammingDistanceWithConfig) {
     PT1.analyze(PAConfig, oracle, TTI, TRBD, TMAD, TID);
     EXPECT_EQ(TPD.pwf.size(),
               6); // 4 instructions, 2 extra cycles.
-    EXPECT_EQ(TPD.pwf[0], PowerFields(8, 8, 0, 0, 0, 0, 0, &Insts[0]));
-    EXPECT_EQ(TPD.pwf[1], PowerFields(1, 1, 0, 0, 0, 0, 0, &Insts[1]));
-    EXPECT_EQ(TPD.pwf[2], PowerFields(5, 5, 0, 0, 0, 0, 0, &Insts[2]));
-    EXPECT_EQ(TPD.pwf[3], PowerFields(5, 5, 0, 0, 0, 0, 0, nullptr));
-    EXPECT_EQ(TPD.pwf[4], PowerFields(2, 2, 0, 0, 0, 0, 0, &Insts[3]));
-    EXPECT_EQ(TPD.pwf[5], PowerFields(2, 2, 0, 0, 0, 0, 0, nullptr));
+    EXPECT_EQ(TPD.pwf[0], PowerFields(8, 8, 0, 0, 0, 0, 0, 0, &Insts[0]));
+    EXPECT_EQ(TPD.pwf[1], PowerFields(1, 1, 0, 0, 0, 0, 0, 0, &Insts[1]));
+    EXPECT_EQ(TPD.pwf[2], PowerFields(5, 5, 0, 0, 0, 0, 0, 0, &Insts[2]));
+    EXPECT_EQ(TPD.pwf[3], PowerFields(5, 5, 0, 0, 0, 0, 0, 0, nullptr));
+    EXPECT_EQ(TPD.pwf[4], PowerFields(2, 2, 0, 0, 0, 0, 0, 0, &Insts[3]));
+    EXPECT_EQ(TPD.pwf[5], PowerFields(2, 2, 0, 0, 0, 0, 0, 0, nullptr));
     EXPECT_EQ(TMAD.instrWithAccesses(), 0);
     EXPECT_EQ(TMAD.lastAccessesSize(), 0);
     EXPECT_EQ(TID.numInstructions(), 0);
@@ -1409,12 +1438,12 @@ TEST(PowerTrace, HammingDistanceWithConfig) {
     PT2.analyze(PAConfig, oracle, TTI, TRBD, TMAD, TID);
     EXPECT_EQ(TPD.pwf.size(),
               6); // 4 instructions, 2 extra cycles.
-    EXPECT_EQ(TPD.pwf[0], PowerFields(4, 0, 4, 0, 0, 0, 0, &Insts[0]));
-    EXPECT_EQ(TPD.pwf[1], PowerFields(9, 0, 9, 0, 0, 0, 0, &Insts[1]));
-    EXPECT_EQ(TPD.pwf[2], PowerFields(13, 0, 13, 0, 0, 0, 0, &Insts[2]));
-    EXPECT_EQ(TPD.pwf[3], PowerFields(13, 0, 13, 0, 0, 0, 0, nullptr));
-    EXPECT_EQ(TPD.pwf[4], PowerFields(8, 0, 8, 0, 0, 0, 0, &Insts[3]));
-    EXPECT_EQ(TPD.pwf[5], PowerFields(8, 0, 8, 0, 0, 0, 0, nullptr));
+    EXPECT_EQ(TPD.pwf[0], PowerFields(4, 0, 4, 0, 0, 0, 0, 0, &Insts[0]));
+    EXPECT_EQ(TPD.pwf[1], PowerFields(9, 0, 9, 0, 0, 0, 0, 0, &Insts[1]));
+    EXPECT_EQ(TPD.pwf[2], PowerFields(13, 0, 13, 0, 0, 0, 0, 0, &Insts[2]));
+    EXPECT_EQ(TPD.pwf[3], PowerFields(13, 0, 13, 0, 0, 0, 0, 0, nullptr));
+    EXPECT_EQ(TPD.pwf[4], PowerFields(8, 0, 8, 0, 0, 0, 0, 0, &Insts[3]));
+    EXPECT_EQ(TPD.pwf[5], PowerFields(8, 0, 8, 0, 0, 0, 0, 0, nullptr));
 
     // Instructions' inputs are ignored in the Hamming distance power model.
     TPD.reset();
@@ -1430,12 +1459,12 @@ TEST(PowerTrace, HammingDistanceWithConfig) {
     PT3.analyze(PAConfig, oracle, TTI, TRBD, TMAD, TID);
     EXPECT_EQ(TPD.pwf.size(),
               6); // 4 instructions, 2 extra cycles.
-    EXPECT_EQ(TPD.pwf[0], PowerFields(0, 0, 0, 0, 0, 0, 0, &Insts[0]));
-    EXPECT_EQ(TPD.pwf[1], PowerFields(0, 0, 0, 0, 0, 0, 0, &Insts[1]));
-    EXPECT_EQ(TPD.pwf[2], PowerFields(0, 0, 0, 0, 0, 0, 0, &Insts[2]));
-    EXPECT_EQ(TPD.pwf[3], PowerFields(0, 0, 0, 0, 0, 0, 0, nullptr));
-    EXPECT_EQ(TPD.pwf[4], PowerFields(0, 0, 0, 0, 0, 0, 0, &Insts[3]));
-    EXPECT_EQ(TPD.pwf[5], PowerFields(0, 0, 0, 0, 0, 0, 0, nullptr));
+    EXPECT_EQ(TPD.pwf[0], PowerFields(0, 0, 0, 0, 0, 0, 0, 0, &Insts[0]));
+    EXPECT_EQ(TPD.pwf[1], PowerFields(0, 0, 0, 0, 0, 0, 0, 0, &Insts[1]));
+    EXPECT_EQ(TPD.pwf[2], PowerFields(0, 0, 0, 0, 0, 0, 0, 0, &Insts[2]));
+    EXPECT_EQ(TPD.pwf[3], PowerFields(0, 0, 0, 0, 0, 0, 0, 0, nullptr));
+    EXPECT_EQ(TPD.pwf[4], PowerFields(0, 0, 0, 0, 0, 0, 0, 0, &Insts[3]));
+    EXPECT_EQ(TPD.pwf[5], PowerFields(0, 0, 0, 0, 0, 0, 0, 0, nullptr));
 
     TPD.reset();
     TRBD.reset();
@@ -1468,12 +1497,12 @@ TEST(PowerTrace, HammingDistanceWithConfig) {
     PT4.analyze(PAConfig, oracle2, TTI, TRBD, TMAD, TID);
     EXPECT_EQ(TPD.pwf.size(),
               6); // 4 instructions, 2 extra cycles.
-    EXPECT_EQ(TPD.pwf[0], PowerFields(5, 0, 0, 4, 0, 0, 0, &Insts[0]));
-    EXPECT_EQ(TPD.pwf[1], PowerFields(4, 0, 0, 2, 0, 0, 0, &Insts[1]));
-    EXPECT_EQ(TPD.pwf[2], PowerFields(0, 0, 0, 0, 0, 0, 0, &Insts[2]));
-    EXPECT_EQ(TPD.pwf[3], PowerFields(0, 0, 0, 0, 0, 0, 0, nullptr));
-    EXPECT_EQ(TPD.pwf[4], PowerFields(4, 0, 0, 2, 0, 0, 0, &Insts[3]));
-    EXPECT_EQ(TPD.pwf[5], PowerFields(18, 0, 0, 9, 0, 0, 0, nullptr));
+    EXPECT_EQ(TPD.pwf[0], PowerFields(5, 0, 0, 4, 0, 0, 0, 0, &Insts[0]));
+    EXPECT_EQ(TPD.pwf[1], PowerFields(4, 0, 0, 2, 0, 0, 0, 0, &Insts[1]));
+    EXPECT_EQ(TPD.pwf[2], PowerFields(0, 0, 0, 0, 0, 0, 0, 0, &Insts[2]));
+    EXPECT_EQ(TPD.pwf[3], PowerFields(0, 0, 0, 0, 0, 0, 0, 0, nullptr));
+    EXPECT_EQ(TPD.pwf[4], PowerFields(4, 0, 0, 2, 0, 0, 0, 0, &Insts[3]));
+    EXPECT_EQ(TPD.pwf[5], PowerFields(18, 0, 0, 9, 0, 0, 0, 0, nullptr));
 
     TPD.reset();
     TRBD.reset();
@@ -1489,12 +1518,12 @@ TEST(PowerTrace, HammingDistanceWithConfig) {
     PT5.analyze(PAConfig, oracle, TTI, TRBD, TMAD, TID);
     EXPECT_EQ(TPD.pwf.size(),
               6); // 4 instructions, 2 extra cycles.
-    EXPECT_EQ(TPD.pwf[0], PowerFields(0, 0, 0, 0, 0, 0, 0, &Insts[0]));
-    EXPECT_EQ(TPD.pwf[1], PowerFields(0, 0, 0, 0, 0, 0, 0, &Insts[1]));
-    EXPECT_EQ(TPD.pwf[2], PowerFields(12, 0, 0, 0, 0, 10, 0, &Insts[2]));
-    EXPECT_EQ(TPD.pwf[3], PowerFields(8.4, 0, 0, 0, 0, 7, 0, nullptr));
-    EXPECT_EQ(TPD.pwf[4], PowerFields(6, 0, 0, 0, 0, 5, 0, &Insts[3]));
-    EXPECT_EQ(TPD.pwf[5], PowerFields(4.8, 0, 0, 0, 0, 4, 0, nullptr));
+    EXPECT_EQ(TPD.pwf[0], PowerFields(0, 0, 0, 0, 0, 0, 0, 0, &Insts[0]));
+    EXPECT_EQ(TPD.pwf[1], PowerFields(0, 0, 0, 0, 0, 0, 0, 0, &Insts[1]));
+    EXPECT_EQ(TPD.pwf[2], PowerFields(12, 0, 0, 0, 0, 10, 0, 0, &Insts[2]));
+    EXPECT_EQ(TPD.pwf[3], PowerFields(8.4, 0, 0, 0, 0, 7, 0, 0, nullptr));
+    EXPECT_EQ(TPD.pwf[4], PowerFields(6, 0, 0, 0, 0, 5, 0, 0, &Insts[3]));
+    EXPECT_EQ(TPD.pwf[5], PowerFields(4.8, 0, 0, 0, 0, 4, 0, 0, nullptr));
 
     TPD.reset();
     TRBD.reset();
@@ -1510,12 +1539,12 @@ TEST(PowerTrace, HammingDistanceWithConfig) {
     PT6.analyze(PAConfig, oracle, TTI, TRBD, TMAD, TID);
     EXPECT_EQ(TPD.pwf.size(),
               6); // 4 instructions, 2 extra cycles.
-    EXPECT_EQ(TPD.pwf[0], PowerFields(0, 0, 0, 0, 0, 0, 0, &Insts[0]));
-    EXPECT_EQ(TPD.pwf[1], PowerFields(0, 0, 0, 0, 0, 0, 0, &Insts[1]));
-    EXPECT_EQ(TPD.pwf[2], PowerFields(4, 0, 0, 0, 0, 0, 2, &Insts[2]));
-    EXPECT_EQ(TPD.pwf[3], PowerFields(0, 0, 0, 0, 0, 0, 0, nullptr));
-    EXPECT_EQ(TPD.pwf[4], PowerFields(4, 0, 0, 0, 0, 0, 2, &Insts[3]));
-    EXPECT_EQ(TPD.pwf[5], PowerFields(22, 0, 0, 0, 0, 0, 11, nullptr));
+    EXPECT_EQ(TPD.pwf[0], PowerFields(0, 0, 0, 0, 0, 0, 0, 0, &Insts[0]));
+    EXPECT_EQ(TPD.pwf[1], PowerFields(0, 0, 0, 0, 0, 0, 0, 0, &Insts[1]));
+    EXPECT_EQ(TPD.pwf[2], PowerFields(4, 0, 0, 0, 0, 0, 2, 0, &Insts[2]));
+    EXPECT_EQ(TPD.pwf[3], PowerFields(0, 0, 0, 0, 0, 0, 0, 0, nullptr));
+    EXPECT_EQ(TPD.pwf[4], PowerFields(4, 0, 0, 0, 0, 0, 2, 0, &Insts[3]));
+    EXPECT_EQ(TPD.pwf[5], PowerFields(22, 0, 0, 0, 0, 0, 11, 0, nullptr));
 
     TPD.reset();
     TRBD.reset();
@@ -1535,13 +1564,13 @@ TEST(PowerTrace, HammingDistanceWithConfig) {
     PT7.analyze(PAConfig, oracle, TTI, TRBD, TMAD, TID);
     EXPECT_EQ(TPD.pwf.size(),
               7); // 7 instructions.
-    EXPECT_EQ(TPD.pwf[0], PowerFields(0, 0, 0, 0, 0, 0, 0, &Insts2[0]));
-    EXPECT_EQ(TPD.pwf[1], PowerFields(16.8, 0, 0, 0, 0, 14, 0, &Insts2[1]));
-    EXPECT_EQ(TPD.pwf[2], PowerFields(0, 0, 0, 0, 0, 0, 0, &Insts2[2]));
-    EXPECT_EQ(TPD.pwf[3], PowerFields(20.4, 0, 0, 0, 0, 17, 0, &Insts2[3]));
-    EXPECT_EQ(TPD.pwf[4], PowerFields(6, 0, 0, 0, 0, 5, 0, &Insts2[4]));
-    EXPECT_EQ(TPD.pwf[5], PowerFields(0, 0, 0, 0, 0, 0, 0, &Insts2[5]));
-    EXPECT_EQ(TPD.pwf[6], PowerFields(6, 0, 0, 0, 0, 5, 0, &Insts2[6]));
+    EXPECT_EQ(TPD.pwf[0], PowerFields(0, 0, 0, 0, 0, 0, 0, 0, &Insts2[0]));
+    EXPECT_EQ(TPD.pwf[1], PowerFields(16.8, 0, 0, 0, 0, 14, 0, 0, &Insts2[1]));
+    EXPECT_EQ(TPD.pwf[2], PowerFields(0, 0, 0, 0, 0, 0, 0, 0, &Insts2[2]));
+    EXPECT_EQ(TPD.pwf[3], PowerFields(20.4, 0, 0, 0, 0, 17, 0, 0, &Insts2[3]));
+    EXPECT_EQ(TPD.pwf[4], PowerFields(6, 0, 0, 0, 0, 5, 0, 0, &Insts2[4]));
+    EXPECT_EQ(TPD.pwf[5], PowerFields(0, 0, 0, 0, 0, 0, 0, 0, &Insts2[5]));
+    EXPECT_EQ(TPD.pwf[6], PowerFields(6, 0, 0, 0, 0, 5, 0, 0, &Insts2[6]));
     EXPECT_EQ(TMAD.instrWithAccesses(), 0);
     EXPECT_EQ(TMAD.lastAccessesSize(), 0);
     EXPECT_EQ(TID.numInstructions(), 0);
@@ -1564,13 +1593,13 @@ TEST(PowerTrace, HammingDistanceWithConfig) {
     PT8.analyze(PAConfig, oracle, TTI, TRBD, TMAD, TID);
     EXPECT_EQ(TPD.pwf.size(),
               7); // 7 instructions.
-    EXPECT_EQ(TPD.pwf[0], PowerFields(0, 0, 0, 0, 0, 0, 0, &Insts2[0]));
-    EXPECT_EQ(TPD.pwf[1], PowerFields(48, 0, 0, 0, 0, 0, 24, &Insts2[1]));
-    EXPECT_EQ(TPD.pwf[2], PowerFields(0, 0, 0, 0, 0, 0, 0, &Insts2[2]));
-    EXPECT_EQ(TPD.pwf[3], PowerFields(44, 0, 0, 0, 0, 0, 22, &Insts2[3]));
-    EXPECT_EQ(TPD.pwf[4], PowerFields(8, 0, 0, 0, 0, 0, 4, &Insts2[4]));
-    EXPECT_EQ(TPD.pwf[5], PowerFields(0, 0, 0, 0, 0, 0, 0, &Insts2[5]));
-    EXPECT_EQ(TPD.pwf[6], PowerFields(6, 0, 0, 0, 0, 0, 3, &Insts2[6]));
+    EXPECT_EQ(TPD.pwf[0], PowerFields(0, 0, 0, 0, 0, 0, 0, 0, &Insts2[0]));
+    EXPECT_EQ(TPD.pwf[1], PowerFields(48, 0, 0, 0, 0, 0, 24, 0, &Insts2[1]));
+    EXPECT_EQ(TPD.pwf[2], PowerFields(0, 0, 0, 0, 0, 0, 0, 0, &Insts2[2]));
+    EXPECT_EQ(TPD.pwf[3], PowerFields(44, 0, 0, 0, 0, 0, 22, 0, &Insts2[3]));
+    EXPECT_EQ(TPD.pwf[4], PowerFields(8, 0, 0, 0, 0, 0, 4, 0, &Insts2[4]));
+    EXPECT_EQ(TPD.pwf[5], PowerFields(0, 0, 0, 0, 0, 0, 0, 0, &Insts2[5]));
+    EXPECT_EQ(TPD.pwf[6], PowerFields(6, 0, 0, 0, 0, 0, 3, 0, &Insts2[6]));
 
     TPD.reset();
     TRBD.reset();
@@ -1590,13 +1619,13 @@ TEST(PowerTrace, HammingDistanceWithConfig) {
     PT9.analyze(PAConfig, oracle3, TTI, TRBD, TMAD, TID);
     EXPECT_EQ(TPD.pwf.size(),
               7); // 7 instructions.
-    EXPECT_EQ(TPD.pwf[0], PowerFields(0, 0, 0, 0, 0, 0, 0, &Insts2[0]));
-    EXPECT_EQ(TPD.pwf[1], PowerFields(0, 0, 0, 0, 0, 0, 0, &Insts2[1]));
-    EXPECT_EQ(TPD.pwf[2], PowerFields(0, 0, 0, 0, 0, 0, 0, &Insts2[2]));
-    EXPECT_EQ(TPD.pwf[3], PowerFields(34, 0, 0, 0, 0, 0, 17, &Insts2[3]));
-    EXPECT_EQ(TPD.pwf[4], PowerFields(0, 0, 0, 0, 0, 0, 0, &Insts2[4]));
-    EXPECT_EQ(TPD.pwf[5], PowerFields(0, 0, 0, 0, 0, 0, 0, &Insts2[5]));
-    EXPECT_EQ(TPD.pwf[6], PowerFields(6, 0, 0, 0, 0, 0, 3, &Insts2[6]));
+    EXPECT_EQ(TPD.pwf[0], PowerFields(0, 0, 0, 0, 0, 0, 0, 0, &Insts2[0]));
+    EXPECT_EQ(TPD.pwf[1], PowerFields(0, 0, 0, 0, 0, 0, 0, 0, &Insts2[1]));
+    EXPECT_EQ(TPD.pwf[2], PowerFields(0, 0, 0, 0, 0, 0, 0, 0, &Insts2[2]));
+    EXPECT_EQ(TPD.pwf[3], PowerFields(44, 0, 0, 0, 0, 0, 22, 0, &Insts2[3]));
+    EXPECT_EQ(TPD.pwf[4], PowerFields(0, 0, 0, 0, 0, 0, 0, 0, &Insts2[4]));
+    EXPECT_EQ(TPD.pwf[5], PowerFields(0, 0, 0, 0, 0, 0, 0, 0, &Insts2[5]));
+    EXPECT_EQ(TPD.pwf[6], PowerFields(46, 0, 0, 0, 0, 0, 23, 0, &Insts2[6]));
 }
 
 TEST(PowerTrace, withConfigAndNoise) {
@@ -1622,10 +1651,12 @@ TEST(PowerTrace, withConfigAndNoise) {
     PT.analyze(PAConfig, oracle, TTI, TRBD, TMAD, TID);
     EXPECT_EQ(TPD.pwf.size(), 2);
     EXPECT_GT(PowerFields::noise(TPD.pwf[1], TPD.pwf[0]), 0.0);
-    EXPECT_EQ(TPD.pwf[0].addr, 0.0);
+    EXPECT_EQ(TPD.pwf[0].mstate, 0.0);
     EXPECT_EQ(TPD.pwf[0].data, 0.0);
+    EXPECT_EQ(TPD.pwf[0].addr, 0.0);
     EXPECT_EQ(TPD.pwf[0].ireg, 0.0);
     EXPECT_EQ(TPD.pwf[0].oreg, 0.0);
+    EXPECT_NE(TPD.pwf[0].instr, 0.0);
     EXPECT_EQ(TPD.pwf[0].pc, 0.0);
     EXPECT_EQ(TMAD.instrWithAccesses(), 0);
     EXPECT_EQ(TMAD.lastAccessesSize(), 0);
@@ -1644,9 +1675,11 @@ TEST(PowerTrace, withConfigAndNoise) {
     PT2.analyze(PAConfig, oracle, TTI, TRBD, TMAD, TID);
     EXPECT_EQ(TPD.pwf.size(), 2);
     EXPECT_GT(PowerFields::noise(TPD.pwf[1], TPD.pwf[0]), 0.0);
-    EXPECT_EQ(TPD.pwf[0].addr, 0.0);
+    EXPECT_EQ(TPD.pwf[0].mstate, 0.0);
     EXPECT_EQ(TPD.pwf[0].data, 0.0);
+    EXPECT_EQ(TPD.pwf[0].addr, 0.0);
     EXPECT_EQ(TPD.pwf[0].ireg, 0.0);
+    EXPECT_NE(TPD.pwf[0].oreg, 0.0);
     EXPECT_EQ(TPD.pwf[0].instr, 0.0);
     EXPECT_EQ(TPD.pwf[0].pc, 0.0);
 }
@@ -1680,12 +1713,12 @@ TEST(PowerTrace, multipleAnalyses) {
     PT.analyze(PAConfigs, oracle, TTI, TRBD, TMAD, TID);
     EXPECT_EQ(TPDHW.pwf.size(),
               6); // 4 instructions, 2 extra cycles.
-    EXPECT_EQ(TPDHW.pwf[0], PowerFields(17, 8, 4, 4, 0, 0, 0, &Insts[0]));
-    EXPECT_EQ(TPDHW.pwf[1], PowerFields(22, 9, 5, 2, 2, 0, 0, &Insts[1]));
-    EXPECT_EQ(TPDHW.pwf[2], PowerFields(34, 6, 12, 0, 0, 10, 2, &Insts[2]));
-    EXPECT_EQ(TPDHW.pwf[3], PowerFields(28, 6, 12, 0, 0, 5, 2, nullptr));
-    EXPECT_EQ(TPDHW.pwf[4], PowerFields(40, 6, 14, 2, 0, 10, 2, &Insts[3]));
-    EXPECT_EQ(TPDHW.pwf[5], PowerFields(65.6, 6, 14, 9, 0, 8, 9, nullptr));
+    EXPECT_EQ(TPDHW.pwf[0], PowerFields(17, 8, 4, 4, 0, 0, 0, 0, &Insts[0]));
+    EXPECT_EQ(TPDHW.pwf[1], PowerFields(22, 9, 5, 2, 2, 0, 0, 0, &Insts[1]));
+    EXPECT_EQ(TPDHW.pwf[2], PowerFields(38, 6, 12, 0, 0, 10, 2, 4, &Insts[2]));
+    EXPECT_EQ(TPDHW.pwf[3], PowerFields(32, 6, 12, 0, 0, 5, 2, 4, nullptr));
+    EXPECT_EQ(TPDHW.pwf[4], PowerFields(44, 6, 14, 2, 0, 10, 2, 4, &Insts[3]));
+    EXPECT_EQ(TPDHW.pwf[5], PowerFields(69.6, 6, 14, 9, 0, 8, 9, 4, nullptr));
 
     EXPECT_EQ(TPDHD.pwf.size(),
               6); // 4 instructions, 2 extra cycles.

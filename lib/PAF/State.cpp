@@ -18,9 +18,11 @@
  * This file is part of PAF, the Physical Attack Framework.
  */
 
-#include "PAF/Memory.h"
+#include "PAF/State.h"
+#include "PAF/ArchInfo.h"
 #include "PAF/Intervals.h"
 
+#include <cassert>
 #include <iostream>
 #include <vector>
 
@@ -80,29 +82,33 @@ Intervals getInitializedSegments(const IndexNavigator &IN, bool readonly) {
 
 namespace PAF {
 
+void RegBankState::build(Time t) {
+    for (unsigned r = 0; r < CPU.numRegisters(); r++)
+        regbank[r] = getRegisterValueAtTime(CPU.registerName(r), t);
+}
+
+const std::vector<uint64_t> &RegBankState::getState(Time t) {
+    build(t);
+    return regbank;
+}
+
 MemoryState::MemoryState(const IndexNavigator &IN, unsigned verbosity)
-    : MTAnalyzer(IN, verbosity),
+    : State(IN, verbosity),
       readonlyInitialized(getInitializedSegments(IN, true)),
       writableInitialized(getInitializedSegments(IN, false)) {
-    build(currentTime);
+    build(0);
 }
 
 void MemoryState::build(Time t) {
-    currentTime = t;
-
     if (verbose())
-        cout << "Analysing memory state at time " << currentTime << ":\n";
+        cout << "Analysing memory state at time " << t << ":\n";
 
     accessedMemory.clear();
 
     SeqOrderPayload SOP;
-    if (!indexNavigator.node_at_time(currentTime, &SOP))
-        reporter->errx(EXIT_FAILURE, "Can not find node at time %d",
-                       currentTime);
+    if (!indexNavigator.node_at_time(t, &SOP))
+        reporter->errx(EXIT_FAILURE, "Can not find node at time %d", t);
 
-    // By the very nature of memtree / memsubtree, we know that we will get
-    // disjoint intervals in ascending order. This allows us to merge
-    // adjacent intervals as we read them.
     indexNavigator.index.memtree.visit(
         SOP.memory_root, [this](const MemoryPayload &MPL, OFF_T nodeof) {
             this->MPLVisitor(MPL, nodeof);
@@ -158,20 +164,36 @@ void MemoryState::dump(ostream &os) const {
         os << "No memory accesses recorded during execution.\n";
 }
 
-void MemoryState::visit(bool full, MemoryState::Action fn) const {
-    if (!full) {
-        // Visit only the RW memory accessed during execution.
-        // Now print all the accessed segments that are not read-only.
-        for (const auto &I : accessedMemory)
-            if (!readonlyInitialized.contains(I))
-                fn(I, getMemoryValueAtTime(I.beginValue(), I.size() + 1,
-                                           currentTime));
-    } else {
+void MemoryState::visit(Time t, bool full, MemoryState::Action fn) {
+    build(t);
+    if (full) {
         // Visit all the memory segments initialized from the ELF image and
         // the RW memory accessed during execution.
 
         // TODO: implement !
+        assert(false &&
+               "MemoryState::visit(full=true) not yet implemented !");
+
+    } else {
+        // Visit only the RW memory accessed during execution.
+        for (const auto &I : accessedMemory)
+            if (!readonlyInitialized.contains(I))
+                fn(I, getMemoryValueAtTime(I.beginValue(), I.size() + 1, t));
     }
+}
+
+uint64_t MemoryState::getContent(Time t, Addr address, size_t size) const {
+    vector<uint8_t> mem = getMemoryValueAtTime(address, size, t);
+
+    uint64_t v = 0;
+    for (size_t b = 0; b < size; b++) {
+        v <<= 8;
+        if (isBigEndian())
+            v |= mem[b];
+        else
+            v |= mem[size - 1 - b];
+    }
+    return v;
 }
 
 void MemoryState::MPLVisitor(const MemoryPayload &MP, OFF_T nodeof) {

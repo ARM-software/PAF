@@ -18,8 +18,7 @@
  * This file is part of PAF, the Physical Attack Framework.
  */
 
-#include "PAF/Memory.h"
-#include "PAF/PAF.h"
+#include "PAF/State.h"
 
 #include "libtarmac/argparse.hh"
 #include "libtarmac/reporter.hh"
@@ -90,7 +89,6 @@ int main(int argc, char *argv[]) {
                  << "'\n";
         IndexNavigator IN(trace, tu.image_filename);
         MemoryState MS(IN, tu.is_verbose());
-        MS.build(at);
 
         if (tu.is_verbose())
             MS.dump(cout);
@@ -98,7 +96,7 @@ int main(int argc, char *argv[]) {
         cout << "Memory state (";
         cout << (full ? "full" : "partial");
         cout << ") as rebuilt after analysis:\n";
-        MS.visit(full, [&](const Interval &I, const vector<uint8_t> &bytes) {
+        MS.visit(at, full, [&](const Interval &I, const vector<uint8_t> &bytes) {
             cout << " - ";
             ::dump(cout, I, bytes);
             cout << '\n';

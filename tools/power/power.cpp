@@ -211,6 +211,10 @@ int main(int argc, char **argv) {
         {"--with-mem-data"},
         "Include the memory accesses data contribution to the power (HW, HD)",
         [&]() { PTSelect.push_back(PowerTraceConfig::WITH_MEM_DATA); });
+    ap.optnoval(
+        {"--with-mem-state"},
+        "Include the memory state contribution to the power (HW)",
+        [&]() { PTSelect.push_back(PowerTraceConfig::WITH_MEMORY_STATE); });
     ap.optnoval({"--with-instruction-inputs"},
                 "include the instructions input operands contribution to the "
                 "power (HW only)",
@@ -391,8 +395,10 @@ int main(int argc, char **argv) {
         // Create the least powerful Oracle that is required.
         unique_ptr<PowerTrace::Oracle> oracle(
             analyses.count(PowerAnalysisConfig::HAMMING_DISTANCE) != 0 ||
+                    (analyses.count(PowerAnalysisConfig::HAMMING_WEIGHT) != 0 &&
+                     PTConfig.withMemoryState()) ||
                     RBDumper->enabled() || IDumper->enabled()
-                ? make_unique<PowerTrace::MTAOracle>(PA, *CPU)
+                ? make_unique<PowerTrace::MTAOracle>(IN, *CPU, false)
                 : make_unique<PowerTrace::Oracle>());
 
         for (const ExecutionRange &er : ERS) {

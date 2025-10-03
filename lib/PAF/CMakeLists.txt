@@ -18,10 +18,10 @@
 
 set(LIBPAF_PUBLIC_HEADERS
       ${CMAKE_SOURCE_DIR}/include/PAF/ArchInfo.h
-      ${CMAKE_SOURCE_DIR}/include/PAF/Intervals.h
-      ${CMAKE_SOURCE_DIR}/include/PAF/Memory.h
-      ${CMAKE_SOURCE_DIR}/include/PAF/PAF.h
       ${CMAKE_SOURCE_DIR}/include/PAF/Error.h
+      ${CMAKE_SOURCE_DIR}/include/PAF/Intervals.h
+      ${CMAKE_SOURCE_DIR}/include/PAF/PAF.h
+      ${CMAKE_SOURCE_DIR}/include/PAF/State.h
       ${CMAKE_SOURCE_DIR}/include/PAF/utils/Misc.h
       ${CMAKE_SOURCE_DIR}/include/PAF/utils/ProgressMonitor.h
       ${CMAKE_SOURCE_DIR}/include/PAF/utils/StopWatch.h)
@@ -29,9 +29,9 @@ set(LIBPAF_PUBLIC_HEADERS
 set(LIBPAF_SOURCES
   ArchInfo.cpp
   Error.cpp
-  Memory.cpp
   Misc.cpp
-  PAF.cpp)
+  PAF.cpp
+  State.cpp)
 
 add_paf_library(paf
   OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/lib"

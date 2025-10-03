@@ -20,22 +20,46 @@
 
 #pragma once
 
-#include "PAF/PAF.h"
+#include "PAF/ArchInfo.h"
 #include "PAF/Intervals.h"
+#include "PAF/PAF.h"
 
 #include "libtarmac/misc.hh"
 
-#include <vector>
 #include <functional>
 #include <ostream>
+#include <vector>
 
 namespace PAF {
+
+class State : public MTAnalyzer {
+  public:
+    State(const IndexNavigator &IN, unsigned verbosity)
+        : MTAnalyzer(IN, verbosity) {}
+    virtual ~State() = default;
+};
+
+/// The RegBankState class models the register bank state at a given time.
+class RegBankState : public State {
+  public:
+    RegBankState(const RegBankState &) = delete;
+    RegBankState(const IndexNavigator &IN, const ArchInfo &CPU, unsigned verbosity): State(IN, verbosity), regbank(CPU.numRegisters(), 0), CPU(CPU) {}
+
+    /// Get the current state of the register bank.
+    const std::vector<uint64_t> &getState(Time t);
+
+  private:
+    std::vector<uint64_t> regbank;
+    const ArchInfo &CPU;
+
+    void build(Time t);
+};
 
 /// The MemoryState class models the memory state at a given time. It uses
 /// information (and guesses) about memory accesses from the tarmac trace as
 /// well as information from the memory segments initialized from the ELF image
 /// to build a representation of the memory state.
-class MemoryState : public MTAnalyzer {
+class MemoryState : public State {
 
   public:
     using Interval = PAF::Interval<Addr>;
@@ -43,9 +67,6 @@ class MemoryState : public MTAnalyzer {
 
     MemoryState(const MemoryState &) = delete;
     MemoryState(const IndexNavigator &IN, unsigned verbosity);
-
-    /// Build the memory state at time t.
-    void build(Time t);
 
     /// Dump the memory state to os.
     void dump(std::ostream &os) const;
@@ -55,10 +76,14 @@ class MemoryState : public MTAnalyzer {
     using Action =
         std::function<void(const Interval &, const std::vector<uint8_t> &)>;
 
-    /// Visit all memory intervals in the memory state. If \p full is true,
+    /// Visit all memory intervals in the memory state at time \p t. If \p full is true,
     /// also visit the segments initialized from the ELF image. For each
     /// interval, call fn with the interval and its content.
-    void visit(bool full, Action fn) const;
+    void visit(Time t, bool full, Action fn);
+
+    /// Get the value of memory at address \p address of size \p size bytes at
+    /// time \p t.
+    uint64_t getContent(Time t, Addr address, size_t size) const;
 
   private:
     /// Read-only segments initialized from the ELF image.
@@ -67,10 +92,9 @@ class MemoryState : public MTAnalyzer {
     const Intervals writableInitialized;
     /// Other segments that were accessed during execution.
     Intervals accessedMemory;
-    /// The time at which the memory state was built.
-    Time currentTime = 0;
 
     void MPLVisitor(const MemoryPayload &MP, OFF_T nodeof);
+    void build(Time t);
 };
 
 } // namespace PAF

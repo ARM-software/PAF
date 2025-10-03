@@ -21,6 +21,7 @@
 #pragma once
 
 #include "PAF/ArchInfo.h"
+#include "PAF/State.h"
 #include "PAF/PAF.h"
 #include "PAF/SCA/Dumper.h"
 #include "PAF/SCA/NPAdapter.h"
@@ -29,6 +30,7 @@
 #include "libtarmac/misc.hh"
 
 #include <iostream>
+#include <libtarmac/index.hh>
 #include <limits>
 #include <memory>
 #include <string>
@@ -105,7 +107,7 @@ class PowerDumper : public Dumper {
 
     /// Called for each sample in the trace.
     virtual void dump(double total, double pc, double instr, double oreg,
-                      double ireg, double addr, double data,
+                      double ireg, double addr, double data, double mstate,
                       const PAF::ReferenceInstruction *I) = 0;
 
     /// Destruct this PowerDumper
@@ -131,7 +133,7 @@ class CSVPowerDumper : public PowerDumper, public FileStreamDumper {
 
     /// Called for each sample in the trace.
     void dump(double total, double pc, double instr, double oreg, double ireg,
-              double addr, double data,
+              double addr, double data, double mstate,
               const PAF::ReferenceInstruction *I) override;
 
   private:
@@ -157,7 +159,7 @@ class NPYPowerDumper : public PowerDumper, public FilenameDumper {
 
     /// Called for each sample in the trace.
     void dump(double total, double pc, double instr, double oreg, double ireg,
-              double addr, double data,
+              double addr, double data, double mstate,
               const PAF::ReferenceInstruction *I) override {
         npyA.append(total);
     }
@@ -202,8 +204,10 @@ class PowerTraceConfig {
         WITH_LAST_MEMORY_ACCESSES_TRANSITIONS = 1 << 8,
         /// Include memory update hamming distance (HD).
         WITH_MEMORY_UPDATE_TRANSITIONS = 1 << 9,
+        /// Include the memory state (HW).
+        WITH_MEMORY_STATE = 1 << 10,
         /// Include all !
-        WITH_ALL = 0x3F
+        WITH_ALL = (1 << 11) - 1,
     };
 
     /// Default constructor, consider all power sources.
@@ -268,9 +272,13 @@ class PowerTraceConfig {
     }
     /// Does this config include any memory transition ?
     [[nodiscard]] bool withMemoryAccessTransitions() const {
-        return (config & WITH_LOAD_TO_LOAD_TRANSITIONS) ||
-               (config & WITH_STORE_TO_STORE_TRANSITIONS) ||
-               (config & WITH_LAST_MEMORY_ACCESSES_TRANSITIONS);
+        return has(WITH_LOAD_TO_LOAD_TRANSITIONS) ||
+               has(WITH_STORE_TO_STORE_TRANSITIONS) ||
+               has(WITH_LAST_MEMORY_ACCESSES_TRANSITIONS);
+    }
+    /// Does this config include the memory state contribution ?
+    [[nodiscard]] bool withMemoryState() const {
+        return has(WITH_MEMORY_STATE);
     }
     /// Does this config have all power sources set ?
     [[nodiscard]] bool withAll() const { return config == WITH_ALL; }
@@ -329,7 +337,7 @@ class PowerAnalysisConfig {
     /// Get some noise to add to the computed power.
     [[nodiscard]] double getNoise() const { return noiseSource->get(); }
 
-    PowerDumper &getDumper() { return *powerDumper; }
+    [[nodiscard]] PowerDumper &getDumper() const { return *powerDumper; }
 
   private:
     std::unique_ptr<NoiseSource> noiseSource;
@@ -350,49 +358,41 @@ class PowerTrace {
       public:
         Oracle() = default;
         virtual ~Oracle() = default;
-        [[nodiscard]] virtual std::vector<uint64_t>
-        getRegBankState(Time t) const {
+
+        [[nodiscard]] virtual std::vector<uint64_t> getRegBankState(Time t) {
             return {};
         }
 
-        [[nodiscard]] virtual uint64_t getMemoryState(Addr address, size_t size,
-                                                      Time t) const {
+        [[nodiscard]] virtual uint64_t getMemoryValue(Time t, Addr address,
+                                                      size_t size) {
             return 0;
         }
+
+        virtual void visitMemoryState(Time t, MemoryState::Action fn) {}
     };
 
     class MTAOracle : public Oracle {
       public:
-        MTAOracle(const PAF::MTAnalyzer &MTA, const PAF::ArchInfo &CPU)
-            : analyzer(MTA), CPU(CPU) {}
-        [[nodiscard]] std::vector<uint64_t>
-        getRegBankState(Time t) const override {
-            const unsigned NR = CPU.numRegisters();
-            std::vector<uint64_t> regbankInitialState(NR);
-            for (unsigned r = 0; r < NR; r++)
-                regbankInitialState[r] =
-                    analyzer.getRegisterValueAtTime(CPU.registerName(r), t);
-            return regbankInitialState;
-        }
-        [[nodiscard]] uint64_t getMemoryState(Addr address, size_t size,
-                                              Time t) const override {
-            std::vector<uint8_t> mem =
-                analyzer.getMemoryValueAtTime(address, size, t);
+        MTAOracle(const IndexNavigator &IN, const PAF::ArchInfo &CPU,
+                  unsigned verbosity)
+            : MS(IN, verbosity), RBS(IN, CPU, verbosity) {}
 
-            uint64_t v = 0;
-            for (size_t b = 0; b < size; b++) {
-                v <<= 1;
-                if (analyzer.isBigEndian())
-                    v |= mem[b];
-                else
-                    v |= mem[size - 1 - b];
-            }
-            return v;
+        [[nodiscard]] std::vector<uint64_t> getRegBankState(Time t) override {
+            return RBS.getState(t);
+        }
+
+        [[nodiscard]] uint64_t getMemoryValue(Time t, Addr address,
+                                              size_t size) override {
+            return MS.getContent(t, address, size);
+        }
+
+        void visitMemoryState(Time t, MemoryState::Action fn) override {
+            MS.visit(t, false, fn);
         }
 
       private:
-        const PAF::MTAnalyzer &analyzer;
-        const PAF::ArchInfo &CPU;
+        MemoryState MS;
+        RegBankState RBS;
     };
 
     /// Construct a PowerTrace.

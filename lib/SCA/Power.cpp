@@ -23,12 +23,14 @@
 #include "PAF/PAF.h"
 #include "PAF/SCA/Dumper.h"
 #include "PAF/SCA/SCA.h"
+#include "PAF/State.h"
 
 #include <cassert>
 #include <fstream>
 #include <iomanip>
 #include <iostream>
 #include <memory>
+#include <sys/types.h>
 #include <vector>
 
 using std::ostream;
@@ -38,6 +40,7 @@ using std::vector;
 
 using PAF::FromTraceBuilder;
 using PAF::MemoryAccess;
+using PAF::MemoryState;
 using PAF::MTAnalyzer;
 using PAF::ReferenceInstruction;
 using PAF::RegisterAccess;
@@ -68,71 +71,90 @@ class PowerModelBase {
     virtual ~PowerModelBase() = default;
 
     PowerModelBase(const PAF::ArchInfo &CPU, const PowerTraceConfig &PTConfig,
-                   PowerAnalysisConfig &PAConfig)
-        : cpu(CPU), PTConfig(PTConfig), PAConfig(PAConfig), inputRegs(0.0),
-          pc(0.0), psr(0.0), instr(0.0), cycles(1) {}
+                   const PowerAnalysisConfig &PAConfig,
+                   PowerTrace::Oracle &oracle)
+        : oracle(oracle), CPU(CPU), PTConfig(PTConfig), PAConfig(PAConfig) {}
 
     [[nodiscard]] unsigned getLastInstrCycles() const { return cycles; }
+
+    virtual void initialize(const ReferenceInstruction &I) {}
 
     virtual void add(const ReferenceInstruction &I) = 0;
 
     void dump(const ReferenceInstruction *I = nullptr) const {
         for (unsigned i = 0; i < cycles; i++) {
-            double POReg = i < outputRegs.size() ? outputRegs[i] : 0.0;
-            double PIReg = inputRegs;
-            double PAddr = i < memory.size() ? memory[i].address : 0.0;
-            double PData = i < memory.size() ? memory[i].data : 0.0;
-            double PPC = pc;
-            double PPSR = psr;
-            double PInstr = instr;
+            double PPC = 0.0;
+            double PInstr = 0.0;
+            double POReg = 0.0;
+            double PPSR = 0.0;
+            double PIReg = 0.0;
+            double PAddr = 0.0;
+            double PData = 0.0;
+            double PMS = 0.0;
 
-            if (PAConfig.addNoise()) {
-                if (PTConfig.withInstructionsOutputs()) {
+            if (PTConfig.withPC()) {
+                PPC = pc;
+                if (PAConfig.addNoise())
+                    PPC += PAConfig.getNoise();
+            }
+            if (PTConfig.withOpcode()) {
+                PInstr = instr;
+                if (PAConfig.addNoise())
+                    PInstr += PAConfig.getNoise();
+            }
+            if (PTConfig.withInstructionsOutputs()) {
+                POReg = i < outputRegs.size() ? outputRegs[i] : 0.0;
+                PPSR = psr;
+                if (PAConfig.addNoise()) {
                     POReg += PAConfig.getNoise();
                     PPSR += PAConfig.getNoise();
                 }
-                if (PTConfig.withInstructionsInputs())
+            }
+            if (PTConfig.withInstructionsInputs()) {
+                PIReg = inputRegs;
+                if (PAConfig.addNoise())
                     PIReg += PAConfig.getNoise();
-                if (PTConfig.withMemAddress())
+            }
+            if (PTConfig.withMemAddress()) {
+                PAddr = i < memory.size() ? memory[i].address : 0.0;
+                if (PAConfig.addNoise())
                     PAddr += PAConfig.getNoise();
-                if (PTConfig.withMemData())
+            }
+            if (PTConfig.withMemData()) {
+                PData = i < memory.size() ? memory[i].data : 0.0;
+                if (PAConfig.addNoise())
                     PData += PAConfig.getNoise();
-                if (PTConfig.withPC())
-                    PPC += PAConfig.getNoise();
-                if (PTConfig.withOpcode())
-                    PInstr += PAConfig.getNoise();
+            }
+            if (PTConfig.withMemoryState()) {
+                PMS = memState;
+                if (PAConfig.addNoise())
+                    PMS += PAConfig.getNoise();
             }
 
-            // Scaling factors, very finger in the air values.
-            const double F_PC = 1.0;
-            const double F_PSR = 0.5;
-            const double F_Instr = 1.0;
-            const double F_ORegisters = 2.0;
-            const double F_IRegisters = 2.0;
-            const double F_Data = 2.0;
-            const double F_Address = 1.2;
+            // Compute a total power figure, with very finger in the air scaling
+            // factors, depending on the power source.
+            double total = 1.0 * PPC + 1.0 * PInstr + 0.5 * PPSR + 2.0 * POReg +
+                           2.0 * PIReg + 1.2 * PAddr + 2.0 * PData + 1.0 * PMS;
 
-            double total = F_PC * PPC + F_Instr * PInstr + F_PSR * PPSR +
-                           F_ORegisters * POReg + F_IRegisters * PIReg +
-                           F_Address * PAddr + F_Data * PData;
-
-            PAConfig.getDumper().dump(total, pc, instr, POReg + PPSR, PIReg,
-                                      PAddr, PData, i == 0 ? I : nullptr);
+            PAConfig.getDumper().dump(total, PPC, PInstr, POReg + PPSR, PIReg,
+                                      PAddr, PData, PMS, i == 0 ? I : nullptr);
         }
     }
 
   protected:
-    const PAF::ArchInfo &cpu;
+    PowerTrace::Oracle &oracle;
+    const PAF::ArchInfo &CPU;
     const PowerTraceConfig &PTConfig;
-    PowerAnalysisConfig &PAConfig;
+    const PowerAnalysisConfig &PAConfig;
 
     vector<MemAccessPower> memory;
     vector<double> outputRegs;
-    double inputRegs;
-    double pc;
-    double psr;
-    double instr;
-    unsigned cycles;
+    double inputRegs = 0.0;
+    double memState = 0.0;
+    double pc = 0.0;
+    double psr = 0.0;
+    double instr = 0.0;
+    unsigned cycles = 1;
 
     /// Set how many cycles were used by the last added instruction.
     void setLastInstrCycles() {
@@ -162,13 +184,30 @@ class HammingWeightPM : public PowerModelBase {
   public:
     HammingWeightPM() = delete;
     HammingWeightPM(const PAF::ArchInfo &CPU, const PowerTraceConfig &PTConfig,
-                    PowerAnalysisConfig &PAConfig)
-        : PowerModelBase(CPU, PTConfig, PAConfig), hwPC(PTConfig.withPC()),
-          hwInstr(PTConfig.withOpcode()), hwMemAddr(PTConfig.withMemAddress()),
+                    PowerAnalysisConfig &PAConfig,
+                    PowerTrace::Oracle &oracle)
+        : PowerModelBase(CPU, PTConfig, PAConfig, oracle),
+          hwPC(PTConfig.withPC()), hwInstr(PTConfig.withOpcode()),
+          hwMemAddr(PTConfig.withMemAddress()),
           hwMemData(PTConfig.withMemData()),
           hwPSR(PTConfig.withInstructionsOutputs()),
           hwInputReg(PTConfig.withInstructionsInputs()),
           hwOutputReg(PTConfig.withInstructionsOutputs()) {}
+
+    void initialize(const ReferenceInstruction &I) override {
+        memState = 0.0;
+        // Memory state related power consumption estimation..
+        if (PTConfig.withMemoryState()) {
+            uint64_t acc = 0;
+            oracle.visitMemoryState(
+                I.time - 1, [&](const MemoryState::Interval &,
+                                const std::vector<uint8_t> &bytes) {
+                    for (const auto &b : bytes)
+                        acc += PAF::SCA::hamming_weight<decltype(b)>(b, -1);
+                });
+            memState = static_cast<double>(acc);
+        }
+    }
 
     void add(const ReferenceInstruction &I) override {
         pc = hwPC(I.pc);
@@ -178,6 +217,29 @@ class HammingWeightPM : public PowerModelBase {
         // Memory access related power consumption estimation.
         for (const MemoryAccess &MA : I.memAccess)
             memory.emplace_back(hwMemAddr(MA.addr), hwMemData(MA.value));
+
+        // Update Memory state related power consumption iff memory was changed.
+        if (PTConfig.withMemoryState()) {
+            unsigned previousHW = 0;
+            unsigned newHW = 0;
+            bool memoryWasWritten = false;
+            for (const MemoryAccess &MA : I.memAccess) {
+                if (MA.access == MemoryAccess::Type::WRITE) {
+                    memoryWasWritten = true;
+                    uint64_t previousValue =
+                        oracle.getMemoryValue(I.time - 1, MA.addr, MA.size);
+                    previousHW +=
+                        PAF::SCA::hamming_weight<decltype(previousValue)>(
+                            previousValue, -1);
+                    newHW += PAF::SCA::hamming_weight<decltype(MA.value)>(
+                        MA.value, -1);
+                }
+            }
+            if (memoryWasWritten) {
+                memState += static_cast<double>(newHW);
+                memState -= static_cast<double>(previousHW);
+            }
+        }
 
         psr = 0.0;
         inputRegs = 0.0;
@@ -189,7 +251,7 @@ class HammingWeightPM : public PowerModelBase {
                 switch (RA.access) {
                 // Output registers.
                 case RegisterAccess::Type::WRITE:
-                    if (cpu.isStatusRegister(RA.name))
+                    if (CPU.isStatusRegister(RA.name))
                         psr = hwPSR(RA.value);
                     else
                         outputRegs.push_back(hwOutputReg(RA.value));
@@ -271,8 +333,8 @@ class HammingDistancePM : public PowerModelBase {
     HammingDistancePM(const PAF::ArchInfo &CPU,
                       const PowerTraceConfig &PTConfig,
                       PowerAnalysisConfig &PAConfig,
-                      const PowerTrace::Oracle &oracle, vector<uint64_t> &&regs)
-        : PowerModelBase(CPU, PTConfig, PAConfig), oracle(oracle),
+                      PowerTrace::Oracle &oracle, vector<uint64_t> &&regs)
+        : PowerModelBase(CPU, PTConfig, PAConfig, oracle),
           hdPC(PTConfig.withPC()), hdInstr(PTConfig.withOpcode()),
           regs(PTConfig.withInstructionsOutputs(), std::move(regs)),
           lastLoad(nullptr), lastStore(nullptr), lastAccess(nullptr) {}
@@ -325,8 +387,7 @@ class HammingDistancePM : public PowerModelBase {
                     // Memory point update.
                     if (PTConfig.withMemoryUpdateTransitions()) {
                         DataPwr += HD<typeof(MemoryAccess::value)>(
-                            MA.value, oracle.getMemoryState(MA.addr, MA.size,
-                                                            I.time - 1));
+                            MA.value, oracle.getMemoryValue(MA.addr, MA.size, I.time - 1));
                     }
                     break;
                 }
@@ -351,11 +412,11 @@ class HammingDistancePM : public PowerModelBase {
             switch (RA.access) {
             // Output registers.
             case RegisterAccess::Type::WRITE:
-                if (cpu.isStatusRegister(RA.name))
-                    psr = regs(cpu.registerId(RA.name), RA.value);
+                if (CPU.isStatusRegister(RA.name))
+                    psr = regs(CPU.registerId(RA.name), RA.value);
                 else
                     outputRegs.push_back(
-                        regs(cpu.registerId(RA.name), RA.value));
+                        regs(CPU.registerId(RA.name), RA.value));
                 break;
             // Ignore input registers.
             case RegisterAccess::Type::READ:
@@ -367,7 +428,6 @@ class HammingDistancePM : public PowerModelBase {
     }
 
   private:
-    const PowerTrace::Oracle &oracle;
     Reg<Addr> hdPC;
     Reg<uint32_t> hdInstr;
     RegBank regs;
@@ -422,8 +482,8 @@ void CSVPowerDumper::nextTrace() { *this << '\n'; }
 
 void CSVPowerDumper::preDump() {
     const char *s = "";
-    for (const auto &field :
-         {"Total", "PC", "Instr", "ORegs", "IRegs", "Addr", "Data"}) {
+    for (const auto &field : {"Total", "PC", "Instr", "ORegs", "IRegs", "Addr",
+                              "Data", "MemState"}) {
         *this << s << '"' << field << '"';
         s = sep;
     }
@@ -437,7 +497,7 @@ void CSVPowerDumper::preDump() {
 }
 
 void CSVPowerDumper::dump(double total, double pc, double instr, double oreg,
-                          double ireg, double addr, double data,
+                          double ireg, double addr, double data, double mstate,
                           const ReferenceInstruction *I) {
 
     *this << total;
@@ -447,6 +507,7 @@ void CSVPowerDumper::dump(double total, double pc, double instr, double oreg,
     *this << sep << ireg;
     *this << sep << addr;
     *this << sep << data;
+    *this << sep << mstate;
 
     if (I != nullptr && detailedOutput) {
         *this << sep << I->time;
@@ -498,7 +559,7 @@ void PowerTrace::analyze(std::vector<PowerAnalysisConfig> &PAConfigs,
         cfg.getDumper().preDump();
         switch (cfg.getPowerModel()) {
         case PowerAnalysisConfig::HAMMING_WEIGHT:
-            PMs.emplace_back(new HammingWeightPM(CPU, PTConfig, cfg));
+            PMs.emplace_back(new HammingWeightPM(CPU, PTConfig, cfg, oracle));
             break;
         case PowerAnalysisConfig::HAMMING_DISTANCE:
             PMs.emplace_back(new HammingDistancePM(
@@ -506,6 +567,10 @@ void PowerTrace::analyze(std::vector<PowerAnalysisConfig> &PAConfigs,
                 oracle.getRegBankState(instructions[0].time - 1)));
             break;
         }
+    }
+
+    for (auto &pm : PMs) {
+        pm->initialize(instructions[0]);
     }
 
     for (unsigned i = 0; i < instructions.size(); i++) {
