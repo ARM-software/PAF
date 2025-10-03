@@ -32,8 +32,10 @@ jobs:
   configure_build_test_doc_with_clang_x86:
     name: "(x86, clang) Configure, build, test + build doc"
     runs-on: ubuntu-22.04
+    permissions:
+      contents: read
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v5
     - name: apt update
       run: sudo apt-get update
     - name: Install dependencies for apps with a GUI, doxygen and Ninja
@@ -53,8 +55,10 @@ jobs:
   configure_build_test_doc_with_gcc_x86:
     name: "(x86, gcc) Configure, build, test + build doc"
     runs-on: ubuntu-22.04
+    permissions:
+      contents: read
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v5
     - name: apt update
       run: sudo apt-get update
     - name: Install dependencies for apps with a GUI, doxygen and Ninja
@@ -74,8 +78,10 @@ jobs:
   configure_build_test_doc_with_clang_arm:
     name: "(arm, clang) Configure, build, test + build doc"
     runs-on: ubuntu-22.04-arm
+    permissions:
+      contents: read
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v5
     - name: apt update
       run: sudo apt-get update
     - name: Install dependencies for apps with a GUI, doxygen and Ninja
@@ -95,8 +101,10 @@ jobs:
   configure_build_test_doc_with_gcc_arm:
     name: "(arm, gcc) Configure, build, test + build doc"
     runs-on: ubuntu-22.04-arm
+    permissions:
+      contents: read
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v5
     - name: apt update
       run: sudo apt-get update
     - name: Install dependencies for apps with a GUI, doxygen and Ninja
