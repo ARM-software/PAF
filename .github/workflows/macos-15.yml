@@ -16,7 +16,7 @@
 #
 # This file is part of PAF, the Physical Attack Framework.
 
-name: "macOS Ventura (x86)"
+name: "macOS Sequoia (arm)"
 
 on:
   push:
@@ -31,7 +31,7 @@ env:
 jobs:
   configure_build_test_doc:
     name: "Configure, build and test"
-    runs-on: macos-13
+    runs-on: macos-15
     steps:
     - uses: actions/checkout@v4
     - name: Configure
