@@ -30,6 +30,7 @@
 #include <iomanip>
 #include <iostream>
 #include <memory>
+#include <string>
 #include <sys/types.h>
 #include <vector>
 
@@ -536,6 +537,84 @@ void CSVPowerDumper::dump(double total, double pc, double instr, double oreg,
     }
 
     *this << '\n';
+}
+
+NPYPowerDumper::NPYPowerDumper(const std::string &filename, size_t num_traces,
+                               const PowerTraceConfig &PTConfig)
+    : FilenameDumper(filename), NPYs() {
+    NPYs[0] = std::make_unique<NPAdapter<double>>(num_traces); // total
+    if (PTConfig.withPC())
+        NPYs[1] = std::make_unique<NPAdapter<double>>(num_traces); // pc
+    if (PTConfig.withOpcode())
+        NPYs[2] = std::make_unique<NPAdapter<double>>(num_traces); // instr
+    if (PTConfig.withInstructionsOutputs())
+        NPYs[3] = std::make_unique<NPAdapter<double>>(num_traces); // oreg
+    if (PTConfig.withInstructionsInputs())
+        NPYs[4] = std::make_unique<NPAdapter<double>>(num_traces); // ireg
+    if (PTConfig.withMemAddress())
+        NPYs[5] = std::make_unique<NPAdapter<double>>(num_traces); // maddr
+    if (PTConfig.withMemData())
+        NPYs[6] = std::make_unique<NPAdapter<double>>(num_traces); // mdata
+    if (PTConfig.withMemoryState())
+        NPYs[7] = std::make_unique<NPAdapter<double>>(num_traces); // mstate
+}
+
+namespace {
+string makeNPYName(const string &filename, const char *suffix) {
+    if (filename.size() >= 4 &&
+        filename.compare(filename.size() - 4, 4, ".npy") == 0) {
+        // Insert "-suffix" before the .npy extension.
+        return filename.substr(0, filename.size() - 4) + "-" + suffix + ".npy";
+    }
+    // Append with a dot separator when no .npy extension.
+    return filename + '.' + suffix;
+};
+} // namespace
+
+NPYPowerDumper::~NPYPowerDumper() {
+    // Intentionally ignore the return value.
+    static_cast<void>(NPYs[0]->save(filename));
+
+    if (NPYs[1])
+        static_cast<void>(NPYs[1]->save(makeNPYName(filename, "pc")));
+    if (NPYs[2])
+        static_cast<void>(NPYs[2]->save(makeNPYName(filename, "instr")));
+    if (NPYs[3])
+        static_cast<void>(NPYs[3]->save(makeNPYName(filename, "oreg")));
+    if (NPYs[4])
+        static_cast<void>(NPYs[4]->save(makeNPYName(filename, "ireg")));
+    if (NPYs[5])
+        static_cast<void>(NPYs[5]->save(makeNPYName(filename, "maddr")));
+    if (NPYs[6])
+        static_cast<void>(NPYs[6]->save(makeNPYName(filename, "mdata")));
+    if (NPYs[7])
+        static_cast<void>(NPYs[7]->save(makeNPYName(filename, "mstate")));
+}
+
+void NPYPowerDumper::nextTrace() {
+    for (auto &npy : NPYs)
+        if (npy)
+            npy->next();
+}
+
+void NPYPowerDumper::dump(double total, double pc, double instr, double oreg,
+                          double ireg, double addr, double data, double mstate,
+                          const PAF::ReferenceInstruction *) {
+    NPYs[0]->append(total);
+    if (NPYs[1])
+        NPYs[1]->append(pc);
+    if (NPYs[2])
+        NPYs[2]->append(instr);
+    if (NPYs[3])
+        NPYs[3]->append(oreg);
+    if (NPYs[4])
+        NPYs[4]->append(ireg);
+    if (NPYs[5])
+        NPYs[5]->append(addr);
+    if (NPYs[6])
+        NPYs[6]->append(data);
+    if (NPYs[7])
+        NPYs[7]->append(mstate);
 }
 
 void PowerTrace::analyze(std::vector<PowerAnalysisConfig> &PAConfigs,

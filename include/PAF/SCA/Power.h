@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: <text>Copyright 2021-2024,2025 Arm Limited and/or its
+ * SPDX-FileCopyrightText: <text>Copyright 2021-2025 Arm Limited and/or its
  * affiliates <open-source-office@arm.com></text>
  * SPDX-License-Identifier: Apache-2.0
  *
@@ -29,6 +29,7 @@
 
 #include "libtarmac/misc.hh"
 
+#include <array>
 #include <iostream>
 #include <libtarmac/index.hh>
 #include <limits>
@@ -38,143 +39,7 @@
 
 namespace PAF::SCA {
 
-/// TimingInfo is a class used for emitting timing information.
-///
-/// This information correlates samples in the trace with instructions being
-/// executed. Formatting is delegated to a subclass (YamlTimingInfo for
-/// example).
-class TimingInfo {
-  public:
-    /// Construct an empty TimingInfo object.
-    TimingInfo() {}
-    virtual ~TimingInfo();
-
-    /// Save this TimingInfo to file filename.
-    void saveToFile(const std::string &filename) const;
-    /// Save this TimingInfo to stream os.
-    virtual void save(std::ostream &os) const = 0;
-
-    /// Add some dummy cycles.
-    void incr(unsigned c) { currentCycle += c; }
-
-    /// Move to next instruction.
-    void add(Addr pc, unsigned c) {
-        if (first)
-            pcCycle.emplace_back(pc, currentCycle);
-        currentCycle += c;
-    }
-
-    /// Prepare state for next trace.
-    ///
-    /// To be used when moving from one trace to another. Statistics are
-    /// computed and the first trace is the one that is kept for logging.
-    void nextTrace() {
-        cmin = std::min(cmin, currentCycle);
-        cmax = std::max(cmax, currentCycle);
-        first = false;
-        currentCycle = 0;
-    }
-
-  protected:
-    /// The sequence of (pc, cycle_count).
-    std::vector<std::pair<Addr, unsigned>> pcCycle;
-    size_t cmin{
-        std::numeric_limits<size_t>::max()}; ///< Minimum number of cycles.
-    size_t cmax{0};                          ///< Maximum number of cycles.
-
-  private:
-    size_t currentCycle{0};
-    bool first{true};
-};
-
-/// The YAML Formatter class for TimingInfo.
-class YAMLTimingInfo : public TimingInfo {
-  public:
-    YAMLTimingInfo() {}
-
-    /// Save this TimingInfo to file os.
-    void save(std::ostream &os) const override;
-};
-
-/// PowerDumper is a base class for emitting a power trace.
-///
-/// Subclasssing it enables to support various power trace outputs like CSV or
-/// NPY.
-class PowerDumper : public Dumper {
-  public:
-    /// Default constructor.
-    PowerDumper() : Dumper(true) {}
-
-    /// Called for each sample in the trace.
-    virtual void dump(double total, double pc, double instr, double oreg,
-                      double ireg, double addr, double data, double mstate,
-                      const PAF::ReferenceInstruction *I) = 0;
-
-    /// Destruct this PowerDumper
-    ~PowerDumper() override = default;
-};
-
-/// CSVPowerDumper is a PowerDumper specialization for writing the power trace
-/// in CSV format.
-class CSVPowerDumper : public PowerDumper, public FileStreamDumper {
-  public:
-    /// Construct a power trace that will be dumped in CSV format to file
-    /// filename.
-    CSVPowerDumper(const std::string &filename, bool detailed_output);
-
-    /// Construct a power trace that will be dumped in CSV format to stream os.
-    CSVPowerDumper(std::ostream &os, bool detailed_output);
-
-    /// Update state when switching to next trace.
-    void nextTrace() override;
-
-    /// Called at the beginning of a trace.
-    void preDump() override;
-
-    /// Called for each sample in the trace.
-    void dump(double total, double pc, double instr, double oreg, double ireg,
-              double addr, double data, double mstate,
-              const PAF::ReferenceInstruction *I) override;
-
-  private:
-    const char *sep;           ///< CVS column separator.
-    const bool detailedOutput; ///< Use a detailed output format.
-};
-
-/// NPYPowerDumper is a PowerDumper specialization for writing the power trace
-/// in NPY format.
-class NPYPowerDumper : public PowerDumper, public FilenameDumper {
-  public:
-    /// Construct a power trace that will be dumped in NPY format to file
-    /// filename.
-    NPYPowerDumper(const std::string &filename, size_t num_traces)
-        : FilenameDumper(filename), npyA(num_traces) {}
-
-    /// Construct a power trace that will be dumped in NPY format to stream
-    /// os.
-    NPYPowerDumper(std::ostream &os, size_t num_traces);
-
-    /// Update state when switching to next trace.
-    void nextTrace() override { npyA.next(); }
-
-    /// Called for each sample in the trace.
-    void dump(double total, double pc, double instr, double oreg, double ireg,
-              double addr, double data, double mstate,
-              const PAF::ReferenceInstruction *I) override {
-        npyA.append(total);
-    }
-
-    /// Destruct this NPYPowerDumper.
-    ~NPYPowerDumper() override {
-        // Intentionally ignore the return value.
-        static_cast<void>(npyA.save(filename));
-    }
-
-  private:
-    NPAdapter<double> npyA;
-};
-
-/// The PowerTraceConfig class is used to configure how a trace is processed in
+  /// The PowerTraceConfig class is used to configure how a trace is processed in
 /// power analysis run. It allows to select what has to be considered as a power
 /// source: the opcode, the program counter, ...
 class PowerTraceConfig {
@@ -285,6 +150,138 @@ class PowerTraceConfig {
 
   private:
     unsigned config;
+};
+
+/// TimingInfo is a class used for emitting timing information.
+///
+/// This information correlates samples in the trace with instructions being
+/// executed. Formatting is delegated to a subclass (YamlTimingInfo for
+/// example).
+class TimingInfo {
+  public:
+    /// Construct an empty TimingInfo object.
+    TimingInfo() {}
+    virtual ~TimingInfo();
+
+    /// Save this TimingInfo to file filename.
+    void saveToFile(const std::string &filename) const;
+    /// Save this TimingInfo to stream os.
+    virtual void save(std::ostream &os) const = 0;
+
+    /// Add some dummy cycles.
+    void incr(unsigned c) { currentCycle += c; }
+
+    /// Move to next instruction.
+    void add(Addr pc, unsigned c) {
+        if (first)
+            pcCycle.emplace_back(pc, currentCycle);
+        currentCycle += c;
+    }
+
+    /// Prepare state for next trace.
+    ///
+    /// To be used when moving from one trace to another. Statistics are
+    /// computed and the first trace is the one that is kept for logging.
+    void nextTrace() {
+        cmin = std::min(cmin, currentCycle);
+        cmax = std::max(cmax, currentCycle);
+        first = false;
+        currentCycle = 0;
+    }
+
+  protected:
+    /// The sequence of (pc, cycle_count).
+    std::vector<std::pair<Addr, unsigned>> pcCycle;
+    size_t cmin{
+        std::numeric_limits<size_t>::max()}; ///< Minimum number of cycles.
+    size_t cmax{0};                          ///< Maximum number of cycles.
+
+  private:
+    size_t currentCycle{0};
+    bool first{true};
+};
+
+/// The YAML Formatter class for TimingInfo.
+class YAMLTimingInfo : public TimingInfo {
+  public:
+    YAMLTimingInfo() {}
+
+    /// Save this TimingInfo to file os.
+    void save(std::ostream &os) const override;
+};
+
+/// PowerDumper is a base class for emitting a power trace.
+///
+/// Subclasssing it enables to support various power trace outputs like CSV or
+/// NPY.
+class PowerDumper : public Dumper {
+  public:
+    /// Default constructor.
+    PowerDumper() : Dumper(true) {}
+
+    /// Called for each sample in the trace.
+    virtual void dump(double total, double pc, double instr, double oreg,
+                      double ireg, double addr, double data, double mstate,
+                      const PAF::ReferenceInstruction *I) = 0;
+
+    /// Destruct this PowerDumper
+    ~PowerDumper() override = default;
+};
+
+/// CSVPowerDumper is a PowerDumper specialization for writing the power trace
+/// in CSV format.
+class CSVPowerDumper : public PowerDumper, public FileStreamDumper {
+  public:
+    /// Construct a power trace that will be dumped in CSV format to file
+    /// filename.
+    CSVPowerDumper(const std::string &filename, bool detailed_output);
+
+    /// Construct a power trace that will be dumped in CSV format to stream os.
+    CSVPowerDumper(std::ostream &os, bool detailed_output);
+
+    /// Update state when switching to next trace.
+    void nextTrace() override;
+
+    /// Called at the beginning of a trace.
+    void preDump() override;
+
+    /// Called for each sample in the trace.
+    void dump(double total, double pc, double instr, double oreg, double ireg,
+              double addr, double data, double mstate,
+              const PAF::ReferenceInstruction *I) override;
+
+  private:
+    const char *sep;           ///< CVS column separator.
+    const bool detailedOutput; ///< Use a detailed output format.
+};
+
+/// NPYPowerDumper is a PowerDumper specialization for writing the power trace
+/// in NPY format.
+class NPYPowerDumper : public PowerDumper, public FilenameDumper {
+  public:
+    /// Construct a power trace that will be dumped in NPY format to file
+    /// filename.
+    NPYPowerDumper(const std::string &filename, size_t num_traces,
+                   const PowerTraceConfig &PTConfig);
+
+    /// Construct a power trace that will be dumped in NPY format to stream
+    /// os.
+    //NPYPowerDumper(std::ostream &os, size_t num_traces);
+
+    /// Update state when switching to next trace.
+    void nextTrace() override;
+
+    /// Called for each sample in the trace.
+    void dump(double total, double pc, double instr, double oreg, double ireg,
+              double addr, double data, double mstate,
+              const PAF::ReferenceInstruction *) override;
+
+    /// Destruct this NPYPowerDumper.
+    ~NPYPowerDumper();
+
+  private:
+    ///< NPY adapters for each power source.
+    std::array<std::unique_ptr<NPAdapter<double>>, 8> NPYs;
 };
 
 class PowerAnalysisConfig {

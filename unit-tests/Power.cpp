@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: <text>Copyright 2021-2024 Arm Limited and/or its
+ * SPDX-FileCopyrightText: <text>Copyright 2021-2025 Arm Limited and/or its
  * affiliates <open-source-office@arm.com></text>
  * SPDX-License-Identifier: Apache-2.0
  *
@@ -711,27 +711,42 @@ TEST(CSVPowerDumper, base) {
 TEST_WITH_TEMP_FILE(NPYPowerDumperF, "test-Power.npy.XXXXXX");
 
 TEST_F(NPYPowerDumperF, base) {
+    const string tmpFileName = getTemporaryFilename();
+    const PowerTraceConfig PTC(PowerTraceConfig::WITH_ALL);
+
     {
-        NPYPowerDumper NPD(getTemporaryFilename(), 2);
+        NPYPowerDumper NPD(tmpFileName, 2, PTC);
         NPD.preDump();
-        NPD.dump(1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 0.0, &Insts[0]);
+        NPD.dump(1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, &Insts[0]);
         NPD.postDump();
         NPD.nextTrace();
 
         NPD.preDump();
-        NPD.dump(2.0, 4.0, 6.0, 8.0, 10.0, 12.0, 14.0, 0.0, &Insts[0]);
+        NPD.dump(2.0, 4.0, 6.0, 8.0, 10.0, 12.0, 14.0, 16.0, nullptr);
         NPD.postDump();
         NPD.nextTrace();
     }
 
-    NPArray<double> npy(getTemporaryFilename().c_str());
-    EXPECT_TRUE(npy.error() == nullptr);
-    EXPECT_EQ(npy.rows(), 2);
-    EXPECT_EQ(npy.cols(), 1);
-    EXPECT_EQ(npy.elementSize(), sizeof(double));
-    for (size_t col = 0; col < npy.cols(); col++)
+    const array<string, 8> NPYFileNames = {
+        tmpFileName,
+        tmpFileName + ".pc",
+        tmpFileName + ".instr",
+        tmpFileName + ".oreg",
+        tmpFileName + ".ireg",
+        tmpFileName + ".maddr",
+        tmpFileName + ".mdata",
+        tmpFileName + ".mstate",
+    };
+
+    for (size_t i = 0; i < NPYFileNames.size(); i++) {
+        NPArray<double> npy(NPYFileNames[i]);
+        EXPECT_TRUE(npy.error() == nullptr);
+        EXPECT_EQ(npy.rows(), 2);
+        EXPECT_EQ(npy.cols(), 1);
+        EXPECT_EQ(npy.elementSize(), sizeof(double));
         for (size_t row = 0; row < npy.rows(); row++)
-            EXPECT_EQ(npy(row, col), double((row + 1) * (col + 1)));
+            EXPECT_EQ(npy(row, 0), double((row + 1) * (i + 1)));
+    }
 }
 
 TEST(RegBankDumper, base) {

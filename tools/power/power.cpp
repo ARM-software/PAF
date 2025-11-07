@@ -340,10 +340,11 @@ int main(int argc, char **argv) {
                 noiseTy, noiseLevel);
             break;
         case FileFormat::NPY:
-            PAConfigs.emplace_back(
-                pwrModel,
-                make_unique<NPYPowerDumper>(outputFileName, tu.traces.size()),
-                noiseTy, noiseLevel);
+            PAConfigs.emplace_back(pwrModel,
+                                   make_unique<NPYPowerDumper>(outputFileName,
+                                                               tu.traces.size(),
+                                                               PTConfig),
+                                   noiseTy, noiseLevel);
             break;
         }
         if (dontAddNoise)
