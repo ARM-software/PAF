@@ -603,6 +603,17 @@ TEST(MTAnalyzer, base) {
         EXPECT_EQ(CallInstr.disassembly.substr(0, 3), "BL ");
         EXPECT_EQ(cs.end.addr, cs.begin.addr + CallInstr.width / 8);
     }
+
+    // getMemorySettingInstruction.
+    ReferenceInstruction MemSetInstr;
+    EXPECT_TRUE(T.getMemorySettingInstruction(MemSetInstr, symb_addr, symb_size,
+                                              Instances[1].begin.time));
+    EXPECT_EQ(MemSetInstr.disassembly.substr(0, 5), "STR r");
+
+    // getRegisterSettingInstruction test.
+    EXPECT_TRUE(T.getRegisterSettingInstruction(MemSetInstr, "r0",
+                                               Instances[0].end.time));
+    EXPECT_EQ(MemSetInstr.disassembly.substr(0, 8), "MUL r0,r");
 }
 
 TEST(MTAnalyzer, labels) {

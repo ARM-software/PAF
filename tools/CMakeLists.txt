@@ -1,4 +1,4 @@
-# SPDX-FileCopyrightText: <text>Copyright 2021,2022,2024 Arm Limited and/or its
+# SPDX-FileCopyrightText: <text>Copyright 2021,2022,2024,2025 Arm Limited and/or its
 # affiliates <open-source-office@arm.com></text>
 # SPDX-License-Identifier: Apache-2.0
 #
@@ -18,7 +18,7 @@
 
 add_subdirectory(faulter)
 add_subdirectory(constanttime)
-add_subdirectory(memory)
+add_subdirectory(misc)
 add_subdirectory(power)
 add_subdirectory(run-model)
 add_subdirectory(sca-apps)

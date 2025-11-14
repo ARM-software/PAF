@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: <text>Copyright 2021,2022,2024, 2025 Arm Limited
+ * SPDX-FileCopyrightText: <text>Copyright 2021,2022,2024,2025 Arm Limited
  * and/or its affiliates <open-source-office@arm.com></text>
  * SPDX-License-Identifier: Apache-2.0
  *
@@ -634,6 +634,16 @@ class MTAnalyzer {
 
     /// Get the instruction which was processed at time t.
     bool getInstructionAtTime(ReferenceInstruction &I, Time t) const;
+
+    /// Get the instruction which did set the value observed at time t in memory
+    /// at address.
+    bool getMemorySettingInstruction(ReferenceInstruction &I, uint64_t address,
+                                     size_t num_bytes, Time t) const;
+
+    /// Get the instruction which did set the value observed at time t in
+    /// register reg.
+    bool getRegisterSettingInstruction(ReferenceInstruction &I,
+                                       const std::string &reg, Time t) const;
 
     /// Get this Index CallTree and cache it for future uses as it is not
     /// invalidated.

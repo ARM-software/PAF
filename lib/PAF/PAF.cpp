@@ -615,20 +615,97 @@ vector<uint8_t> MTAnalyzer::getMemoryValueAtTime(uint64_t address,
     return result;
 }
 
+namespace {
+struct InstrCollect {
+    ReferenceInstruction &instr;
+    InstrCollect(ReferenceInstruction &I) : instr(I) {}
+    void operator()(const ReferenceInstruction &I) { instr = I; }
+};
+} // namespace
+
 bool MTAnalyzer::getInstructionAtTime(ReferenceInstruction &I, Time t) const {
     SeqOrderPayload SOP;
     if (!indexNavigator.node_at_time(t, &SOP))
         reporter->errx(1, "Can not find node at time %d in this trace", t);
 
-    struct Collect {
-        ReferenceInstruction &instr;
-        Collect(ReferenceInstruction &I) : instr(I) {}
-        void operator()(const ReferenceInstruction &I) { instr = I; }
-    } C(I);
-
-    FromTraceBuilder<ReferenceInstruction, ReferenceInstructionBuilder, Collect>
+    InstrCollect C(I);
+    FromTraceBuilder<ReferenceInstruction, ReferenceInstructionBuilder,
+                     InstrCollect>
         FTB(indexNavigator);
     TarmacSite ts(0, t, 0, 0);
+    FTB.build(ExecutionRange(ts, ts), C);
+
+    return true;
+}
+
+bool MTAnalyzer::getMemorySettingInstruction(ReferenceInstruction &I,
+                                             uint64_t address, size_t num_bytes,
+                                             Time t) const {
+    SeqOrderPayload SOP;
+    if (!indexNavigator.node_at_time(t, &SOP))
+        reporter->errx(1, "Can not find node at time %d in this trace", t);
+
+    unsigned line;
+    if (!indexNavigator.getmem_next(SOP.memory_root, 'm', address, num_bytes,
+                                    nullptr, nullptr, nullptr, &line))
+        reporter->errx(1,
+                       "Can not find memory setting instruction for address "
+                       "0x%08x at time %d",
+                       address, t);
+
+    if (line == 0)
+        return false;
+
+    if (!indexNavigator.node_at_line(line, &SOP))
+        reporter->errx(1, "Can not find node at line %d in this trace", line);
+    InstrCollect C(I);
+    FromTraceBuilder<ReferenceInstruction, ReferenceInstructionBuilder,
+                     InstrCollect>
+        FTB(indexNavigator);
+
+    TarmacSite ts(SOP);
+    FTB.build(ExecutionRange(ts, ts), C);
+
+    return true;
+}
+
+bool MTAnalyzer::getRegisterSettingInstruction(ReferenceInstruction &I,
+                                               const string &reg,
+                                               Time t) const {
+    SeqOrderPayload SOP;
+    if (!indexNavigator.node_at_time(t, &SOP))
+        reporter->errx(1, "Can not find node at time %d in this trace", t);
+
+    RegisterId regId;
+    if (!lookup_reg_name(regId, reg))
+        reporter->errx(1, "Can not find register '%s'", reg.c_str());
+
+    Addr offset =
+        reg_needs_iflags(regId)
+            ? reg_offset(regId, indexNavigator.get_iflags(SOP.memory_root))
+            : reg_offset(regId);
+
+    size_t size = reg_size(regId);
+
+    unsigned line;
+    if (!indexNavigator.getmem_next(SOP.memory_root, 'r', offset, size, nullptr,
+                                    nullptr, nullptr, &line))
+        reporter->errx(1,
+                       "Can not find register setting instruction for register "
+                       "'%s' at time %d",
+                       reg.c_str(), t);
+
+    if (line == 0)
+        return false;
+
+    if (!indexNavigator.node_at_line(line, &SOP))
+        reporter->errx(1, "Can not find node at line %d in this trace", line);
+    InstrCollect C(I);
+    FromTraceBuilder<ReferenceInstruction, ReferenceInstructionBuilder,
+                     InstrCollect>
+        FTB(indexNavigator);
+
+    TarmacSite ts(SOP);
     FTB.build(ExecutionRange(ts, ts), C);
 
     return true;
