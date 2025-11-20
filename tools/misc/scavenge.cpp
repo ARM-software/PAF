@@ -91,6 +91,7 @@ vector<uint8_t> bytesSequence(string_view arg) {
     }
     return bytes;
 }
+
 void dump(ostream &os, const vector<uint8_t> &bytes) {
     os << std::hex << std::setfill('0');
     for (const auto &b : bytes)

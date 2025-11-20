@@ -84,53 +84,37 @@ class PowerModelBase {
 
     void dump(const ReferenceInstruction *I = nullptr) const {
         for (unsigned i = 0; i < cycles; i++) {
-            double PPC = 0.0;
-            double PInstr = 0.0;
-            double POReg = 0.0;
-            double PPSR = 0.0;
-            double PIReg = 0.0;
-            double PAddr = 0.0;
-            double PData = 0.0;
-            double PMS = 0.0;
 
-            if (PTConfig.withPC()) {
-                PPC = pc;
-                if (PAConfig.addNoise())
-                    PPC += PAConfig.getNoise();
+            double PPC = pc;
+            if (PAConfig.addNoise())
+                PPC += PAConfig.getNoise();
+
+            double PInstr = instr;
+            if (PAConfig.addNoise())
+                PInstr += PAConfig.getNoise();
+
+            double POReg = i < outputRegs.size() ? outputRegs[i] : 0.0;
+            double PPSR = psr;
+            if (PAConfig.addNoise()) {
+                POReg += PAConfig.getNoise();
+                PPSR += PAConfig.getNoise();
             }
-            if (PTConfig.withOpcode()) {
-                PInstr = instr;
-                if (PAConfig.addNoise())
-                    PInstr += PAConfig.getNoise();
-            }
-            if (PTConfig.withInstructionsOutputs()) {
-                POReg = i < outputRegs.size() ? outputRegs[i] : 0.0;
-                PPSR = psr;
-                if (PAConfig.addNoise()) {
-                    POReg += PAConfig.getNoise();
-                    PPSR += PAConfig.getNoise();
-                }
-            }
-            if (PTConfig.withInstructionsInputs()) {
-                PIReg = inputRegs;
-                if (PAConfig.addNoise())
-                    PIReg += PAConfig.getNoise();
-            }
-            if (PTConfig.withMemAddress()) {
-                PAddr = i < memory.size() ? memory[i].address : 0.0;
-                if (PAConfig.addNoise())
-                    PAddr += PAConfig.getNoise();
-            }
-            if (PTConfig.withMemData()) {
-                PData = i < memory.size() ? memory[i].data : 0.0;
-                if (PAConfig.addNoise())
-                    PData += PAConfig.getNoise();
-            }
-            if (PTConfig.withMemoryState()) {
-                PMS = memState;
-                if (PAConfig.addNoise())
-                    PMS += PAConfig.getNoise();
-            }
+
+            double PIReg = inputRegs;
+            if (PAConfig.addNoise())
+                PIReg += PAConfig.getNoise();
+
+            double PAddr = i < memory.size() ? memory[i].address : 0.0;
+            if (PAConfig.addNoise())
+                PAddr += PAConfig.getNoise();
+
+            double PData = i < memory.size() ? memory[i].data : 0.0;
+            if (PAConfig.addNoise())
+                PData += PAConfig.getNoise();
+
+            double PMS = memState;
+            if (PAConfig.addNoise())
+                PMS += PAConfig.getNoise();
 
             // Compute a total power figure, with very finger in the air scaling
             // factors, depending on the power source.
